@@ -112,8 +112,10 @@ RunService.RenderStepped:Connect(function(dt)
 				continue
 			end
 			visual.modelo.Parent = pasta
-			-- Distribui os pets num arco atrás do jogador
-			local angulo = math.rad(180 + (i - (quantidade + 1) / 2) * 35)
+			-- Distribui os pets num arco atrás do jogador, mas fora do centro
+			-- (no meio eles ficariam entre a câmera e o personagem)
+			local graus = if quantidade == 1 then 50 else -70 + (i - 1) * 140 / (quantidade - 1)
+			local angulo = math.rad(180 + graus)
 			local deslocamento = Vector3.new(math.sin(angulo) * DISTANCIA, 0, -math.cos(angulo) * DISTANCIA)
 			local flutuar = math.sin(tempo * 3 + i) * 0.4
 			local alvo = raiz.CFrame * CFrame.new(deslocamento + Vector3.new(0, flutuar - 1, 0))

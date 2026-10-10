@@ -31,12 +31,13 @@ local function formatar(n: number): string
 	return if i == 1 then tostring(math.floor(n)) else string.format("%.1f%s", n, sufixos[i])
 end
 
-local function criarPlaca(titulo: string, posicao: Vector3): { TextLabel }
+local function criarPlaca(titulo: string, posicao: Vector3, olharPara: Vector3): { TextLabel }
 	local placa = Instance.new("Part")
 	placa.Name = `Ranking_{titulo}`
 	placa.Anchored = true
-	placa.Size = Vector3.new(24, 16, 1)
-	placa.Position = posicao
+	placa.Size = Vector3.new(18, 11, 1)
+	-- A face da frente (-Z) fica virada para "olharPara"
+	placa.CFrame = CFrame.lookAt(posicao, Vector3.new(olharPara.X, posicao.Y, olharPara.Z))
 	placa.Color = Color3.fromRGB(150, 95, 45)
 	placa.Material = Enum.Material.Wood
 	placa.Parent = workspace:WaitForChild("Mundos")
@@ -80,19 +81,19 @@ local function criarPlaca(titulo: string, posicao: Vector3): { TextLabel }
 end
 
 function Ranking.iniciar(obterDados: (Player) -> any)
-	-- Um de cada lado da entrada da pista, de frente para quem nasce
+	-- Nas laterais do hub, viradas para o spawn, sem tapar a visão da pista
 	local origem = Config.origemMundo(1)
-	local lado = Config.Pista.Largura / 2 + 15
+	local spawn = origem + Vector3.new(0, 0, -12)
 	local placas = {
 		{
 			store = DataStoreService:GetOrderedDataStore("RankingRebirths_v1"),
 			campo = "Rebirths",
-			linhas = criarPlaca("Melhores Renascimentos", origem + Vector3.new(lado, 9, -2)),
+			linhas = criarPlaca("Melhores Renascimentos", origem + Vector3.new(32, 7.5, -22), spawn),
 		},
 		{
 			store = DataStoreService:GetOrderedDataStore("RankingVitorias_v1"),
 			campo = "VitoriasTotais",
-			linhas = criarPlaca("Mais Vitórias", origem + Vector3.new(-lado, 9, -2)),
+			linhas = criarPlaca("Mais Vitórias", origem + Vector3.new(-26, 7.5, -38), spawn),
 		},
 	}
 
