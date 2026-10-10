@@ -38,17 +38,41 @@ local CEU = { "cartoon sky", "anime skybox", "cartoon skybox", "bright sky" }
 
 -- Todos com o mesmo estilo de busca para os ícones combinarem entre si
 local ICONES = {
-	Vitoria = { "simulator trophy icon", "trophy icon" },
-	Rebirth = { "simulator rebirth icon", "rebirth icon" },
-	Escudo = { "simulator shield icon", "shield icon" },
-	Pet = { "simulator pet icon", "paw icon" },
-	Fusao = { "simulator fuse icon", "magic icon" },
-	Melhoria = { "simulator upgrade icon", "upgrade icon" },
-	Aura = { "simulator aura icon", "sparkle icon" },
-	Mundo = { "simulator world icon", "globe icon" },
-	Pocao = { "simulator potion icon", "potion icon" },
-	Presente = { "simulator gift icon", "gift icon" },
+	Vitoria = { "simulator trophy icon", "trophy icon", "trophy", "wins icon" },
+	Rebirth = { "simulator rebirth icon", "rebirth icon", "rebirth" },
+	Escudo = { "simulator shield icon", "shield icon", "shield" },
+	Pet = { "simulator pet icon", "paw icon", "pet icon" },
+	Fusao = { "simulator fuse icon", "fuse icon", "fusion icon", "merge icon" },
+	Melhoria = { "simulator upgrade icon", "upgrade icon", "upgrade arrow", "upgrades" },
+	Aura = { "simulator aura icon", "aura icon", "sparkle icon" },
+	Mundo = { "simulator world icon", "world icon", "globe icon", "planet icon" },
+	Pocao = { "simulator potion icon", "potion icon", "potion" },
+	Presente = { "simulator gift icon", "gift icon", "rewards icon", "present icon" },
 }
+
+-- O nome da imagem precisa ter uma destas palavras (a busca de imagens traz muito lixo)
+local PALAVRAS_ICONE = {
+	Vitoria = { "troph", "win", "cup" },
+	Rebirth = { "rebirth" },
+	Escudo = { "shield" },
+	Pet = { "pet", "paw" },
+	Fusao = { "fuse", "fusion", "merge" },
+	Melhoria = { "upgrade" },
+	Aura = { "aura", "sparkle" },
+	Mundo = { "world", "globe", "planet", "earth" },
+	Pocao = { "potion" },
+	Presente = { "gift", "reward", "present" },
+}
+
+local function nomeTem(nome, palavras)
+	nome = string.lower(nome)
+	for _, palavra in palavras do
+		if string.find(nome, palavra, 1, true) then
+			return true
+		end
+	end
+	return false
+end
 
 local function pasta(pai, nome)
 	local existente = pai:FindFirstChild(nome)
@@ -85,7 +109,8 @@ end
 
 local ok, falhas = 0, 0
 
--- Tenta cada busca; "validar" recebe os objetos baixados e devolve o que guardar (ou nil)
+-- Tenta cada busca; "validar" recebe os objetos baixados e o nome do resultado,
+-- e devolve o que guardar (ou nil)
 local function buscar(destino, nome, consultas, decal, validar)
 	if destino:FindFirstChild(nome) then
 		return
@@ -102,7 +127,7 @@ local function buscar(destino, nome, consultas, decal, validar)
 				local r = resultados[i]
 				local baixou, objetos = pcall(game.GetObjects, game, "rbxassetid://" .. r.AssetId)
 				if baixou then
-					local guardar = validar(objetos)
+					local guardar = validar(objetos, r.Name)
 					if guardar then
 						guardar = semScripts(guardar:Clone())
 						guardar.Name = nome
@@ -149,7 +174,10 @@ end)
 
 local icones = pasta(raiz, "Icones")
 for nome, consultas in ICONES do
-	buscar(icones, nome, consultas, true, function(objetos)
+	buscar(icones, nome, consultas, true, function(objetos, nomeResultado)
+		if not nomeTem(nomeResultado, PALAVRAS_ICONE[nome]) then
+			return nil
+		end
 		local decal = primeiroDe(objetos, "Decal")
 		return if decal and decal.Texture ~= "" then decal else nil
 	end)
