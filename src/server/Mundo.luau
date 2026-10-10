@@ -53,6 +53,21 @@ local function quadriculado(pai: Instance, centro: Vector3, tamanho: Vector3, co
 	end
 end
 
+-- Parede invisível entre dois cantos (x/z) para ninguém cair do mapa
+local function barreira(pai: Instance, origem: Vector3, x1: number, z1: number, x2: number, z2: number)
+	local altura = 60
+	local espessura = 2
+	local parte = Instance.new("Part")
+	parte.Name = "Barreira"
+	parte.Anchored = true
+	parte.Transparency = 1
+	parte.CanQuery = false
+	parte.CanTouch = false
+	parte.Size = Vector3.new(math.max(math.abs(x2 - x1), espessura), altura, math.max(math.abs(z2 - z1), espessura))
+	parte.Position = origem + Vector3.new((x1 + x2) / 2, altura / 2, (z1 + z2) / 2)
+	parte.Parent = pai
+end
+
 function Mundo.spawn(indice: number): CFrame
 	local posicao = Config.origemMundo(indice) + Vector3.new(0, 4, -12)
 	return CFrame.lookAt(posicao, posicao + Vector3.new(0, 0, 1))
@@ -226,6 +241,20 @@ function Mundo.construir(aoAbrirOvo: (Player, string) -> ()): { BasePart }
 		for i = 1, #Config.Paredes do
 			table.insert(paredes, criarParede(pista, indice, i, origem))
 		end
+
+		-- Contorno invisível do hub + pista (formato de T)
+		local barreiras = Instance.new("Folder")
+		barreiras.Name = "Barreiras"
+		barreiras.Parent = pasta
+		local hx, hz, px = hub.X / 2, hub.Z, p.Largura / 2
+		barreira(barreiras, origem, -hx, -hz, hx, -hz) -- fundo do hub
+		barreira(barreiras, origem, -hx, -hz, -hx, 0) -- lado esquerdo do hub
+		barreira(barreiras, origem, hx, -hz, hx, 0) -- lado direito do hub
+		barreira(barreiras, origem, -hx, 0, -px, 0) -- frente do hub, à esquerda da pista
+		barreira(barreiras, origem, px, 0, hx, 0) -- frente do hub, à direita da pista
+		barreira(barreiras, origem, -px, 0, -px, comprimento) -- lados da pista
+		barreira(barreiras, origem, px, 0, px, comprimento)
+		barreira(barreiras, origem, -px, comprimento, px, comprimento) -- fim da pista
 
 		pasta.Parent = raiz
 	end

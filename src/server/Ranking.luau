@@ -7,7 +7,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 
 local Ranking = {}
 
-local INTERVALO = 120
+local INTERVALO = 60
 local TOP = 10
 
 local nomes: { [number]: string } = {}
@@ -35,14 +35,14 @@ local function criarPlaca(titulo: string, posicao: Vector3): { TextLabel }
 	local placa = Instance.new("Part")
 	placa.Name = `Ranking_{titulo}`
 	placa.Anchored = true
-	placa.Size = Vector3.new(1, 14, 20)
+	placa.Size = Vector3.new(24, 16, 1)
 	placa.Position = posicao
 	placa.Color = Color3.fromRGB(150, 95, 45)
 	placa.Material = Enum.Material.Wood
 	placa.Parent = workspace:WaitForChild("Mundos")
 
 	local gui = Instance.new("SurfaceGui")
-	gui.Face = Enum.NormalId.Left
+	gui.Face = Enum.NormalId.Front -- virado para o spawn (-Z)
 	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
 	gui.PixelsPerStud = 20
 	gui.Parent = placa
@@ -80,18 +80,19 @@ local function criarPlaca(titulo: string, posicao: Vector3): { TextLabel }
 end
 
 function Ranking.iniciar(obterDados: (Player) -> any)
-	local hub = Config.Pista.TamanhoHub
+	-- Um de cada lado da entrada da pista, de frente para quem nasce
 	local origem = Config.origemMundo(1)
+	local lado = Config.Pista.Largura / 2 + 15
 	local placas = {
 		{
 			store = DataStoreService:GetOrderedDataStore("RankingRebirths_v1"),
 			campo = "Rebirths",
-			linhas = criarPlaca("Melhores Renascimentos", origem + Vector3.new(hub.X / 2 - 2, 8, -20)),
+			linhas = criarPlaca("Melhores Renascimentos", origem + Vector3.new(lado, 9, -2)),
 		},
 		{
 			store = DataStoreService:GetOrderedDataStore("RankingVitorias_v1"),
 			campo = "VitoriasTotais",
-			linhas = criarPlaca("Mais Vitórias", origem + Vector3.new(hub.X / 2 - 2, 8, -48)),
+			linhas = criarPlaca("Mais Vitórias", origem + Vector3.new(-lado, 9, -2)),
 		},
 	}
 

@@ -574,6 +574,12 @@ while true do
 		tempoVitoriasAuto = 0
 	end
 	for player, d in data do
+		-- Segurança extra: quem cair abaixo do mapa volta para o spawn do mundo
+		local character = player.Character
+		local raiz = character and character:FindFirstChild("HumanoidRootPart")
+		if raiz and raiz:IsA("BasePart") and raiz.Position.Y < -25 then
+			irParaMundo(player)
+		end
 		if darAuto and player:GetAttribute("VitoriasAutoLigado") and temPasse(player, "VitoriasAuto") then
 			-- Ganha como se tivesse quebrado a parede mais forte possível no mundo atual
 			for indice = #Config.Paredes, 1, -1 do
