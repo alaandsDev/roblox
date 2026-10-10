@@ -95,19 +95,31 @@ local function criarOvo(pasta: Instance, ovo, posicao: Vector3, aoAbrir: (Player
 		casca.Parent = base
 	end
 
+	local linhas = 2 + #ovo.Pets
 	local gui = Instance.new("BillboardGui")
-	gui.Size = UDim2.fromOffset(220, 160)
+	gui.Size = UDim2.fromOffset(230, 34 + 28 + #ovo.Pets * 24 + linhas * 2)
 	gui.StudsOffsetWorldSpace = Vector3.new(0, 10, 0)
-	gui.MaxDistance = 80
+	gui.MaxDistance = 70
+	-- Sempre na frente dos modelos 3D, senão o texto fica cortado atrás do ovo
+	gui.AlwaysOnTop = true
+	gui.LightInfluence = 0
 	gui.Adornee = base
 	gui.Parent = base
 
-	texto(gui, ovo.Nome, UDim2.new(1, 0, 0, 34))
-	local custo = texto(gui, `🏆 {formatar(ovo.Custo)}`, UDim2.new(1, 0, 0, 28), UDim2.fromOffset(0, 34))
+	local layout = Instance.new("UIListLayout")
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.Padding = UDim.new(0, 2)
+	layout.Parent = gui
+
+	local nome = texto(gui, ovo.Nome, UDim2.new(1, 0, 0, 34))
+	nome.LayoutOrder = 0
+	local custo = texto(gui, `🏆 {formatar(ovo.Custo)}`, UDim2.new(1, 0, 0, 28))
+	custo.LayoutOrder = 1
 	custo.TextColor3 = Color3.fromRGB(255, 220, 60)
 	for i, entrada in ovo.Pets do
 		local pet = Config.Pets[entrada.Pet]
-		local linha = texto(gui, `{pet.Nome} {entrada.Chance}%`, UDim2.new(1, 0, 0, 22), UDim2.fromOffset(0, 40 + i * 22))
+		local linha = texto(gui, `{pet.Nome} {entrada.Chance}%`, UDim2.new(1, 0, 0, 24))
+		linha.LayoutOrder = 1 + i
 		linha.TextColor3 = Config.Raridades[pet.Raridade]
 	end
 
