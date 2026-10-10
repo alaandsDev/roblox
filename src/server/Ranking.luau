@@ -35,25 +35,30 @@ local function criarPlaca(titulo: string, posicao: Vector3): { TextLabel }
 	local placa = Instance.new("Part")
 	placa.Name = `Ranking_{titulo}`
 	placa.Anchored = true
-	placa.Size = Vector3.new(1, 16, 22)
+	placa.Size = Vector3.new(1, 14, 20)
 	placa.Position = posicao
-	placa.Color = Color3.fromRGB(70, 45, 25)
+	placa.Color = Color3.fromRGB(150, 95, 45)
 	placa.Material = Enum.Material.Wood
 	placa.Parent = workspace:WaitForChild("Mundos")
 
 	local gui = Instance.new("SurfaceGui")
 	gui.Face = Enum.NormalId.Left
 	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	gui.PixelsPerStud = 25
+	gui.PixelsPerStud = 20
 	gui.Parent = placa
 
 	local layout = Instance.new("UIListLayout")
-	layout.Padding = UDim.new(0, 4)
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	layout.Parent = gui
 
+	local ordem = 0
+	-- Altura em fração da placa, para o texto ocupar todo o espaço
 	local function linha(texto: string, altura: number, cor: Color3): TextLabel
+		ordem += 1
 		local label = Instance.new("TextLabel")
-		label.Size = UDim2.new(1, 0, 0, altura)
+		label.LayoutOrder = ordem
+		label.Size = UDim2.fromScale(0.92, altura)
 		label.BackgroundTransparency = 1
 		label.Font = Enum.Font.FredokaOne
 		label.TextScaled = true
@@ -66,10 +71,10 @@ local function criarPlaca(titulo: string, posicao: Vector3): { TextLabel }
 		return label
 	end
 
-	linha(titulo, 50, Color3.fromRGB(255, 210, 60))
+	linha(titulo, 0.15, Color3.fromRGB(255, 210, 60))
 	local linhas = {}
 	for i = 1, TOP do
-		linhas[i] = linha("", 30, Color3.new(1, 1, 1))
+		linhas[i] = linha("", 0.085, Color3.new(1, 1, 1))
 	end
 	return linhas
 end
