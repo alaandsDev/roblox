@@ -8,7 +8,7 @@ local RunService = game:GetService("RunService")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Modelos = require(ReplicatedStorage.Shared.Modelos)
 
-local TAMANHO = 2.2
+local TAMANHO = 1.8
 local DISTANCIA = 5
 
 local pasta = Instance.new("Folder")
@@ -114,7 +114,7 @@ RunService.RenderStepped:Connect(function(dt)
 			visual.modelo.Parent = pasta
 			-- Distribui os pets num arco atrás do jogador, mas fora do centro
 			-- (no meio eles ficariam entre a câmera e o personagem)
-			local graus = if quantidade == 1 then 50 else -70 + (i - 1) * 140 / (quantidade - 1)
+			local graus = if quantidade == 1 then 80 else -85 + (i - 1) * 170 / (quantidade - 1)
 			local angulo = math.rad(180 + graus)
 			local deslocamento = Vector3.new(math.sin(angulo) * DISTANCIA, 0, -math.cos(angulo) * DISTANCIA)
 			local flutuar = math.sin(tempo * 3 + i) * 0.4
