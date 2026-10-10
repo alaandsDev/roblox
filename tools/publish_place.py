@@ -30,7 +30,7 @@ PLACE_ID = 86294164179735
 def carregar_config() -> dict:
     config = {}
     if CONFIG.exists():
-        config = json.loads(CONFIG.read_text(encoding="utf-8"))
+        config = json.loads(CONFIG.read_text(encoding="utf-8-sig"))
     config["api_key"] = os.environ.get("ROBLOX_API_KEY", config.get("api_key"))
     config["universe_id"] = os.environ.get("ROBLOX_UNIVERSE_ID", config.get("universe_id", UNIVERSE_ID))
     config["place_id"] = os.environ.get("ROBLOX_PLACE_ID", config.get("place_id", PLACE_ID))
