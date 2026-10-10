@@ -1,5 +1,5 @@
 {
-  "name": "roblox",
+  "name": "SimuladorEscudo",
   "tree": {
     "$className": "DataModel",
     "ReplicatedStorage": {
@@ -17,6 +17,11 @@
         "Client": {
           "$path": "src/client"
         }
+      }
+    },
+    "Lighting": {
+      "$properties": {
+        "Technology": "Future"
       }
     }
   }

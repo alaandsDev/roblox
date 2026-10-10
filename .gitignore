@@ -11,3 +11,9 @@ sourcemap.json
 .DS_Store
 Thumbs.db
 .vscode/
+
+# Build e publicação
+build/
+tools/bin/
+publish.local.json
+__pycache__/

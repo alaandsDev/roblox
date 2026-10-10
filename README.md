@@ -62,11 +62,40 @@ No Studio, todos os gamepasses ficam liberados para teste (`Config.LiberarPasses
 - **Gamepasses / produtos**: crie no Creator Hub e coloque os IDs em `Config.Gamepasses` e `Config.Produtos`.
 - **Iluminação**: em *Lighting*, coloque `Technology = Future`.
 
+## Puxar do Git, gerar e publicar (Windows)
+
+```
+cd C:\Users\aland\Desktop\projects\roblox
+git switch claude/nice-dirac-ubdorh
+git pull origin claude/nice-dirac-ubdorh
+git log -5 --oneline
+python tools\build_place.py
+.\build\SimuladorEscudo.rbxlx
+python tools\publish_place.py
+```
+
+- `build_place.py` gera `build\SimuladorEscudo.rbxlx` (baixa o Rojo sozinho se precisar).
+- Abrir o `.rbxlx` abre o jogo no Studio para testar.
+- `publish_place.py` publica no Roblox. Antes da primeira vez, crie `publish.local.json` na raiz
+  (instruções no topo do script). Esse arquivo tem sua chave secreta e **não vai para o Git**.
+
+### Não perca o que você fez no Studio
+
+O build é gerado a partir do Git, então o que você montar só no Studio some na próxima publicação.
+Salve assim e faça commit:
+
+- **Modelos** (pets, ovos, escudos): clique com o botão direito em `ReplicatedStorage > Modelos` →
+  *Save to File...* → salve como `assets\Modelos.rbxm`.
+- **Mapa/decoração**: agrupe tudo numa pasta `Mapa` no Workspace → *Save to File...* →
+  `assets\Mapa.rbxm`.
+
+O `build_place.py` coloca esses arquivos de volta no jogo automaticamente.
+
 ## Usando itens grátis da Store (Toolbox)
 
 O jogo funciona sem nenhum modelo, usando bolinhas e discos coloridos no lugar. Para trocar pelos itens da Store:
 
-**Jeito automático:** abra `ferramentas/BuscarModelos.lua`, copie tudo, cole na **Command Bar** do Studio
+**Jeito automático:** abra `tools/BuscarModelos.lua`, copie tudo, cole na **Command Bar** do Studio
 (*View > Command Bar*) e aperte Enter. O script pesquisa cada pet, ovo e escudo na Store, coloca na
 pasta certa com o nome certo e apaga os scripts dos modelos. Depois, confira e troque o que não gostar.
 
