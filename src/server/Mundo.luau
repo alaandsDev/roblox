@@ -174,8 +174,8 @@ function Mundo.construir(aoAbrirOvo: (Player, string) -> ()): { BasePart }
 		local placa = Instance.new("Part")
 		placa.Name = "Placa"
 		placa.Anchored = true
-		placa.Size = Vector3.new(30, 6, 1)
-		placa.Position = origem + Vector3.new(0, 14, -1)
+		placa.Size = Vector3.new(14, 3, 1)
+		placa.Position = origem + Vector3.new(0, 20, 2)
 		placa.Transparency = 1
 		placa.CanCollide = false
 		placa.Parent = pasta
