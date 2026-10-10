@@ -1,6 +1,19 @@
 # roblox
 
-Projeto de jogo Roblox versionado com [Rojo](https://rojo.space).
+Simulator para Roblox versionado com [Rojo](https://rojo.space).
+
+## O jogo
+
+- **Clicar** gera ⚡ Energia, até o limite da mochila.
+- **Vender** troca a energia por 💰 Moedas.
+- **Upgrades** (Força e Mochila) custam moedas e ficam mais caros a cada compra.
+- **Rebirth** zera moedas e upgrades em troca de +50% de multiplicador permanente.
+- O progresso é salvo com DataStore (a cada 60 s e quando o jogador sai).
+
+Toda a economia (preços, bônus, cooldown) fica em `src/shared/Config.luau`.
+
+> Para o salvamento funcionar no Studio, publique o jogo e ative
+> *Game Settings > Security > Enable Studio Access to API Services*.
 
 ## Estrutura
 
