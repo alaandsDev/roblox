@@ -24,3 +24,15 @@ bloom.Intensity = 0.4
 bloom.Size = 24
 bloom.Threshold = 1.5
 bloom.Parent = Lighting
+
+-- Céu: usa o primeiro Sky dentro de ReplicatedStorage.Modelos.Ceu (se você baixou um)
+local modelos = ReplicatedStorage:FindFirstChild("Modelos")
+local pastaCeu = modelos and modelos:FindFirstChild("Ceu")
+local ceu = pastaCeu and pastaCeu:FindFirstChildWhichIsA("Sky", true)
+if ceu then
+	local antigo = Lighting:FindFirstChildOfClass("Sky")
+	if antigo then
+		antigo:Destroy()
+	end
+	ceu:Clone().Parent = Lighting
+end

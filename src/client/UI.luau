@@ -137,6 +137,28 @@ function UI.botao(props: { [string]: any }): TextButton
 	return b
 end
 
+-- Imagem de ReplicatedStorage.Modelos.Icones/<nome> (Decal, Texture ou ImageLabel), se existir
+function UI.icone(nome: string): string?
+	local modelos = game:GetService("ReplicatedStorage"):FindFirstChild("Modelos")
+	local icones = modelos and modelos:FindFirstChild("Icones")
+	local item = icones and icones:FindFirstChild(nome)
+	if not item then
+		return nil
+	end
+	local alvo = item
+	if not (item:IsA("Decal") or item:IsA("ImageLabel") or item:IsA("ImageButton")) then
+		alvo = item:FindFirstChildWhichIsA("Decal", true)
+			or item:FindFirstChildWhichIsA("ImageLabel", true)
+			or item:FindFirstChildWhichIsA("ImageButton", true)
+	end
+	if alvo and alvo:IsA("Decal") then
+		return alvo.Texture
+	elseif alvo and (alvo:IsA("ImageLabel") or alvo:IsA("ImageButton")) then
+		return alvo.Image
+	end
+	return nil
+end
+
 UI.gui = UI.create("ScreenGui", { Name = "SimuladorGui", ResetOnSpawn = false, IgnoreGuiInset = false })
 
 -- Janelas ---------------------------------------------------------------------------

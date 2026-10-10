@@ -11,7 +11,7 @@ local store = DataStoreService:GetDataStore("SimuladorEscudo_v1")
 
 local remotes = Instance.new("Folder")
 remotes.Name = "Remotes"
-for _, name in { "Acao", "Notificar", "OvoAberto" } do
+for _, name in { "Acao", "Notificar", "OvoAberto", "Efeito" } do
 	local remote = Instance.new("RemoteEvent")
 	remote.Name = name
 	remote.Parent = remotes
@@ -30,6 +30,14 @@ end
 function Dados.notificar(player: Player, texto: string)
 	remotes.Notificar:FireClient(player, texto)
 end
+
+-- Pede ao cliente para tocar som/efeito visual (tipo: "Compra", "Parede", "Rebirth"...)
+function Dados.efeito(player: Player, tipo: string, posicao: Vector3?)
+	remotes.Efeito:FireClient(player, tipo, posicao)
+end
+
+-- Chamado no fim de cada sync (usado pelas conquistas)
+Dados.aoSincronizar = nil :: ((Player, any) -> ())?
 
 function Dados.boostAtivo(data, id: string): boolean
 	return data.Boosts[id] > os.time()
@@ -160,6 +168,10 @@ function Dados.sync(player: Player)
 	player:SetAttribute("MultVitorias", Dados.multVitorias(player, data))
 	player:SetAttribute("MaxEquipados", Dados.maxEquipados(player, data))
 
+	if Dados.aoSincronizar then
+		Dados.aoSincronizar(player, data)
+	end
+
 	local leaderstats = player:FindFirstChild("leaderstats")
 	if leaderstats then
 		leaderstats["🛡️ Armadura"].Value = math.floor(data.Armadura)
@@ -202,6 +214,7 @@ function Dados.chocarOvo(player: Player, data, ovoId: string): boolean
 
 	local pet = { Id = tostring(data.ProximoPetId), Tipo = escolhido, Dourado = false }
 	data.ProximoPetId += 1
+	data.OvosAbertos += 1
 	table.insert(data.Pets, pet)
 	if #data.PetsEquipados < Dados.maxEquipados(player, data) then
 		table.insert(data.PetsEquipados, pet.Id)

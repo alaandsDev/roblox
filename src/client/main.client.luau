@@ -9,6 +9,7 @@ local Loja = require(script.Parent.Janelas.Loja)
 local Pets = require(script.Parent.Janelas.Pets)
 local Mundos = require(script.Parent.Janelas.Mundos)
 local Recompensas = require(script.Parent.Janelas.Recompensas)
+local Efeitos = require(script.Parent.Efeitos)
 
 local player = UI.player
 local cores = UI.cores
@@ -37,16 +38,32 @@ local stats = UI.create("Frame", {
 	Parent = gui,
 }, { UI.create("UIListLayout", { Padding = UDim.new(0, 2) }) })
 
-local vitoriasLabel = UI.texto("TextLabel", {
-	Size = UDim2.new(0.7, 0, 0, 40),
-	TextXAlignment = Enum.TextXAlignment.Left,
-	Parent = stats,
-})
-local rebirthsLabel = UI.texto("TextLabel", {
-	Size = UDim2.new(0.7, 0, 0, 36),
-	TextXAlignment = Enum.TextXAlignment.Left,
-	Parent = stats,
-})
+-- Linha com ícone (se existir) + número. Sem ícone, o emoji vai junto do texto.
+local function statLinha(icone: string, emoji: string, altura: number): (TextLabel, string)
+	local linha = UI.create("Frame", { Size = UDim2.new(0.7, 0, 0, altura), BackgroundTransparency = 1, Parent = stats })
+	local imagem = UI.icone(icone)
+	local deslocamento = 0
+	if imagem then
+		UI.create("ImageLabel", {
+			Size = UDim2.fromOffset(altura, altura),
+			BackgroundTransparency = 1,
+			Image = imagem,
+			ScaleType = Enum.ScaleType.Fit,
+			Parent = linha,
+		})
+		deslocamento = altura + 6
+	end
+	local label = UI.texto("TextLabel", {
+		Position = UDim2.fromOffset(deslocamento, 0),
+		Size = UDim2.new(1, -deslocamento, 1, 0),
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Parent = linha,
+	})
+	return label, if imagem then "" else emoji .. " "
+end
+
+local vitoriasLabel, prefixoVitorias = statLinha("Vitoria", "🏆", 40)
+local rebirthsLabel, prefixoRebirths = statLinha("Rebirth", "🔁", 36)
 local boostsLabel = UI.texto("TextLabel", {
 	Size = UDim2.new(1, 0, 0, 22),
 	TextXAlignment = Enum.TextXAlignment.Left,
@@ -127,6 +144,7 @@ end
 
 local function clicar()
 	UI.acao("Click")
+	Efeitos.tocar("Clique")
 	mostrarGanho()
 end
 
@@ -311,18 +329,40 @@ local menu = UI.create("Frame", {
 
 local recompensasBotao: TextButton
 for ordem, item in {
-	{ "🛒 Escudos", cores.azul, Loja.Escudos },
-	{ "🐾 Pets", Color3.fromRGB(240, 140, 60), Pets.Inventario },
-	{ "🔮 Fusão", cores.roxo, Pets.Fusao },
-	{ "🔁 Rebirth", cores.verde, Loja.Rebirth },
-	{ "⬆️ Melhorias", Color3.fromRGB(40, 170, 120), Loja.Melhorias },
-	{ "✨ Auras", Color3.fromRGB(230, 60, 90), Loja.Auras },
-	{ "🌍 Mundos", Color3.fromRGB(60, 120, 200), Mundos.Janela },
-	{ "🧪 Poções", Color3.fromRGB(200, 60, 160), Recompensas.Pocoes },
-	{ "🎁 Prêmios", cores.amarelo, Recompensas.Janela },
+	{ "Escudos", "🛒", "Escudo", cores.azul, Loja.Escudos },
+	{ "Pets", "🐾", "Pet", Color3.fromRGB(240, 140, 60), Pets.Inventario },
+	{ "Fusão", "🔮", "Fusao", cores.roxo, Pets.Fusao },
+	{ "Rebirth", "🔁", "Rebirth", cores.verde, Loja.Rebirth },
+	{ "Melhorias", "⬆️", "Melhoria", Color3.fromRGB(40, 170, 120), Loja.Melhorias },
+	{ "Auras", "✨", "Aura", Color3.fromRGB(230, 60, 90), Loja.Auras },
+	{ "Mundos", "🌍", "Mundo", Color3.fromRGB(60, 120, 200), Mundos.Janela },
+	{ "Poções", "🧪", "Pocao", Color3.fromRGB(200, 60, 160), Recompensas.Pocoes },
+	{ "Prêmios", "🎁", "Presente", cores.amarelo, Recompensas.Janela },
 } do
-	local texto, cor, janela = item[1], item[2], item[3]
-	local b = UI.botao({ LayoutOrder = ordem, BackgroundColor3 = cor, Text = texto, Parent = menu })
+	local texto, emoji, icone, cor, janela = item[1], item[2], item[3], item[4], item[5]
+	local imagem = UI.icone(icone)
+	local b = UI.botao({
+		LayoutOrder = ordem,
+		BackgroundColor3 = cor,
+		Text = if imagem then "" else `{emoji} {texto}`,
+		Parent = menu,
+	})
+	if imagem then
+		-- Ícone em cima, nome embaixo
+		UI.create("ImageLabel", {
+			Size = UDim2.fromScale(1, 0.62),
+			BackgroundTransparency = 1,
+			Image = imagem,
+			ScaleType = Enum.ScaleType.Fit,
+			Parent = b,
+		})
+		UI.texto("TextLabel", {
+			Position = UDim2.fromScale(0, 0.62),
+			Size = UDim2.fromScale(1, 0.38),
+			Text = texto,
+			Parent = b,
+		})
+	end
 	b.Activated:Connect(function()
 		UI.abrir(janela)
 	end)
@@ -357,8 +397,8 @@ local function atualizarHUD()
 	end
 	nivelAnterior = nivel
 
-	vitoriasLabel.Text = `🏆 {formatar(get("Vitorias"))}`
-	rebirthsLabel.Text = `🔁 {rebirths}`
+	vitoriasLabel.Text = `{prefixoVitorias}{formatar(get("Vitorias"))}`
+	rebirthsLabel.Text = `{prefixoRebirths}{rebirths}`
 	boostsLabel.Text = Recompensas.boostsAtivos()
 	armaduraLabel.Text = `Armadura: {formatar(get("Armadura"))}`
 

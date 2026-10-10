@@ -116,6 +116,31 @@ pasta certa com o nome certo e apaga os scripts dos modelos. Depois, confira e t
 Para adicionar um pet, ovo ou escudo novo, inclua uma entrada no `Config.luau` com um Id novo
 e coloque um modelo com esse nome na pasta.
 
+## Sons, céu, efeitos e ícones
+
+Rode `tools/BuscarExtras.lua` na Barra de comandos do Studio (igual ao BuscarModelos). Ele cria em
+`ReplicatedStorage > Modelos`:
+
+| Pasta | Nomes usados pelo jogo |
+|---|---|
+| `Sons` | `Clique`, `Ovo`, `Nivel`, `Compra`, `Parede`, `Rebirth`, `Musica` (em loop) |
+| `Efeitos` | `Parede`, `Compra`, `Rebirth`, `Nivel`, `Ovo` (modelos com ParticleEmitter) |
+| `Ceu` | um `Sky`, que vai para o Lighting |
+| `Icones` | `Vitoria`, `Rebirth`, `Escudo`, `Pet`, `Fusao`, `Melhoria`, `Aura`, `Mundo`, `Pocao`, `Presente` (Decals) |
+
+Tudo é opcional: sem som não toca nada, sem efeito aparece uma explosão de partículas simples e sem
+ícone o botão usa emoji. Para trocar algo, coloque outro item com o mesmo nome.
+Depois salve a pasta `Modelos` de novo em `assets\Modelos.rbxm`.
+
+> Áudios longos de terceiros podem não tocar (o Roblox bloqueia áudios privados). Se a música não
+> tocar, pegue uma faixa da biblioteca de música do próprio Roblox na aba *Audio* da Toolbox.
+
+## Conquistas (badges)
+
+Crie as badges no Creator Hub (*sua experiência > Engajamento > Badges*) e coloque cada Id em
+`Config.Badges`. O jogo entrega sozinho quando o jogador cumpre a condição: entrar no jogo,
+primeiro pet, 100 ovos, pet dourado, primeiro rebirth, Mundo Neve, Mundo Lava e nível 50.
+
 ## Visual "cubinhos" (studs)
 
 O chão quadriculado usa o estilo **Studs** nativo do Roblox (`Material = Plastic`, `TopSurface = Studs`),

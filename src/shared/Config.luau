@@ -16,6 +16,7 @@ Config.StartingData = {
 	Pets = {}, -- lista de { Id = string, Tipo = string, Dourado = boolean }
 	PetsEquipados = {}, -- lista de Ids
 	ProximoPetId = 1,
+	OvosAbertos = 0,
 	Auras = {},
 	AuraEquipada = "",
 	Mundo = 1,
@@ -311,6 +312,40 @@ Config.Gamepasses = {
 	AutoClickOP = { Id = 0, Nome = "Autoclic OP" },
 	VitoriasAuto = { Id = 0, Nome = "Vitórias Automáticas" },
 	PetsExtra = { Id = 0, Nome = "+3 Pets equipados" },
+}
+
+-- Conquistas (badges). Crie no Creator Hub (Experiência > Engajamento > Badges) e coloque o Id.
+-- Condicao recebe os dados do jogador e diz se ele já merece a badge.
+Config.Badges = {
+	{ Id = 0, Nome = "Bem-vindo!", Condicao = function(_d)
+		return true
+	end },
+	{ Id = 0, Nome = "Primeiro Pet", Condicao = function(d)
+		return d.OvosAbertos >= 1
+	end },
+	{ Id = 0, Nome = "Colecionador (100 ovos)", Condicao = function(d)
+		return d.OvosAbertos >= 100
+	end },
+	{ Id = 0, Nome = "Pet Dourado", Condicao = function(d)
+		for _, pet in d.Pets do
+			if pet.Dourado then
+				return true
+			end
+		end
+		return false
+	end },
+	{ Id = 0, Nome = "Primeiro Rebirth", Condicao = function(d)
+		return d.Rebirths >= 1
+	end },
+	{ Id = 0, Nome = "Chegou ao Mundo Neve", Condicao = function(d)
+		return d.MundoMax >= 2
+	end },
+	{ Id = 0, Nome = "Chegou ao Mundo Lava", Condicao = function(d)
+		return d.MundoMax >= 3
+	end },
+	{ Id = 0, Nome = "Nível 50", Condicao = function(d)
+		return d.Nivel >= 50
+	end },
 }
 
 -- IDs dos Developer Products (boosts de armadura comprados com Robux)

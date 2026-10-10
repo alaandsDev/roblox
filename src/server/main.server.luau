@@ -9,12 +9,16 @@ local Modelos = require(ReplicatedStorage.Shared.Modelos)
 local Dados = require(script.Parent.Dados)
 local Mundo = require(script.Parent.Mundo)
 local Ranking = require(script.Parent.Ranking)
+local Conquistas = require(script.Parent.Conquistas)
 
 local remotes = Dados.remotes
 local data = Dados.data
 local sync = Dados.sync
 local notificar = Dados.notificar
 local temPasse = Dados.temPasse
+local efeito = Dados.efeito
+
+Dados.aoSincronizar = Conquistas.verificar
 
 local ultimoClique: { [Player]: number } = {}
 local ultimaAcao: { [Player]: number } = {}
@@ -138,6 +142,7 @@ function acoes.ComprarEscudo(player, d, id)
 	d.EscudoEquipado = escudo.Id
 	Dados.contarTutorial(d, "Escudo", 1)
 	atualizarPersonagem(player)
+	efeito(player, "Compra")
 	return true
 end
 
@@ -160,6 +165,7 @@ function acoes.Rebirth(player, d)
 	d.Nivel = 1
 	d.XP = 0
 	notificar(player, `Rebirth! Agora você tem x{1 + d.Rebirths * Config.BonusPorRebirth} de bônus`)
+	efeito(player, "Rebirth")
 	return true
 end
 
@@ -265,6 +271,7 @@ function acoes.FundirPet(player, d, tipo)
 		table.insert(d.PetsEquipados, novo.Id)
 	end
 	notificar(player, `✨ {Config.Pets[tipo].Nome} Dourado criado!`)
+	efeito(player, "Rebirth")
 	return true
 end
 
@@ -277,6 +284,7 @@ function acoes.ComprarAura(player, d, id)
 	d.Auras[aura.Id] = true
 	d.AuraEquipada = aura.Id
 	atualizarPersonagem(player)
+	efeito(player, "Compra")
 	return true
 end
 
@@ -303,6 +311,7 @@ function acoes.ComprarMundo(player, d, indice)
 	d.Mundo = indice
 	irParaMundo(player)
 	notificar(player, `Bem-vindo ao {mundo.Nome}!`)
+	efeito(player, "Rebirth")
 	return true
 end
 
@@ -328,6 +337,7 @@ function acoes.ComprarMelhoria(player, d, id)
 	d.Vitorias -= custo
 	d.Melhorias[melhoria.Id] += 1
 	atualizarPersonagem(player)
+	efeito(player, "Compra")
 	return true
 end
 
@@ -433,6 +443,7 @@ for _, parede in Mundo.construir(aoAbrirOvo) do
 		toques[parede] = agora
 		Dados.darVitorias(d, Dados.vitoriasParede(player, d, mundo, indice))
 		Dados.contarTutorial(d, "Parede", 1)
+		efeito(player, "Parede", hit.Position)
 		sync(player)
 	end)
 end
@@ -514,6 +525,7 @@ local function onPlayerRemoving(player: Player)
 	toquesParede[player] = nil
 	inicioSessao[player] = nil
 	presentesColetados[player] = nil
+	Conquistas.remover(player)
 end
 
 Players.PlayerAdded:Connect(onPlayerAdded)
