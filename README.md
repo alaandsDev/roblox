@@ -66,6 +66,12 @@ No Studio, todos os gamepasses ficam liberados para teste (`Config.LiberarPasses
 
 O jogo funciona sem nenhum modelo, usando bolinhas e discos coloridos no lugar. Para trocar pelos itens da Store:
 
+**Jeito automático:** abra `ferramentas/BuscarModelos.lua`, copie tudo, cole na **Command Bar** do Studio
+(*View > Command Bar*) e aperte Enter. O script pesquisa cada pet, ovo e escudo na Store, coloca na
+pasta certa com o nome certo e apaga os scripts dos modelos. Depois, confira e troque o que não gostar.
+
+**Jeito manual:**
+
 1. No Studio, crie em **ReplicatedStorage** uma pasta `Modelos` com três subpastas: `Pets`, `Ovos` e `Escudos`.
 2. Na Toolbox (*View > Toolbox > Creator Store*), pegue os modelos grátis. Exemplos de busca: "egg", "pet pack", "shield".
 3. Arraste cada modelo para a subpasta certa e **renomeie com o Id do Config**:
