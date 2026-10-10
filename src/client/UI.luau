@@ -39,6 +39,14 @@ function UI.formatar(n: number): string
 	return string.format("%.1f%s", n, SUFIXOS[i])
 end
 
+-- Como formatar, mas mostra 1 casa decimal em números pequenos (ex.: +1.4)
+function UI.formatarDecimal(n: number): string
+	if n < 100 then
+		return (string.format("%.1f", n):gsub("%.0$", ""))
+	end
+	return UI.formatar(n)
+end
+
 function UI.formatarTempo(segundos: number): string
 	segundos = math.max(0, math.floor(segundos))
 	local h = segundos // 3600

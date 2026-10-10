@@ -76,7 +76,8 @@ end
 
 function Dados.ganhoPorClique(player: Player, data): number
 	local escudo = Config.getEscudo(data.EscudoEquipado) or Config.Escudos[1]
-	return math.max(1, math.floor(escudo.Bonus * Dados.multArmadura(player, data)))
+	-- Sem arredondar: bônus pequenos (pets, níveis) somam frações a cada toque
+	return escudo.Bonus * Dados.multArmadura(player, data)
 end
 
 function Dados.multVitorias(player: Player, data): number
@@ -161,7 +162,7 @@ function Dados.sync(player: Player)
 
 	local leaderstats = player:FindFirstChild("leaderstats")
 	if leaderstats then
-		leaderstats["🛡️ Armadura"].Value = data.Armadura
+		leaderstats["🛡️ Armadura"].Value = math.floor(data.Armadura)
 		leaderstats["🏆 Vitórias"].Value = data.Vitorias
 		leaderstats["🔁 Rebirths"].Value = data.Rebirths
 	end

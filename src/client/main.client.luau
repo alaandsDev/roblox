@@ -115,7 +115,7 @@ local function mostrarGanho()
 		Position = toque.Position + UDim2.fromOffset(math.random(-60, 60), -40),
 		Size = UDim2.fromOffset(120, 36),
 		TextColor3 = cores.amarelo,
-		Text = `+{formatar(get("GanhoPorClique") or 1)} 🛡️`,
+		Text = `+{UI.formatarDecimal(get("GanhoPorClique") or 1)} 🛡️`,
 		Parent = gui,
 	})
 	TweenService:Create(ganho, TweenInfo.new(0.8), {
