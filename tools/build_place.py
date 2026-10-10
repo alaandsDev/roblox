@@ -2,7 +2,8 @@
 
 Uso:  python tools\\build_place.py
 
-- Usa o Rojo do PATH/Aftman; se não achar, baixa o Rojo sozinho para tools/bin.
+- Baixa sozinho a versão certa do Rojo para tools/bin (versões antigas não leem
+  arquivos .rbxm salvos pelo Studio atual, por isso não usamos o Rojo do PATH).
 - Se existir assets/Modelos.rbxm, vira ReplicatedStorage.Modelos (pets, ovos, escudos).
 - Se existir assets/Mapa.rbxm, vira Workspace.Mapa (decoração feita no Studio).
 """
@@ -11,14 +12,13 @@ import io
 import json
 import os
 import platform
-import shutil
 import subprocess
 import sys
 import urllib.request
 import zipfile
 from pathlib import Path
 
-ROJO_VERSION = "7.4.4"
+ROJO_VERSION = "7.7.1"
 RAIZ = Path(__file__).resolve().parent.parent
 BUILD = RAIZ / "build"
 SAIDA = BUILD / "SimuladorEscudo.rbxlx"
@@ -40,7 +40,7 @@ def baixar_rojo() -> Path:
     if not nome_zip:
         sys.exit(f"Sistema {sistema} não suportado. Instale o Rojo manualmente.")
 
-    destino = RAIZ / "tools" / "bin"
+    destino = RAIZ / "tools" / "bin" / ROJO_VERSION
     executavel = destino / ("rojo.exe" if sistema == "Windows" else "rojo")
     if executavel.exists():
         return executavel
@@ -54,8 +54,7 @@ def baixar_rojo() -> Path:
 
 
 def encontrar_rojo() -> str:
-    no_path = shutil.which("rojo")
-    return no_path if no_path else str(baixar_rojo())
+    return str(baixar_rojo())
 
 
 def main() -> None:
