@@ -1,45 +1,52 @@
-# roblox
+# Simulador de Escudo
 
-Simulator para Roblox versionado com [Rojo](https://rojo.space).
+Simulator para Roblox no estilo "toque para ficar mais forte", versionado com [Rojo](https://rojo.space).
 
 ## O jogo
 
-- **Clicar** gera ⚡ Energia, até o limite da mochila.
-- **Vender** troca a energia por 💰 Moedas.
-- **Upgrades** (Força e Mochila) custam moedas e ficam mais caros a cada compra.
-- **Rebirth** zera moedas e upgrades em troca de +50% de multiplicador permanente.
-- O progresso é salvo com DataStore (a cada 60 s e quando o jogador sai).
+- **TOQUE!**: cada toque dá 🛡️ Armadura (o valor depende do escudo equipado, do nível e dos rebirths) e XP.
+- **Nível**: o XP sobe o nível, e cada nível dá +6% de armadura.
+- **Pista de paredes**: corra pela pista. Se sua armadura for maior que a vida da parede, você atravessa e ganha 🏆 Vitórias.
+- **Escudos**: comprados com vitórias. Cada um dá mais armadura por toque.
+- **Rebirth**: a partir do nível 10, zera armadura, vitórias e nível em troca de +50% permanente (você mantém os escudos).
+- **Tutorial** em 6 passos, com recompensa em vitórias.
+- **Clique automático** grátis, e o **Autoclic OP** (gamepass), que clica mais rápido.
+- **Gamepasses**: x2 Armadura, x2 Vitórias, +15 Velocidade e Autoclic OP.
+- **Ganho offline**: quem volta ao jogo ganha armadura pelo tempo que ficou fora (até 8 h).
+- O progresso é salvo com DataStore.
 
-Toda a economia (preços, bônus, cooldown) fica em `src/shared/Config.luau`.
-
-> Para o salvamento funcionar no Studio, publique o jogo e ative
-> *Game Settings > Security > Enable Studio Access to API Services*.
+Toda a economia (preços, escudos, paredes, bônus e tutorial) fica em `src/shared/Config.luau`.
 
 ## Estrutura
 
-| Pasta         | Vai para no Roblox                              | Uso                                 |
-|---------------|-------------------------------------------------|-------------------------------------|
-| `src/server`  | `ServerScriptService.Server`                    | Scripts do servidor (`.server.luau`) |
-| `src/client`  | `StarterPlayer.StarterPlayerScripts.Client`     | Scripts do cliente (`.client.luau`)  |
-| `src/shared`  | `ReplicatedStorage.Shared`                      | ModuleScripts usados pelos dois     |
+| Arquivo                          | O que faz                                                 |
+|----------------------------------|-----------------------------------------------------------|
+| `src/shared/Config.luau`         | Balanceamento e listas (escudos, paredes, tutorial, passes) |
+| `src/server/main.server.luau`    | Dados do jogador, salvamento, cliques, compras, rebirth    |
+| `src/server/Pista.luau`          | Gera a pista quadriculada e as paredes                     |
+| `src/server/Visual.server.luau`  | Iluminação colorida (saturação, bloom)                     |
+| `src/client/main.client.luau`    | Toda a interface                                           |
+| `src/client/Paredes.client.luau` | Libera a passagem nas paredes que você já consegue quebrar  |
 
-## Como usar
+## Como rodar
 
-1. Instale o [Aftman](https://github.com/LPGhatguy/aftman) e rode `aftman install` (instala o Rojo na versão do `aftman.toml`).
-2. No Roblox Studio, instale o plugin do Rojo (Toolbox > Plugins > "Rojo").
-3. Na pasta do projeto, rode:
-   ```sh
-   rojo serve
-   ```
-4. No Studio, abra o plugin Rojo e clique em **Connect**. Tudo que você editar em `src/` aparece no Studio na hora.
+1. Instale o [Aftman](https://github.com/LPGhatguy/aftman) e rode `aftman install`.
+2. No Roblox Studio, instale o plugin **Rojo**.
+3. Rode `rojo serve` e clique em **Connect** no plugin.
+4. Aperte **Play**. A pista aparece na frente do spawn.
 
-Para gerar um arquivo do jogo: `rojo build -o jogo.rbxl`.
+### Configurações no Studio
 
-## Usando um template / jogo pronto
+- **Salvamento**: publique o jogo e ative *Game Settings > Security > Enable Studio Access to API Services*.
+- **Gamepasses**: crie os passes no Creator Hub e coloque os IDs em `Config.Gamepasses`.
+- **Iluminação**: em *Lighting*, coloque `Technology = Future`, porque essa opção não pode ser mudada por script.
 
-Mapas, modelos e partes visuais ficam melhor no próprio Studio (salvos no Roblox).
-Os **scripts** do template podem ser trazidos para cá: copie o código de cada
-Script/ModuleScript para um arquivo em `src/` seguindo a tabela acima.
+## Visual "cubinhos" (studs)
 
-> ⚠️ Antes de usar scripts de modelos gratuitos, procure por `require(<número>)`,
-> `getfenv` e `loadstring` — são sinais comuns de backdoor.
+O chão quadriculado usa o estilo **Studs** nativo do Roblox. Para fazer o mesmo nas suas peças:
+selecione a Part, coloque `Material = Plastic` e, em *Surface*, mude `TopSurface` para `Studs`.
+Para ter o quadriculado, alterne duas cores parecidas entre peças vizinhas.
+As cores vivas vêm do `ColorCorrectionEffect` com saturação alta (`Visual.server.luau`).
+
+> ⚠️ Antes de usar scripts de modelos gratuitos da Toolbox, procure por `require(<número>)`,
+> `getfenv` e `loadstring`, que são sinais comuns de backdoor.
