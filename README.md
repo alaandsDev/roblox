@@ -77,7 +77,7 @@ python tools\publish_place.py
 - `build_place.py` gera `build\SimuladorEscudo.rbxlx` (baixa o Rojo sozinho se precisar).
 - Abrir o `.rbxlx` abre o jogo no Studio para testar.
 - `publish_place.py` publica no Roblox. Antes da primeira vez, crie `publish.local.json` na raiz
-  (instruções no topo do script). Esse arquivo tem sua chave secreta e **não vai para o Git**.
+  com `{ "api_key": "SUA_CHAVE" }` (Universe ID e Place ID já estão no script). Esse arquivo tem sua chave secreta e **não vai para o Git**.
 
 ### Não perca o que você fez no Studio
 

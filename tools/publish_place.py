@@ -2,13 +2,10 @@
 
 Uso:  python tools\\publish_place.py
 
-Configuração (uma vez): crie publish.local.json na raiz do projeto (ele NÃO vai pro Git):
-    {
-      "api_key": "SUA_CHAVE",
-      "universe_id": 1234567890,
-      "place_id": 9876543210
-    }
-Ou use as variáveis de ambiente ROBLOX_API_KEY, ROBLOX_UNIVERSE_ID e ROBLOX_PLACE_ID.
+Universe ID e Place ID já estão abaixo. Falta só a chave da API (uma vez):
+crie publish.local.json na raiz do projeto (ele NÃO vai pro Git):
+    { "api_key": "SUA_CHAVE" }
+Ou use a variável de ambiente ROBLOX_API_KEY.
 
 A chave é criada em https://create.roblox.com/dashboard/credentials com a permissão
 "universe-places" > "write", liberada para a experiência do jogo.
@@ -25,14 +22,18 @@ RAIZ = Path(__file__).resolve().parent.parent
 ARQUIVO = RAIZ / "build" / "SimuladorEscudo.rbxlx"
 CONFIG = RAIZ / "publish.local.json"
 
+# https://create.roblox.com/dashboard/creations/experiences/10770107678/places/86294164179735
+UNIVERSE_ID = 10770107678
+PLACE_ID = 86294164179735
+
 
 def carregar_config() -> dict:
     config = {}
     if CONFIG.exists():
         config = json.loads(CONFIG.read_text(encoding="utf-8"))
     config["api_key"] = os.environ.get("ROBLOX_API_KEY", config.get("api_key"))
-    config["universe_id"] = os.environ.get("ROBLOX_UNIVERSE_ID", config.get("universe_id"))
-    config["place_id"] = os.environ.get("ROBLOX_PLACE_ID", config.get("place_id"))
+    config["universe_id"] = os.environ.get("ROBLOX_UNIVERSE_ID", config.get("universe_id", UNIVERSE_ID))
+    config["place_id"] = os.environ.get("ROBLOX_PLACE_ID", config.get("place_id", PLACE_ID))
     faltando = [k for k in ("api_key", "universe_id", "place_id") if not config.get(k)]
     if faltando:
         sys.exit(f"Faltando {', '.join(faltando)}. Veja as instruções no topo de tools/publish_place.py.")
