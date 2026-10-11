@@ -56,7 +56,7 @@ function LodController.Start()
 						for _, station in runtime:GetChildren() do
 							local anchor = station:FindFirstChild("InfoAnchor")
 							if anchor and anchor:IsA("BasePart") then
-								apply(station, (anchor.Position - origin).Magnitude, reduced)
+								apply(station, (anchor.CFrame.Position - origin).Magnitude, reduced)
 							end
 						end
 					end

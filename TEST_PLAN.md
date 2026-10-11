@@ -34,6 +34,7 @@
 | `tests/Migrations.spec.luau` | v1 → v2 (Level/Variant, NextUid, slots inválidos) + Template |
 | `tests/Economy.spec.luau` | simulação Casual/Ativo/Hardcore: progressão não quebra em 5 min/2 h, 8 h offline ≤ 1 h ativa |
 | `tests/roblox/GameplayHarness.luau` (Lune) | **integração** de todos os Services de gameplay reais: roll/cooldown/pity/inventário cheio/auto-sell, equipar + estações (billboard/pad/placa, sem colisão), **nível individual** (custo exato, spam, não equipado, máximo, pisar no pad), renda/coletor (pisar, longe), dados, upgrades, venda (protegidos, prévia = confirmado), Index (marco único), offline (claim único, futuro, fechar sem resgatar), diário (spam, dia seguinte, reset, Dia 7), base demo, saída |
+| `tests/roblox/ClientHarness.luau` (Lune) | **ponta a ponta**: Services do servidor + Controllers REAIS do cliente, ligados por uma rede falsa que copia os dados. Clica nos botões de verdade: HUD completo, ROLAR, reveal normal e compacto, as 4 cinemáticas (palco, CONTINUAR, limpeza), morrer no meio, MOCHILA (selecionar/EQUIPAR), todas as janelas, DIÁRIO, OFFLINE, venda com confirmação, configurações, notificações agrupadas; falha com qualquer erro de execução |
 | `tests/roblox/MapHarness.luau` (Lune) | executa o **MapService/MapBuilder/BaseBuilder reais**; **map references**; estados RB0/RB5/dono; gera a imagem `build/map_preview.png` |
 
 Também rodar antes de cada commit:

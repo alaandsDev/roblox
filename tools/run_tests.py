@@ -9,6 +9,7 @@ Uso:  python tools\\run_tests.py
    roda o MapValidator e testa RB0/RB5/dono. Gera build/map_preview.json.
    tests/roblox/ServiceHarness.luau e GameplayHarness.luau: integração dos Services reais
    (base, roll, inventário, estações, economia, venda, dados, offline, diário).
+   tests/roblox/ClientHarness.luau: servidor + interface do cliente de ponta a ponta.
 4. Se o Pillow estiver instalado, desenha build/map_preview.png (vista de cima).
 Os binários (versões fixas) são baixados para tools/bin na primeira vez.
 """
@@ -99,6 +100,7 @@ def main() -> None:
     mapa = subprocess.run([str(lune), "run", "tests/roblox/MapHarness.luau"], cwd=RAIZ)
     servicos = subprocess.run([str(lune), "run", "tests/roblox/ServiceHarness.luau"], cwd=RAIZ)
     gameplay = subprocess.run([str(lune), "run", "tests/roblox/GameplayHarness.luau"], cwd=RAIZ)
+    cliente = subprocess.run([str(lune), "run", "tests/roblox/ClientHarness.luau"], cwd=RAIZ)
 
     if mapa.returncode == 0:
         try:
@@ -108,7 +110,7 @@ def main() -> None:
         except ImportError:
             print("(Pillow não instalado: pulando a imagem do mapa)")
 
-    if erros or puros.returncode != 0 or mapa.returncode != 0 or servicos.returncode != 0 or gameplay.returncode != 0:
+    if erros or puros.returncode != 0 or mapa.returncode != 0 or servicos.returncode != 0 or gameplay.returncode != 0 or cliente.returncode != 0:
         sys.exit(1)
 
 

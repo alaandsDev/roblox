@@ -13,8 +13,26 @@ local serde = require("@lune/serde")
 local taskLib = require("@lune/task")
 
 local Instance = roblox.Instance
+local Enum = roblox.Enum
 
 local Env = {}
+
+-- Erros lançados dentro de callbacks de sinais/threads (os harnesses conferem no fim)
+Env.errors = {}
+function Env.record(err)
+	table.insert(Env.errors, tostring(err))
+	print("  [ERRO em callback] " .. tostring(err))
+end
+
+-- Roda fn protegido (erros vão para Env.errors em vez de sumir numa thread)
+function Env.protect(fn)
+	return function(...)
+		local ok, err = pcall(fn, ...)
+		if not ok then
+			Env.record(err)
+		end
+	end
+end
 
 function Env.signal()
 	local s = { listeners = {} }
@@ -39,12 +57,80 @@ function Env.signal()
 	function s:Fire(...)
 		for _, entry in self.listeners do
 			if entry.connected then
-				taskLib.spawn(entry.fn, ...)
+				taskLib.spawn(Env.protect(entry.fn), ...)
 			end
 		end
 	end
+	function s:Wait()
+		local thread = coroutine.running()
+		self:Once(function(...)
+			taskLib.spawn(thread, ...)
+		end)
+		return coroutine.yield()
+	end
 	return s
 end
+
+-- Eventos/propriedades de Instance que o Lune não implementa (um sinal por instância)
+-- O Lune devolve um objeto novo a cada acesso à mesma Instance: a identidade vem de um atributo
+local instanceSignals = {}
+local nextSignalId = 0
+local function eventOf(instance, name)
+	local id = instance:GetAttribute("__HarnessId")
+	if not id then
+		nextSignalId += 1
+		id = nextSignalId
+		instance:SetAttribute("__HarnessId", id)
+	end
+	local map = instanceSignals[id]
+	if not map then
+		map = {}
+		instanceSignals[id] = map
+	end
+	if not map[name] then
+		map[name] = Env.signal()
+	end
+	return map[name]
+end
+Env.eventOf = eventOf
+local EVENTS = {
+	Instance = { "Destroying", "ChildAdded", "ChildRemoved", "AncestryChanged" },
+	GuiButton = { "Activated", "MouseEnter", "MouseLeave", "MouseButton1Down", "MouseButton1Up", "MouseButton1Click" },
+	Sound = { "Ended" },
+}
+for className, names in EVENTS do
+	for _, name in names do
+		pcall(roblox.implementProperty, className, name, function(instance)
+			return eventOf(instance, name)
+		end)
+	end
+end
+pcall(roblox.implementMethod, "Instance", "GetPropertyChangedSignal", function(instance, property)
+	return eventOf(instance, "Changed:" .. property)
+end)
+pcall(roblox.implementMethod, "Instance", "WaitForChild", function(instance, name, timeout)
+	local deadline = os.clock() + (timeout or 5)
+	repeat
+		local child = instance:FindFirstChild(name)
+		if child then
+			return child
+		end
+		taskLib.wait(0.02)
+	until os.clock() > deadline
+	return nil
+end)
+pcall(roblox.implementMethod, "Sound", "Play", function() end)
+pcall(roblox.implementMethod, "Sound", "Stop", function() end)
+pcall(roblox.implementMethod, "ParticleEmitter", "Emit", function() end)
+pcall(roblox.implementProperty, "GuiBase2d", "AbsoluteSize", function()
+	return roblox.Vector2.new(1280, 720)
+end)
+pcall(roblox.implementProperty, "GuiBase2d", "AbsolutePosition", function()
+	return roblox.Vector2.new(0, 0)
+end)
+pcall(roblox.implementProperty, "Camera", "ViewportSize", function()
+	return roblox.Vector2.new(1280, 720)
+end)
 
 function Env.create()
 	local game = Instance.new("DataModel")
@@ -84,6 +170,13 @@ function Env.create()
 	server.Name = "Server"
 	server.Parent = real.ServerScriptService
 	mount("src/server", server)
+	local starterPlayer = game:GetService("StarterPlayer")
+	local starterScripts = Instance.new("StarterPlayerScripts")
+	starterScripts.Parent = starterPlayer
+	local client = Instance.new("Folder")
+	client.Name = "Client"
+	client.Parent = starterScripts
+	mount("src/client", client)
 
 	-- Jogadores falsos
 	local Players = {
@@ -173,9 +266,20 @@ function Env.create()
 		},
 		BadgeService = {},
 		SoundService = {},
+		-- Tween instantâneo: aplica as propriedades finais no Play e dispara Completed
 		TweenService = {
-			Create = function()
-				return { Play = function() end, Cancel = function() end }
+			Create = function(_, instance, _info, props)
+				local tween = { Completed = Env.signal() }
+				function tween.Play()
+					for key, value in props or {} do
+						pcall(function()
+							instance[key] = value
+						end)
+					end
+					tween.Completed:Fire(Enum.PlaybackState.Completed)
+				end
+				function tween.Cancel() end
+				return tween
 			end,
 		},
 	}
@@ -216,15 +320,29 @@ function Env.create()
 		end
 		return parts
 	end
-	pcall(roblox.implementMethod, "Model", "GetPivot", function(model)
-		return model.WorldPivot
-	end)
+	-- Pivô do Model: WorldPivot (se já definido), senão PrimaryPart, senão a primeira peça
+	local function pivotOf(model)
+		local ok, pivot = pcall(function()
+			return model.WorldPivot
+		end)
+		if ok and pivot then
+			return pivot
+		end
+		local primary = model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart", true)
+		return if primary then primary.CFrame else roblox.CFrame.new()
+	end
+	pcall(roblox.implementMethod, "Model", "GetPivot", pivotOf)
 	pcall(roblox.implementMethod, "Model", "PivotTo", function(model, target)
-		local delta = target * model.WorldPivot:Inverse()
+		local delta = target * pivotOf(model):Inverse()
 		for _, part in descendantsParts(model) do
 			part.CFrame = delta * part.CFrame
 		end
 		model.WorldPivot = target
+	end)
+	pcall(roblox.implementMethod, "WorldRoot", "BulkMoveTo", function(_, parts, cframes)
+		for i, part in parts do
+			part.CFrame = cframes[i]
+		end
 	end)
 	pcall(roblox.implementMethod, "BasePart", "GetPivot", function(part)
 		return part.CFrame
@@ -250,6 +368,14 @@ function Env.create()
 			baseEnv[name] = value
 		end
 	end
+	-- Tipos que o Lune não tem
+	if baseEnv.TweenInfo == nil then
+		baseEnv.TweenInfo = {
+			new = function(time, style, direction)
+				return { Time = time or 1, EasingStyle = style, EasingDirection = direction }
+			end,
+		}
+	end
 
 	local env = {
 		game = game,
@@ -258,11 +384,12 @@ function Env.create()
 		Players = Players,
 		shared = shared,
 		server = server,
+		client = client,
 		tags = tags,
 	}
 
 	-- Um contexto = um cache de require. overrides[fullName] substitui módulos (ex.: Net).
-	function env.newContext(overrides)
+	function env.newContext(overrides, globals)
 		local cache = {}
 		local function requireModule(target)
 			if type(target) == "string" then
@@ -279,6 +406,9 @@ function Env.create()
 			local moduleEnv = table.clone(baseEnv)
 			moduleEnv.script = target
 			moduleEnv.require = requireModule
+			for name, value in globals or {} do
+				moduleEnv[name] = value
+			end
 			local chunk = luau.load(fs.readFile(path), { debugName = path, environment = moduleEnv })
 			local result = chunk()
 			cache[key] = result
