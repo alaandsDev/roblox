@@ -17,7 +17,7 @@ local DataController = require(script.Parent.DataController)
 
 local SettingsController = {}
 
-local OPTIONS = { "HideRollAnimation", "CameraShake", "ReducedEffects" }
+local OPTIONS = { "HideRollAnimation", "CameraShake", "ReducedEffects", "Music" }
 
 local window: UIKit.Window
 local buttons: { [string]: TextButton } = {}

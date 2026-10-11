@@ -85,10 +85,49 @@ function BoostService.Compute(player: Player): { [string]: any }
 	return runtime
 end
 
+-- Etiqueta "👑 VIP" acima da cabeça de quem tem o gamepass VIP
+local function vipTag(player: Player)
+	local character = player.Character
+	local head = character and character:FindFirstChild("Head")
+	if not head then
+		return
+	end
+	local existing = head:FindFirstChild("VipTag")
+	local isVip = MonetizationService.OwnsPass(player, "VIP")
+	if not isVip then
+		if existing then
+			existing:Destroy()
+		end
+		return
+	end
+	if existing then
+		return
+	end
+	local gui = Instance.new("BillboardGui")
+	gui.Name = "VipTag"
+	gui.Size = UDim2.fromOffset(120, 34)
+	gui.StudsOffset = Vector3.new(0, 2.6, 0)
+	gui.MaxDistance = 80
+	gui.LightInfluence = 0
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.fromScale(1, 1)
+	label.BackgroundTransparency = 1
+	label.Font = Enum.Font.FredokaOne
+	label.TextScaled = true
+	label.TextColor3 = Color3.fromRGB(255, 205, 60)
+	label.Text = "👑 VIP"
+	local stroke = Instance.new("UIStroke")
+	stroke.Thickness = 2
+	stroke.Parent = label
+	label.Parent = gui
+	gui.Parent = head
+end
+
 function BoostService.Refresh(player: Player)
 	if PlayerDataService.GetData(player) then
 		PlayerDataService.Set(player, "Runtime", BoostService.Compute(player))
 		BoostService.Changed:Fire(player)
+		pcall(vipTag, player)
 	end
 end
 
@@ -104,6 +143,18 @@ function BoostService.Start()
 		BoostService.Refresh(player)
 		refreshAll()
 	end)
+	local function watch(player: Player)
+		if typeof(player) == "Instance" then
+			player.CharacterAdded:Connect(function(character)
+				character:WaitForChild("Head", 10)
+				pcall(vipTag, player)
+			end)
+		end
+	end
+	Players.PlayerAdded:Connect(watch)
+	for _, player in Players:GetPlayers() do
+		watch(player)
+	end
 	MonetizationService.PassesLoaded:Connect(BoostService.Refresh)
 	MonetizationService.PassPurchased:Connect(BoostService.Refresh)
 	Players.PlayerRemoving:Connect(function(player)

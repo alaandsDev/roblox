@@ -138,7 +138,7 @@ local ORDER = {
 	"EconomyService", "InventoryService", "IndexService", "SellService", "RollService",
 	"DiceService", "UpgradeService", "StationService", "DailyService", "TowerService",
 	"RebirthService", "FusionService", "TradeService", "MissionService",
-	"BoostService", "JackpotService",
+	"BoostService", "JackpotService", "LeaderboardService",
 }
 local S = {}
 for _, name in ORDER do
@@ -182,7 +182,7 @@ local CLIENT_ORDER = {
 	"NotificationController", "DataController", "HudController", "NavigationController", "AmbientController",
 	"RevealController", "RollController", "InventoryController", "DiceShopController", "UpgradesController",
 	"SellController", "IndexController", "DailyController", "OfflineController", "SettingsController", "TowerController",
-	"RebirthController", "FusionController", "TradeController", "MissionController", "StoreController",
+	"RebirthController", "FusionController", "TradeController", "MissionController", "StoreController", "MusicController",
 	"FeedbackController", "LodController",
 }
 local C = {}
@@ -583,6 +583,9 @@ do
 	check(find(store.content, "Gem_JackpotSpin") ~= nil, "LOJA mostra a loja de gemas")
 	UIKit.Windows.closeAll()
 	data.Gems = 500
+	S.JackpotService._rand = function()
+		return 0 -- prêmio determinístico (dinheiro) para conferir o custo
+	end
 	local jackpot = find(gui("HUD"), "JackpotShortcut")
 	check(jackpot ~= nil, "atalho JACKPOT no lado direito")
 	if jackpot then

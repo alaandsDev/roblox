@@ -32,7 +32,7 @@ local Definitions: Definitions = {
 		GetSnapshot = { args = {}, rate = { capacity = 5, refill = 1 } },
 		SetSetting = {
 			args = {
-				{ type = "string", enum = { "AutoRoll", "HideRollAnimation", "CameraShake", "ReducedEffects" } },
+				{ type = "string", enum = { "AutoRoll", "HideRollAnimation", "CameraShake", "ReducedEffects", "Music" } },
 				{ type = "boolean" },
 			},
 			rate = { capacity = 5, refill = 2 },

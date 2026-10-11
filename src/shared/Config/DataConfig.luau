@@ -94,6 +94,8 @@ DataConfig.Template = {
 		HideRollAnimation = false,
 		CameraShake = true,
 		ReducedEffects = false,
+		-- Música de fundo (desligada por padrão: licença do asset a conferir, ver ASSETS.md)
+		Music = false,
 		-- Venda automática por raridade (Secret é sempre protegido, ver RollConfig)
 		AutoSell = {
 			Common = false,
@@ -120,6 +122,6 @@ DataConfig.Template = {
 DataConfig.PrivateKeys = { "ProcessedReceipts" }
 
 -- Configurações que o cliente pode alterar (sempre booleanas)
-DataConfig.ClientSettings = { "AutoRoll", "HideRollAnimation", "CameraShake", "ReducedEffects" }
+DataConfig.ClientSettings = { "AutoRoll", "HideRollAnimation", "CameraShake", "ReducedEffects", "Music" }
 
 return DataConfig

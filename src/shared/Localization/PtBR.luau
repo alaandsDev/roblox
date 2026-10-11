@@ -243,6 +243,7 @@ return {
 	["settings.HideRollAnimation"] = "Ocultar animação do roll",
 	["settings.CameraShake"] = "Tremer a câmera",
 	["settings.ReducedEffects"] = "Efeitos reduzidos",
+	["settings.Music"] = "Música de fundo",
 	["settings.on"] = "LIGADO",
 	["settings.off"] = "DESLIGADO",
 

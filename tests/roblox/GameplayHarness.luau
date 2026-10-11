@@ -44,7 +44,7 @@ local ORDER = {
 	"EconomyService", "InventoryService", "IndexService", "SellService", "RollService",
 	"DiceService", "UpgradeService", "StationService", "DailyService", "TowerService",
 	"RebirthService", "FusionService", "TradeService", "MissionService",
-	"BoostService", "JackpotService",
+	"BoostService", "JackpotService", "LeaderboardService",
 }
 local S = {}
 for _, name in ORDER do
@@ -673,6 +673,21 @@ check(d1.Runtime.Friends == 1 and math.abs(d1.Runtime.FriendBonus - 0.05) < 1e-9
 d1.Runtime = { Income = 999 }
 S.BoostService.Refresh(p1)
 check(d1.Runtime.Income < 999, "Runtime é recalculado (valor salvo ignorado)")
+end
+
+do
+-- RANKINGS (Fase 11)
+S.LeaderboardService.Refresh()
+local top = S.LeaderboardService.LocalTop("Rolls")
+check(#top >= 1 and top[1].value >= top[#top].value, "ranking local ordenado")
+local panel = env.real.Workspace.Map:FindFirstChild("Panel3", true)
+local filled = false
+for _, d in panel.Sign:GetDescendants() do
+	if d:IsA("TextLabel") and string.find(d.Text, "1. ", 1, true) == 1 and d.Text ~= "1. —" then
+		filled = true
+	end
+end
+check(filled, "painel MAIS ROLLS do Hub preenchido")
 end
 
 ------------------------------------------------------------------------------------
