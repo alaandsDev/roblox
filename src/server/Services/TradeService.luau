@@ -7,6 +7,7 @@
 	    SetTradeReady(bool) -> os dois PRONTOS habilitam CONFIRMAR
 	    ConfirmTrade() -> os dois confirmam a MESMA versão da oferta -> troca atômica (TradeCore)
 	    CancelTrade() / sair do jogo -> encerra
+	Itens oferecidos ficam travados em memória ("in_trade"): não dá para vender, fundir ou equipar.
 	Segurança: tudo validado de novo no momento da troca (dono, proteção, capacidade); os dois
 	perfis estão travados neste servidor (sessão do DataStore), então não há duplicação.
 ]]
@@ -76,8 +77,17 @@ local function broadcast(session: Session)
 	end
 end
 
+-- Trava (em memória) os itens oferecidos: não dá para vender, fundir ou equipar durante a troca
+local function lockOffer(session: Session, player: Player, uids: { string }?)
+	local data = PlayerDataService.GetData(player)
+	if data then
+		InventoryCore.setTradeLocks(data, uids)
+	end
+end
+
 local function close(session: Session, reason: string)
 	for _, player in { session.a, session.b } do
+		lockOffer(session, player, nil)
 		if sessions[player] == session then
 			sessions[player] = nil
 			Net.fire("TradeClosed", player, reason)
@@ -138,11 +148,14 @@ end
 function TradeService.SetOffer(player: Player, uids: { string })
 	local session = sessionOf(player)
 	local data = PlayerDataService.GetData(player)
+	lockOffer(session, player, nil) -- a oferta antiga não conta como "em troca" na validação
 	local err = TradeCore.validateOffer(data, uids, TradeService.MaxItems, InventoryCore)
 	if err then
+		lockOffer(session, player, session.offers[player])
 		Net.fail(err)
 	end
 	session.offers[player] = table.clone(uids)
+	lockOffer(session, player, session.offers[player])
 	session.version += 1
 	table.clear(session.ready)
 	broadcast(session)
@@ -175,8 +188,13 @@ function TradeService.Confirm(player: Player)
 		Net.fail(Net.Codes.NotReady)
 	end
 	local offerA, offerB = session.offers[a], session.offers[b]
+	-- Sem yield daqui até o fim: a troca não pode ser intercalada com outra requisição
+	InventoryCore.setTradeLocks(dataA, nil)
+	InventoryCore.setTradeLocks(dataB, nil)
 	local ok, err, newA, newB = TradeCore.execute(dataA, dataB, offerA, offerB, Formulas:capacity(dataA), Formulas:capacity(dataB), os.time(), InventoryCore)
 	if not ok then
+		InventoryCore.setTradeLocks(dataA, offerA)
+		InventoryCore.setTradeLocks(dataB, offerB)
 		session.version += 1
 		table.clear(session.ready)
 		broadcast(session)

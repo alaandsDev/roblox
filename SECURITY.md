@@ -89,3 +89,26 @@ salvar os dois em seguida não permite duplicação entre servidores.
 Prompts do mapa (coletor, melhorias, pads de estação) conferem se o prompt pertence à base
 do jogador. Dinheiro offline e diário validam timestamps (NaN, infinito, futuro, negativo).
 DevService (Barra de comandos) só existe no Studio.
+
+## Auditoria pré-Studio — casos de borda (testados no `GameplayHarness`)
+
+| Sistema | Caso | Resultado |
+|---|---|---|
+| Troca | item oferecido vendido / vendido em lote / equipado / EQUIPAR MELHORES / fundido | recusado (`in_trade`); trava só em memória, some ao fechar a troca |
+| Troca | oferecer item do outro jogador, item repetido, acima de 8 | `not_owned` / `trade_duplicate` / `trade_too_many` |
+| Troca | mudar a oferta depois de confirmar | os dois perdem PRONTO; confirmação antiga não vale (versão) |
+| Troca | confirmar 2× sozinho (spam) | só "aguardando"; nada se move |
+| Troca | item some antes do commit | troca recusada, nada muda, PRONTO zerado |
+| Troca | 2ª troca com quem já está trocando | `trade_busy` |
+| Troca | jogador sai no meio | sessão fecha ("left"), o outro fica com os itens livres; convite de quem saiu é inválido |
+| Troca | destinatário sem espaço | `trade_full_a/b` (TradeCore.spec) |
+| Troca | confirmação simultânea | o commit não tem `yield`: valida tudo dos dois lados e move de uma vez (atômico) |
+| Fusão | uid repetido, inexistente, personagens diferentes, favorito, equipado, em troca, tipos inválidos | recusado |
+| Fusão | spam do mesmo pedido | só o 1º vale (`not_owned` depois) |
+| Renascimento | 2 pedidos seguidos com dinheiro para 1 | só 1 vale (`not_enough_money`) |
+| Torre | torre inexistente / bloqueada / completa / spam | `invalid_tower` / `tower_locked` / `tower_complete` / `cooldown`; recompensa só no 1º clear de cada andar |
+| Compras | mesmo recibo repetido, falha no save, erro na entrega | idempotente (`ReceiptCore.spec`): nunca entrega 2× |
+
+Risco residual conhecido: se o servidor cair entre o commit da troca e o save dos dois
+perfis (`SaveNow` é disparado logo depois), um dos lados pode voltar ao estado anterior.
+O DataStore não tem transação entre duas chaves; a janela é de poucos segundos.

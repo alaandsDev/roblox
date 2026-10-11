@@ -582,6 +582,132 @@ check(not okNS and codeNS == "trade_no_session", "confirmar de novo (spam): nada
 end
 
 do
+-- AUDITORIA: casos de borda da TROCA
+check((call("RequestTrade", p1, p2.UserId)) and (call("RespondTrade", p2, p1.UserId, true)), "borda: nova sessão de troca")
+local x = S.InventoryService.Add(p1, "chrono_sage")
+local z = S.InventoryService.Add(p1, "crystal_mage")
+check((call("SetTradeOffer", p1, { x })), "borda: item X oferecido")
+local okS, codeS = call("SellCharacter", p1, { x })
+check(not okS and codeS == "in_trade" and d1.Inventory[x] ~= nil, "item em troca não pode ser vendido")
+call("SellBatch", p1, "Rarity:Divine", true)
+check(d1.Inventory[x] ~= nil, "venda em lote pula o item em troca")
+local okE, codeE = call("EquipCharacter", p1, x)
+check(not okE and codeE == "in_trade", "item em troca não pode ser equipado")
+call("EquipBest", p1)
+check((function()
+	for _, uid in d1.EquippedCharacters do
+		if uid == x then
+			return false
+		end
+	end
+	return true
+end)(), "EQUIPAR MELHORES ignora item em troca")
+call("UnequipCharacter", p1, d1.EquippedCharacters["1"]) -- deixa um slot livre para os testes abaixo
+local fx1 = S.InventoryService.Add(p1, "chrono_sage")
+local fx2 = S.InventoryService.Add(p1, "chrono_sage")
+local okFu, codeFu = call("Fuse", p1, { x, fx1, fx2 })
+check(not okFu and codeFu == "in_trade" and d1.Inventory[x] ~= nil, "item em troca não pode ser fundido")
+local okNO, codeNO = call("SetTradeOffer", p2, { x })
+check(not okNO and codeNO == "not_owned", "oferecer item do OUTRO jogador: recusado")
+local y = S.InventoryService.Add(p2, "crystal_mage")
+local okDu, codeDu = call("SetTradeOffer", p2, { y, y })
+check(not okDu and codeDu == "trade_duplicate", "mesmo item duas vezes na oferta: recusado")
+local many = {}
+for _ = 1, S.TradeService.MaxItems + 1 do
+	table.insert(many, S.InventoryService.Add(p2, "flame_rookie"))
+end
+local okMany, codeMany = call("SetTradeOffer", p2, many)
+check(not okMany and codeMany == "trade_too_many", "oferta acima do limite: recusada")
+S.InventoryService.Remove(p2, many)
+check((call("SetTradeOffer", p2, { y })), "p2 oferece Y")
+-- trocar a oferta libera o item antigo
+check((call("SetTradeOffer", p1, { z })), "p1 troca X por Z na oferta")
+local okEX, slotX = call("EquipCharacter", p1, x)
+check(okEX and slotX ~= nil, "item que saiu da oferta volta a ser equipável")
+call("UnequipCharacter", p1, x)
+-- item some durante a troca (ex.: removido pelo servidor): confirmação falha sem mover nada
+call("SetTradeReady", p1, true)
+call("SetTradeReady", p2, true)
+local okW1 = call("ConfirmTrade", p1)
+local okW2 = call("ConfirmTrade", p1)
+check(okW1 and okW2 and d1.Inventory[z] ~= nil, "confirmar duas vezes sozinho (spam): só espera o outro")
+d2.Inventory[y] = nil
+local countA, countB = 0, 0
+for _ in d1.Inventory do
+	countA += 1
+end
+local okGone, codeGone = call("ConfirmTrade", p2)
+for _ in d1.Inventory do
+	countB += 1
+end
+check(not okGone and codeGone == "not_owned" and d1.Inventory[z] ~= nil and countA == countB, "item sumiu antes do commit: troca recusada, nada muda")
+local okRe, codeRe = call("ConfirmTrade", p1)
+check(not okRe and codeRe == "trade_not_ready", "depois da falha os dois precisam ficar PRONTOS de novo")
+-- terceiro jogador: não dá para abrir duas trocas
+local p3 = env.newPlayer("terceiro")
+env.join(p3)
+check(Env.waitFor(function()
+	return p3:GetAttribute("BaseId") ~= nil
+end), "3º jogador entrou")
+local okBusy, codeBusy = call("RequestTrade", p3, p1.UserId)
+check(not okBusy and codeBusy == "trade_busy", "jogador já em troca não recebe outra")
+call("CancelTrade", p2)
+check(S.TradeService.SessionOf(p1) == nil and S.TradeService.SessionOf(p2) == nil, "cancelar fecha para os dois")
+local okFree = call("EquipCharacter", p1, z)
+check(okFree, "troca cancelada: itens oferecidos ficam livres")
+call("UnequipCharacter", p1, z)
+-- sair no meio da troca
+check((call("RequestTrade", p3, p1.UserId)) and (call("RespondTrade", p1, p3.UserId, true)), "p1 <-> p3 em troca")
+call("SetTradeOffer", p1, { z })
+env.leave(p3)
+check(S.TradeService.SessionOf(p1) == nil and lastEvent("TradeClosed", p1) ~= nil and lastEvent("TradeClosed", p1).args[1] == "left", "o outro saiu: troca encerrada com aviso")
+check(d1.Inventory[z] ~= nil and (call("EquipCharacter", p1, z)), "quem ficou mantém o item e ele fica livre")
+call("UnequipCharacter", p1, z)
+local okLeft, codeLeft = call("RespondTrade", p1, p3.UserId, true)
+check(not okLeft and codeLeft == "trade_no_request", "aceitar convite de quem saiu: nada")
+end
+
+do
+-- AUDITORIA: casos de borda da FUSÃO, RENASCIMENTO e TORRE
+local a1 = S.InventoryService.Add(p1, "solar_paladin")
+local a2 = S.InventoryService.Add(p1, "solar_paladin")
+local a3 = S.InventoryService.Add(p1, "solar_paladin")
+local other = S.InventoryService.Add(p1, "chrono_sage")
+d1.Money = 1e12
+local okR, codeR = call("Fuse", p1, { a1, a1, a1 })
+check(not okR and codeR == "fusion_count", "fusão com o mesmo uid repetido: recusada")
+local okI, codeI = call("Fuse", p1, { a1, a2, "c999999" })
+check(not okI and codeI == "not_owned", "fusão com uid inexistente: recusada")
+local okM, codeM = call("Fuse", p1, { a1, a2, other })
+check(not okM and codeM == "fusion_mismatch", "fusão com personagens diferentes: recusada")
+call("SetCharacterFlag", p1, a3, "Favorite", true)
+local okFav, codeFav = call("Fuse", p1, { a1, a2, a3 })
+check(not okFav and codeFav == "favorite", "fusão com favorito: recusada")
+call("SetCharacterFlag", p1, a3, "Favorite", false)
+call("EquipCharacter", p1, a3)
+local okEq, codeEq = call("Fuse", p1, { a1, a2, a3 })
+check(not okEq and codeEq == "equipped", "fusão com personagem na base: recusada")
+call("UnequipCharacter", p1, a3)
+local okBad, codeBad = call("Fuse", p1, { 1, {}, "x" })
+check(not okBad, "fusão com tipos inválidos: recusada")
+local okOne = call("Fuse", p1, { a1, a2, a3 })
+local okTwo, codeTwo = call("Fuse", p1, { a1, a2, a3 })
+check(okOne and not okTwo and codeTwo == "not_owned", "fusão repetida (spam): só a primeira vale")
+-- Renascimento: spam com dinheiro para só 1
+local cost = Formulas:rebirthCost(d1.Rebirths)
+d1.Money = cost
+local before = d1.Rebirths
+local okRb1 = call("Rebirth", p1)
+local okRb2, codeRb2 = call("Rebirth", p1)
+check(okRb1 and not okRb2 and codeRb2 == "not_enough_money" and d1.Rebirths == before + 1, "renascer 2x seguidas: só 1 vale")
+-- Torre: id inválido e torre bloqueada
+local okTv, codeTv = call("RequestEnterTower", p1, "NaoExiste")
+check(not okTv and codeTv == "invalid_tower", "torre inexistente: recusada")
+local okTl, codeTl = call("RequestEnterTower", p1, "Void")
+check(not okTl and codeTl == "tower_locked", "torre ainda bloqueada: recusada")
+end
+
+do
 -- MISSÕES (Fase 9)
 check(type(d1.Missions.Daily) == "table" and next(d1.Missions.Daily) ~= nil, "missões diárias sorteadas ao entrar")
 d1.Missions.Daily = { roll_50 = { Progress = 49, Claimed = false }, tower_3 = { Progress = 0, Claimed = false } }

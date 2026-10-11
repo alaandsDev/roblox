@@ -58,11 +58,35 @@ function InventoryCore.setFlag(data: any, uid: string, flag: string, value: bool
 	return true, nil
 end
 
--- Protegido contra venda (travado, favorito ou equipado)
+-- Itens oferecidos numa troca aberta (só em memória, nunca salvo). Chave = tabela de dados do
+-- jogador (fraca: some sozinha quando o perfil é descartado). Bloqueia vender, fundir e equipar.
+local tradeLocks: { [any]: { [string]: boolean } } = setmetatable({}, { __mode = "k" }) :: any
+
+function InventoryCore.setTradeLocks(data: any, uids: { string }?)
+	if uids and #uids > 0 then
+		local set = {}
+		for _, uid in uids do
+			set[uid] = true
+		end
+		tradeLocks[data] = set
+	else
+		tradeLocks[data] = nil
+	end
+end
+
+function InventoryCore.inTrade(data: any, uid: string): boolean
+	local set = tradeLocks[data]
+	return set ~= nil and set[uid] == true
+end
+
+-- Protegido contra venda/fusão/troca (em troca, travado, favorito ou equipado)
 function InventoryCore.protection(data: any, uid: string): string?
 	local item = data.Inventory[uid]
 	if not item then
 		return "not_owned"
+	end
+	if InventoryCore.inTrade(data, uid) then
+		return "in_trade"
 	end
 	if item.Locked then
 		return "locked"
@@ -96,6 +120,9 @@ end
 function InventoryCore.equip(data: any, uid: string, slotId: number?, unlocked: { [number]: boolean }): (boolean, string?, number?)
 	if not data.Inventory[uid] then
 		return false, "not_owned", nil
+	end
+	if InventoryCore.inTrade(data, uid) then
+		return false, "in_trade", nil
 	end
 	local target = slotId
 	if target == nil then
@@ -176,7 +203,12 @@ function InventoryCore.equipBest(data: any, unlocked: { [number]: boolean }, cha
 		table.insert(slots, id)
 	end
 	table.sort(slots)
-	local best = InventoryCore.sortedByBest(data, characters)
+	local best = {}
+	for _, uid in InventoryCore.sortedByBest(data, characters) do
+		if not InventoryCore.inTrade(data, uid) then
+			table.insert(best, uid)
+		end
+	end
 	table.clear(data.EquippedCharacters)
 	local placed = 0
 	for i, slot in slots do

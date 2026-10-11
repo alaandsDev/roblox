@@ -87,6 +87,13 @@ Tabelas vazias no Template são **mapas dinâmicos**: o carregamento só garante
 - **Studio sem API**: perfil temporário, nada salvo, aviso na tela.
 - **Falha no jogo publicado**: o jogador é desconectado com mensagem (melhor que jogar sem salvar).
 
+## Tamanho do save (auditoria)
+
+`tests/DataSize.spec.luau` monta um perfil de FIM DE JOGO (600 personagens nível 50
+Celestiais, Índice completo, 40 slots, 3 torres completas, 100 recibos, missões) e mede o
+JSON: **≈ 79 KB** (limite do DataStore: 4 MB por chave → ~2% do limite). O teste falha se
+passar de 256 KB.
+
 ## Como mudar o schema (futuro)
 
 1. Aumente `DataConfig.SchemaVersion` e `Template.Version`.

@@ -29,6 +29,7 @@ require("./TradeCore.spec")
 require("./MissionCore.spec")
 require("./JackpotCore.spec")
 require("./Odds.spec")
+require("./DataSize.spec")
 
 if not T.report() then
 	error("testes falharam", 0)

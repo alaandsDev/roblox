@@ -109,6 +109,7 @@ return {
 	["error.locked"] = "Personagem travado.",
 	["error.favorite"] = "Personagem favorito.",
 	["error.equipped"] = "Personagem está na base.",
+	["error.in_trade"] = "Personagem está numa troca aberta.",
 	["error.nothing_to_sell"] = "Nada para vender.",
 	["error.protected"] = "Protegido.",
 	["error.invalid_dice"] = "Dado inválido.",
