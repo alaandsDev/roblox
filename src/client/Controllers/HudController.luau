@@ -86,7 +86,7 @@ function HudController.Init()
 
 	-- ESQUERDA
 	local left = container(root, "Left", {
-		Size = UDim2.fromOffset(Theme.ButtonSizes.Side.X, Theme.ButtonSizes.Side.Y * 3 + 24),
+		Size = UDim2.fromOffset(Theme.ButtonSizes.Side.X, Theme.ButtonSizes.Side.Y * 4 + 36),
 		Position = UDim2.new(0, 14, 0.5, -10),
 		AnchorPoint = Vector2.new(0, 0.5),
 	})
@@ -105,6 +105,9 @@ function HudController.Init()
 	end)
 	side("Index", "📘", "hud.index", Color3.fromRGB(70, 140, 255), 3, function()
 		UIKit.Windows.toggle("Index")
+	end)
+	side("Missions", "📜", "hud.missions", Color3.fromRGB(230, 150, 40), 4, function()
+		UIKit.Windows.toggle("Missions")
 	end)
 
 	-- BAIXO CENTRO

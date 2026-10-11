@@ -28,6 +28,7 @@ local ORDER = {
 	"RebirthController",
 	"FusionController",
 	"TradeController",
+	"MissionController",
 	"FeedbackController",
 	"LodController",
 }

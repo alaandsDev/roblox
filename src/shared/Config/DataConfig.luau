@@ -59,6 +59,9 @@ DataConfig.Template = {
 	-- Torres: { [towerId] = maior andar vencido }; time escolhido (até 5 uids; vazio = automático)
 	TowerProgress = {},
 	TowerTeam = {},
+	-- Missões: { Day, Daily = { [id] = { Progress, Claimed } }, Achievements = { [id] = nível } }
+	Missions = {},
+
 	-- Perks comprados com fichas de renascimento: { [perkId] = nível }
 	RebirthPerks = {},
 

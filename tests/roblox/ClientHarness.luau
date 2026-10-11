@@ -137,7 +137,7 @@ local ORDER = {
 	"PlayerDataService", "MonetizationService", "MapService", "BaseService", "AnalyticsService",
 	"EconomyService", "InventoryService", "IndexService", "SellService", "RollService",
 	"DiceService", "UpgradeService", "StationService", "DailyService", "TowerService",
-	"RebirthService", "FusionService", "TradeService",
+	"RebirthService", "FusionService", "TradeService", "MissionService",
 }
 local S = {}
 for _, name in ORDER do
@@ -181,7 +181,7 @@ local CLIENT_ORDER = {
 	"NotificationController", "DataController", "HudController", "NavigationController", "AmbientController",
 	"RevealController", "RollController", "InventoryController", "DiceShopController", "UpgradesController",
 	"SellController", "IndexController", "DailyController", "OfflineController", "SettingsController", "TowerController",
-	"RebirthController", "FusionController", "TradeController",
+	"RebirthController", "FusionController", "TradeController", "MissionController",
 	"FeedbackController", "LodController",
 }
 local C = {}
@@ -549,6 +549,29 @@ do
 
 	local trade = openWindow("Trade")
 	check(trade ~= nil and trade.isOpen and find(trade.content, "Lobby").Visible, "TROCAS abre no lobby (sem sessão)")
+	UIKit.Windows.closeAll()
+end
+
+-- Missões
+do
+	data.Missions.Daily = { roll_50 = { Progress = 50, Claimed = false } }
+	S.PlayerDataService.Replicate(player, "Missions")
+	task.wait(0.3)
+	local missions = openWindow("Missions")
+	check(missions ~= nil and missions.isOpen, "MISSÕES abre")
+	local claimButton
+	for _, d in missions.content:GetDescendants() do
+		if d:IsA("TextButton") and d:FindFirstChild("Label") and d.Label.Text == "RESGATAR!" then
+			claimButton = d
+		end
+	end
+	check(claimButton ~= nil, "missão completa mostra RESGATAR")
+	if claimButton then
+		click(claimButton)
+	end
+	check(Env.waitFor(function()
+		return data.Missions.Daily.roll_50.Claimed == true
+	end, 2), "resgatar missão pela interface")
 	UIKit.Windows.closeAll()
 end
 

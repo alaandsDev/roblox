@@ -30,6 +30,7 @@ local ORDER = {
 	"RebirthService",
 	"FusionService",
 	"TradeService",
+	"MissionService",
 	"DevService", -- só ativo no Studio
 }
 

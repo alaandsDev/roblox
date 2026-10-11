@@ -43,7 +43,7 @@ local ORDER = {
 	"PlayerDataService", "MonetizationService", "MapService", "BaseService", "AnalyticsService",
 	"EconomyService", "InventoryService", "IndexService", "SellService", "RollService",
 	"DiceService", "UpgradeService", "StationService", "DailyService", "TowerService",
-	"RebirthService", "FusionService", "TradeService",
+	"RebirthService", "FusionService", "TradeService", "MissionService",
 }
 local S = {}
 for _, name in ORDER do
@@ -578,6 +578,39 @@ check(S.TradeService.SessionOf(p1) == nil and S.TradeService.SessionOf(p2) == ni
 local okNS, codeNS = call("ConfirmTrade", p1)
 check(not okNS and codeNS == "trade_no_session", "confirmar de novo (spam): nada acontece")
 
+end
+
+do
+-- MISSÕES (Fase 9)
+check(type(d1.Missions.Daily) == "table" and next(d1.Missions.Daily) ~= nil, "missões diárias sorteadas ao entrar")
+d1.Missions.Daily = { roll_50 = { Progress = 49, Claimed = false }, tower_3 = { Progress = 0, Claimed = false } }
+local okInc, codeInc = call("ClaimMission", p1, "Daily", "tower_3")
+check(not okInc and codeInc == "mission_incomplete", "missão incompleta não paga")
+S.AnalyticsService.Track(p1, "Roll", { rarity = "Common" })
+check(Env.waitFor(function()
+	return d1.Missions.Daily.roll_50.Progress == 50
+end, 1), "evento do jogo avança a missão")
+local moneyM = d1.Money
+local okM, given = call("ClaimMission", p1, "Daily", "roll_50")
+check(okM and given.kind == "Money" and d1.Money > moneyM, "missão completa: recompensa entregue")
+local okM2, codeM2 = call("ClaimMission", p1, "Daily", "roll_50")
+check(not okM2 and codeM2 == "already_claimed", "resgatar de novo: nada")
+local okBad, codeBad = call("ClaimMission", p1, "Daily", "nao_existe")
+check(not okBad and codeBad == "mission_invalid", "missão que não é sua: recusada")
+d1.Rolls = 150
+local gemsA = d1.Gems
+local okA, ach = call("ClaimMission", p1, "Achievement", "rolls")
+check(okA and ach.kind == "Gems" and d1.Gems == gemsA + 25 and d1.Missions.Achievements.rolls == 1, "conquista nível 1 (100 rolls)")
+local okA2, codeA2 = call("ClaimMission", p1, "Achievement", "rolls")
+check(not okA2 and codeA2 == "mission_incomplete", "próximo nível exige 1000 rolls")
+S.MissionService._now = function()
+	return os.time() + 86400
+end
+S.AnalyticsService.Track(p1, "Roll", {})
+check(Env.waitFor(function()
+	return d1.Missions.Day == math.floor((os.time() + 86400) / 86400)
+end, 1), "virada do dia: novas diárias, conquistas mantidas")
+check(d1.Missions.Achievements.rolls == 1, "conquista resgatada continua registrada")
 end
 
 ------------------------------------------------------------------------------------

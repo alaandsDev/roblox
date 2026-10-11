@@ -113,6 +113,13 @@ describe("Localization", function()
 		for _, perk in require("../src/shared/Config/RebirthConfig").Perks do
 			table.insert(keys, "rebirth.perk." .. perk.Id)
 		end
+		local MissionConfig = require("../src/shared/Config/MissionConfig")
+		for _, m in MissionConfig.Pool do
+			table.insert(keys, "mission." .. m.Id)
+		end
+		for _, a in MissionConfig.Achievements do
+			table.insert(keys, "mission.ach." .. a.Id)
+		end
 		for _, tower in require("../src/shared/Config/TowerConfig").List do
 			table.insert(keys, "tower." .. tower.Id)
 		end
