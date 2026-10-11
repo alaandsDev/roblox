@@ -20,6 +20,9 @@ local VariantConfig = require("../../src/shared/Config/VariantConfig")
 local OfflineIncomeConfig = require("../../src/shared/Config/OfflineIncomeConfig")
 local BaseProgressionConfig = require("../../src/shared/Config/BaseProgressionConfig")
 local Rng = require("../../tests/Rng")
+local TowerConfig = require("../../src/shared/Config/TowerConfig")
+local RebirthConfig = require("../../src/shared/Config/RebirthConfig")
+local BattleCore = require("../../src/shared/Modules/BattleCore")
 
 local EconomySim = {}
 
@@ -31,15 +34,25 @@ local formulas = Formulas.new({
 	Characters = CharacterConfig,
 	Levels = LevelConfig,
 	Variants = VariantConfig,
-	Rebirth = require("../../src/shared/Config/RebirthConfig"),
+	Rebirth = RebirthConfig,
 })
+local battle = BattleCore.new(TowerConfig, CharacterConfig, RarityConfig)
 local core = RollCore.new(RarityConfig, CharacterConfig, RollConfig)
 EconomySim.Formulas = formulas
 
--- Slots liberados no RB0 (sem Rebirth nesta fase)
-local UNLOCKED: { [number]: boolean } = {}
-for _, slot in BaseProgressionConfig.Milestones[0].UnlockedSlots do
-	UNLOCKED[slot] = true
+-- Slots liberados pela progressão (cada Rebirth = +1 slot)
+local function unlockedFor(rebirths: number): { [number]: boolean }
+	local best = 0
+	for rb in BaseProgressionConfig.Milestones do
+		if rb <= rebirths and rb > best then
+			best = rb
+		end
+	end
+	local map = {}
+	for _, slot in BaseProgressionConfig.Milestones[best].UnlockedSlots do
+		map[slot] = true
+	end
+	return map
 end
 
 export type Profile = {
@@ -51,12 +64,15 @@ export type Profile = {
 	-- fração do dinheiro que aceita gastar em níveis de estação por decisão
 	levelSpend: number,
 	autoSellAfterRolls: number?,
+	-- renasce quando o dinheiro passa de custo * margem (nil = nunca)
+	rebirthMargin: number?,
+	towers: boolean?,
 }
 
 EconomySim.Profiles = {
-	Casual = { name = "Casual", manualInterval = 2.5, collectEvery = 120, thinkEvery = 60, levelSpend = 0.3 } :: Profile,
-	Ativo = { name = "Ativo", collectEvery = 30, thinkEvery = 15, levelSpend = 0.5 } :: Profile,
-	Hardcore = { name = "Hardcore", collectEvery = 5, thinkEvery = 3, levelSpend = 0.6, autoSellAfterRolls = 300 } :: Profile,
+	Casual = { name = "Casual", manualInterval = 2.5, collectEvery = 120, thinkEvery = 60, levelSpend = 0.3, rebirthMargin = 2, towers = true } :: Profile,
+	Ativo = { name = "Ativo", collectEvery = 30, thinkEvery = 15, levelSpend = 0.5, rebirthMargin = 1.2, towers = true } :: Profile,
+	Hardcore = { name = "Hardcore", collectEvery = 5, thinkEvery = 3, levelSpend = 0.6, autoSellAfterRolls = 300, rebirthMargin = 1, towers = true } :: Profile,
 }
 
 export type Snapshot = {
@@ -71,6 +87,8 @@ export type Snapshot = {
 	avgStationLevel: number,
 	best: string,
 	discovered: number,
+	rebirths: number,
+	towerFloors: number,
 }
 
 local function newData(): any
@@ -86,6 +104,10 @@ local function newData(): any
 		Pity = { Legendary = 0, Mythic = 0 },
 		UncollectedMoney = 0,
 		Index = {},
+		Rebirths = 0,
+		RebirthTokens = 0,
+		RebirthPerks = {},
+		TowerProgress = {},
 	}
 end
 
@@ -163,6 +185,79 @@ local function sellExtras(data: any): number
 	return InventoryCore.executeSale(data, plan)
 end
 
+local function tryRebirth(data: any, margin: number?): boolean
+	if not margin then
+		return false
+	end
+	local cost = formulas:rebirthCost(data.Rebirths)
+	if not cost or data.Money < cost * margin then
+		return false
+	end
+	data.Money = 0
+	data.UncollectedMoney = 0
+	data.Upgrades = { Luck = 0, Income = 0, RollSpeed = 0, Inventory = 0 }
+	data.Rebirths += 1
+	data.RebirthTokens += formulas:rebirthTokens(data.Rebirths)
+	-- gasta fichas no perk mais barato (prioridade: Renda, Sorte, Poder, Capacidade, Velocidade)
+	for _ = 1, 20 do
+		local bought = false
+		for _, id in { "Income", "Luck", "Power", "Capacity", "Speed" } do
+			local cost2 = formulas:perkCost(id, formulas:perkLevel(data, id))
+			if cost2 and data.RebirthTokens >= cost2 then
+				data.RebirthTokens -= cost2
+				data.RebirthPerks[id] = formulas:perkLevel(data, id) + 1
+				bought = true
+				break
+			end
+		end
+		if not bought then
+			break
+		end
+	end
+	return true
+end
+
+-- Torres: luta enquanto vence (mesmo BattleCore do servidor), recebendo a recompensa
+local function climbTowers(data: any, rand: () -> number): number
+	local earned = 0
+	local uids = {}
+	for uid in data.Inventory do
+		table.insert(uids, uid)
+	end
+	table.sort(uids, function(a, b)
+		return formulas:unitPower(data.Inventory[a], data) > formulas:unitPower(data.Inventory[b], data)
+	end)
+	for _, tower in TowerConfig.List do
+		local previous = tower.Unlock.Tower
+		if previous and (data.TowerProgress[previous] or 0) < TowerConfig.ById[previous].Floors then
+			break
+		end
+		for _ = 1, 5 do
+			local floor = (data.TowerProgress[tower.Id] or 0) + 1
+			if floor > tower.Floors then
+				break
+			end
+			local team = {}
+			for i = 1, math.min(TowerConfig.TeamSize, #uids) do
+				local item = data.Inventory[uids[i]]
+				table.insert(team, battle:card(item.Id, formulas:unitPower(item, data), "team", i))
+			end
+			if #team == 0 then
+				return earned
+			end
+			local result = battle:simulate(team, battle:enemies(tower, floor), rand)
+			if not result.won then
+				break
+			end
+			data.TowerProgress[tower.Id] = floor
+			local reward = math.floor(math.max(battle:enemyPower(tower, floor) * TowerConfig.MoneyPerPower, formulas:incomePerSecond(data) * TowerConfig.IncomeSeconds))
+			data.Money += reward
+			earned += reward
+		end
+	end
+	return earned
+end
+
 function EconomySim.run(profile: Profile, seconds: number, seed: number, checkpoints: { number }): { Snapshot }
 	local rand = Rng.new(seed)
 	local data = newData()
@@ -213,7 +308,11 @@ function EconomySim.run(profile: Profile, seconds: number, seed: number, checkpo
 		end
 		-- Decisões
 		if t % profile.thinkEvery == 0 then
-			InventoryCore.equipBest(data, UNLOCKED, CharacterConfig.ById)
+			tryRebirth(data, profile.rebirthMargin)
+			InventoryCore.equipBest(data, unlockedFor(data.Rebirths), CharacterConfig.ById)
+			if profile.towers and t % 60 == 0 then
+				earned += climbTowers(data, rand)
+			end
 			while tryBuyDice(data) do
 			end
 			for _ = 1, 20 do
@@ -246,6 +345,8 @@ function EconomySim.run(profile: Profile, seconds: number, seed: number, checkpo
 				avgStationLevel = if count > 0 then levels / count else 0,
 				best = bestId,
 				discovered = discovered,
+				rebirths = data.Rebirths,
+				towerFloors = (data.TowerProgress.Ember or 0) + (data.TowerProgress.Storm or 0) + (data.TowerProgress.Void or 0),
 			})
 		end
 	end

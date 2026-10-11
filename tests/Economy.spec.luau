@@ -34,6 +34,14 @@ describe("Economia (simulação com as configs reais)", function()
 		expect(maxed(s) < #UpgradeConfig.List).toBeTruthy()
 	end)
 
+	it("torres e renascimento: progressão longa (Vazio não é concluído em 2 h; renasce no máximo poucas vezes)", function()
+		for _, s in { ativo[3], hardcore[3] } do
+			expect(s.towerFloors < 120).toBeTruthy()
+			expect(s.rebirths >= 1 and s.rebirths <= 6).toBeTruthy()
+		end
+		expect(hardcore[1].rebirths).toBe(0)
+	end)
+
 	it("8 h offline <= 1 h de renda passiva jogando ativo (no mesmo ponto do jogo)", function()
 		for _, s in { ativo[2], ativo[3], hardcore[2] } do
 			expect(EconomySim.offline(s.income) <= s.income * 3600).toBeTruthy()

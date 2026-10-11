@@ -71,6 +71,21 @@ Todos passam por rate limit + `Validator` (tipos, tamanhos, enums) antes do hand
 | ClaimOfflineReward | — | valor calculado no servidor na entrada; zera antes de pagar (2º pedido = nada) |
 | GetDailyStatus / ClaimDaily | — | relógio do servidor (UTC); estado gravado antes de entregar; spam = `already_claimed` |
 
+| RequestEnterTower | id da torre | torre existe e liberada; luta só o próximo andar; cooldown; time só com uids do jogador; batalha e semente no servidor |
+| SetTowerTeam | lista de uids (≤ 5) | dono de cada uid; sem repetidos |
+| Rebirth | — | custo do servidor; saldo; tudo sem yield (dois pedidos não renascem duas vezes) |
+| BuyRebirthPerk | enum | nível < máximo; fichas suficientes |
+| Fuse | 3 uids | dono, não protegidos, iguais (personagem + variante), variante não máxima, dinheiro |
+| RequestTrade / RespondTrade | userId (+ bool) | jogador no servidor, não é você, ninguém já em troca, convite válido por 30 s |
+| SetTradeOffer | uids (≤ 8) | dono, não protegidos, sem repetidos; muda a versão e tira o PRONTO dos dois |
+| ConfirmTrade | — | os dois PRONTOS e confirmando a MESMA versão; revalida tudo e troca de forma atômica (capacidade dos dois lados) |
+| ClaimMission | enum, id | missão do jogador no dia; completa; marcada antes de pagar |
+| SpinJackpot / BuyGemItem | — / id | gemas descontadas antes do prêmio; prêmio sorteado no servidor |
+| RequestPurchase | chave | só chaves da MonetizationConfig; ID 0 = recusado; entrega pelo ProcessReceipt idempotente |
+
+Trocas: os dois perfis estão sob trava de sessão neste servidor, então mover itens na memória e
+salvar os dois em seguida não permite duplicação entre servidores.
+
 Prompts do mapa (coletor, melhorias, pads de estação) conferem se o prompt pertence à base
 do jogador. Dinheiro offline e diário validam timestamps (NaN, infinito, futuro, negativo).
 DevService (Barra de comandos) só existe no Studio.

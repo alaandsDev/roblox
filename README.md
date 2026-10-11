@@ -1,9 +1,10 @@
 # Roll Legends
 
 Jogo Roblox de **dados + coleção de lutadores + bases + economia + torres + progressão**.
-Status: **FASES 1–6 concluídas** (fundação, mapa, roll/RNG/reveal + cinemática, inventário,
-estações da base com nível individual, renda/coletor, dados, melhorias, venda/auto-sell, índice,
-dinheiro offline, recompensas diárias, HUD). Próximas: Torres, Fusão, Trocas, Rebirth. Veja `MIGRATION_PLAN.md`.
+Status: **todas as fases (1–12) concluídas** — roll/RNG/cinemática, inventário, estações com
+nível, economia, dados, melhorias, venda, índice, offline, diário, torres com batalha de cards,
+renascimento, fusão, trocas, missões, monetização (IDs a criar no Creator Hub, ver
+`MONETIZATION.md`), rankings e polimento. Ainda **não publicado**.
 
 ## Documentação
 
@@ -18,6 +19,7 @@ dinheiro offline, recompensas diárias, HUD). Próximas: Torres, Fusão, Trocas,
 | `RNG.md` | Raridades, fórmula da Luck, pity, fluxo do roll |
 | `RNG_SIMULATION.md` | 1.000.000 rolls por cenário (gerado) |
 | `ECONOMY.md` | Fórmulas de dinheiro, custos e simulação Casual/Ativo/Hardcore (gerado) |
+| `MONETIZATION.md` | Gamepasses, produtos, Jackpot, gemas e como preencher os IDs |
 
 ## Comandos (Windows)
 

@@ -34,6 +34,11 @@
 | `tests/Migrations.spec.luau` | v1 → v2 (Level/Variant, NextUid, slots inválidos) + Template |
 | `tests/Economy.spec.luau` | simulação Casual/Ativo/Hardcore: progressão não quebra em 5 min/2 h, 8 h offline ≤ 1 h ativa |
 | `tests/roblox/GameplayHarness.luau` (Lune) | **integração** de todos os Services de gameplay reais: roll/cooldown/pity/inventário cheio/auto-sell, equipar + estações (billboard/pad/placa, sem colisão), **nível individual** (custo exato, spam, não equipado, máximo, pisar no pad), renda/coletor (pisar, longe), dados, upgrades, venda (protegidos, prévia = confirmado), Index (marco único), offline (claim único, futuro, fechar sem resgatar), diário (spam, dia seguinte, reset, Dia 7), base demo, saída |
+| `tests/BattleCore.spec.luau` | cartas, inimigos determinísticos por andar, chefe, vitória/derrota, log coerente, torres em sequência |
+| `tests/FusionCore.spec.luau` | 3 iguais -> próxima variante, nível máximo, custo, protegidos, mistura, última variante, grupos |
+| `tests/TradeCore.spec.luau` | troca atômica (nível/variante preservados), protegidos, repetidos, limite, vazia, inventário cheio (nada muda) |
+| `tests/MissionCore.spec.luau` | diárias determinísticas por jogador/dia, virada do dia, progresso por evento, conquistas |
+| `tests/JackpotCore.spec.luau` | chances (200.000 giros), extremos, regra dos boosts, IDs sem repetição |
 | `tests/roblox/ClientHarness.luau` (Lune) | **ponta a ponta**: Services do servidor + Controllers REAIS do cliente, ligados por uma rede falsa que copia os dados. Clica nos botões de verdade: HUD completo, ROLAR, reveal normal e compacto, as 4 cinemáticas (palco, CONTINUAR, limpeza), morrer no meio, MOCHILA (selecionar/EQUIPAR), todas as janelas, DIÁRIO, OFFLINE, venda com confirmação, configurações, notificações agrupadas; falha com qualquer erro de execução |
 | `tests/roblox/MapHarness.luau` (Lune) | executa o **MapService/MapBuilder/BaseBuilder reais**; **map references**; estados RB0/RB5/dono; gera a imagem `build/map_preview.png` |
 
@@ -182,6 +187,37 @@ com a visão "Server" (Test > Current: Server); **Cliente** = visão "Client" ou
 | 80 | AE AUTO ROLL + RARE | AUTO ligado; forçar pity e esperar | No Lendário o AUTO pausa durante a cinemática, que fecha sozinha ~1,2 s após CONTINUAR, e o AUTO continua | Servidor | `_G.D:Invoke("SetPity", _G.P, 49, 0)` |
 | 81 | AF MOBILE CINEMATIC | Device iPhone em pé/deitado + PlayReveal | Palco ocupa a tela; textos e botões visíveis; qualidade Medium (menos destroços) | Servidor | `print(_G.D:Invoke("PlayReveal", _G.P, "Mythic"))` |
 | 82 | AG REDUCED EFFECTS | ⚙️ → Efeitos reduzidos LIGADO e "Tremer a câmera" DESLIGADO; PlayReveal | Poucos destroços, sem rastros/rachaduras, sem tremida; impacto ainda tem flash/anel/som; auras das estações desligadas | Servidor | `print(_G.D:Invoke("PlayReveal", _G.P, "Divine"))` |
+
+### Fases 7–11
+
+| # | Seção | Ação | Resultado esperado | Contexto | Comando |
+|---|---|---|---|---|---|
+| 83 | AH TORRES | Portal TORRES no Hub (prompt) | Janela TORRES: 3 torres, "ANDAR 0/30", poder dos inimigos, time automático (5 mais fortes) | Cliente | — |
+| 84 | AH TORRES | LUTAR na Torre das Brasas com personagens fortes | Tela de batalha: cartas dos dois lados, ataques com dano/críticos, VITÓRIA + dinheiro; ANDAR 1/30 | Servidor + Cliente | `print(_G.D:Invoke("GiveCharacter", _G.P, "eclipse_sovereign", 1))` |
+| 85 | AH TORRES | Lutar com time fraco num andar alto | DERROTA, andar não avança | Servidor | `_G.D:Invoke("SetTowerFloor", _G.P, "Ember", 25)` |
+| 86 | AH TORRES | Tempestade antes de completar Brasas | "Complete a torre anterior primeiro." | Cliente | — |
+| 87 | AH TORRES | MOCHILA → "TIME DA TORRE" em até 5 personagens; TIME AUTO volta ao automático | Janela mostra "Seu time"/"Time automático" com o poder | Cliente | — |
+| 88 | AI RENASCIMENTO | Botão RENASCER (esquerda) | Janela com custo, ganhos permanentes, o que reseta e loja de fichas; badge "!" quando dá para renascer | Cliente | — |
+| 89 | AI RENASCIMENTO | Renascer | Confirmação; dinheiro e melhorias globais zeram; Slot05 liberado na base; "+X fichas" | Servidor | `print(_G.D:Invoke("Rebirth", _G.P))` |
+| 90 | AI RENASCIMENTO | 5 renascimentos | Floor02 construído com efeito; Slot09 liberado | Servidor | rodar o comando acima 5 vezes |
+| 91 | AI RENASCIMENTO | Comprar perk com fichas | Nível sobe; sorte/renda do HUD aumentam | Cliente | — |
+| 92 | AJ FUSÃO | Altar FUSÃO com 3 iguais livres | Lista "3x Nome (NORMAL) → PRATA" + custo; FUNDIR cria a Prata com o maior nível | Servidor + Cliente | `print(_G.D:Invoke("GiveCharacter", _G.P, "dragon_knight", 3))` |
+| 93 | AJ FUSÃO | Travar 1 dos 3 | Grupo some da lista (protegidos não entram) | Cliente | — |
+| 94 | AK TROCAS | 2 jogadores (Servidor local) → mesa TROCAS → CONVIDAR | O outro recebe "Pedido de troca!" com ACEITAR/RECUSAR | Cliente (2 janelas) | — |
+| 95 | AK TROCAS | Cada um põe personagens, PRONTO, CONFIRMAR | Troca concluída; itens trocam de mochila; quem recebeu ganha no Índice | Cliente (2 janelas) | — |
+| 96 | AK TROCAS | Mudar a oferta depois do PRONTO | PRONTO dos dois some; precisa confirmar de novo | Cliente | — |
+| 97 | AK TROCAS | Sair do jogo durante a troca | O outro vê "O outro jogador saiu."; nada é trocado | Cliente | — |
+| 98 | AL MISSÕES | Botão MISSÕES / quadro no Hub | 3 diárias com barra de progresso + 4 conquistas | Cliente | — |
+| 99 | AL MISSÕES | Rolar até completar "Role 50 vezes" e RESGATAR | Recompensa; botão vira ✔; badge some | Servidor | `print(_G.D:Invoke("Roll", _G.P, 60))` |
+| 100 | AM LOJA | MERCADO no Hub (prompt) ou atalhos VIP/SORTE x2 à direita | LOJA: gamepasses, pacotes, loja de gemas e chances do Jackpot | Cliente | — |
+| 101 | AM LOJA | Comprar com Robux (IDs ainda 0) | "Este item ainda não está à venda." | Cliente | — |
+| 102 | AM LOJA | Giro do Jackpot com gemas (atalho JACKPOT) | Rolo gira e para no prêmio; −150 gemas; se for personagem, o reveal/cinemática toca | Servidor | `print(_G.D:Invoke("GiveGems", _G.P, 1000))` |
+| 103 | AM LOJA | Simular VIP | Etiqueta 👑 VIP na cabeça; renda x1.5 nas estações; loja mostra COMPRADO | Servidor | `_G.D:Invoke("GrantPass", _G.P, "VIP")` |
+| 104 | AM LOJA | Simular produto | Popup do prêmio (dinheiro/boost/gemas) | Servidor | `print(_G.D:Invoke("DeliverProduct", _G.P, "LuckBoost"))` |
+| 105 | AN AMIGOS | 2 contas amigas no mesmo servidor (jogo publicado) | "Impulso de Amigos +5%" no canto inferior esquerdo | Cliente | — |
+| 106 | AO RANKINGS | Olhar os 3 painéis do Hub | MAIS REBIRTHS / MAIOR TORRE / MAIS ROLLS preenchidos (no Studio: jogadores do servidor) | Cliente | — |
+| 107 | AO RANKINGS | Lista de jogadores (Tab) | Colunas Rebirths e Rolls | Cliente | — |
+| 108 | AP MÚSICA | ⚙️ → Música de fundo LIGADO | Música toca em loop baixo; DESLIGADO para | Cliente | — |
 
 ### Diagnóstico rápido
 

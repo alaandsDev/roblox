@@ -38,7 +38,14 @@ A regressão `tests/Economy.spec.luau` falha se a progressão "quebrar".
    ganha em 2 h. Com **12%**, 8 h offline ≈ **1 h de renda passiva** no mesmo ponto do jogo —
    recompensa por voltar, sem pular metade da progressão. `tests/Economy.spec.luau` garante isso.
 4. Teto do coletor (1 h de renda) evita AFK infinito na própria sessão.
-5. Critérios automatizados: em 5 min (Hardcore) nenhuma melhoria ≥ 10 e no máximo o dado
+5. **Torres** (Fase 7): dificuldade calibrada pelo poder real dos personagens — Brasas
+   (100 → ~40K) termina entre 5 e 30 min, Tempestade (50K → ~10M) leva horas, Vazio
+   (10M → ~250M) é o objetivo de longo prazo (precisa de renascimentos, fusões e níveis).
+   Recompensa por andar = max(poder dos inimigos, 8 s de renda) para não inflar o começo.
+6. **Renascimento** (Fase 8): 5M × 3ⁿ; reseta dinheiro e melhorias globais e dá +25% de renda,
+   +5% de sorte, +10% de poder, +1 pedestal e fichas. A simulação renasce 1 vez na 1ª hora e
+   3 vezes em 4 h (perfil Ativo).
+7. Critérios automatizados: em 5 min (Hardcore) nenhuma melhoria ≥ 10 e no máximo o dado
    Flame; em 2 h (Ativo) ainda sem Celestial e com melhorias por comprar.
 
 ## Resultados da simulação
@@ -48,39 +55,42 @@ A regressão `tests/Economy.spec.luau` falha se a progressão "quebrar".
 
 ### Casual
 
-Roll manual a cada 2.5 s, coleta a cada 120 s, decide a cada 60 s, gasta 30% em níveis de estação.
+Roll manual a cada 2.5 s, coleta a cada 120 s, decide a cada 60 s, gasta 30% em níveis de estação, renasce com 2.0x o custo, sobe torres a cada minuto.
 
-| Tempo | Rolls | Dado | Luck | Renda/s | Ganho total | Saldo | Upg L/I/S/C | Nível médio estação | Melhor | Index | 8 h offline |
-|---|---:|---|---:|---:|---:|---:|---|---:|---|---:|---:|
-| 5 min | 120 | Lucky | 1.55 | $882 | $73.68K | $5.4K | 3/4/2/5 | 1.0 | Chrono Sage (Divine) | 18/24 | $3.04M |
-| 10 min | 240 | Lucky | 1.85 | $1.85K | $614.99K | $26.82K | 6/7/5/9 | 2.2 | Chrono Sage (Divine) | 22/24 | $6.41M |
-| 30 min | 720 | Flame | 2.88 | $8.77K | $6.74M | $62.32K | 10/11/8/13 | 6.8 | Chrono Sage (Divine) | 23/24 | $30.32M |
-| 1 h | 1440 | Storm | 3.92 | $16.3K | $31.83M | $1.94M | 12/13/10/16 | 14.2 | Chrono Sage (Divine) | 23/24 | $56.33M |
-| 2 h | 2880 | Storm | 4.40 | $76.44K | $205.36M | $15.37M | 15/16/11/19 | 22.0 | Eclipse Sovereign (Secret) | 24/24 | $264.17M |
+| Tempo | Rolls | Dado | Luck | Renda/s | Ganho total | Saldo | Upg L/I/S/C | Nível médio estação | Renasc. | Andares (torres) | Melhor | Index | 8 h offline |
+|---|---:|---|---:|---:|---:|---:|---|---:|---:|---:|---|---:|---:|
+| 5 min | 120 | Lucky | 1.65 | $350 | $127.41K | $10.34K | 4/5/2/6 | 1.2 | 0 | 24/120 | Dragon Knight (Legendary) | 17/24 | $1.2M |
+| 10 min | 240 | Lucky | 2.05 | $2.4K | $1.53M | $69.03K | 8/8/6/11 | 2.0 | 0 | 39/120 | Chrono Sage (Divine) | 22/24 | $8.32M |
+| 30 min | 720 | Flame | 3.01 | $9.92K | $10.97M | $404.3K | 11/11/9/14 | 7.8 | 0 | 48/120 | Chrono Sage (Divine) | 23/24 | $34.29M |
+| 1 h | 1440 | Storm | 4.08 | $23.46K | $43.98M | $795.2K | 13/14/10/16 | 14.2 | 0 | 54/120 | Eclipse Sovereign (Secret) | 24/24 | $81.07M |
+| 2 h | 2880 | Storm | 4.62 | $133.81K | $346.37M | $18.51M | 15/17/11/20 | 21.2 | 1 | 66/120 | Eclipse Sovereign (Secret) | 24/24 | $462.45M |
+| 4 h | 5760 | Void | 8.39 | $433.08K | $2.46B | $112.73M | 18/19/11/20 | 34.6 | 3 | 69/120 | Eclipse Sovereign (Secret) | 24/24 | $1.49B |
 
 ### Ativo
 
-Roll AUTO (cooldown), coleta a cada 30 s, decide a cada 15 s, gasta 50% em níveis de estação.
+Roll AUTO (cooldown), coleta a cada 30 s, decide a cada 15 s, gasta 50% em níveis de estação, renasce com 1.2x o custo, sobe torres a cada minuto.
 
-| Tempo | Rolls | Dado | Luck | Renda/s | Ganho total | Saldo | Upg L/I/S/C | Nível médio estação | Melhor | Index | 8 h offline |
-|---|---:|---|---:|---:|---:|---:|---|---:|---|---:|---:|
-| 5 min | 295 | Lucky | 1.75 | $2.42K | $368.18K | $32.95K | 5/6/4/8 | 1.5 | Chrono Sage (Divine) | 22/24 | $8.36M |
-| 10 min | 645 | Flame | 2.62 | $4.25K | $1.46M | $9.22K | 8/8/6/10 | 2.2 | Chrono Sage (Divine) | 23/24 | $14.69M |
-| 30 min | 2267 | Storm | 3.76 | $27.72K | $17.12M | $64.73K | 11/11/9/14 | 8.0 | Eclipse Sovereign (Secret) | 24/24 | $95.8M |
-| 1 h | 5231 | Void | 5.61 | $70.56K | $116.89M | $4.49M | 13/14/11/17 | 21.8 | Eclipse Sovereign (Secret) | 24/24 | $243.85M |
-| 2 h | 11777 | Void | 6.05 | $82.68K | $430.17M | $6.61M | 15/16/11/19 | 23.5 | Eclipse Sovereign (Secret) | 24/24 | $285.74M |
+| Tempo | Rolls | Dado | Luck | Renda/s | Ganho total | Saldo | Upg L/I/S/C | Nível médio estação | Renasc. | Andares (torres) | Melhor | Index | 8 h offline |
+|---|---:|---|---:|---:|---:|---:|---|---:|---:|---:|---|---:|---:|
+| 5 min | 321 | Flame | 2.62 | $4.99K | $1.57M | $94.34K | 8/8/6/10 | 2.0 | 0 | 25/120 | Eclipse Sovereign (Secret) | 24/24 | $17.26M |
+| 10 min | 728 | Flame | 2.88 | $12.28K | $8.72M | $289.49K | 10/11/8/14 | 8.0 | 0 | 49/120 | Eclipse Sovereign (Secret) | 24/24 | $42.45M |
+| 30 min | 2639 | Storm | 4.08 | $59.76K | $77.6M | $1.99M | 13/14/10/17 | 18.0 | 0 | 63/120 | Eclipse Sovereign (Secret) | 24/24 | $206.53M |
+| 1 h | 5764 | Void | 6.12 | $148.05K | $301.71M | $5.83M | 14/15/11/19 | 25.4 | 1 | 67/120 | Eclipse Sovereign (Secret) | 24/24 | $511.66M |
+| 2 h | 12228 | Void | 7.52 | $245.91K | $1.13B | $8.67M | 16/17/11/20 | 27.8 | 2 | 69/120 | Eclipse Sovereign (Secret) | 24/24 | $849.88M |
+| 4 h | 25253 | Celestial | 12.20 | $479.37K | $3.91B | $112.66M | 18/19/11/20 | 38.4 | 3 | 69/120 | Eclipse Sovereign (Secret) | 24/24 | $1.65B |
 
 ### Hardcore
 
-Roll AUTO (cooldown), coleta a cada 5 s, decide a cada 3 s, gasta 60% em níveis de estação.
+Roll AUTO (cooldown), coleta a cada 5 s, decide a cada 3 s, gasta 60% em níveis de estação, renasce com 1.0x o custo, sobe torres a cada minuto.
 
-| Tempo | Rolls | Dado | Luck | Renda/s | Ganho total | Saldo | Upg L/I/S/C | Nível médio estação | Melhor | Index | 8 h offline |
-|---|---:|---|---:|---:|---:|---:|---|---:|---|---:|---:|
-| 5 min | 293 | Lucky | 1.75 | $2.69K | $391.7K | $30.8K | 5/6/3/7 | 2.2 | Chrono Sage (Divine) | 22/24 | $9.3M |
-| 10 min | 634 | Flame | 2.50 | $6.48K | $1.71M | $41.91K | 7/8/5/9 | 5.0 | Chrono Sage (Divine) | 23/24 | $22.39M |
-| 30 min | 2227 | Storm | 3.60 | $34.65K | $22.48M | $458.09K | 10/11/8/13 | 10.8 | Eclipse Sovereign (Secret) | 24/24 | $119.75M |
-| 1 h | 5050 | Storm | 4.08 | $70.56K | $120.89M | $4.37M | 13/14/10/16 | 21.5 | Eclipse Sovereign (Secret) | 24/24 | $243.85M |
-| 2 h | 11561 | Void | 6.05 | $102.96K | $446.37M | $20.5M | 15/16/11/19 | 30.0 | Eclipse Sovereign (Secret) | 24/24 | $355.82M |
+| Tempo | Rolls | Dado | Luck | Renda/s | Ganho total | Saldo | Upg L/I/S/C | Nível médio estação | Renasc. | Andares (torres) | Melhor | Index | 8 h offline |
+|---|---:|---|---:|---:|---:|---:|---|---:|---:|---:|---|---:|---:|
+| 5 min | 321 | Flame | 2.50 | $7.22K | $1.97M | $72.73K | 7/8/6/10 | 4.5 | 0 | 25/120 | Eclipse Sovereign (Secret) | 24/24 | $24.96M |
+| 10 min | 717 | Flame | 3.01 | $21.89K | $16.61M | $485K | 11/12/9/14 | 11.2 | 0 | 55/120 | Eclipse Sovereign (Secret) | 24/24 | $75.66M |
+| 30 min | 2671 | Storm | 4.08 | $43.92K | $101.45M | $375.69K | 13/14/10/16 | 12.5 | 0 | 64/120 | Eclipse Sovereign (Secret) | 24/24 | $151.78M |
+| 1 h | 5676 | Void | 5.89 | $136.08K | $272.32M | $150.51K | 13/15/11/17 | 24.0 | 1 | 66/120 | Eclipse Sovereign (Secret) | 24/24 | $470.29M |
+| 2 h | 12141 | Void | 7.52 | $284.67K | $1.09B | $26.81M | 16/17/11/20 | 32.5 | 2 | 69/120 | Eclipse Sovereign (Secret) | 24/24 | $983.83M |
+| 4 h | 25182 | Void | 8.11 | $432.51K | $3.84B | $32.26M | 17/18/11/20 | 35.7 | 3 | 69/120 | Eclipse Sovereign (Secret) | 24/24 | $1.49B |
 
 ### Dinheiro offline x jogo ativo
 

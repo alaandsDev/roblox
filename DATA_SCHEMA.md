@@ -41,6 +41,11 @@ O `SimuladorEscudo_v1` do protótipo **não é lido nem migrado**.
 | `RevealViews` | map | `{ [rarity] = vezes }` (libera PULAR na cinemática) |
 | `Settings.AutoRoll`, `HideRollAnimation`, `CameraShake`, `ReducedEffects` | boolean | Configurações do cliente |
 | `Settings.AutoSell` | map | `{ Common..Divine = boolean }` (Secreto nunca) |
+| `TowerTeam` | lista | Até 5 uids do time da torre (vazio = automático) |
+| `RebirthPerks` | map | `{ [perkId] = nível }` (loja de fichas) |
+| `Missions` | map | `{ Day, Daily = { [id] = { Progress, Claimed } }, Achievements = { [id] = nível } }` |
+| `Runtime` | map | Multiplicadores da sessão (gamepasses, amigos). **Zerado a cada entrada e recalculado pelo BoostService** — nunca confiável |
+| `Settings.Music` | boolean | Música de fundo (padrão desligada) |
 | `Daily` | map | Reservado (legado) |
 | `ProcessedReceipts` | lista | Últimos PurchaseIds entregues (idempotência). **Privado**: nunca vai ao cliente |
 | `LastLogout` | number | "Visto por último": saída do jogador e a cada 30 s (os.time do servidor) |

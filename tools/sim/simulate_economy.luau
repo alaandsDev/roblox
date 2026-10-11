@@ -11,8 +11,8 @@ local CharacterConfig = require("../../src/shared/Config/CharacterConfig")
 local DailyConfig = require("../../src/shared/Config/DailyConfig")
 local OfflineIncomeConfig = require("../../src/shared/Config/OfflineIncomeConfig")
 
-local CHECKPOINTS = { 300, 600, 1800, 3600, 7200 }
-local LABELS = { [300] = "5 min", [600] = "10 min", [1800] = "30 min", [3600] = "1 h", [7200] = "2 h" }
+local CHECKPOINTS = { 300, 600, 1800, 3600, 7200, 14400 }
+local LABELS = { [300] = "5 min", [600] = "10 min", [1800] = "30 min", [3600] = "1 h", [7200] = "2 h", [14400] = "4 h" }
 local money = NumberFormatter.money
 
 local out = {}
@@ -24,21 +24,21 @@ line("<!-- SIM:BEGIN (gerado por tools/sim/simulate_economy.luau — não editar
 line("")
 for _, name in { "Casual", "Ativo", "Hardcore" } do
 	local profile = EconomySim.Profiles[name]
-	local snaps = EconomySim.run(profile, 7200, 42, CHECKPOINTS)
+	local snaps = EconomySim.run(profile, 14400, 42, CHECKPOINTS)
 	line(string.format("### %s", name))
 	line("")
-	line(string.format("Roll %s, coleta a cada %d s, decide a cada %d s, gasta %d%% em níveis de estação.",
+	line(string.format("Roll %s, coleta a cada %d s, decide a cada %d s, gasta %d%% em níveis de estação, renasce com %.1fx o custo, sobe torres a cada minuto.",
 		if profile.manualInterval then string.format("manual a cada %.1f s", profile.manualInterval) else "AUTO (cooldown)",
-		profile.collectEvery, profile.thinkEvery, math.floor(profile.levelSpend * 100)))
+		profile.collectEvery, profile.thinkEvery, math.floor(profile.levelSpend * 100), profile.rebirthMargin or 0))
 	line("")
-	line("| Tempo | Rolls | Dado | Luck | Renda/s | Ganho total | Saldo | Upg L/I/S/C | Nível médio estação | Melhor | Index | 8 h offline |")
-	line("|---|---:|---|---:|---:|---:|---:|---|---:|---|---:|---:|")
+	line("| Tempo | Rolls | Dado | Luck | Renda/s | Ganho total | Saldo | Upg L/I/S/C | Nível médio estação | Renasc. | Andares (torres) | Melhor | Index | 8 h offline |")
+	line("|---|---:|---|---:|---:|---:|---:|---|---:|---:|---:|---|---:|---:|")
 	for _, s in snaps do
 		local best = CharacterConfig.ById[s.best]
-		line(string.format("| %s | %d | %s | %.2f | %s | %s | %s | %d/%d/%d/%d | %.1f | %s (%s) | %d/24 | %s |",
+		line(string.format("| %s | %d | %s | %.2f | %s | %s | %s | %d/%d/%d/%d | %.1f | %d | %d/120 | %s (%s) | %d/24 | %s |",
 			LABELS[s.time], s.rolls, s.dice, s.luck, money(s.income), money(s.earned), money(s.money),
 			s.upgrades.Luck, s.upgrades.Income, s.upgrades.RollSpeed, s.upgrades.Inventory,
-			s.avgStationLevel, best and best.Name or "-", best and best.Rarity or "-", s.discovered, money(EconomySim.offline(s.income))))
+			s.avgStationLevel, s.rebirths, s.towerFloors, best and best.Name or "-", best and best.Rarity or "-", s.discovered, money(EconomySim.offline(s.income))))
 	end
 	line("")
 	print(name, "ok")

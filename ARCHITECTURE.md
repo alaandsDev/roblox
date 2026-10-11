@@ -138,6 +138,23 @@ Floor02: SideA = Slot09..Slot12 | SideB = Slot13..Slot16
   sempre no andar mais alto, então a base cresce visivelmente.
 
 
+## Fases 7–12
+
+| Service | Responsabilidade | Remotes |
+|---|---|---|
+| TowerService | 3 torres, batalha de cards simulada no servidor (BattleCore), time da torre, recompensas | RequestEnterTower, SetTowerTeam |
+| RebirthService | renascimento (reset, bônus permanentes, +1 pedestal), loja de fichas | Rebirth, BuyRebirthPerk |
+| FusionService | 3 iguais -> próxima variante (FusionCore) | Fuse |
+| TradeService | trocas entre jogadores (convite, ofertas, pronto, confirmação, troca atômica — TradeCore) | RequestTrade, RespondTrade, SetTradeOffer, SetTradeReady, ConfirmTrade, CancelTrade |
+| MissionService | 3 diárias por jogador/dia + conquistas (MissionCore), progresso pelos eventos de analytics | ClaimMission |
+| BoostService | multiplicadores de sessão em data.Runtime (gamepasses, impulso de amigos), etiqueta VIP | — |
+| JackpotService | Giro do Jackpot, loja de gemas, entrega dos produtos Robux | SpinJackpot, BuyGemItem |
+| LeaderboardService | rankings dos painéis do Hub (OrderedDataStore) e leaderstats | — |
+
+Cliente: TowerController (janela + tela de batalha animada), RebirthController, FusionController,
+TradeController, MissionController, StoreController (loja + atalhos da direita + giro),
+MusicController. Interações do mapa: Towers, Fusion, Trade, Missions, Market (loja).
+
 ## Gameplay (Fases 3–6 + estações, offline, diário, cinemática)
 
 Ordem do servidor (`Bootstrap`): PlayerData → Monetization → Map → Base → Analytics → Economy →

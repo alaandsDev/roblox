@@ -17,7 +17,12 @@
 | 4 — Personagens 3D + inventário + estações da base + renda/coletor | ✅ concluída |
 | 5 — Luck + dados + melhorias globais + nível individual | ✅ concluída |
 | 6 — Venda + auto-sell + índice + HUD + offline + diário | ✅ concluída |
-| 7 — Torres + batalha | ⏳ próxima (não iniciada) |
+| 7 — Torres + batalha de cards | ✅ concluída |
+| 8 — Renascimento + progressão + Fusão + Trocas | ✅ concluída |
+| 9 — Missões (diárias + conquistas) | ✅ concluída |
+| 10 — Monetização (gamepasses, produtos, Jackpot, gemas, impulso de amigos) | ✅ concluída (IDs a criar) |
+| 11 — Conteúdo/polimento (rankings, leaderstats, VIP, música) | ✅ concluída |
+| 12 — Balanceamento e simulações (torres + renascimento no ECONOMY.md) | ✅ concluída |
 
 ## Ordem oficial das fases (atualizada)
 
