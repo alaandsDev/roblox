@@ -59,6 +59,9 @@ DataConfig.Template = {
 	-- Torres: { [towerId] = maior andar vencido }; time escolhido (até 5 uids; vazio = automático)
 	TowerProgress = {},
 	TowerTeam = {},
+	-- Perks comprados com fichas de renascimento: { [perkId] = nível }
+	RebirthPerks = {},
+
 	-- Contadores de pity (rolls seguidos sem a raridade)
 	Pity = { Legendary = 0, Mythic = 0 },
 

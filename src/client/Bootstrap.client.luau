@@ -25,6 +25,9 @@ local ORDER = {
 	"OfflineController",
 	"SettingsController",
 	"TowerController",
+	"RebirthController",
+	"FusionController",
+	"TradeController",
 	"FeedbackController",
 	"LodController",
 }

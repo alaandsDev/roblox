@@ -91,6 +91,20 @@ local Definitions: Definitions = {
 		GetDailyStatus = { args = {}, rate = { capacity = 5, refill = 1 } },
 		ClaimDaily = { args = {}, rate = { capacity = 3, refill = 0.5 } },
 
+		-- Renascimento, Fusão e Trocas (FASE 8)
+		Rebirth = { args = {}, rate = { capacity = 2, refill = 0.5 } },
+		BuyRebirthPerk = {
+			args = { { type = "string", enum = { "Luck", "Income", "Speed", "Capacity", "Power" } } },
+			rate = { capacity = 5, refill = 2 },
+		},
+		Fuse = { args = { { type = "array", maxItems = 3, of = UID } }, rate = { capacity = 4, refill = 2 } },
+		RequestTrade = { args = { { type = "number", integer = true, min = 1, max = 1e12 } }, rate = { capacity = 3, refill = 0.3 } },
+		RespondTrade = { args = { { type = "number", integer = true, min = 1, max = 1e12 }, { type = "boolean" } }, rate = { capacity = 5, refill = 1 } },
+		SetTradeOffer = { args = { { type = "array", maxItems = 8, of = UID } }, rate = { capacity = 10, refill = 4 } },
+		SetTradeReady = { args = { { type = "boolean" } }, rate = { capacity = 10, refill = 4 } },
+		ConfirmTrade = { args = {}, rate = { capacity = 5, refill = 2 } },
+		CancelTrade = { args = {}, rate = { capacity = 5, refill = 2 } },
+
 		-- Torres (FASE 7): o servidor simula a batalha e devolve o registro para o cliente animar
 		RequestEnterTower = { args = { CONFIG_ID }, rate = { capacity = 3, refill = 1 } },
 		SetTowerTeam = { args = { { type = "array", maxItems = 5, of = UID } }, rate = { capacity = 5, refill = 2 } },
@@ -115,6 +129,10 @@ local Definitions: Definitions = {
 		Announce = {},
 		-- Estação melhorada: (uid, nivel) — som/efeito no cliente
 		StationUpgraded = {},
+		-- Trocas: pedido recebido (deUserId, nome) e estado da sessão (tabela) / encerrada (motivo)
+		TradeRequest = {},
+		TradeUpdate = {},
+		TradeClosed = {},
 		-- Só Studio: tocar um reveal sem RNG (DevService "PlayReveal")
 		DevReveal = {},
 	},

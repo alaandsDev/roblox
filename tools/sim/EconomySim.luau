@@ -31,6 +31,7 @@ local formulas = Formulas.new({
 	Characters = CharacterConfig,
 	Levels = LevelConfig,
 	Variants = VariantConfig,
+	Rebirth = require("../../src/shared/Config/RebirthConfig"),
 })
 local core = RollCore.new(RarityConfig, CharacterConfig, RollConfig)
 EconomySim.Formulas = formulas

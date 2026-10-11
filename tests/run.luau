@@ -24,6 +24,8 @@ require("./RevealPlanner.spec")
 require("./Migrations.spec")
 require("./Economy.spec")
 require("./BattleCore.spec")
+require("./FusionCore.spec")
+require("./TradeCore.spec")
 
 if not T.report() then
 	error("testes falharam", 0)

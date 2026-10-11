@@ -11,4 +11,5 @@ return Formulas.new({
 	Characters = require(Config.CharacterConfig),
 	Levels = require(Config.CharacterLevelConfig),
 	Variants = require(Config.VariantConfig),
+	Rebirth = require(Config.RebirthConfig),
 })

@@ -43,6 +43,7 @@ local ORDER = {
 	"PlayerDataService", "MonetizationService", "MapService", "BaseService", "AnalyticsService",
 	"EconomyService", "InventoryService", "IndexService", "SellService", "RollService",
 	"DiceService", "UpgradeService", "StationService", "DailyService", "TowerService",
+	"RebirthService", "FusionService", "TradeService",
 }
 local S = {}
 for _, name in ORDER do
@@ -441,6 +442,7 @@ local ok7, d7 = call("ClaimDaily", p1)
 check(ok7 and d7.day == 7 and d7.kind == "Dice" and d1.OwnedDice.Prism == true, "diário: Dia 7 = dado exclusivo Prism")
 
 ------------------------------------------------------------------------------------
+do
 -- TORRES (Fase 7)
 local towerClock = 5000
 S.TowerService._clock = function()
@@ -483,6 +485,100 @@ towerClock += 2
 local okW, lost = call("RequestEnterTower", p2, "Ember")
 check(okW and lost.won == false and d2.TowerProgress.Ember == 19, "derrota não avança o andar")
 local _ = weakData
+
+------------------------------------------------------------------------------------
+end
+do
+-- RENASCIMENTO (Fase 8)
+local RebirthCfg = req(env.shared.Config.RebirthConfig)
+d1.Money = RebirthCfg.BaseCost - 1
+local okR0, codeR0 = call("Rebirth", p1)
+check(not okR0 and codeR0 == "not_enough_money", "renascer sem dinheiro: recusado")
+d1.Money = RebirthCfg.BaseCost + 500
+d1.Upgrades.Luck = 5
+d1.UncollectedMoney = 999
+local rebirthsBefore = d1.Rebirths
+local incomeBeforeR = Formulas:incomePerSecond(d1)
+local okR, rb = call("Rebirth", p1)
+check(okR and d1.Rebirths == rebirthsBefore + 1 and rb.tokens >= 1 and d1.RebirthTokens >= 1, "renascer: +1 renascimento e fichas")
+check(d1.Money == 0 and d1.Upgrades.Luck == 0 and d1.UncollectedMoney == 0, "renascer reseta dinheiro, coletor e melhorias globais")
+check(next(d1.Inventory) ~= nil and d1.OwnedDice.Prism == true and d1.TowerProgress.Ember ~= nil, "renascer mantém personagens, dados e torres")
+local base1R = S.BaseService.GetPlayerBase(p1)
+local slot5 = base1R.Floors.Floor01:FindFirstChild("Slot05", true)
+check(slot5 and slot5:GetAttribute("Unlocked") == true, "renascimento 1 libera o Slot05 na base")
+check((call("EquipCharacter", p1, next(d1.Inventory), 5)), "dá para equipar no slot novo")
+check(Formulas:incomePerSecond(d1) > 0 and Formulas:incomeMultiplier(d1) > 1, "bônus permanente de renda ativo")
+local _ = incomeBeforeR
+d1.RebirthTokens = 1
+check((call("BuyRebirthPerk", p1, "Luck")) and d1.RebirthPerks.Luck == 1 and d1.RebirthTokens == 0, "perk comprado com fichas")
+local okP2, codeP2 = call("BuyRebirthPerk", p1, "Luck")
+check(not okP2 and codeP2 == "not_enough_tokens", "perk sem fichas: recusado")
+
+end
+do
+-- FUSÃO
+local f1 = S.InventoryService.Add(p1, "solar_paladin")
+local f2 = S.InventoryService.Add(p1, "solar_paladin")
+local f3 = S.InventoryService.Add(p1, "solar_paladin")
+d1.Inventory[f2].Level = 6
+d1.Money = 0
+local okF0, codeF0 = call("Fuse", p1, { f1, f2, f3 })
+check(not okF0 and codeF0 == "not_enough_money" and d1.Inventory[f1] ~= nil, "fusão sem dinheiro: nada some")
+d1.Money = 1e12
+local okF, fused = call("Fuse", p1, { f1, f2, f3 })
+check(okF and fused.variant == "Silver" and fused.level == 6, "fusão: 3 Normais -> 1 Prata com o maior nível")
+check(d1.Inventory[f1] == nil and d1.Inventory[f2] == nil and d1.Inventory[fused.uid].Variant == "Silver", "as 3 usadas somem; a nova existe")
+local okF2, codeF2 = call("Fuse", p1, { fused.uid, f1, f2 })
+check(not okF2 and codeF2 == "not_owned", "fusão com uids que não existem mais: recusada")
+
+end
+do
+-- TROCAS (p1 <-> p2)
+local okT0, codeT0 = call("RequestTrade", p1, p1.UserId)
+check(not okT0 and codeT0 == "trade_no_player", "não dá para trocar consigo mesmo")
+check((call("RequestTrade", p1, p2.UserId)), "convite de troca enviado")
+check(lastEvent("TradeRequest", p2) ~= nil, "o outro jogador recebe o convite")
+check((call("RespondTrade", p2, p1.UserId, true)), "convite aceito: sessão aberta")
+local give = S.InventoryService.Add(p1, "chrono_sage")
+local take = S.InventoryService.Add(p2, "crystal_mage")
+local lockedOffer = S.InventoryService.Add(p1, "chrono_sage")
+call("SetCharacterFlag", p1, lockedOffer, "Locked", true)
+local okLO, codeLO = call("SetTradeOffer", p1, { lockedOffer })
+check(not okLO and codeLO == "locked", "personagem travado não pode ser oferecido")
+check((call("SetTradeOffer", p1, { give })) and (call("SetTradeOffer", p2, { take })), "ofertas definidas")
+local okCN, codeCN = call("ConfirmTrade", p1)
+check(not okCN and codeCN == "trade_not_ready", "confirmar antes dos dois PRONTOS: recusado")
+call("SetTradeReady", p1, true)
+call("SetTradeReady", p2, true)
+local okC1, w1 = call("ConfirmTrade", p1)
+check(okC1 and w1 == "waiting", "1º confirmou: espera o outro")
+-- mudar a oferta depois de confirmar invalida tudo
+call("SetTradeOffer", p2, { take })
+local okC2, codeC2 = call("ConfirmTrade", p2)
+check(not okC2 and codeC2 == "trade_not_ready", "mudar a oferta tira o PRONTO dos dois")
+call("SetTradeReady", p1, true)
+call("SetTradeReady", p2, true)
+call("ConfirmTrade", p1)
+local okDone, done = call("ConfirmTrade", p2)
+check(okDone and done == "completed", "os dois confirmaram: troca concluída")
+local p1HasCrystal, p2HasChrono = false, false
+for _, item in d1.Inventory do
+	if item.Id == "crystal_mage" then
+		p1HasCrystal = true
+	end
+end
+for _, item in d2.Inventory do
+	if item.Id == "chrono_sage" then
+		p2HasChrono = true
+	end
+end
+check(d1.Inventory[give] == nil and d2.Inventory[take] == nil and p1HasCrystal and p2HasChrono, "itens trocaram de dono")
+check(d2.Index.chrono_sage ~= nil, "personagem recebido entra no Índice")
+check(S.TradeService.SessionOf(p1) == nil and S.TradeService.SessionOf(p2) == nil, "sessão encerrada")
+local okNS, codeNS = call("ConfirmTrade", p1)
+check(not okNS and codeNS == "trade_no_session", "confirmar de novo (spam): nada acontece")
+
+end
 
 ------------------------------------------------------------------------------------
 -- DEMO + SAÍDA

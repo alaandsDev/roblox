@@ -32,6 +32,34 @@ function Formulas:diceLuck(diceId: string?): number
 	return dice.LuckMultiplier
 end
 
+local function perkLevel(data: any, id: string): number
+	local perks = data.RebirthPerks
+	return if type(perks) == "table" and type(perks[id]) == "number" then perks[id] else 0
+end
+
+function Formulas:perkLevel(data: any, id: string): number
+	return perkLevel(data, id)
+end
+
+-- Bônus permanentes do Renascimento: kind = "Luck" | "Income" | "Power"
+function Formulas:rebirthMultiplier(data: any, kind: string): number
+	local rebirth = self.c.Rebirth
+	if not rebirth then
+		return 1
+	end
+	local rebirths = if type(data.Rebirths) == "number" then data.Rebirths else 0
+	local perRebirth = if kind == "Luck" then rebirth.LuckPerRebirth elseif kind == "Income" then rebirth.IncomePerRebirth else rebirth.PowerPerRebirth
+	local perk = rebirth.PerksById[kind]
+	return 1 + rebirths * perRebirth + (if perk then perkLevel(data, kind) * perk.PerLevel else 0)
+end
+
+-- Multiplicadores de sessão (gamepasses, impulso de amigos) postos pelo servidor em data.Runtime
+function Formulas:runtime(data: any, kind: string): number
+	local runtime = data.Runtime
+	local value = if type(runtime) == "table" then runtime[kind] else nil
+	return if type(value) == "number" and value > 0 then value else 1
+end
+
 -- Boost de Luck temporário ativo (Diário). now = os.time() do servidor
 function Formulas:luckBoost(data: any, now: number?): number
 	local boost = type(data.Boosts) == "table" and data.Boosts.Luck
@@ -47,22 +75,54 @@ end
 function Formulas:luck(data: any, now: number?): number
 	local upgrade = self.c.Upgrades.ById.Luck
 	local base = self:diceLuck(data.EquippedDice) * (1 + level(data, "Luck") * upgrade.PerLevel)
-	return math.max(1, base * self:luckBoost(data, now))
+	return math.max(1, base * self:luckBoost(data, now) * self:rebirthMultiplier(data, "Luck") * self:runtime(data, "Luck"))
 end
 
 function Formulas:rollCooldown(data: any): number
 	local roll = self.c.Roll
 	local upgrade = self.c.Upgrades.ById.RollSpeed
-	return math.max(roll.MinCooldown, roll.BaseCooldown * (1 - level(data, "RollSpeed") * upgrade.PerLevel))
+	local speedPerk = if self.c.Rebirth then perkLevel(data, "Speed") * self.c.Rebirth.PerksById.Speed.PerLevel else 0
+	return math.max(roll.MinCooldown, roll.BaseCooldown * (1 - level(data, "RollSpeed") * upgrade.PerLevel) * (1 - speedPerk))
 end
 
 function Formulas:capacity(data: any): number
 	local upgrade = self.c.Upgrades.ById.Inventory
-	return self.c.Roll.InventoryBaseCapacity + level(data, "Inventory") * upgrade.PerLevel
+	local perk = if self.c.Rebirth then perkLevel(data, "Capacity") * self.c.Rebirth.PerksById.Capacity.PerLevel else 0
+	return self.c.Roll.InventoryBaseCapacity + level(data, "Inventory") * upgrade.PerLevel + perk + self:runtimeAdd(data, "Capacity")
+end
+
+-- Valores somados de sessão (ex.: gamepass de mochila maior)
+function Formulas:runtimeAdd(data: any, kind: string): number
+	local runtime = data.Runtime
+	local value = if type(runtime) == "table" then runtime[kind] else nil
+	return if type(value) == "number" then value else 0
 end
 
 function Formulas:incomeMultiplier(data: any): number
-	return 1 + level(data, "Income") * self.c.Upgrades.ById.Income.PerLevel
+	return (1 + level(data, "Income") * self.c.Upgrades.ById.Income.PerLevel)
+		* self:rebirthMultiplier(data, "Income")
+		* self:runtime(data, "Income")
+end
+
+function Formulas:rebirthCost(rebirths: number): number?
+	local rebirth = self.c.Rebirth
+	if not rebirth or rebirths >= rebirth.MaxRebirths then
+		return nil
+	end
+	return math.floor(rebirth.BaseCost * rebirth.Growth ^ rebirths)
+end
+
+function Formulas:rebirthTokens(newRebirthCount: number): number
+	local rebirth = self.c.Rebirth
+	return rebirth.TokensBase + newRebirthCount // rebirth.TokensBonusEvery
+end
+
+function Formulas:perkCost(id: string, currentLevel: number): number?
+	local perk = self.c.Rebirth and self.c.Rebirth.PerksById[id]
+	if not perk or currentLevel >= perk.MaxLevel then
+		return nil
+	end
+	return perk.BaseCost + currentLevel * perk.CostStep
 end
 
 function Formulas:variant(id: string?): any
@@ -86,15 +146,9 @@ function Formulas:unitPower(item: any, data: any?): number
 	return power * (if data then self:powerMultiplier(data) else 1)
 end
 
--- Multiplicador global de poder (Rebirth / perks). Sem configuração = 1
+-- Multiplicador global de poder (Rebirth + perk Power)
 function Formulas:powerMultiplier(data: any): number
-	local rebirth = self.c.Rebirth
-	if not rebirth then
-		return 1
-	end
-	local perks = type(data.RebirthPerks) == "table" and data.RebirthPerks or {}
-	local perk = rebirth.PerksById and rebirth.PerksById.Power
-	return 1 + (data.Rebirths or 0) * (rebirth.PowerPerRebirth or 0) + (if perk then (perks.Power or 0) * perk.PerLevel else 0)
+	return self:rebirthMultiplier(data, "Power")
 end
 
 -- Renda/s de UMA unidade, sem multiplicadores globais (Level * Variant)

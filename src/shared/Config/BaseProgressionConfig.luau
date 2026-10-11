@@ -5,11 +5,12 @@
 	Regra: vale o marco com o MAIOR rebirth que seja <= rebirth do jogador.
 	(Ex.: com marcos 0 e 5, os Rebirths 1-4 usam o marco 0.)
 
-	Definido até agora:
-	  RB0: Floor01 existe; slots 1-4 (LADO A inteiro) liberados; 5-8 (LADO B) bloqueados.
+	Regra final (Fase 8): cada Rebirth libera +1 slot, em ordem.
+	  RB0: Floor01; slots 1-4 (LADO A inteiro); 5-8 (LADO B) bloqueados.
+	  RB1..RB4: slots 5, 6, 7, 8 (lado B, um por rebirth).
 	  RB5: Floor02 é construído; Slot09 liberado (total 9).
-	Os Rebirths 1-4 AINDA NÃO FORAM DEFINIDOS: preencha aqui quando forem decididos,
-	por exemplo  [2] = { UnlockedFloors = 1, UnlockedSlots = { 1, 2, 3, 4, 5, 6 } }.
+	  ... +1 slot por rebirth; Floor03 no RB13, Floor04 no RB21, Floor05 no RB29.
+	  RB36: 40 slots (5 andares completos) — último marco.
 
 	Campos:
 	  UnlockedFloors: quantos andares existem fisicamente
@@ -25,18 +26,29 @@ export type Milestone = {
 	VisualUpgrade: string?,
 }
 
+local START_SLOTS = 4
+local SLOTS_PER_FLOOR = 8
+local MAX_SLOTS = 40
+
+local milestones: { [number]: Milestone } = {}
+local previousFloors = 1
+for rebirth = 0, MAX_SLOTS - START_SLOTS do
+	local count = START_SLOTS + rebirth
+	local slots = {}
+	for slot = 1, count do
+		table.insert(slots, slot)
+	end
+	local floors = math.ceil(count / SLOTS_PER_FLOOR)
+	milestones[rebirth] = {
+		UnlockedFloors = floors,
+		UnlockedSlots = slots,
+		NewFloor = if floors > previousFloors then floors else nil,
+	}
+	previousFloors = floors
+end
+
 local BaseProgressionConfig: { Milestones: { [number]: Milestone } } = {
-	Milestones = {
-		[0] = {
-			UnlockedFloors = 1,
-			UnlockedSlots = { 1, 2, 3, 4 },
-		},
-		[5] = {
-			UnlockedFloors = 2,
-			UnlockedSlots = { 1, 2, 3, 4, 5, 6, 7, 8, 9 },
-			NewFloor = 2,
-		},
-	},
+	Milestones = milestones,
 }
 
 return BaseProgressionConfig

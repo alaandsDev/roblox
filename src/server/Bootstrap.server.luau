@@ -27,6 +27,9 @@ local ORDER = {
 	"StationService",
 	"DailyService",
 	"TowerService",
+	"RebirthService",
+	"FusionService",
+	"TradeService",
 	"DevService", -- só ativo no Studio
 }
 

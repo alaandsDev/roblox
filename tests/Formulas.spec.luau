@@ -117,6 +117,36 @@ describe("Formulas", function()
 		expect(f:sellValue("flame_rookie", "Gold")).toBe(24)
 	end)
 
+	it("Renascimento: multiplicadores permanentes, custo e fichas", function()
+		local RebirthConfig = require("../src/shared/Config/RebirthConfig")
+		local g = Formulas.new({
+			Dice = require("../src/shared/Config/DiceConfig"),
+			Upgrades = require("../src/shared/Config/UpgradeConfig"),
+			Roll = require("../src/shared/Config/RollConfig"),
+			Economy = require("../src/shared/Config/EconomyConfig"),
+			Characters = require("../src/shared/Config/CharacterConfig"),
+			Levels = LevelCfg,
+			Variants = require("../src/shared/Config/VariantConfig"),
+			Rebirth = RebirthConfig,
+		})
+		local d = data({ Rebirths = 2, RebirthPerks = { Income = 1, Luck = 2, Speed = 5, Capacity = 2 } })
+		expect(math.abs(g:incomeMultiplier(d) - (1 + 2 * 0.25 + 0.15)) < 1e-9).toBeTruthy()
+		expect(math.abs(g:luck(d) - (1 + 2 * 0.05 + 2 * 0.10)) < 1e-9).toBeTruthy()
+		expect(g:capacity(d)).toBe(100 + 50)
+		expect(math.abs(g:rollCooldown(d) - 0.85) < 1e-9).toBeTruthy()
+		expect(g:rebirthCost(0)).toBe(RebirthConfig.BaseCost)
+		expect(g:rebirthCost(1)).toBe(RebirthConfig.BaseCost * RebirthConfig.Growth)
+		expect(g:rebirthCost(RebirthConfig.MaxRebirths)).toBeNil()
+		expect(g:rebirthTokens(1)).toBe(1)
+		expect(g:rebirthTokens(5)).toBe(2)
+		expect(g:perkCost("Luck", 0)).toBe(1)
+		expect(g:perkCost("Luck", 10)).toBeNil()
+		-- runtime (gamepass/amigos)
+		d.Runtime = { Income = 2, Luck = 2, Capacity = 50 }
+		expect(math.abs(g:incomeMultiplier(d) - 2 * (1 + 2 * 0.25 + 0.15)) < 1e-9).toBeTruthy()
+		expect(g:capacity(d)).toBe(200)
+	end)
+
 	it("custo de upgrade cresce e para no nível máximo", function()
 		local a, b = f:upgradeCost("Luck", 0), f:upgradeCost("Luck", 1)
 		expect(a ~= nil and b ~= nil and (b :: number) > (a :: number)).toBeTruthy()

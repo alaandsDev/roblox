@@ -137,6 +137,7 @@ local ORDER = {
 	"PlayerDataService", "MonetizationService", "MapService", "BaseService", "AnalyticsService",
 	"EconomyService", "InventoryService", "IndexService", "SellService", "RollService",
 	"DiceService", "UpgradeService", "StationService", "DailyService", "TowerService",
+	"RebirthService", "FusionService", "TradeService",
 }
 local S = {}
 for _, name in ORDER do
@@ -180,6 +181,7 @@ local CLIENT_ORDER = {
 	"NotificationController", "DataController", "HudController", "NavigationController", "AmbientController",
 	"RevealController", "RollController", "InventoryController", "DiceShopController", "UpgradesController",
 	"SellController", "IndexController", "DailyController", "OfflineController", "SettingsController", "TowerController",
+	"RebirthController", "FusionController", "TradeController",
 	"FeedbackController", "LodController",
 }
 local C = {}
@@ -491,6 +493,64 @@ check(Env.waitFor(function()
 	return not gui("Battle").Enabled
 end, 2), "fechar a batalha")
 UIKit.Windows.closeAll()
+
+-- Fase 8: Fusão, Renascimento e Trocas pela interface
+do
+	for _ = 1, 3 do
+		S.InventoryService.Add(player, "abyss_warlock")
+	end
+	data.Money = 1e12
+	task.wait(0.3)
+	local fusion = openWindow("Fusion")
+	local fuseButton = find(fusion.content, "Fuse_abyss_warlock")
+	check(fuseButton ~= nil, "FUSÃO lista o grupo de 3 iguais")
+	if fuseButton then
+		click(fuseButton)
+	end
+	check(Env.waitFor(function()
+		for _, item in data.Inventory do
+			if item.Id == "abyss_warlock" and item.Variant == "Silver" then
+				return true
+			end
+		end
+		return false
+	end, 2), "FUNDIR cria a variante Prata")
+	UIKit.Windows.closeAll()
+
+	local rebirths = data.Rebirths
+	local rebirth = openWindow("Rebirth")
+	local doRebirth = find(rebirth.content, "DoRebirth")
+	if doRebirth then
+		click(doRebirth)
+	end
+	check(Env.waitFor(function()
+		return gui("Confirm") ~= nil
+	end, 2), "RENASCER pede confirmação")
+	local yesButton
+	for _, d in gui("Confirm"):GetDescendants() do
+		if d:IsA("TextButton") and d:FindFirstChild("Label") and d.Label.Text == "RENASCER" then
+			yesButton = d
+		end
+	end
+	if yesButton then
+		click(yesButton)
+	end
+	check(Env.waitFor(function()
+		return data.Rebirths == rebirths + 1 and data.Money == 0
+	end, 2), "renascimento feito pela interface")
+	local perk = find(rebirth.content, "Perk_Luck")
+	if perk then
+		click(perk)
+	end
+	check(Env.waitFor(function()
+		return (data.RebirthPerks.Luck or 0) == 1
+	end, 2), "perk comprado pela LOJA DE FICHAS")
+	UIKit.Windows.closeAll()
+
+	local trade = openWindow("Trade")
+	check(trade ~= nil and trade.isOpen and find(trade.content, "Lobby").Visible, "TROCAS abre no lobby (sem sessão)")
+	UIKit.Windows.closeAll()
+end
 
 -- Notificações agrupadas
 C.NotificationController.Show("error.inventory_full")
