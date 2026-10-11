@@ -251,7 +251,7 @@ function TradeController.Start()
 	end)
 	Net.on("TradeClosed", function(reason: string)
 		state = nil
-		NotificationController.Show("trade.closed_" .. tostring(reason))
+		NotificationController.Show("trade.closed." .. tostring(reason))
 		if reason == "completed" then
 			UIKit.sound("Reward")
 		end

@@ -107,6 +107,15 @@ describe("Localization", function()
 				table.insert(keys, c.Intro)
 			end
 		end
+		for _, reason in { "completed", "cancelled", "left", "error" } do
+			table.insert(keys, "trade.closed." .. reason)
+		end
+		for _, perk in require("../src/shared/Config/RebirthConfig").Perks do
+			table.insert(keys, "rebirth.perk." .. perk.Id)
+		end
+		for _, tower in require("../src/shared/Config/TowerConfig").List do
+			table.insert(keys, "tower." .. tower.Id)
+		end
 		for _, key in keys do
 			if PtBR[key] == nil then
 				error("faltando no PtBR: " .. key)
