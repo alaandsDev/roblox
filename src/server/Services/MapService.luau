@@ -5,7 +5,7 @@
 	    MapService.GetBases() -> { [baseId]: Model }
 	    MapService.ValidateMap() -> lista de problemas (vazia = ok)
 	No Studio o mapa é validado automaticamente ao iniciar (avisos na Saída).
-	Prompts "Abrir" de áreas ainda não implementadas respondem "em breve".
+	Prompts "Abrir": MapService.RegisterInteraction(id, fn); sem registro respondem "em breve".
 ]]
 
 local Players = game:GetService("Players")
@@ -32,6 +32,14 @@ local log = Logger.new("Map")
 local MapService = {}
 
 MapService.Progression = BaseProgression.new(BaseProgressionConfig, BaseConfig.SlotsPerSide * 2)
+
+-- Interações registradas por outros Services: InteractId -> função(player, prompt)
+local interactions: { [string]: (Player, ProximityPrompt) -> () } = {}
+
+-- Ex.: MapService.RegisterInteraction("DiceShop", function(player, prompt) ... end)
+function MapService.RegisterInteraction(id: string, handler: (Player, ProximityPrompt) -> ())
+	interactions[id] = handler
+end
 
 local refs: MapBuilder.Refs
 local bases: { [number]: Model } = {}
@@ -168,10 +176,18 @@ function MapService.Start()
 			return
 		end
 		local now = os.clock()
-		if now - (promptCooldown[player] or 0) < 1 then
+		if now - (promptCooldown[player] or 0) < 0.3 then
 			return
 		end
 		promptCooldown[player] = now
+		local handler = interactions[id]
+		if handler then
+			local ok, err = pcall(handler :: any, player, prompt)
+			if not ok then
+				log:warn("interação", id, "falhou:", err)
+			end
+			return
+		end
 		Net.fire("Notify", player, "map.coming_soon", { name = prompt.ObjectText })
 	end)
 	Players.PlayerRemoving:Connect(function(player)
