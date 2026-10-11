@@ -92,6 +92,7 @@ def main() -> None:
 
     lune = baixar_lune()
     mapa = subprocess.run([str(lune), "run", "tests/roblox/MapHarness.luau"], cwd=RAIZ)
+    servicos = subprocess.run([str(lune), "run", "tests/roblox/ServiceHarness.luau"], cwd=RAIZ)
 
     if mapa.returncode == 0:
         try:
@@ -101,7 +102,7 @@ def main() -> None:
         except ImportError:
             print("(Pillow não instalado: pulando a imagem do mapa)")
 
-    if erros or puros.returncode != 0 or mapa.returncode != 0:
+    if erros or puros.returncode != 0 or mapa.returncode != 0 or servicos.returncode != 0:
         sys.exit(1)
 
 

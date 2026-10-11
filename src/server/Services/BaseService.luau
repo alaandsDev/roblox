@@ -50,6 +50,9 @@ local SPAWN_FALLBACK_SECONDS = 10
 local BaseService = {}
 
 BaseService.FloorUnlocked = Signal.new()
+-- (player, base) depois que a base foi atribuída / liberada
+BaseService.BaseAssigned = Signal.new()
+BaseService.BaseReleased = Signal.new()
 
 local allocator = BaseAllocator.new(MapConfig.Bases.AssignOrder)
 local lastTeleport: { [Player]: number } = {}
@@ -99,9 +102,46 @@ function BaseService.GetFreeBase(): number?
 	return allocator:peekFree()
 end
 
+-- Bases cujo atributo OwnerUserId é o do jogador (o DataModel é a fonte autoritativa)
+local function basesOwnedBy(userId: number): { Model }
+	local found = {}
+	local folder = workspace:FindFirstChild("Bases")
+	if folder then
+		for _, base in folder:GetChildren() do
+			if base:IsA("Model") and base:GetAttribute("OwnerUserId") == userId then
+				table.insert(found, base)
+			end
+		end
+	end
+	return found
+end
+
+--[[
+	Associação autoritativa Player <-> Base = atributo OwnerUserId da base (+ BaseId no jogador).
+	O allocator é só um cache em memória. Se o cache não tiver o jogador (ex.: módulo carregado em
+	outro contexto) procura pelo atributo; achando exatamente uma base, repara o cache.
+]]
 function BaseService.GetPlayerBase(player: Player): Model?
 	local id = allocator:baseOfUser(player.UserId)
-	return if id then MapService.GetBase(id) else nil
+	if id then
+		local base = MapService.GetBase(id)
+		if base and base:GetAttribute("OwnerUserId") == player.UserId then
+			return base
+		end
+		log:error(`integridade: cache diz Base{id} para {player.Name}, mas o atributo OwnerUserId discorda`)
+	end
+	local owned = basesOwnedBy(player.UserId)
+	if #owned == 1 then
+		local base = owned[1]
+		allocator:claim(player.UserId, base:GetAttribute("BaseId") :: number)
+		if RunService:IsStudio() then
+			log:warn(`cache de bases reparado para {player.Name} ({base.Name})`)
+		end
+		return base
+	elseif #owned > 1 then
+		log:error(`integridade: {player.Name} é dono de {#owned} bases`)
+	end
+	return nil
 end
 
 function BaseService.GetBaseOwner(base: Model): Player?
@@ -171,28 +211,38 @@ function BaseService.AssignBase(player: Player): number?
 			BaseBuilder.setOwner(base, owner)
 		end
 	end)
+	BaseService.BaseAssigned:Fire(player, base)
 	-- Carrega o personagem (ou leva para casa, se ele já nasceu no Hub)
 	coordinator:baseAssigned(player, baseId)
 	return baseId
 end
 
 function BaseService.ReleaseBase(player: Player)
-	local baseId = allocator:release(player.UserId)
 	lastTeleport[player] = nil
 	coordinator:playerLeft(player)
 	player.RespawnLocation = nil :: any
-	if not baseId then
-		return
+	player:SetAttribute("BaseId", nil)
+
+	-- Libera pelo cache E por qualquer base que ainda tenha o atributo do jogador
+	local toRelease: { Model } = {}
+	local baseId = allocator:release(player.UserId)
+	local cached = if baseId then MapService.GetBase(baseId) else nil
+	if cached then
+		table.insert(toRelease, cached)
 	end
-	local base = MapService.GetBase(baseId)
-	if not base then
-		return
+	for _, base in basesOwnedBy(player.UserId) do
+		if base ~= cached then
+			table.insert(toRelease, base)
+		end
 	end
-	base:SetAttribute("OwnerUserId", 0)
-	BaseBuilder.clearRuntime(base)
-	BaseBuilder.setOwner(base, nil)
-	BaseBuilder.applyState(base, MapService.Progression:state(0), MapService.Progression)
-	log:info(`{base.Name} liberada ({player.Name} saiu)`)
+	for _, base in toRelease do
+		base:SetAttribute("OwnerUserId", 0)
+		BaseBuilder.clearRuntime(base)
+		BaseBuilder.setOwner(base, nil)
+		BaseBuilder.applyState(base, MapService.Progression:state(0), MapService.Progression)
+		BaseService.BaseReleased:Fire(player, base)
+		log:info(`{base.Name} liberada ({player.Name} saiu)`)
+	end
 end
 
 local function onDataLoaded(player: Player)
@@ -231,11 +281,10 @@ local function handleTeleport(player: Player, destination: string)
 end
 
 ------------------------------------------------------------------------------------
--- Ferramentas de teste (só no Studio). Pela Barra de comandos, contexto Servidor:
---   local B = require(game.ServerScriptService.Server.Services.BaseService)
---   B.Dev.PreviewFloors(3, 2)   -- Base03 com 2 andares (sem dar Rebirth a ninguém)
---   B.Dev.ShowDummies(3, true)  -- bonecos de escala em todos os slots da Base03
---   B.Dev.Reset(3)              -- volta ao estado do dono (ou RB0 se livre)
+-- Ferramentas de teste (só no Studio). NÃO use require() na Barra de comandos: ela roda em
+-- outra máquina Luau e recebe uma cópia nova (vazia) dos módulos. Use o DevService:
+--   local Dev = game.ServerStorage.RollLegendsDev
+--   Dev:Invoke("ShowDummies", game.Players:GetPlayers()[1], true)
 
 BaseService.Dev = {}
 
@@ -243,10 +292,21 @@ local function requireStudio()
 	assert(RunService:IsStudio(), "ferramenta de teste disponível só no Studio")
 end
 
-function BaseService.Dev.PreviewFloors(baseId: number, floors: number)
+-- Aceita um jogador (usa a base dele) ou um número de base
+local function resolveBase(target: Player | number): Model
+	local base
+	if type(target) == "number" then
+		base = MapService.GetBase(target)
+	else
+		base = BaseService.GetPlayerBase(target)
+	end
+	assert(base, `base não encontrada para {tostring(target)}`)
+	return base
+end
+
+function BaseService.Dev.PreviewFloors(target: Player | number, floors: number)
 	requireStudio()
-	local base = MapService.GetBase(baseId)
-	assert(base, "base inválida")
+	local base = resolveBase(target)
 	local rebirth = MapService.Progression:floorUnlockRebirth(floors)
 	local state = if rebirth then MapService.Progression:state(rebirth) else MapService.Progression:state(0)
 	-- Se o andar ainda não tem marco definido, só constrói a estrutura (slots seguem bloqueados)
@@ -258,10 +318,9 @@ function BaseService.Dev.PreviewFloors(baseId: number, floors: number)
 	log:info(`[DEV] {base.Name}: prévia com {after} andar(es)`)
 end
 
-function BaseService.Dev.ShowDummies(baseId: number, show: boolean)
+function BaseService.Dev.ShowDummies(target: Player | number, show: boolean)
 	requireStudio()
-	local base = MapService.GetBase(baseId)
-	assert(base, "base inválida")
+	local base = resolveBase(target)
 	local runtime = base:FindFirstChild("RuntimeCharacters") :: Folder
 	for _, child in runtime:GetChildren() do
 		if child.Name == "ScaleDummy" then
@@ -284,11 +343,10 @@ function BaseService.Dev.ShowDummies(baseId: number, show: boolean)
 	log:info(`[DEV] {count} bonecos de escala na {base.Name}`)
 end
 
-function BaseService.Dev.Reset(baseId: number)
+function BaseService.Dev.Reset(target: Player | number)
 	requireStudio()
-	local base = MapService.GetBase(baseId)
-	assert(base, "base inválida")
-	BaseService.Dev.ShowDummies(baseId, false)
+	local base = resolveBase(target)
+	BaseService.Dev.ShowDummies(base:GetAttribute("BaseId") :: number, false)
 	local owner = BaseService.GetBaseOwner(base)
 	if owner then
 		BaseService.RefreshBase(owner, true)
@@ -296,6 +354,11 @@ function BaseService.Dev.Reset(baseId: number)
 		BaseBuilder.applyState(base, MapService.Progression:state(0), MapService.Progression)
 	end
 end
+
+-- Nomes pedidos (equivalentes, recebendo o jogador)
+BaseService.Dev.ShowDummiesForPlayer = BaseService.Dev.ShowDummies
+BaseService.Dev.PreviewFloorsForPlayer = BaseService.Dev.PreviewFloors
+BaseService.Dev.ResetPlayerBase = BaseService.Dev.Reset
 
 ------------------------------------------------------------------------------------
 

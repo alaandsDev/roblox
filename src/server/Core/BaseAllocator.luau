@@ -48,6 +48,24 @@ function BaseAllocator:assign(userId: number): number?
 	return id
 end
 
+-- Registra um dono já conhecido (reparo do cache a partir dos atributos do DataModel).
+-- Só funciona se a base estiver livre e o jogador ainda não tiver base.
+function BaseAllocator:claim(userId: number, baseId: number): boolean
+	if not table.find(self.order, baseId) then
+		return false
+	end
+	local owner = self.ownerOf[baseId]
+	if owner == userId and self.baseOf[userId] == baseId then
+		return true
+	end
+	if owner ~= nil or self.baseOf[userId] ~= nil then
+		return false
+	end
+	self.ownerOf[baseId] = userId
+	self.baseOf[userId] = baseId
+	return true
+end
+
 function BaseAllocator:release(userId: number): number?
 	local id = self.baseOf[userId]
 	if id then

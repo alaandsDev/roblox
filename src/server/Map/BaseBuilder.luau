@@ -582,7 +582,10 @@ function BaseBuilder.playFloorUnlockedEffect(base: Model, floor: number)
 	burst.EmissionDirection = Enum.NormalId.Top
 	burst.Enabled = false
 	burst.Parent = platform
-	burst:Emit(80)
+	-- Efeito é cosmético: uma falha aqui nunca pode interromper a progressão da base
+	pcall(function()
+		burst:Emit(80)
+	end)
 	task.delay(3, burst.Destroy, burst)
 end
 

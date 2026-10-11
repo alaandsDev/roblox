@@ -18,6 +18,7 @@ local MapConfig = require(Shared.Config.MapConfig)
 local BaseConfig = require(Shared.Config.BaseConfig)
 local BaseProgressionConfig = require(Shared.Config.BaseProgressionConfig)
 local BaseProgression = require(Shared.Modules.BaseProgression)
+local BaseLayout = require(Shared.Modules.BaseLayout)
 local Logger = require(Shared.Modules.Logger)
 local Net = require(Shared.Modules.Net)
 
@@ -52,8 +53,20 @@ function MapService.GetBases(): { [number]: Model }
 	return bases
 end
 
+-- Busca no cache e, se não houver (ex.: módulo carregado em outro contexto, como a Barra de
+-- comandos do Studio), direto em Workspace.Bases — o DataModel é a fonte da verdade.
 function MapService.GetBase(baseId: number): Model?
-	return bases[baseId]
+	local cached = bases[baseId]
+	if cached and cached.Parent then
+		return cached
+	end
+	local folder = workspace:FindFirstChild("Bases")
+	local found = folder and folder:FindFirstChild(BaseLayout.baseName(baseId))
+	if found and found:IsA("Model") then
+		bases[baseId] = found
+		return found
+	end
+	return nil
 end
 
 -- Monta o "retrato" do mapa e roda o MapValidator

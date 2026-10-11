@@ -16,6 +16,7 @@ local ORDER = {
 	"MonetizationService",
 	"MapService",
 	"BaseService",
+	"DevService", -- só ativo no Studio
 }
 
 Net.initServer()

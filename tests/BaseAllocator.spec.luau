@@ -53,6 +53,17 @@ describe("BaseAllocator (atribuição de base)", function()
 		expect(alloc:release(999)).toBeNil()
 	end)
 
+	it("claim repara o cache só quando a base está livre", function()
+		local alloc = BaseAllocator.new(MapConfig.Bases.AssignOrder)
+		expect(alloc:claim(50, 7)).toBe(true)
+		expect(alloc:baseOfUser(50)).toBe(7)
+		expect(alloc:claim(50, 7)).toBe(true) -- idempotente
+		expect(alloc:claim(51, 7)).toBe(false) -- já tem dono
+		expect(alloc:claim(50, 8)).toBe(false) -- jogador já tem base
+		expect(alloc:claim(52, 99)).toBe(false) -- base inexistente
+		expect(alloc:assign(53) ~= 7).toBeTruthy() -- assign não entrega base reparada
+	end)
+
 	it("ordem de preferência cobre as 10 bases sem repetir", function()
 		local seen = {}
 		for _, id in MapConfig.Bases.AssignOrder do
