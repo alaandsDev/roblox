@@ -64,7 +64,15 @@ describe("Validator (payload)", function()
 			end
 		end
 		expect(count >= 9).toBeTruthy()
-		for _, name in { "RequestRoll", "RequestEquipCharacter", "RequestSellCharacter", "RequestEquipDice", "RequestUpgrade", "RequestEnterTower" } do
+		-- O roll nunca aceita argumentos do cliente (raridade/luck/personagem)
+		expect(#Definitions.Requests.RequestRoll.args).toBe(0)
+		-- Secreto nunca pode entrar no auto-sell
+		expect(table.find(Definitions.Requests.SetAutoSell.args[1].enum, "Secret")).toBeNil()
+		for _, name in {
+			"RequestRoll", "EquipCharacter", "UnequipCharacter", "SellCharacter", "SellBatch", "BuyDice",
+			"EquipDice", "BuyUpgrade", "CollectMoney", "SetAutoSell", "UpgradeCharacter", "ClaimOfflineReward",
+			"ClaimDaily", "RequestEnterTower",
+		} do
 			expect(Definitions.Requests[name] ~= nil).toBeTruthy()
 		end
 	end)

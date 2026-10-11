@@ -7,7 +7,7 @@ local DataConfig = {
 	StoreName = "RollLegends_PlayerData_v1",
 	KeyPrefix = "Player_",
 
-	SchemaVersion = 1,
+	SchemaVersion = 2,
 
 	-- Salvamento automático (segundos entre cada rodada)
 	AutosaveInterval = 120,
@@ -32,7 +32,7 @@ local DataConfig = {
 -- Formato inicial do perfil. Tabelas vazias são "mapas dinâmicos": o conteúdo não é
 -- comparado com o modelo, só o tipo.
 DataConfig.Template = {
-	Version = 1,
+	Version = 2,
 
 	Money = 0,
 	Gems = 0,
@@ -42,18 +42,56 @@ DataConfig.Template = {
 	Rebirths = 0,
 
 	EquippedDice = "Normal",
+	-- Dados comprados ({ [diceId] = true })
+	OwnedDice = { Normal = true },
 
+	-- Inventário: { [uid] = { Id, Level, Variant, Locked, Favorite, ObtainedAt } } (ver DATA_SCHEMA.md)
 	Inventory = {},
+	-- Próximo número de uid ("c1", "c2", ...). Nunca diminui.
+	NextUid = 1,
+	-- { [tostring(slotId)] = uid }
 	EquippedCharacters = {},
+	-- Personagens já descobertos: { [characterId] = { Count, FirstAt } }
 	Index = {},
-	Upgrades = {},
+	-- Marcos do Index já recebidos: { [tostring(percentual)] = true }
+	IndexRewards = {},
+	Upgrades = { Luck = 0, Income = 0, RollSpeed = 0, Inventory = 0 },
 	TowerProgress = {},
-	Pity = {},
+	-- Contadores de pity (rolls seguidos sem a raridade)
+	Pity = { Legendary = 0, Mythic = 0 },
+
+	-- Renda acumulada no coletor da base, ainda não coletada
+	UncollectedMoney = 0,
+	-- Renda/s da base no último momento conhecido (base do dinheiro offline)
+	LastKnownIncomePerSecond = 0,
+	-- Dinheiro offline calculado na entrada e ainda não resgatado
+	PendingOfflineReward = 0,
+
+	-- Recompensas diárias (ver DailyConfig)
+	LastDailyClaim = 0,
+	DailyStreak = 0,
+	DailyCycleDay = 0,
+
+	-- Boosts temporários: { Luck = { Multiplier, ExpiresAt } }
+	Boosts = {},
+	-- Quantas vezes cada raridade alta já saiu (libera PULAR na cinemática)
+	RevealViews = {},
 
 	Settings = {
 		AutoRoll = false,
 		HideRollAnimation = false,
-		AutoSell = {},
+		CameraShake = true,
+		ReducedEffects = false,
+		-- Venda automática por raridade (Secret é sempre protegido, ver RollConfig)
+		AutoSell = {
+			Common = false,
+			Uncommon = false,
+			Rare = false,
+			Epic = false,
+			Legendary = false,
+			Mythic = false,
+			Divine = false,
+		},
 	},
 
 	Daily = {},
@@ -70,6 +108,6 @@ DataConfig.Template = {
 DataConfig.PrivateKeys = { "ProcessedReceipts" }
 
 -- Configurações que o cliente pode alterar (sempre booleanas)
-DataConfig.ClientSettings = { "AutoRoll", "HideRollAnimation" }
+DataConfig.ClientSettings = { "AutoRoll", "HideRollAnimation", "CameraShake", "ReducedEffects" }
 
 return DataConfig

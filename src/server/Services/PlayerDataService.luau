@@ -152,6 +152,31 @@ function PlayerDataService.SaveNow(player: Player): boolean
 	return ok
 end
 
+-- Agenda um salvamento em até SAVE_SOON_DELAY segundos (vários pedidos viram um só).
+-- Usado depois de eventos importantes (drop raro, compra, recompensa) sem gravar a cada roll.
+local SAVE_SOON_DELAY = 8
+local saveSoon: { [Player]: boolean } = {}
+function PlayerDataService.SaveSoon(player: Player)
+	if saveSoon[player] or not entries[player] then
+		return
+	end
+	saveSoon[player] = true
+	task.delay(SAVE_SOON_DELAY, function()
+		saveSoon[player] = nil
+		if entries[player] then
+			PlayerDataService.SaveNow(player)
+		end
+	end)
+end
+
+-- Avisa o cliente que uma chave mudou (para quem altera a tabela direto, sem Set)
+function PlayerDataService.Replicate(player: Player, key: string)
+	local data = PlayerDataService.GetData(player)
+	if data and not table.find(DataConfig.PrivateKeys, key) then
+		Net.fire("DataChanged", player, key, TableUtil.deepCopy(data[key]))
+	end
+end
+
 ------------------------------------------------------------------------------------
 -- Ciclo de vida
 

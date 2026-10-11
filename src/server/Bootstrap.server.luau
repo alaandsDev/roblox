@@ -16,6 +16,16 @@ local ORDER = {
 	"MonetizationService",
 	"MapService",
 	"BaseService",
+	"AnalyticsService",
+	"EconomyService",
+	"InventoryService",
+	"IndexService",
+	"SellService",
+	"RollService",
+	"DiceService",
+	"UpgradeService",
+	"StationService",
+	"DailyService",
 	"DevService", -- só ativo no Studio
 }
 
