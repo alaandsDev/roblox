@@ -151,24 +151,26 @@ function BaseService.AssignBase(player: Player): number?
 	-- Todo nascimento/respawn do jogador passa a ser no PlayerSpawn desta base
 	player.RespawnLocation = BaseBuilder.spawnLocation(base) :: any
 
-	local thumbnail: string? = nil
-	local ok, result = pcall(
-		Players.GetUserThumbnailAsync,
-		Players,
-		player.UserId,
-		Enum.ThumbnailType.HeadShot,
-		Enum.ThumbnailSize.Size150x150
-	)
-	if ok then
-		thumbnail = result
-	end
-	-- O jogador pode ter saído enquanto a foto carregava
-	if allocator:baseOfUser(player.UserId) ~= baseId then
-		return nil
-	end
-	BaseBuilder.setOwner(base, { displayName = player.DisplayName, userName = player.Name, thumbnail = thumbnail })
+	-- Placa e progressão na hora; a foto do avatar (pode levar ~2 s) chega depois,
+	-- para não atrasar o nascimento do jogador
+	local owner: BaseBuilder.OwnerInfo = { displayName = player.DisplayName, userName = player.Name }
+	BaseBuilder.setOwner(base, owner)
 	BaseService.RefreshBase(player, true)
 	log:info(`{player.Name} recebeu a {base.Name}`)
+	task.spawn(function()
+		local ok, thumbnail = pcall(
+			Players.GetUserThumbnailAsync,
+			Players,
+			player.UserId,
+			Enum.ThumbnailType.HeadShot,
+			Enum.ThumbnailSize.Size150x150
+		)
+		-- Só atualiza se a base ainda for dele (pode ter saído enquanto a foto carregava)
+		if ok and allocator:baseOfUser(player.UserId) == baseId then
+			owner.thumbnail = thumbnail
+			BaseBuilder.setOwner(base, owner)
+		end
+	end)
 	-- Carrega o personagem (ou leva para casa, se ele já nasceu no Hub)
 	coordinator:baseAssigned(player, baseId)
 	return baseId
