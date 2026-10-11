@@ -67,12 +67,14 @@ export type Profile = {
 	-- renasce quando o dinheiro passa de custo * margem (nil = nunca)
 	rebirthMargin: number?,
 	towers: boolean?,
+	-- junta dinheiro (para de gastar) quando o renascimento custa até X segundos de renda
+	saveForRebirthSeconds: number?,
 }
 
 EconomySim.Profiles = {
-	Casual = { name = "Casual", manualInterval = 2.5, collectEvery = 120, thinkEvery = 60, levelSpend = 0.3, rebirthMargin = 2, towers = true } :: Profile,
-	Ativo = { name = "Ativo", collectEvery = 30, thinkEvery = 15, levelSpend = 0.5, rebirthMargin = 1.2, towers = true } :: Profile,
-	Hardcore = { name = "Hardcore", collectEvery = 5, thinkEvery = 3, levelSpend = 0.6, autoSellAfterRolls = 300, rebirthMargin = 1, towers = true } :: Profile,
+	Casual = { name = "Casual", manualInterval = 2.5, collectEvery = 120, thinkEvery = 60, levelSpend = 0.3, rebirthMargin = 1, towers = true, saveForRebirthSeconds = 1200 } :: Profile,
+	Ativo = { name = "Ativo", collectEvery = 30, thinkEvery = 15, levelSpend = 0.5, rebirthMargin = 1, towers = true, saveForRebirthSeconds = 1800 } :: Profile,
+	Hardcore = { name = "Hardcore", collectEvery = 5, thinkEvery = 3, levelSpend = 0.6, autoSellAfterRolls = 300, rebirthMargin = 1, towers = true, saveForRebirthSeconds = 2400 } :: Profile,
 }
 
 export type Snapshot = {
@@ -89,6 +91,9 @@ export type Snapshot = {
 	discovered: number,
 	rebirths: number,
 	towerFloors: number,
+	nextRebirthCost: number,
+	rebirthTimes: { number },
+	cooldown: number,
 }
 
 local function newData(): any
@@ -266,6 +271,7 @@ function EconomySim.run(profile: Profile, seconds: number, seed: number, checkpo
 	local earned = 0
 	local nextCheckpoint = 1
 	local bestTier, bestId = 0, ""
+	local rebirthTimes = {}
 	for t = 1, seconds do
 		-- Rolls
 		local interval = profile.manualInterval or (formulas:rollCooldown(data) + RollConfig.AutoRollExtraDelay)
@@ -308,19 +314,25 @@ function EconomySim.run(profile: Profile, seconds: number, seed: number, checkpo
 		end
 		-- Decisões
 		if t % profile.thinkEvery == 0 then
-			tryRebirth(data, profile.rebirthMargin)
+			if tryRebirth(data, profile.rebirthMargin) then
+				table.insert(rebirthTimes, t)
+			end
 			InventoryCore.equipBest(data, unlockedFor(data.Rebirths), CharacterConfig.ById)
 			if profile.towers and t % 60 == 0 then
 				earned += climbTowers(data, rand)
 			end
+			local cost = formulas:rebirthCost(data.Rebirths)
+			local saving = profile.saveForRebirthSeconds ~= nil and cost ~= nil and cost <= formulas:incomePerSecond(data) * (profile.saveForRebirthSeconds :: number)
 			while tryBuyDice(data) do
 			end
-			for _ = 1, 20 do
-				if not tryBuyUpgrade(data) then
-					break
+			if not saving then
+				for _ = 1, 20 do
+					if not tryBuyUpgrade(data) then
+						break
+					end
 				end
+				levelStations(data, data.Money * profile.levelSpend)
 			end
-			levelStations(data, data.Money * profile.levelSpend)
 		end
 		if nextCheckpoint <= #checkpoints and t == checkpoints[nextCheckpoint] then
 			nextCheckpoint += 1
@@ -346,6 +358,9 @@ function EconomySim.run(profile: Profile, seconds: number, seed: number, checkpo
 				best = bestId,
 				discovered = discovered,
 				rebirths = data.Rebirths,
+				nextRebirthCost = formulas:rebirthCost(data.Rebirths) or math.huge,
+				rebirthTimes = table.clone(rebirthTimes),
+				cooldown = formulas:rollCooldown(data),
 				towerFloors = (data.TowerProgress.Ember or 0) + (data.TowerProgress.Storm or 0) + (data.TowerProgress.Void or 0),
 			})
 		end
@@ -353,9 +368,13 @@ function EconomySim.run(profile: Profile, seconds: number, seed: number, checkpo
 	return snapshots
 end
 
--- Dinheiro offline (8 h) para uma renda/s
-function EconomySim.offline(income: number, seconds: number?): number
-	return math.floor(income * math.min(seconds or OfflineIncomeConfig.MaxSeconds, OfflineIncomeConfig.MaxSeconds) * OfflineIncomeConfig.Multiplier)
+-- Dinheiro offline (8 h) para uma renda/s (com o teto do próximo renascimento, se informado)
+function EconomySim.offline(income: number, seconds: number?, nextRebirthCost: number?): number
+	local amount = math.floor(income * math.min(seconds or OfflineIncomeConfig.MaxSeconds, OfflineIncomeConfig.MaxSeconds) * OfflineIncomeConfig.Multiplier)
+	if nextRebirthCost and OfflineIncomeConfig.MaxRebirthFraction and nextRebirthCost < math.huge then
+		amount = math.min(amount, math.floor(nextRebirthCost * OfflineIncomeConfig.MaxRebirthFraction))
+	end
+	return amount
 end
 
 return EconomySim

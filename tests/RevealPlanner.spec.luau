@@ -92,11 +92,11 @@ describe("Reveal: qual apresentação tocar", function()
 	end)
 
 	it("odds exibidas batem com a config (chance base por personagem)", function()
-		-- Lendário: 2% dividido por 3 personagens = 1 em 150
-		expect(planner:odds("dragon_knight")).toBe(150)
-		-- Secreto: 0,05% e 1 personagem = 1 em 2000
-		expect(planner:odds("eclipse_sovereign")).toBe(2000)
-		expect(planner:rarityOdds("Mythic")).toBe(133)
+		-- Lendário: 1,3% dividido por 3 personagens = 1 em ~231
+		expect(planner:odds("dragon_knight")).toBe(231)
+		-- Secreto: 0,0005% e 1 personagem = 1 em 200.000
+		expect(planner:odds("eclipse_sovereign")).toBe(200000)
+		expect(planner:rarityOdds("Mythic")).toBe(1667)
 		expect(planner:odds("nao_existe")).toBe(0)
 	end)
 

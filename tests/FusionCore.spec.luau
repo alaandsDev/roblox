@@ -67,6 +67,28 @@ describe("Fusão", function()
 		expect(e).toBe("fusion_max")
 	end)
 
+	it("Diamante -> Esmeralda precisa de 2; e 3 nessa etapa é recusado", function()
+		local d = fresh()
+		local a = InventoryCore.add(d, "void_emperor", 0, "Diamond")
+		local b = InventoryCore.add(d, "void_emperor", 0, "Diamond")
+		local c = InventoryCore.add(d, "void_emperor", 0, "Diamond")
+		local plan = FusionCore.plan(d, { a, b }, configs)
+		expect(plan ~= nil and plan.toVariant == "Emerald").toBeTruthy()
+		local _, err = FusionCore.plan(d, { a, b, c }, configs)
+		expect(err).toBe("fusion_count")
+	end)
+
+	it("matemática: cópias Normais acumuladas para cada variante (Celestial = 216)", function()
+		local total = 1
+		local expected = { Silver = 3, Gold = 9, Diamond = 27, Emerald = 54, Void = 108, Celestial = 216 }
+		for _, v in configs.Variants.List do
+			if v.Id ~= "Normal" then
+				total *= FusionCore.required(configs, v.Id)
+				expect(total).toBe(expected[v.Id])
+			end
+		end
+	end)
+
 	it("grupos prontos para fundir", function()
 		local d = fresh()
 		for _ = 1, 4 do

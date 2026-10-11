@@ -117,8 +117,9 @@ local function doRoll(player: Player, options: RollOptions?): RollResult
 	local luck = Formulas:luck(data, os.time())
 	local rolled
 	if opts.minRarity then
-		-- Prêmio (Jackpot): sorteia só entre MinRarity ou melhor; não mexe no pity
-		local rarity = core:pickRarity(luck, RollService._rand, core:tierOf(opts.minRarity))
+		-- Prêmio (Jackpot): mesmo piso do pity — sorteio natural, abaixo do piso vira EXATAMENTE
+		-- MinRarity (nunca aumenta Divino/Secreto); não mexe no pity
+		local rarity = core:pickWithFloor(luck, RollService._rand, opts.minRarity)
 		rolled = { rarity = rarity, characterId = core:pickCharacter(rarity, RollService._rand), pity = data.Pity, pityTriggered = nil }
 	else
 		rolled = core:roll(luck, data.Pity, RollService._rand)

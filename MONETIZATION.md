@@ -7,7 +7,7 @@ a compra é recusada com o aviso "Este item ainda não está à venda" (nada que
 
 1. Publique o jogo. Em *Creator Hub > Monetização*:
    - **Passes**: crie VIP, Sorte x2, Mochila Gigante, Roll Rápido.
-   - **Produtos de desenvolvedor**: Pacote de Dinheiro, Cofre de Dinheiro, Super Sorte 3x,
+   - **Produtos de desenvolvedor**: Pacote de Dinheiro, Cofre de Dinheiro, Super Sorte 2x,
      Giro do Jackpot, 500 Gemas.
 2. Copie cada ID para o campo `Id` correspondente e confira se `PriceRobux` é igual ao preço
    definido lá (o valor só é usado para MOSTRAR na loja).
@@ -23,13 +23,21 @@ a compra é recusada com o aviso "Este item ainda não está à venda" (nada que
 | FastRoll | Gamepass | Cooldown do roll x0.85 (o mínimo seguro continua valendo) |
 | MoneySmall | Produto | max($10K, 15 min de renda) |
 | MoneyLarge | Produto | max($150K, 2 h de renda) |
-| LuckBoost | Produto | Sorte 3x por 30 min (soma tempo se repetido) |
+| LuckBoost | Produto | Sorte 2x por 30 min (soma tempo se repetido; auditoria: era 3x) |
 | JackpotSpin | Produto | 1 giro do Jackpot |
 | Gems500 | Produto | 500 gemas |
 
 Gamepasses viram multiplicadores de sessão em `data.Runtime` (BoostService), recalculados a
 cada entrada (o valor salvo nunca é confiado). O **Impulso de Amigos** (+5% de renda por amigo
 no mesmo servidor, até +25%) também entra aí.
+
+## Limite de pay-to-win (auditoria)
+
+Com a Luck saturando (ver RNG.md), pagar **não multiplica Secretos**: jogador F2P no máximo
+(cenário F) ≈ **0,36 Secreto/h**; o mesmo jogador com VIP + Sorte x2 + Roll Rápido + Super
+Sorte 2x (cenário G) ≈ **0,40 Secreto/h** (+11%). Os passes valem pela velocidade no começo
+(Luck 1→2 quase dobra as chances) e pela renda, não por Secretos infinitos.
+`tests/Odds.spec.luau` falha se G passar de 1,25× F ou de 1 Secreto/h.
 
 ## Gemas
 

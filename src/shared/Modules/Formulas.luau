@@ -49,8 +49,12 @@ function Formulas:rebirthMultiplier(data: any, kind: string): number
 	end
 	local rebirths = if type(data.Rebirths) == "number" then data.Rebirths else 0
 	local perRebirth = if kind == "Luck" then rebirth.LuckPerRebirth elseif kind == "Income" then rebirth.IncomePerRebirth else rebirth.PowerPerRebirth
+	local fromRebirths = rebirths * perRebirth
+	if kind == "Luck" and rebirth.LuckRebirthCap then
+		fromRebirths = math.min(fromRebirths, rebirth.LuckRebirthCap)
+	end
 	local perk = rebirth.PerksById[kind]
-	return 1 + rebirths * perRebirth + (if perk then perkLevel(data, kind) * perk.PerLevel else 0)
+	return 1 + fromRebirths + (if perk then perkLevel(data, kind) * perk.PerLevel else 0)
 end
 
 -- Multiplicadores de sessão (gamepasses, impulso de amigos) postos pelo servidor em data.Runtime
@@ -76,6 +80,16 @@ function Formulas:luck(data: any, now: number?): number
 	local upgrade = self.c.Upgrades.ById.Luck
 	local base = self:diceLuck(data.EquippedDice) * (1 + level(data, "Luck") * upgrade.PerLevel)
 	return math.max(1, base * self:luckBoost(data, now) * self:rebirthMultiplier(data, "Luck") * self:runtime(data, "Luck"))
+end
+
+-- Luck que realmente entra nos pesos (retornos decrescentes; MESMA fórmula do RollCore)
+function Formulas:effectiveLuck(data: any, now: number?): number
+	local l = self:luck(data, now)
+	local cap = self.c.Roll.LuckSoftCap
+	if cap and cap > 0 then
+		return 1 + (l - 1) / (1 + (l - 1) / cap)
+	end
+	return l
 end
 
 function Formulas:rollCooldown(data: any): number

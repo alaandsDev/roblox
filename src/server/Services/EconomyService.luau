@@ -225,6 +225,15 @@ end
 ------------------------------------------------------------------------------------
 -- Dinheiro offline
 
+-- Teto do offline pelo próximo renascimento (sem renascimento restante: sem teto extra)
+function EconomyService.OfflineRebirthCap(data: any): number
+	local cost = Formulas:rebirthCost(data.Rebirths or 0)
+	if not cost or not OfflineIncomeConfig.MaxRebirthFraction then
+		return math.huge
+	end
+	return math.floor(cost * OfflineIncomeConfig.MaxRebirthFraction)
+end
+
 function EconomyService.CheckOffline(player: Player)
 	if offlineChecked[player] then
 		return
@@ -243,7 +252,9 @@ function EconomyService.CheckOffline(player: Player)
 		local pending = if finite(data.PendingOfflineReward) and data.PendingOfflineReward > 0 then data.PendingOfflineReward else 0
 		-- Pendente não resgatado de sessões anteriores soma, mas nunca passa do teto de uma sessão
 		local cap = math.floor(data.LastKnownIncomePerSecond * OfflineIncomeConfig.MaxSeconds * OfflineIncomeConfig.Multiplier)
-		PlayerDataService.Set(player, "PendingOfflineReward", math.min(pending + amount, math.max(cap, amount)))
+		local total = math.min(pending + amount, math.max(cap, amount))
+		total = math.min(total, EconomyService.OfflineRebirthCap(data))
+		PlayerDataService.Set(player, "PendingOfflineReward", total)
 		log:info(`{player.Name}: dinheiro offline {amount} ({math.floor(seconds)} s)`)
 	elseif reason == "future" or reason == "invalid" then
 		log:warn(`{player.Name}: LastLogout inválido ({reason}); sem dinheiro offline`)

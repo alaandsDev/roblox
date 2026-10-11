@@ -21,8 +21,8 @@ export type Tower = {
 }
 
 local list: { Tower } = {
-	{ Id = "Ember", Order = 1, Floors = 30, BasePower = 100, Growth = 1.229, Theme = { 255, 120, 50 }, Unlock = {}, CompletionGems = 100 },
-	{ Id = "Storm", Order = 2, Floors = 40, BasePower = 50000, Growth = 1.146, Theme = { 90, 140, 255 }, Unlock = { Tower = "Ember" }, CompletionGems = 250 },
+	{ Id = "Ember", Order = 1, Floors = 30, BasePower = 150, Growth = 1.26, Theme = { 255, 120, 50 }, Unlock = {}, CompletionGems = 100 },
+	{ Id = "Storm", Order = 2, Floors = 40, BasePower = 120000, Growth = 1.12, Theme = { 90, 140, 255 }, Unlock = { Tower = "Ember" }, CompletionGems = 250 },
 	{ Id = "Void", Order = 3, Floors = 50, BasePower = 10000000, Growth = 1.068, Theme = { 150, 70, 255 }, Unlock = { Tower = "Storm" }, CompletionGems = 600 },
 }
 
@@ -37,7 +37,9 @@ return {
 	TeamSize = 5,
 	MaxEnemies = 5,
 	BossEvery = 10,
-	BossMultiplier = 1.25,
+	-- Chefe = 1 inimigo com o poder do andar * BossMultiplier. Como ele concentra o ataque
+	-- (derruba uma carta por golpe), < 1 deixa a luta parecida com a de 5 inimigos (auditoria)
+	BossMultiplier = 0.7,
 	-- Cartas: vida = poder * HpPerPower; ataque = poder * AtkPerPower
 	HpPerPower = 5,
 	AtkPerPower = 1,

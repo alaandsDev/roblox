@@ -23,8 +23,13 @@ function FusionCore.nextVariant(variants: any, id: string): string?
 	return nil
 end
 
+-- Quantas unidades a fusão para `variant` (variante de DESTINO) precisa
+function FusionCore.required(configs: any, targetVariant: string): number
+	return configs.Fusion.RequiredByTarget[targetVariant] or configs.Fusion.MaxRequired
+end
+
 function FusionCore.plan(data: any, uids: { string }, configs: any): (Plan?, string?)
-	if #uids ~= configs.Fusion.Required then
+	if #uids < 2 or #uids > configs.Fusion.MaxRequired then
 		return nil, "fusion_count"
 	end
 	local seen = {}
@@ -53,6 +58,9 @@ function FusionCore.plan(data: any, uids: { string }, configs: any): (Plan?, str
 	if not toVariant then
 		return nil, "fusion_max"
 	end
+	if #uids ~= FusionCore.required(configs, toVariant) then
+		return nil, "fusion_count"
+	end
 	local character = configs.Characters.ById[first.Id]
 	local cost = math.floor(character.BaseIncome * configs.Fusion.CostSeconds * configs.Variants.ById[toVariant].Order)
 	return { characterId = first.Id, fromVariant = fromVariant, toVariant = toVariant, level = level, cost = cost }, nil
@@ -70,12 +78,12 @@ function FusionCore.groups(data: any, configs: any): { any }
 	end
 	local out = {}
 	for key, list in buckets do
-		if #list >= configs.Fusion.Required then
+		local id, variant = string.match(key, "^(.-)|(.*)$")
+		local target = FusionCore.nextVariant(configs.Variants, variant :: string)
+		local need = if target then FusionCore.required(configs, target) else math.huge
+		if #list >= need then
 			table.sort(list)
-			local id, variant = string.match(key, "^(.-)|(.*)$")
-			if FusionCore.nextVariant(configs.Variants, variant :: string) then
-				table.insert(out, { characterId = id, variant = variant, uids = table.move(list, 1, configs.Fusion.Required, 1, {}), count = #list })
-			end
+			table.insert(out, { characterId = id, variant = variant, uids = table.move(list, 1, need, 1, {}), count = #list })
 		end
 	end
 	table.sort(out, function(a, b)

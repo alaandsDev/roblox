@@ -24,7 +24,7 @@ local MonetizationConfig = {
 	Products = {
 		MoneySmall = { Id = 0, Name = "Pacote de Dinheiro", PriceRobux = 49, Order = 1, Icon = "💵" },
 		MoneyLarge = { Id = 0, Name = "Cofre de Dinheiro", PriceRobux = 199, Order = 2, Icon = "💰" },
-		LuckBoost = { Id = 0, Name = "Super Sorte 3x (30 min)", PriceRobux = 79, Order = 3, Icon = "🌟" },
+		LuckBoost = { Id = 0, Name = "Super Sorte 2x (30 min)", PriceRobux = 79, Order = 3, Icon = "🌟" },
 		JackpotSpin = { Id = 0, Name = "Giro do Jackpot", PriceRobux = 45, Order = 4, Icon = "🎰" },
 		Gems500 = { Id = 0, Name = "500 Gemas", PriceRobux = 99, Order = 5, Icon = "💎" },
 	} :: { [string]: Item },
@@ -34,7 +34,8 @@ local MonetizationConfig = {
 		MoneySmall = { Seconds = 15 * 60, Min = 10_000 },
 		MoneyLarge = { Seconds = 2 * 60 * 60, Min = 150_000 },
 	} :: { [string]: { Seconds: number, Min: number } }),
-	LuckBoostProduct = { Multiplier = 3, Duration = 30 * 60 },
+	-- Boosts temporários nunca passam de 2x (mesmo teto do Diário e da loja de gemas)
+	LuckBoostProduct = { Multiplier = 2, Duration = 30 * 60 },
 	GemsProduct = ({ Gems500 = 500 } :: { [string]: number }),
 }
 

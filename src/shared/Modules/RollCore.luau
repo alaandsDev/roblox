@@ -7,9 +7,11 @@
 	    core:chances(luck)                 --> { [rarityId] = probabilidade 0..1 }
 	    core:roll(luck, pity, rand)        --> { rarity, characterId, pity (novo), pityTriggered }
 
-	Fórmula da Luck (ver RNG.md):  pesoEfetivo(r) = Weight(r) * luck ^ LuckExponent(r)
-	Pity: se algum contador atingiu o limite, o sorteio é restrito às raridades >= MinRarity
-	(mantendo as proporções entre elas).
+	Fórmula da Luck (ver RNG.md):
+	    LuckEfetiva    = 1 + (luck - 1) / (1 + (luck - 1) / LuckSoftCap)   (retornos decrescentes)
+	    pesoEfetivo(r) = Weight(r) * LuckEfetiva ^ LuckExponent(r)
+	Pity: se algum contador atingiu o limite, o roll é sorteado normalmente; se ficou abaixo de
+	MinRarity, vira EXATAMENTE MinRarity (o pity nunca aumenta as chances acima do piso).
 ]]
 
 local RollCore = {}
@@ -42,9 +44,19 @@ function RollCore:tierOf(rarityId: string): number
 	return self.rarities.ById[rarityId].Tier
 end
 
+-- Luck usada nos pesos (com retornos decrescentes, ver RNG.md)
+function RollCore:effectiveLuck(luck: number): number
+	local l = math.max(1, luck)
+	local cap = self.rollConfig.LuckSoftCap
+	if cap and cap > 0 then
+		return 1 + (l - 1) / (1 + (l - 1) / cap)
+	end
+	return l
+end
+
 -- Pesos efetivos para uma Luck (Luck < 1 é tratada como 1)
 function RollCore:weights(luck: number, minTier: number?): { [string]: number }
-	local l = math.max(1, luck)
+	local l = self:effectiveLuck(luck)
 	local weights = {}
 	for _, rarity in self.rarities.List do
 		if (not minTier or rarity.Tier >= minTier) and self.charactersByRarity[rarity.Id] then
@@ -124,14 +136,34 @@ function RollCore:nextPity(pity: { [string]: number }, rarity: string): { [strin
 	return updated
 end
 
+-- Sorteio com piso: sorteia normalmente; se ficou abaixo do piso, vira EXATAMENTE o piso.
+-- (Não restringe o sorteio às raridades altas: o piso nunca aumenta as chances acima dele.)
+function RollCore:pickWithFloor(luck: number, rand: () -> number, floorRarity: string?): string
+	local rarity = self:pickRarity(luck, rand)
+	if floorRarity and self:tierOf(rarity) < self:tierOf(floorRarity) then
+		return floorRarity
+	end
+	return rarity
+end
+
 function RollCore:roll(luck: number, pity: { [string]: number }, rand: () -> number): RollResult
-	local pityId, minTier = self:pityFor(pity)
-	local rarity = self:pickRarity(luck, rand, minTier)
+	local pityId = self:pityFor(pity)
+	local floorRarity = nil
+	if pityId then
+		for _, rule in self.rollConfig.Pity do
+			if rule.Id == pityId then
+				floorRarity = rule.MinRarity
+			end
+		end
+	end
+	local rarity = self:pickWithFloor(luck, rand, floorRarity)
+	local naturalPity = floorRarity ~= nil and self:tierOf(rarity) > self:tierOf(floorRarity :: string)
 	return {
 		rarity = rarity,
 		characterId = self:pickCharacter(rarity, rand),
 		pity = self:nextPity(pity, rarity),
-		pityTriggered = pityId,
+		-- só conta como "pity" quando o piso foi realmente usado
+		pityTriggered = if naturalPity then nil else pityId,
 	}
 end
 

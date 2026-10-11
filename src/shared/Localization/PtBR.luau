@@ -298,12 +298,12 @@ return {
 
 	-- Fusão
 	["fusion.title"] = "FUSÃO",
-	["fusion.hint"] = "Junte {count} personagens iguais (mesma variante) para criar uma variante mais forte.",
+	["fusion.hint"] = "Junte personagens iguais (mesma variante): 3 até Diamante, 2 de Esmeralda em diante.",
 	["fusion.have"] = "Você tem {count}",
 	["fusion.button"] = "FUNDIR",
-	["fusion.empty"] = "Nenhum personagem com 3 cópias livres (não travadas, favoritas ou na base).",
+	["fusion.empty"] = "Nenhum personagem com cópias livres suficientes (não travadas, favoritas, na base ou em troca).",
 	["fusion.done"] = "{name} virou {variant}!",
-	["error.fusion_count"] = "Escolha exatamente 3 personagens diferentes.",
+	["error.fusion_count"] = "Quantidade errada para essa fusão.",
 	["error.fusion_mismatch"] = "Os 3 precisam ser iguais (mesma variante).",
 	["error.fusion_max"] = "Essa já é a variante máxima.",
 
@@ -379,7 +379,7 @@ return {
 	["store.pass.FastRoll"] = "Rolls 15% mais rápidos",
 	["store.product.MoneySmall"] = "15 min da sua renda (mín. $10K)",
 	["store.product.MoneyLarge"] = "2 h da sua renda (mín. $150K)",
-	["store.product.LuckBoost"] = "Sorte 3x por 30 minutos",
+	["store.product.LuckBoost"] = "Sorte 2x por 30 minutos",
 	["store.product.JackpotSpin"] = "1 giro do Jackpot",
 	["store.product.Gems500"] = "500 gemas",
 	["store.gem.JackpotSpin"] = "Giro do Jackpot",

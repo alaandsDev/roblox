@@ -61,7 +61,9 @@ function FusionController.Groups(data: any): { any }
 	end
 	local out = {}
 	for _, group in buckets do
-		if #group.uids >= FusionConfig.Required and nextVariant(group.variant) then
+		local target = nextVariant(group.variant)
+		if target and #group.uids >= (FusionConfig.RequiredByTarget[target.Id] or FusionConfig.MaxRequired) then
+			group.need = FusionConfig.RequiredByTarget[target.Id] or FusionConfig.MaxRequired
 			table.sort(group.uids)
 			table.insert(out, group)
 		end
@@ -93,7 +95,7 @@ function FusionController.Refresh()
 		UIKit.stroke(row, 3, Color3.fromRGB(target.Color[1], target.Color[2], target.Color[3]), true)
 		UIKit.text(row, { text = character.VisualTheme.Icon, size = UDim2.fromOffset(60, 60), position = UDim2.fromOffset(10, 10), stroke = 0 })
 		UIKit.text(row, {
-			text = string.format("%dx %s (%s) → %s", FusionConfig.Required, character.Name, Localization.t("variant." .. group.variant), Localization.t("variant." .. target.Id)),
+			text = string.format("%dx %s (%s) → %s", group.need, character.Name, Localization.t("variant." .. group.variant), Localization.t("variant." .. target.Id)),
 			size = UDim2.new(0.55, 0, 0, 30),
 			position = UDim2.fromOffset(80, 8),
 			align = Enum.TextXAlignment.Left,
@@ -107,7 +109,7 @@ function FusionController.Refresh()
 			position = UDim2.new(1, -10, 0.5, 0),
 			anchor = Vector2.new(1, 0.5),
 			onClick = function()
-				local uids = table.move(group.uids, 1, FusionConfig.Required, 1, {})
+				local uids = table.move(group.uids, 1, group.need, 1, {})
 				local result = Net.request("Fuse", uids)
 				if result.ok then
 					UIKit.sound("RevealStinger")
@@ -122,7 +124,7 @@ end
 
 function FusionController.Init()
 	window = UIKit.window({ name = "Fusion", title = Localization.t("fusion.title"), icon = "✨", header = Color3.fromRGB(170, 80, 255) })
-	UIKit.text(window.content, { text = Localization.t("fusion.hint", { count = FusionConfig.Required }), size = UDim2.new(1, -24, 0, 26), position = UDim2.fromOffset(12, 8), color = Theme.Colors.TextMuted })
+	UIKit.text(window.content, { text = Localization.t("fusion.hint"), size = UDim2.new(1, -24, 0, 26), position = UDim2.fromOffset(12, 8), color = Theme.Colors.TextMuted })
 	list = UIKit.new("ScrollingFrame", {
 		BackgroundTransparency = 1,
 		Size = UDim2.new(1, -16, 1, -48),

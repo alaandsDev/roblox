@@ -12,6 +12,9 @@ return {
 	Multiplier = 0.12,
 	-- Menos que isso fora do jogo não gera recompensa (evita popup a cada reconexão)
 	MinSeconds = 60,
+	-- Teto extra (auditoria): o dinheiro offline nunca passa desta fração do custo do PRÓXIMO
+	-- renascimento — voltar do offline não compra renascimentos de uma vez
+	MaxRebirthFraction = 0.5,
 	MinAmount = 1,
 	-- Folga para relógios de servidores diferentes
 	ClockSkewTolerance = 120,

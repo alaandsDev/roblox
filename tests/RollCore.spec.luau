@@ -13,24 +13,47 @@ local function near(a: number, b: number, tolerance: number): boolean
 end
 
 describe("RollCore: pesos e Luck", function()
-	it("pesos base somam 100.000 e batem com as % pedidas", function()
-		local expected = { Common = 55, Uncommon = 25, Rare = 12, Epic = 5, Legendary = 2, Mythic = 0.75, Divine = 0.2, Secret = 0.05 }
+	it("pesos base somam 10.000.000 e batem com a curva da auditoria (% com Luck 1)", function()
+		-- Auditoria pré-Studio: Secreto 1 em 200.000, Divino 1 em 20.000, Mítico 1 em ~1.667
+		local expected = { Common = 56.1345, Uncommon = 26, Rare = 12, Epic = 4.5, Legendary = 1.3, Mythic = 0.06, Divine = 0.005, Secret = 0.0005 }
 		local total = 0
 		for _, rarity in RarityConfig.List do
 			total += rarity.Weight
-			expect(rarity.Weight / 1000).toBe(expected[rarity.Id])
+			expect(math.abs(rarity.Weight / 100000 - expected[rarity.Id]) < 1e-9).toBeTruthy()
 		end
-		expect(total).toBe(100000)
+		expect(total).toBe(10000000)
+	end)
+
+	it("expoentes de Luck crescem com o tier (Comum = 0)", function()
+		local last = -1
+		for _, rarity in RarityConfig.List do
+			expect(rarity.LuckExponent > last).toBeTruthy()
+			last = rarity.LuckExponent
+		end
+		expect(RarityConfig.ById.Common.LuckExponent).toBe(0)
+	end)
+
+	it("retornos decrescentes: Luck efetiva cresce sempre, mas satura em 1 + LuckSoftCap", function()
+		local last = 0
+		for _, l in { 1, 1.5, 2, 4, 10, 30, 100, 1000 } do
+			local e = core:effectiveLuck(l)
+			expect(e > last).toBeTruthy()
+			expect(e <= 1 + RollConfig.LuckSoftCap).toBeTruthy()
+			last = e
+		end
+		expect(core:effectiveLuck(1)).toBe(1)
+		-- 1x -> 2x continua perceptível
+		expect(core:effectiveLuck(2) > 1.8).toBeTruthy()
 	end)
 
 	it("Luck 1: chances = pesos base", function()
 		local chances = core:chances(1)
-		expect(near(chances.Common, 0.55, 1e-9)).toBeTruthy()
-		expect(near(chances.Secret, 0.0005, 1e-9)).toBeTruthy()
+		expect(near(chances.Common, 0.5613450, 1e-9)).toBeTruthy()
+		expect(near(chances.Secret, 0.000005, 1e-12)).toBeTruthy()
 	end)
 
 	it("Luck < 1 é tratada como 1", function()
-		expect(near(core:chances(0.2).Common, 0.55, 1e-9)).toBeTruthy()
+		expect(near(core:chances(0.2).Common, 0.5613450, 1e-9)).toBeTruthy()
 	end)
 
 	it("mais Luck => toda raridade alta fica mais provável e a Comum menos", function()
@@ -70,7 +93,7 @@ describe("RollCore: pesos e Luck", function()
 			return 0
 		end)).toBe("Common")
 		expect(core:pickRarity(1, function()
-			return 0.99999
+			return 1 - 1e-7
 		end)).toBe("Secret")
 	end)
 
@@ -97,7 +120,7 @@ describe("RollCore: pity", function()
 	end)
 
 	it("pity Mítico vence o Lendário quando os dois disparam", function()
-		local result = core:roll(1, { Legendary = 60, Mythic = 249 }, function()
+		local result = core:roll(1, { Legendary = 60, Mythic = RollConfig.Pity[2].Threshold - 1 }, function()
 			return 0
 		end)
 		expect(result.pityTriggered).toBe("Mythic")

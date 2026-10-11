@@ -42,6 +42,19 @@ describe("Economia (simulação com as configs reais)", function()
 		expect(hardcore[1].rebirths).toBe(0)
 	end)
 
+	it("renascimento: o 1º do perfil Ativo vem entre 1 h e 3 h", function()
+		local run = EconomySim.run(EconomySim.Profiles.Ativo, 3 * 3600, 11, { 3 * 3600 })
+		local first = run[1].rebirthTimes[1]
+		expect(first ~= nil and first >= 3600 and first <= 3 * 3600).toBeTruthy()
+	end)
+
+	it("offline nunca paga mais que metade do próximo renascimento (não compra renascimentos de uma vez)", function()
+		local OfflineIncomeConfig = require("../src/shared/Config/OfflineIncomeConfig")
+		for _, s in { ativo[2], ativo[3], hardcore[2], hardcore[3] } do
+			expect(EconomySim.offline(s.income, nil, s.nextRebirthCost) <= s.nextRebirthCost * OfflineIncomeConfig.MaxRebirthFraction).toBeTruthy()
+		end
+	end)
+
 	it("8 h offline <= 1 h de renda passiva jogando ativo (no mesmo ponto do jogo)", function()
 		for _, s in { ativo[2], ativo[3], hardcore[2] } do
 			expect(EconomySim.offline(s.income) <= s.income * 3600).toBeTruthy()
