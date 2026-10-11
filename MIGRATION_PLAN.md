@@ -1,9 +1,70 @@
-# MIGRATION_PLAN — Simulador de Escudo ➜ ROLL LEGENDS
+# MIGRATION_PLAN — Roll Legends
 
-> Status: **FASE 0 concluída (auditoria + plano)**. Nenhum código foi alterado nesta fase.
-> Próximo passo: aguardar aprovação para iniciar a **FASE 1 (arquitetura + DataStore)**.
+> **O jogo anterior ("Simulador de Escudo") era um protótipo e foi completamente descontinuado.
+> Nenhuma compatibilidade ou migração de dados foi necessária.**
+>
+> Checkpoint do protótipo: tag Git `shield-prototype-final` (commit `f22dde8`).
+> O DataStore `SimuladorEscudo_v1` não é lido; o Roll Legends usa `RollLegends_PlayerData_v1`.
+
+## Status
+
+| Fase | Status |
+|---|---|
+| 0 — Auditoria | ✅ concluída (seção "Histórico: auditoria do protótipo" abaixo) |
+| 1 — Limpeza + arquitetura/fundação | ✅ concluída |
+| 2 — Mapa completo + 10 bases + Hub + cabanas + esteira | ⏳ próxima |
+
+## Ordem oficial das fases (atualizada)
+
+1. Limpeza + arquitetura (fundação, DataStore, rede segura, monetização mínima) ✅
+2. Mapa completo + 10 bases + Hub + cabanas + esteira
+3. Sistema de dados/RNG + primeira revelação
+4. Personagens 3D + inventário + personagens na base + geração de dinheiro
+5. Luck + novos dados + upgrades + loja
+6. Venda + auto-sell + índice
+7. Torres + batalha de cards
+8. Rebirth + progressão avançada
+9. Missões + daily + offline
+10. Monetização
+11. Conteúdo, VFX, áudio e polish
+12. Balanceamento, simulações e otimização
+
+Cada fase termina com: `python tools\run_tests.py`, `luau-lsp analyze`, build, roteiro do
+`TEST_PLAN.md` no Studio, documentação e commit.
+
+## Decisões de design registradas
+
+- **UI em PT-BR**, textos centralizados em `Shared/Localization` (EN-US depois).
+- **Personagens: modelos 3D completos já na V1** (revelação, base, previews, batalhas);
+  raridades altas com aura/partículas/idle/luz, respeitando mobile.
+- **Base: cada andar = 2 lados × 4 slots = 8** (`SideA` Slot01–04, `SideB` Slot05–08;
+  Floor02 = Slot09–16…). Rebirth 0 = 4 slots liberados **todos no SideA**; SideB bloqueado.
+  Exposição em fileira com orientação consistente. Liberações configuráveis; só estão
+  definidos Rebirth 0 = 4 slots, Floor01 = 8 físicos e Rebirth 5 = próximo andar.
+  (Substitui qualquer menção anterior a "2 de cada lado".)
+- **Publicação**: o Roll Legends usa o mesmo Place ID do protótipo (o protótipo foi abandonado).
+
+## FASE 1 — o que foi feito
+
+- **1A Limpeza**: removidos todo o gameplay, UI, configs, remotes e assets específicos do
+  protótipo; `Modelos.rbxm` (672 KB, 1.024 poses, pets/escudos/ovos) substituído por
+  `Assets.rbxm` (12,8 KB: Sounds, VFX, Icons, Sky; 0 scripts, 0 animações).
+- **1B Fundação**: Bootstrap servidor/cliente, GameConfig, DataConfig, PlayerDataService
+  (ProfileCore: UpdateAsync, session lock, autosave, retry/backoff, schema versionado,
+  BindToClose, PlayerRemoving, backup de corrupção), Localization, NumberFormatter,
+  AssetLoader, Logger, Signal, TableUtil.
+- **1C Segurança**: Net com schema por remote, Validator, RateLimiter, requests futuros
+  (`RequestRoll`, `RequestEquipCharacter`, `RequestSellCharacter`, `RequestEquipDice`,
+  `RequestUpgrade`, `RequestEnterTower`) respondendo `not_implemented`.
+- **1D Monetização mínima**: MonetizationConfig, MonetizationService, ReceiptCore idempotente.
 
 ---
+
+# Histórico: auditoria do protótipo (FASE 0)
+
+> O texto abaixo é o registro da auditoria feita antes da reconstrução. As classificações
+> "ADAPTAR/REUTILIZAR" foram revistas na FASE 1: como o protótipo foi abandonado, quase tudo
+> foi reescrito do zero; só ficaram as ferramentas, as técnicas e os assets genéricos.
 
 ## 1. Auditoria do projeto atual
 
@@ -286,7 +347,7 @@ MonetizationService (passes, produtos, receipts idempotentes)
 
 ---
 
-## 4. Plano de implementação
+## 4. Plano de implementação (versão original da FASE 0, substituído pela "Ordem oficial" acima)
 
 ### 4.1 Estratégia de troca
 1. A FASE 1 cria a nova árvore (`Shared/Config`, `Shared/Modules`, `Services`, `Controllers`) e o novo `PlayerDataService` **no lugar** do jogo antigo, em um único commit de troca. O código antigo sai junto. Ele fica preservado no histórico do Git; há uma tag `legacy-shield-sim` para voltar se precisar.
@@ -352,9 +413,3 @@ Observação: o `ECONOMY.md` começa na FASE 4 (os primeiros números já são s
 | Cards/molduras | "card frame ui", "rarity frame" | Cards do inventário e da batalha |
 
 ---
-
-## 7. Decisões pendentes (preciso de você antes de começar)
-
-1. **Place ID (R1)**: publicar no mesmo jogo (o Simulador de Escudo deixa de existir) ou criar uma experiência nova para o Roll Legends?
-2. **Idioma da UI**: português (padrão proposto, com `Strings.luau` para traduzir depois) ou inglês? O código fica em inglês, como na arquitetura pedida.
-3. **Lutadores na base**: modelos 3D na base (mais bonito, mais pesado) ou estátuas/cards 3D simples na v1 e modelos depois?

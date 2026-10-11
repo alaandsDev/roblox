@@ -1,11 +1,11 @@
-"""Gera build/SimuladorEscudo.rbxlx a partir do código (src/) + assets salvos do Studio.
+"""Gera build/RollLegends.rbxlx a partir do código (src/) + assets salvos do Studio.
 
 Uso:  python tools\\build_place.py
 
 - Baixa sozinho a versão certa do Rojo para tools/bin (versões antigas não leem
   arquivos .rbxm salvos pelo Studio atual, por isso não usamos o Rojo do PATH).
-- Se existir assets/Modelos.rbxm, vira ReplicatedStorage.Modelos (pets, ovos, escudos).
-- Se existir assets/Mapa.rbxm, vira Workspace.Mapa (decoração feita no Studio).
+- Se existir assets/Assets.rbxm, vira ReplicatedStorage.Assets (sons, VFX, ícones, modelos).
+- Se existir assets/Map.rbxm, vira Workspace.Map (decoração feita no Studio).
 """
 
 import io
@@ -21,12 +21,12 @@ from pathlib import Path
 ROJO_VERSION = "7.7.1"
 RAIZ = Path(__file__).resolve().parent.parent
 BUILD = RAIZ / "build"
-SAIDA = BUILD / "SimuladorEscudo.rbxlx"
+SAIDA = BUILD / "RollLegends.rbxlx"
 
 # arquivo em assets/ -> (serviço, nome da instância)
 ASSETS = {
-    "Modelos.rbxm": ("ReplicatedStorage", "Modelos"),
-    "Mapa.rbxm": ("Workspace", "Mapa"),
+    "Assets.rbxm": ("ReplicatedStorage", "Assets"),
+    "Map.rbxm": ("Workspace", "Map"),
 }
 
 

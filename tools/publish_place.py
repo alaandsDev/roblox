@@ -1,4 +1,4 @@
-"""Publica build/SimuladorEscudo.rbxlx no Roblox usando a Open Cloud API.
+"""Publica build/RollLegends.rbxlx no Roblox usando a Open Cloud API.
 
 Uso:  python tools\\publish_place.py
 
@@ -19,7 +19,7 @@ import urllib.request
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
-ARQUIVO = RAIZ / "build" / "SimuladorEscudo.rbxlx"
+ARQUIVO = RAIZ / "build" / "RollLegends.rbxlx"
 CONFIG = RAIZ / "publish.local.json"
 
 # https://create.roblox.com/dashboard/creations/experiences/10770107678/places/86294164179735

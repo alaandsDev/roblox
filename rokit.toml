@@ -1,0 +1,4 @@
+# Ferramentas do projeto (https://github.com/rojo-rbx/rokit). O build_place.py baixa as
+# versões certas sozinho; isto é só para quem quiser usar no terminal.
+[tools]
+rojo = "rojo-rbx/rojo@7.7.1"
