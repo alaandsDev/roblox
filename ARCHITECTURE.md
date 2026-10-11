@@ -95,6 +95,11 @@ Sempre por `AssetLoader` (remove scripts, desliga colisão/física). Busca na St
   progressão visual (andares/slots) e teleporta. Também atende `RequestTeleport`
   (Center/Home/Shop, cooldown de 1 s no servidor). Sem base livre: jogador vai para o Hub
   (log "No free base available.").
+- Spawn: `PlayerSpawn` de cada base é um `SpawnLocation` (Neutral = false) logo depois do arco
+  da entrada, olhando para dentro. `CharacterAutoLoads = false`; o `Core/SpawnCoordinator`
+  (puro, testado) só carrega o personagem depois da base atribuída, define
+  `player.RespawnLocation` e posiciona o HumanoidRootPart na altura certa (respawn incluso).
+  Sem base em 10 s (ou servidor cheio): nasce no Hub e vai para casa quando a base chegar.
 - Esteira: estrutura fixa no servidor; as ripas e objetos que andam (72 + 16 peças) existem
   só no cliente e são movidos com um único `BulkMoveTo` por quadro.
 - Tags (CollectionService): `PlayerBase`, `CharacterSlot`, `LockedCharacterSlot`,

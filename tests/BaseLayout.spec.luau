@@ -113,6 +113,28 @@ describe("BaseLayout (slots 4 + 4 por andar)", function()
 		end
 	end)
 
+	it("PlayerSpawn logo depois da entrada, no corredor, sem encostar em nada", function()
+		local sp = BaseConfig.Spawn
+		local half = sp.size / 2 + 1 -- folga para o corpo do personagem
+		local front = -BaseConfig.Depth / 2
+		expect(sp.z > front).toBeTruthy() -- dentro da base
+		expect(sp.z - front <= 6).toBeTruthy() -- logo depois da entrada
+		expect(math.abs(sp.x) + half <= BaseConfig.Entrance.halfWidth - 1.2).toBeTruthy() -- longe dos pilares do arco
+		expect(math.abs(sp.x) + half <= BaseConfig.CorridorHalfWidth).toBeTruthy()
+		local function clear(rect)
+			return sp.x + half <= rect.minX or sp.x - half >= rect.maxX or sp.z + half <= rect.minZ or sp.z - half >= rect.maxZ
+		end
+		for _, pad in { BaseConfig.Collector, BaseConfig.UpgradeArea } do
+			expect(clear({ minX = pad.x - pad.width / 2, maxX = pad.x + pad.width / 2, minZ = pad.z - pad.depth / 2, maxZ = pad.z + pad.depth / 2 })).toBeTruthy()
+		end
+		expect(clear(layout:rampRect(1))).toBeTruthy()
+		for _, id in layout:slotsForFloor(1) do
+			local p = layout:slotPosition(id)
+			local r = BaseConfig.PedestalSize / 2
+			expect(clear({ minX = p.x - r, maxX = p.x + r, minZ = p.z - r, maxZ = p.z + r })).toBeTruthy()
+		end
+	end)
+
 	it("nomes padronizados", function()
 		expect(layout:slotName(5)).toBe("Slot05")
 		expect(layout:slotName(12)).toBe("Slot12")

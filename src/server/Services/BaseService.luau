@@ -10,8 +10,16 @@
 	    BaseService.RefreshBase(player)     -> aplica andares/slots conforme o Rebirth
 	    BaseService.FloorUnlocked           -> Signal(player, floor) (gancho para o Rebirth)
 
-	Fluxo de entrada: dados carregados -> base livre -> placa do dono -> progressão visual
-	-> teleporte para o PlayerSpawn. Na saída a base volta a "BASE LIVRE".
+	Spawn (Player -> Base -> Spawn):
+	- CharacterAutoLoads = false: o personagem só é carregado DEPOIS da base atribuída.
+	- player.RespawnLocation = PlayerSpawn da base do jogador (SpawnLocation na entrada,
+	  Neutral = false: ninguém mais nasce ali). Vale para entrada e para todo respawn.
+	- Quando o HumanoidRootPart existe, o personagem é colocado exatamente no PlayerSpawn,
+	  na altura certa e olhando para dentro da base (só se a base for MESMO dele).
+	- A ordem dos eventos é controlada pelo Core/SpawnCoordinator (sem corrida entre
+	  CharacterAdded e atribuição). Se a base demorar (ou não houver base livre), o jogador
+	  nasce no Hub e vai para casa assim que a base for atribuída.
+	Na saída a base volta a "BASE LIVRE".
 	Também responde ao HUD de navegação (RequestTeleport: Center / Home / Shop).
 ]]
 
@@ -28,6 +36,7 @@ local Net = require(Shared.Modules.Net)
 
 local Server = script.Parent.Parent
 local BaseAllocator = require(Server.Core.BaseAllocator)
+local SpawnCoordinator = require(Server.Core.SpawnCoordinator)
 local BaseBuilder = require(Server.Map.BaseBuilder)
 local MapService = require(script.Parent.MapService)
 local PlayerDataService = require(script.Parent.PlayerDataService)
@@ -35,6 +44,8 @@ local PlayerDataService = require(script.Parent.PlayerDataService)
 local log = Logger.new("Base")
 
 local TELEPORT_COOLDOWN = 1
+-- Sem base depois desse tempo (dados lentos / servidor cheio): nasce no Hub
+local SPAWN_FALLBACK_SECONDS = 10
 
 local BaseService = {}
 
@@ -43,15 +54,42 @@ BaseService.FloorUnlocked = Signal.new()
 local allocator = BaseAllocator.new(MapConfig.Bases.AssignOrder)
 local lastTeleport: { [Player]: number } = {}
 
-local function teleport(player: Player, target: CFrame): boolean
+-- Coloca o personagem em pé sobre `floorCFrame` (posição no piso + direção do olhar)
+local function teleport(player: Player, floorCFrame: CFrame): boolean
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-	if not character or not humanoid or humanoid.Health <= 0 then
+	local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if not character or not humanoid or not root or humanoid.Health <= 0 then
 		return false
 	end
-	character:PivotTo(target * CFrame.new(0, 3, 0))
+	-- Altura do HumanoidRootPart acima do piso: pernas + metade do root (R6 tem HipHeight 0)
+	local legs = if humanoid.RigType == Enum.HumanoidRigType.R15 then humanoid.HipHeight else 2
+	character:PivotTo(floorCFrame * CFrame.new(0, legs + root.Size.Y / 2 + 0.05, 0))
+	root.AssemblyLinearVelocity = Vector3.zero
 	return true
 end
+
+local coordinator = SpawnCoordinator.new({
+	loadCharacter = function(player: Player)
+		task.spawn(function()
+			if player.Parent == Players then
+				local ok, err = pcall(player.LoadCharacter, player)
+				if not ok then
+					log:warn("LoadCharacter falhou para", player.Name, err)
+				end
+			end
+		end)
+	end,
+	placeAtBase = function(player: Player, baseId: number)
+		local base = MapService.GetBase(baseId)
+		if base then
+			teleport(player, BaseBuilder.spawnCFrame(base))
+		end
+	end,
+	ownerOf = function(baseId: number): number?
+		return allocator:owner(baseId)
+	end,
+})
 
 function BaseService.GetFreeBase(): number?
 	return allocator:peekFree()
@@ -72,7 +110,7 @@ end
 
 function BaseService.TeleportPlayerHome(player: Player): boolean
 	local base = BaseService.GetPlayerBase(player)
-	if not base then
+	if not base or base:GetAttribute("OwnerUserId") ~= player.UserId then
 		return teleport(player, MapService.GetHubSpawn())
 	end
 	return teleport(player, BaseBuilder.spawnCFrame(base))
@@ -106,6 +144,8 @@ function BaseService.AssignBase(player: Player): number?
 	local base = MapService.GetBase(baseId) :: Model
 	base:SetAttribute("OwnerUserId", player.UserId)
 	player:SetAttribute("BaseId", baseId)
+	-- Todo nascimento/respawn do jogador passa a ser no PlayerSpawn desta base
+	player.RespawnLocation = BaseBuilder.spawnLocation(base)
 
 	local thumbnail: string? = nil
 	local ok, result = pcall(
@@ -125,12 +165,16 @@ function BaseService.AssignBase(player: Player): number?
 	BaseBuilder.setOwner(base, { displayName = player.DisplayName, userName = player.Name, thumbnail = thumbnail })
 	BaseService.RefreshBase(player, true)
 	log:info(`{player.Name} recebeu a {base.Name}`)
+	-- Carrega o personagem (ou leva para casa, se ele já nasceu no Hub)
+	coordinator:baseAssigned(player, baseId)
 	return baseId
 end
 
 function BaseService.ReleaseBase(player: Player)
 	local baseId = allocator:release(player.UserId)
 	lastTeleport[player] = nil
+	coordinator:playerLeft(player)
+	player.RespawnLocation = nil
 	if not baseId then
 		return
 	end
@@ -151,8 +195,8 @@ local function onDataLoaded(player: Player)
 	end
 	if not BaseService.AssignBase(player) then
 		Net.fire("Notify", player, "nav.no_base")
+		coordinator:fallbackDue(player) -- sem base livre: nasce no Hub
 	end
-	BaseService.TeleportPlayerHome(player)
 end
 
 local function handleTeleport(player: Player, destination: string)
@@ -250,29 +294,59 @@ end
 ------------------------------------------------------------------------------------
 
 function BaseService.Init()
+	-- O personagem só é carregado pelo SpawnCoordinator (depois da base atribuída)
+	Players.CharacterAutoLoads = false
 	Net.handle("RequestTeleport", handleTeleport)
 end
 
+local function watchPlayer(player: Player)
+	coordinator:playerJoined(player)
+	player.CharacterAdded:Connect(function(character)
+		coordinator:characterAdded(player)
+		local humanoid = character:WaitForChild("Humanoid", 10) :: Humanoid?
+		local root = character:WaitForChild("HumanoidRootPart", 10)
+		if not humanoid or not root or player.Character ~= character then
+			return
+		end
+		humanoid.Died:Once(function()
+			coordinator:died(player)
+			task.delay(Players.RespawnTime, function()
+				if player.Parent == Players then
+					coordinator:respawnDue(player)
+				end
+			end)
+		end)
+		task.wait() -- deixa o Roblox terminar de posicionar no SpawnLocation
+		if player.Character == character then
+			coordinator:rootReady(player)
+		end
+	end)
+	-- Rede de segurança: se a base não vier a tempo, nasce no Hub
+	task.delay(SPAWN_FALLBACK_SECONDS, function()
+		if player.Parent == Players then
+			coordinator:fallbackDue(player)
+		end
+	end)
+end
+
 function BaseService.Start()
+	Players.PlayerAdded:Connect(watchPlayer)
+	for _, player in Players:GetPlayers() do
+		watchPlayer(player)
+		-- Já tinha personagem antes deste script (ex.: Play Solo): marca para ser levado para casa
+		if player.Character then
+			coordinator:characterAdded(player)
+			coordinator:rootReady(player)
+		end
+	end
+	Players.PlayerRemoving:Connect(BaseService.ReleaseBase)
+
 	PlayerDataService.Loaded:Connect(onDataLoaded)
 	for _, player in Players:GetPlayers() do
 		if PlayerDataService.IsLoaded(player) and not allocator:baseOfUser(player.UserId) then
 			task.spawn(onDataLoaded, player)
 		end
 	end
-
-	local function watchCharacter(player: Player)
-		player.CharacterAdded:Connect(function(character)
-			character:WaitForChild("HumanoidRootPart", 10)
-			task.wait() -- deixa o Roblox terminar de posicionar o personagem
-			BaseService.TeleportPlayerHome(player)
-		end)
-	end
-	Players.PlayerAdded:Connect(watchCharacter)
-	for _, player in Players:GetPlayers() do
-		watchCharacter(player)
-	end
-	Players.PlayerRemoving:Connect(BaseService.ReleaseBase)
 
 	if BaseConfig.MaxFloors < 2 then
 		log:warn("BaseConfig.MaxFloors < 2: o Floor02 nunca será construído")

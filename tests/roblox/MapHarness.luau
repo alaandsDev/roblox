@@ -180,6 +180,24 @@ for i = 1, 8 do
 	check(unlocked == (i <= 4), string.format("RB0: Slot%02d %s", i, if i <= 4 then "liberado" else "bloqueado"))
 end
 
+-- PlayerSpawn: SpawnLocation na entrada, no piso, olhando para dentro da base
+local BaseConfig = requireModule(shared.Config.BaseConfig)
+for i = 1, 10 do
+	local base = bases:FindFirstChild(string.format("Base%02d", i))
+	local spawn = base.PlayerSpawn
+	local origin = base.WorldPivot -- LookVector = frente da base (para o corredor)
+	local localPos = origin:PointToObjectSpace(spawn.CFrame.Position)
+	local inward = -origin.LookVector
+	local ok = spawn.ClassName == "SpawnLocation"
+		and spawn.Neutral == false
+		and spawn.CanCollide == false
+		and math.abs(localPos.X) < 0.01
+		and math.abs(localPos.Z - BaseConfig.Spawn.z) < 0.01
+		and math.abs((spawn.CFrame.Position.Y + spawn.Size.Y / 2) - (BaseConfig.PlatformThickness + 0.2)) < 0.01
+		and spawn.CFrame.LookVector:Dot(inward) > 0.999
+	check(ok, string.format("Base%02d: PlayerSpawn na entrada, no piso, olhando para dentro", i))
+end
+
 -- RB5: Floor02 aparece, Slot09 liberado, Slot10 bloqueado
 local BaseBuilder = requireModule(server.Map.BaseBuilder)
 local progression = MapService.Progression

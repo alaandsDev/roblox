@@ -13,6 +13,7 @@ require("./BaseLayout.spec")
 require("./BaseProgression.spec")
 require("./MapLayout.spec")
 require("./MapValidator.spec")
+require("./SpawnCoordinator.spec")
 
 if not T.report() then
 	error("testes falharam", 0)

@@ -5,7 +5,7 @@
 	Base01 (Model)                 atributos: BaseId, OwnerUserId   tag: PlayerBase
 	├── OwnerSign                  placa na entrada (avatar + nome / "BASE LIVRE")
 	├── Entrance                   arco da entrada
-	├── PlayerSpawn                onde o dono nasce (olhando para dentro da base)
+	├── PlayerSpawn                SpawnLocation na entrada (dono nasce aqui, olhando para dentro)
 	├── Floors
 	│   └── Floor01                atributos: FloorId, UnlockRebirth
 	│       ├── Platform
@@ -468,13 +468,28 @@ function BaseBuilder.build(baseId: number, parent: Instance, progression: Progre
 	end
 	buildOwnerSign(base, origin)
 
-	local spawnPart = Build.part(Vector3.new(4, 1, 4), origin * CFrame.new(BaseConfig.Spawn.x, 1.5, BaseConfig.Spawn.z) * CFrame.Angles(0, math.pi, 0), {
-		Name = "PlayerSpawn",
-		Transparency = 1,
-		Parent = base,
-	})
-	Build.decor(spawnPart)
-	Build.tag(spawnPart, "TeleportPoint")
+	-- PlayerSpawn é um SpawnLocation: o Roblox já faz o dono nascer aqui (player.RespawnLocation).
+	-- Neutral = false: jogadores sem RespawnLocation (os outros) nunca nascem aqui.
+	-- O topo fica no nível do piso; virado (LookVector) para dentro da base (local +Z).
+	local s = BaseConfig.Spawn
+	local spawnLocation = Instance.new("SpawnLocation")
+	spawnLocation.Name = "PlayerSpawn"
+	spawnLocation.Anchored = true
+	spawnLocation.Size = Vector3.new(s.size, 0.2, s.size)
+	spawnLocation.CFrame = origin * CFrame.new(s.x, BaseConfig.PlatformThickness + 0.1, s.z) * CFrame.Angles(0, math.pi, 0)
+	spawnLocation.Transparency = 1
+	spawnLocation.CanCollide = false
+	spawnLocation.CanQuery = false
+	spawnLocation.CanTouch = false
+	spawnLocation.Neutral = false
+	spawnLocation.AllowTeamChangeOnTouch = false
+	spawnLocation.Duration = 0
+	local spawnDecal = spawnLocation:FindFirstChildOfClass("Decal")
+	if spawnDecal then
+		spawnDecal:Destroy()
+	end
+	spawnLocation.Parent = base
+	Build.tag(spawnLocation, "TeleportPoint")
 
 	pad(base, "MoneyCollector", BaseConfig.Collector, rgb(80, 230, 110), "base.collector")
 	pad(base, "UpgradeArea", BaseConfig.UpgradeArea, rgb(80, 170, 255), "base.upgrades")
@@ -539,8 +554,15 @@ function BaseBuilder.clearRuntime(base: Model)
 	end
 end
 
+-- CFrame do ponto de nascimento NO PISO (centro da entrada, olhando para dentro da base)
 function BaseBuilder.spawnCFrame(base: Model): CFrame
-	return (base:FindFirstChild("PlayerSpawn") :: BasePart).CFrame
+	local spawn = base:FindFirstChild("PlayerSpawn") :: BasePart
+	return spawn.CFrame * CFrame.new(0, spawn.Size.Y / 2, 0)
+end
+
+function BaseBuilder.spawnLocation(base: Model): SpawnLocation?
+	local spawn = base:FindFirstChild("PlayerSpawn")
+	return if spawn and spawn:IsA("SpawnLocation") then spawn else nil
 end
 
 -- Efeito simples quando um andar novo aparece (gancho para a fase de Rebirth)

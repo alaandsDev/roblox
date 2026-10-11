@@ -41,7 +41,9 @@ local BaseConfig = {
 	-- (andar ímpar sobe pelo lado B, andar par pelo lado A)
 	Ramp = { InnerX = 28, OuterX = 38, StartZ = -26, EndZ = 18 },
 
-	Spawn = { x = 0, z = -20 }, -- jogador nasce na entrada, olhando para dentro da base
+	-- PlayerSpawn: logo depois do arco da entrada (frente em Z = -30), no centro do corredor,
+	-- olhando para dentro da base. Livre de pilares do arco, pads e rampa.
+	Spawn = { x = 0, z = -25, size = 4 },
 	Collector = { x = -24, z = -25, width = 8, depth = 6 }, -- frente, lado B
 	UpgradeArea = { x = 24, z = -25, width = 8, depth = 6 }, -- frente, lado A
 	Entrance = { halfWidth = 13, height = 13 },
