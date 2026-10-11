@@ -17,13 +17,13 @@ local Localization = require(Shared.Localization.Localization)
 local AssetLoader = require(Shared.Modules.AssetLoader)
 
 local COOLDOWN = 1
-local BUTTON_WIDTH, BUTTON_HEIGHT, GAP = 132, 50, 10
+local BUTTON_WIDTH, BUTTON_HEIGHT, GAP = 160, 58, 12
 
 -- Ícones provisórios (emoji); trocar por imagens da Store depois (tools/FindAssets.lua)
 local BUTTONS = {
-	{ id = "Center", text = "nav.center", icon = "🎲", color = Color3.fromRGB(150, 90, 240) },
-	{ id = "Home", text = "nav.home", icon = "🏠", color = Color3.fromRGB(70, 190, 100) },
-	{ id = "Shop", text = "nav.shop", icon = "🛒", color = Color3.fromRGB(255, 150, 50) },
+	{ id = "Center", text = "nav.center", icon = "🎲", color = Color3.fromRGB(255, 190, 50) },
+	{ id = "Home", text = "nav.home", icon = "🏠", color = Color3.fromRGB(70, 165, 255) },
+	{ id = "Shop", text = "nav.shop", icon = "🛒", color = Color3.fromRGB(80, 215, 90) },
 }
 
 local NavigationController = {}

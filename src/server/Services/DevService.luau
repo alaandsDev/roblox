@@ -22,6 +22,16 @@ local Logger = require(game:GetService("ReplicatedStorage").Shared.Modules.Logge
 local BaseService = require(script.Parent.BaseService)
 local PlayerDataService = require(script.Parent.PlayerDataService)
 
+local Shared = game:GetService("ReplicatedStorage").Shared
+local CharacterConfig = require(Shared.Config.CharacterConfig)
+local Formulas = require(Shared.Modules.GameFormulas)
+local Net = require(Shared.Modules.Net)
+local InventoryService = require(script.Parent.InventoryService)
+local RollService = require(script.Parent.RollService)
+local EconomyService = require(script.Parent.EconomyService)
+local StationService = require(script.Parent.StationService)
+local AnalyticsService = require(script.Parent.AnalyticsService)
+
 local log = Logger.new("Dev")
 
 local DevService = {}
@@ -80,6 +90,115 @@ end)
 DevService.Register("ResetBase", "(player|baseId) volta a base ao estado real", function(target)
 	BaseService.Dev.Reset(target)
 	return "ok"
+end)
+
+------------------------------------------------------------------------------------
+-- Fases 3–6 + estações / offline / diário / reveal
+
+local function data(player: Player): any
+	local d = PlayerDataService.GetData(player)
+	assert(d, "dados não carregados")
+	return d
+end
+
+DevService.Register("GiveMoney", "(player, valor) adiciona dinheiro", function(player, amount)
+	return EconomyService.AddMoney(player, amount, "Dev")
+end)
+DevService.Register("SetRolls", "(player, n) define o total de rolls (requisito dos dados)", function(player, n)
+	PlayerDataService.Set(player, "Rolls", n)
+	return n
+end)
+DevService.Register("GiveCharacter", "(player, id, quantidade?, nivel?) dá personagens", function(player, id, count, level)
+	assert(CharacterConfig.ById[id], "personagem inválido: " .. tostring(id))
+	local uids = {}
+	for _ = 1, count or 1 do
+		local uid = InventoryService.Add(player, id)
+		data(player).Inventory[uid].Level = level or 1
+		table.insert(uids, uid)
+	end
+	InventoryService.SendDelta(player, uids, nil)
+	return table.concat(uids, ",")
+end)
+DevService.Register("Roll", "(player, n) faz n rolls agora (ignora cooldown) e resume", function(player, n)
+	local counts = {}
+	for _ = 1, n or 1 do
+		RollService.ResetCooldown(player)
+		local ok, result = pcall(RollService.Roll, player)
+		if not ok then
+			return "parou: " .. (if type(result) == "table" then tostring((result :: any).code) else tostring(result))
+		end
+		counts[result.Rarity] = (counts[result.Rarity] or 0) + 1
+	end
+	return game:GetService("HttpService"):JSONEncode(counts)
+end)
+DevService.Register("SetPity", "(player, lendario, mitico) contadores de pity", function(player, legendary, mythic)
+	PlayerDataService.Set(player, "Pity", { Legendary = legendary or 0, Mythic = mythic or 0 })
+	return "ok"
+end)
+DevService.Register("GetLuck", "(player) Luck efetiva", function(player)
+	return Formulas:luck(data(player), os.time())
+end)
+DevService.Register("Income", "(player) renda/s e dinheiro não coletado", function(player)
+	local d = data(player)
+	return string.format("renda %.2f/s, não coletado %.2f, money %d", Formulas:incomePerSecond(d), d.UncollectedMoney, d.Money)
+end)
+DevService.Register("FillInventory", "(player) enche o inventário de comuns", function(player)
+	local free = InventoryService.Capacity(player) - InventoryService.Count(player)
+	for _ = 1, free do
+		InventoryService.Add(player, "flame_rookie")
+	end
+	return InventoryService.Count(player)
+end)
+DevService.Register("ClearInventory", "(player) apaga TODO o inventário", function(player)
+	local uids = {}
+	for uid in data(player).Inventory do
+		table.insert(uids, uid)
+	end
+	InventoryService.Remove(player, uids)
+	return #uids
+end)
+DevService.Register("PopulateDemoBase", "(player, todos8?) base demo com raridades/níveis/variantes", function(player, all)
+	return StationService.PopulateDemo(player, all)
+end)
+DevService.Register("SimulateOffline", "(player, segundos, renda/s?) simula ter ficado offline", function(player, seconds, ips)
+	local d = data(player)
+	d.LastLogout = os.time() - seconds
+	if ips then
+		d.LastKnownIncomePerSecond = ips
+	end
+	EconomyService._resetOffline(player)
+	EconomyService.CheckOffline(player)
+	return d.PendingOfflineReward
+end)
+DevService.Register("SetDaily", "(player, diasAtras, diaDoCiclo) estado do diário", function(player, daysAgo, cycleDay)
+	local now = os.time()
+	PlayerDataService.Set(player, "LastDailyClaim", if daysAgo then now - daysAgo * 86400 else 0)
+	PlayerDataService.Set(player, "DailyCycleDay", cycleDay or 0)
+	return "ok"
+end)
+DevService.Register("PlayReveal", "(player, raridade, personagemId?, novo?) toca o reveal sem RNG", function(player, rarity, id, isNew)
+	local chosen = id
+	if not chosen then
+		for _, c in CharacterConfig.List do
+			if c.Rarity == rarity then
+				chosen = c.Id
+				break
+			end
+		end
+	end
+	assert(chosen and CharacterConfig.ById[chosen], "personagem inválido")
+	Net.fire("DevReveal", player, { CharacterId = chosen, Rarity = CharacterConfig.ById[chosen].Rarity, IsNew = isNew ~= false })
+	return chosen
+end)
+DevService.Register("PlayAllReveals", "(player) Lendário, Mítico, Divino e Secreto em sequência", function(player)
+	Net.fire("DevReveal", player, { All = true })
+	return "ok"
+end)
+DevService.Register("RollHistory", "(player) últimos rolls da sessão", function(player)
+	return game:GetService("HttpService"):JSONEncode(RollService.History(player))
+end)
+DevService.Register("Analytics", "() contagem dos eventos de analytics", function()
+	return game:GetService("HttpService"):JSONEncode(AnalyticsService.Counts())
 end)
 
 function DevService.Init()
