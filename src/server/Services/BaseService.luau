@@ -73,6 +73,8 @@ local coordinator = SpawnCoordinator.new({
 	loadCharacter = function(player: Player)
 		task.spawn(function()
 			if player.Parent == Players then
+				local baseId = allocator:baseOfUser(player.UserId)
+				log:info(`spawn: carregando personagem de {player.Name} ({if baseId then "base " .. baseId else "sem base: Hub"})`)
 				local ok, err = pcall(player.LoadCharacterAsync, player)
 				if not ok then
 					log:warn("LoadCharacterAsync falhou para", player.Name, err)
@@ -82,8 +84,10 @@ local coordinator = SpawnCoordinator.new({
 	end,
 	placeAtBase = function(player: Player, baseId: number)
 		local base = MapService.GetBase(baseId)
-		if base then
-			teleport(player, BaseBuilder.spawnCFrame(base))
+		if base and teleport(player, BaseBuilder.spawnCFrame(base)) then
+			log:info(`spawn: {player.Name} na entrada da {base.Name}`)
+		else
+			log:warn(`spawn: não foi possível posicionar {player.Name} na base {baseId}`)
 		end
 	end,
 	ownerOf = function(baseId: number): number?

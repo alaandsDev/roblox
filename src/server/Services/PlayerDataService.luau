@@ -47,6 +47,8 @@ type Entry = {
 }
 
 local entries: { [Player]: Entry } = {}
+-- Studio com place local/não publicado (ou DataStore indisponível): perfis temporários direto
+local offlineOnly = false
 local loading: { [Player]: boolean } = {}
 local core: any = nil
 -- Usado na idempotência de compras (ver MonetizationService)
@@ -189,7 +191,12 @@ local function onPlayerAdded(player: Player)
 		return
 	end
 	loading[player] = true
-	local profile, reason = core:load(keyFor(player))
+	local profile, reason
+	if offlineOnly then
+		reason = ProfileCore.Reasons.Error
+	else
+		profile, reason = core:load(keyFor(player))
+	end
 	loading[player] = nil
 
 	local offline = false
@@ -288,7 +295,24 @@ end
 ------------------------------------------------------------------------------------
 
 function PlayerDataService.Init()
-	local store = DataStoreService:GetDataStore(DataConfig.StoreName)
+	local isStudio = RunService:IsStudio()
+	if isStudio and game.GameId == 0 then
+		offlineOnly = true
+		log:warn("place não publicado: DataStore desativado, perfis temporários (nada é salvo)")
+	end
+	local ok, store = pcall(DataStoreService.GetDataStore, DataStoreService, DataConfig.StoreName)
+	if not ok then
+		log:warn("DataStore indisponível:", store)
+		if isStudio then
+			offlineOnly = true
+		end
+		-- No jogo publicado o load vai falhar e o jogador recebe a mensagem de erro (nada é perdido)
+		store = {
+			UpdateAsync = function()
+				error("DataStore indisponível")
+			end,
+		}
+	end
 	core = ProfileCore.new({
 		store = store :: any,
 		jobId = if game.JobId ~= "" then game.JobId else "studio-" .. HttpService:GenerateGUID(false),
@@ -296,7 +320,7 @@ function PlayerDataService.Init()
 		version = DataConfig.SchemaVersion,
 		migrations = Migrations,
 		lockTimeout = DataConfig.SessionLockTimeout,
-		maxAttempts = DataConfig.MaxAttempts,
+		maxAttempts = if isStudio then DataConfig.StudioMaxAttempts else DataConfig.MaxAttempts,
 		retryBaseDelay = DataConfig.RetryBaseDelay,
 		now = os.time,
 		wait = function(seconds)

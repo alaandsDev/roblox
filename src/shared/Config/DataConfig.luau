@@ -19,6 +19,8 @@ local DataConfig = {
 	-- Tentativas ao carregar/salvar e espera inicial entre elas (dobra a cada tentativa)
 	MaxAttempts = 5,
 	RetryBaseDelay = 1,
+	-- No Studio: 1 tentativa só (sem acesso à API o erro é imediato e repetir só atrasa o spawn)
+	StudioMaxAttempts = 1,
 
 	-- Quantos PurchaseIds guardamos para evitar entregar a mesma compra duas vezes
 	ReceiptHistorySize = 100,
