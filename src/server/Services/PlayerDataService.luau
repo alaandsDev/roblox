@@ -262,6 +262,8 @@ local function onPlayerAdded(player: Player)
 		return
 	end
 
+	-- Multiplicadores de sessão nunca vêm do save (o BoostService recalcula)
+	profile.Data.Runtime = {}
 	entries[player] = { profile = profile, offline = offline }
 	log:info(`perfil carregado: {player.Name} (novo: {profile.IsNew}, offline: {offline})`)
 	PlayerDataService.Loaded:Fire(player, profile.Data)

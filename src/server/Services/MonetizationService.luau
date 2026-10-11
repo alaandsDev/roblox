@@ -51,6 +51,14 @@ function MonetizationService.OwnsPass(player: Player, key: string): boolean
 	return owned ~= nil and owned[key] == true
 end
 
+-- Gamepasses que o jogador tem nesta sessão (para o cliente mostrar "COMPRADO")
+function MonetizationService.OwnedPasses(player: Player): { [string]: boolean }
+	return table.clone(ownedPasses[player] or {})
+end
+
+-- (player) depois que os gamepasses foram verificados na entrada
+MonetizationService.PassesLoaded = Signal.new()
+
 local function loadPasses(player: Player)
 	local owned = {}
 	ownedPasses[player] = owned
@@ -64,6 +72,29 @@ local function loadPasses(player: Player)
 			end
 		end
 	end
+	MonetizationService.PassesLoaded:Fire(player)
+end
+
+------------------------------------------------------------------------------------
+-- Testes no Studio (sem IDs reais): simula a compra de um gamepass / a entrega de um produto
+
+MonetizationService.Dev = {}
+
+function MonetizationService.Dev.GrantPass(player: Player, key: string)
+	assert(game:GetService("RunService"):IsStudio(), "só no Studio")
+	assert(MonetizationConfig.GamePasses[key], "gamepass inválido: " .. tostring(key))
+	local owned = ownedPasses[player] or {}
+	ownedPasses[player] = owned
+	owned[key] = true
+	MonetizationService.PassPurchased:Fire(player, key)
+end
+
+function MonetizationService.Dev.DeliverProduct(player: Player, key: string): boolean
+	assert(game:GetService("RunService"):IsStudio(), "só no Studio")
+	local deliver = deliverers[key]
+	local data = PlayerDataService.GetData(player)
+	assert(deliver and data, "produto sem entregador: " .. tostring(key))
+	return deliver(player, data)
 end
 
 local function processReceipt(info: any): Enum.ProductPurchaseDecision

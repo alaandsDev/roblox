@@ -82,7 +82,8 @@ function Formulas:rollCooldown(data: any): number
 	local roll = self.c.Roll
 	local upgrade = self.c.Upgrades.ById.RollSpeed
 	local speedPerk = if self.c.Rebirth then perkLevel(data, "Speed") * self.c.Rebirth.PerksById.Speed.PerLevel else 0
-	return math.max(roll.MinCooldown, roll.BaseCooldown * (1 - level(data, "RollSpeed") * upgrade.PerLevel) * (1 - speedPerk))
+	local base = roll.BaseCooldown * (1 - level(data, "RollSpeed") * upgrade.PerLevel) * (1 - speedPerk)
+	return math.max(roll.MinCooldown, base * self:runtime(data, "Cooldown"))
 end
 
 function Formulas:capacity(data: any): number

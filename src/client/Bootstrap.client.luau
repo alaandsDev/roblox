@@ -29,6 +29,7 @@ local ORDER = {
 	"FusionController",
 	"TradeController",
 	"MissionController",
+	"StoreController",
 	"FeedbackController",
 	"LodController",
 }

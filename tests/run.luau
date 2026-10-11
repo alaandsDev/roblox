@@ -27,6 +27,7 @@ require("./BattleCore.spec")
 require("./FusionCore.spec")
 require("./TradeCore.spec")
 require("./MissionCore.spec")
+require("./JackpotCore.spec")
 
 if not T.report() then
 	error("testes falharam", 0)

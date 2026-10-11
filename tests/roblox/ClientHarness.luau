@@ -138,6 +138,7 @@ local ORDER = {
 	"EconomyService", "InventoryService", "IndexService", "SellService", "RollService",
 	"DiceService", "UpgradeService", "StationService", "DailyService", "TowerService",
 	"RebirthService", "FusionService", "TradeService", "MissionService",
+	"BoostService", "JackpotService",
 }
 local S = {}
 for _, name in ORDER do
@@ -181,7 +182,7 @@ local CLIENT_ORDER = {
 	"NotificationController", "DataController", "HudController", "NavigationController", "AmbientController",
 	"RevealController", "RollController", "InventoryController", "DiceShopController", "UpgradesController",
 	"SellController", "IndexController", "DailyController", "OfflineController", "SettingsController", "TowerController",
-	"RebirthController", "FusionController", "TradeController", "MissionController",
+	"RebirthController", "FusionController", "TradeController", "MissionController", "StoreController",
 	"FeedbackController", "LodController",
 }
 local C = {}
@@ -573,6 +574,41 @@ do
 		return data.Missions.Daily.roll_50.Claimed == true
 	end, 2), "resgatar missão pela interface")
 	UIKit.Windows.closeAll()
+end
+
+-- Loja e Jackpot
+do
+	local store = openWindow("Store")
+	check(store ~= nil and store.isOpen and find(store.content, "Pass_VIP") ~= nil, "LOJA mostra os gamepasses")
+	check(find(store.content, "Gem_JackpotSpin") ~= nil, "LOJA mostra a loja de gemas")
+	UIKit.Windows.closeAll()
+	data.Gems = 500
+	local jackpot = find(gui("HUD"), "JackpotShortcut")
+	check(jackpot ~= nil, "atalho JACKPOT no lado direito")
+	if jackpot then
+		click(jackpot)
+	end
+	check(Env.waitFor(function()
+		local g = gui("Jackpot")
+		return g ~= nil and g.Enabled and find(g, "ClosePrize") ~= nil
+	end, 6), "giro do Jackpot animado e prêmio mostrado")
+	check(data.Gems == 350, "giro cobrou 150 gemas")
+	local closePrize = find(gui("Jackpot"), "ClosePrize")
+	if closePrize then
+		click(closePrize)
+	end
+	task.wait(0.2)
+	-- Se o prêmio foi personagem, o reveal toca; espera terminar (ou fecha a cinemática)
+	Env.waitFor(function()
+		local stage = gui("HeroLanding")
+		if stage then
+			local continue = find(stage, "Continue")
+			if continue and continue.Visible then
+				click(continue)
+			end
+		end
+		return not C.RevealController.Busy()
+	end, 8)
 end
 
 -- Notificações agrupadas

@@ -36,6 +36,7 @@ local moneyLabel: TextLabel
 local gemsLabel: TextLabel
 local luckLabel: TextLabel
 local boostLabel: TextLabel
+local friendLabel: TextLabel
 
 function HudController.SetBadge(name: string, text: string?)
 	local set = badges[name]
@@ -71,6 +72,8 @@ local function refreshStats()
 	local now = os.time()
 	local luck = Formulas:luck(data, now)
 	luckLabel.Text = string.format("🍀 %sx", NumberFormatter.abbreviate(math.floor(luck * 100 + 0.5) / 100))
+	local runtime = data.Runtime or {}
+	friendLabel.Text = Localization.t("hud.friend_boost", { percent = math.floor((runtime.FriendBonus or 0) * 100 + 0.5) })
 	local boost = data.Boosts and data.Boosts.Luck
 	if boost and type(boost.ExpiresAt) == "number" and boost.ExpiresAt > now then
 		boostLabel.Visible = true
@@ -194,14 +197,14 @@ function HudController.Init()
 	luckLabel = UIKit.text(stats, { name = "Luck", size = UDim2.fromOffset(160, 32), position = UDim2.fromOffset(0, 28), color = Theme.Colors.Luck, align = Enum.TextXAlignment.Left })
 	gemsLabel = UIKit.text(stats, { name = "Gems", size = UDim2.fromOffset(150, 32), position = UDim2.fromOffset(170, 28), color = Theme.Colors.Gems, align = Enum.TextXAlignment.Left })
 	moneyLabel = UIKit.text(stats, { name = "Money", text = "$0", size = UDim2.fromOffset(400, 70), position = UDim2.fromOffset(0, 60), color = Theme.Colors.Money, align = Enum.TextXAlignment.Left, stroke = 4 })
-	local friend = UIKit.text(stats, {
+	friendLabel = UIKit.text(stats, {
 		name = "FriendBoost",
 		text = Localization.t("hud.friend_boost", { percent = 0 }),
 		size = UDim2.fromOffset(330, 34),
 		position = UDim2.fromOffset(0, 132),
 		align = Enum.TextXAlignment.Left,
 	})
-	friend.TextTransparency = if FriendBoostConfig.Enabled then 0 else 0.35
+	friendLabel.TextTransparency = if FriendBoostConfig.Enabled then 0 else 0.35
 	boostLabel.Visible = false
 end
 
@@ -209,7 +212,7 @@ function HudController.Start()
 	DataController.Wait()
 	refreshStats()
 	DataController.Changed:Connect(function(key: string)
-		if key == "Money" or key == "Gems" or key == "EquippedDice" or key == "Upgrades" or key == "Boosts" then
+		if key == "Money" or key == "Gems" or key == "EquippedDice" or key == "Upgrades" or key == "Boosts" or key == "Runtime" or key == "Rebirths" or key == "RebirthPerks" then
 			refreshStats()
 		end
 		if key == "PendingOfflineReward" then

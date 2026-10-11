@@ -1,7 +1,7 @@
 --!strict
--- Impulso de amigos (ARQUITETURA: ainda desligado). +PerFriend de renda por amigo no servidor, até Max.
+-- Impulso de amigos (Fase 10): +PerFriend de renda por amigo no MESMO servidor, até Max.
 return {
-	Enabled = false,
+	Enabled = true,
 	PerFriend = 0.05,
 	Max = 0.25,
 }

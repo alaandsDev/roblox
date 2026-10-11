@@ -59,6 +59,10 @@ DataConfig.Template = {
 	-- Torres: { [towerId] = maior andar vencido }; time escolhido (até 5 uids; vazio = automático)
 	TowerProgress = {},
 	TowerTeam = {},
+	-- Multiplicadores da SESSÃO (gamepasses, impulso de amigos): recalculados a cada entrada
+	-- pelo BoostService (o valor salvo nunca é confiado)
+	Runtime = {},
+
 	-- Missões: { Day, Daily = { [id] = { Progress, Claimed } }, Achievements = { [id] = nível } }
 	Missions = {},
 

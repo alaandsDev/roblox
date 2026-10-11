@@ -37,6 +37,7 @@ local BaseService = require(script.Parent.BaseService)
 local MapService = require(script.Parent.MapService)
 local InventoryService = require(script.Parent.InventoryService)
 local UpgradeService = require(script.Parent.UpgradeService)
+local BoostService = require(script.Parent.BoostService)
 
 local log = Logger.new("Station")
 
@@ -448,6 +449,7 @@ function StationService.Start()
 		end
 	end)
 	UpgradeService.Purchased:Connect(StationService.RefreshAll)
+	BoostService.Changed:Connect(StationService.RefreshAll)
 	BaseService.BaseAssigned:Connect(function(player)
 		task.defer(StationService.Sync, player)
 	end)

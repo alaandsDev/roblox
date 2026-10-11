@@ -105,6 +105,10 @@ local Definitions: Definitions = {
 		ConfirmTrade = { args = {}, rate = { capacity = 5, refill = 2 } },
 		CancelTrade = { args = {}, rate = { capacity = 5, refill = 2 } },
 
+		-- Monetização (FASE 10): Jackpot e loja de gemas (Robux passa por RequestPurchase)
+		SpinJackpot = { args = {}, rate = { capacity = 3, refill = 1 } },
+		BuyGemItem = { args = { CONFIG_ID }, rate = { capacity = 4, refill = 1 } },
+
 		-- Missões (FASE 9)
 		ClaimMission = {
 			args = { { type = "string", enum = { "Daily", "Achievement" } }, CONFIG_ID },
@@ -139,6 +143,8 @@ local Definitions: Definitions = {
 		TradeRequest = {},
 		TradeUpdate = {},
 		TradeClosed = {},
+		-- Prêmio entregue (Jackpot, loja de gemas, produto Robux): (descrição)
+		JackpotResult = {},
 		-- Só Studio: tocar um reveal sem RNG (DevService "PlayReveal")
 		DevReveal = {},
 	},

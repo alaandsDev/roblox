@@ -87,7 +87,10 @@ local function announce(player: Player, result: RollResult)
 	end
 end
 
-function RollService.Roll(player: Player): RollResult
+export type RollOptions = { granted: boolean?, minRarity: string? }
+
+local function doRoll(player: Player, options: RollOptions?): RollResult
+	local opts: RollOptions = options or {}
 	local data = PlayerDataService.GetData(player)
 	if not data then
 		Net.fail(Net.Codes.NotReady)
@@ -95,22 +98,31 @@ function RollService.Roll(player: Player): RollResult
 	assert(data)
 
 	local now = RollService._clock()
-	local cooldown = Formulas:rollCooldown(data)
-	if now - (lastRoll[player] or -math.huge) < cooldown - RollConfig.CooldownTolerance then
-		Net.fail("cooldown")
-	end
-	-- Inventário cheio: bloqueia ANTES de gerar o resultado
-	if InventoryService.IsFull(player) then
-		if now - (lastFullWarning[player] or -math.huge) > 5 then
-			lastFullWarning[player] = now
-			AnalyticsService.Track(player, "InventoryFull", { capacity = InventoryService.Capacity(player) })
+	if not opts.granted then
+		local cooldown = Formulas:rollCooldown(data)
+		if now - (lastRoll[player] or -math.huge) < cooldown - RollConfig.CooldownTolerance then
+			Net.fail("cooldown")
 		end
-		Net.fail("inventory_full")
+		-- Inventário cheio: bloqueia ANTES de gerar o resultado (roll de prêmio pode passar do limite)
+		if InventoryService.IsFull(player) then
+			if now - (lastFullWarning[player] or -math.huge) > 5 then
+				lastFullWarning[player] = now
+				AnalyticsService.Track(player, "InventoryFull", { capacity = InventoryService.Capacity(player) })
+			end
+			Net.fail("inventory_full")
+		end
+		lastRoll[player] = now
 	end
-	lastRoll[player] = now
 
 	local luck = Formulas:luck(data, os.time())
-	local rolled = core:roll(luck, data.Pity, RollService._rand)
+	local rolled
+	if opts.minRarity then
+		-- Prêmio (Jackpot): sorteia só entre MinRarity ou melhor; não mexe no pity
+		local rarity = core:pickRarity(luck, RollService._rand, core:tierOf(opts.minRarity))
+		rolled = { rarity = rarity, characterId = core:pickCharacter(rarity, RollService._rand), pity = data.Pity, pityTriggered = nil }
+	else
+		rolled = core:roll(luck, data.Pity, RollService._rand)
+	end
 	local rarity, characterId = rolled.rarity, rolled.characterId
 	PlayerDataService.Set(player, "Pity", rolled.pity)
 	local rolls = PlayerDataService.Increment(player, "Rolls", 1)
@@ -136,7 +148,7 @@ function RollService.Roll(player: Player): RollResult
 		Odds = planner:odds(characterId),
 	}
 	-- Auto-sell: nunca vende uma descoberta nova (primeiro do Index) nem raridade protegida
-	if not isNew and SellService.ShouldAutoSell(player, rarity) then
+	if not opts.granted and not isNew and SellService.ShouldAutoSell(player, rarity) then
 		result.AutoSold = true
 		result.SoldFor = Formulas:sellValue(characterId, variant)
 		EconomyService.AddMoney(player, result.SoldFor, "AutoSell")
@@ -172,6 +184,15 @@ function RollService.Roll(player: Player): RollResult
 	announce(player, result)
 	RollService.Rolled:Fire(player, result)
 	return result
+end
+
+function RollService.Roll(player: Player): RollResult
+	return doRoll(player, nil)
+end
+
+-- Personagem garantido de minRarity ou melhor (prêmios). Ignora cooldown e inventário cheio
+function RollService.GrantRoll(player: Player, minRarity: string): RollResult
+	return doRoll(player, { granted = true, minRarity = minRarity })
 end
 
 function RollService.History(player: Player): { any }

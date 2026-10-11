@@ -120,6 +120,21 @@ describe("Localization", function()
 		for _, a in MissionConfig.Achievements do
 			table.insert(keys, "mission.ach." .. a.Id)
 		end
+		local Monet = require("../src/shared/Config/MonetizationConfig")
+		for key in Monet.GamePasses do
+			table.insert(keys, "store.pass." .. key)
+		end
+		for key in Monet.Products do
+			table.insert(keys, "store.product." .. key)
+		end
+		local Jackpot = require("../src/shared/Config/JackpotConfig")
+		for _, r in Jackpot.Rewards do
+			table.insert(keys, "jackpot." .. r.Id)
+		end
+		for _, g in Jackpot.GemShop do
+			table.insert(keys, "store.gem." .. g.Id)
+			table.insert(keys, "store.gem_desc." .. g.Id)
+		end
 		for _, tower in require("../src/shared/Config/TowerConfig").List do
 			table.insert(keys, "tower." .. tower.Id)
 		end

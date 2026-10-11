@@ -44,6 +44,7 @@ local ORDER = {
 	"EconomyService", "InventoryService", "IndexService", "SellService", "RollService",
 	"DiceService", "UpgradeService", "StationService", "DailyService", "TowerService",
 	"RebirthService", "FusionService", "TradeService", "MissionService",
+	"BoostService", "JackpotService",
 }
 local S = {}
 for _, name in ORDER do
@@ -611,6 +612,67 @@ check(Env.waitFor(function()
 	return d1.Missions.Day == math.floor((os.time() + 86400) / 86400)
 end, 1), "virada do dia: novas diárias, conquistas mantidas")
 check(d1.Missions.Achievements.rolls == 1, "conquista resgatada continua registrada")
+end
+
+do
+-- MONETIZAÇÃO (Fase 10)
+local okNC, codeNC = call("RequestPurchase", p1, "VIP")
+check(not okNC and codeNC == "not_configured", "gamepass sem ID: recusado com aviso")
+d1.Gems = 10
+local okJ0, codeJ0 = call("SpinJackpot", p1)
+check(not okJ0 and codeJ0 == "not_enough_gems" and d1.Gems == 10, "Jackpot sem gemas: recusado")
+d1.Gems = 1000
+S.JackpotService._rand = function()
+	return 0
+end
+local okJm, prizeM = call("SpinJackpot", p1)
+check(okJm and prizeM.kind == "Money" and d1.Gems == 850, "Jackpot: gasta 150 gemas e entrega o prêmio")
+S.JackpotService._rand = function()
+	return 0.99999
+end
+local invCount = 0
+for _ in d1.Inventory do
+	invCount += 1
+end
+local okJ, prize = call("SpinJackpot", p1)
+check(okJ and prize.kind == "Roll" and prize.roll ~= nil, "Jackpot: prêmio personagem garantido")
+local tiers = { Common = 1, Uncommon = 2, Rare = 3, Epic = 4, Legendary = 5, Mythic = 6, Divine = 7, Secret = 8 }
+check(okJ and tiers[prize.roll.Rarity] >= 6, "prêmio Mítico+ respeita a raridade mínima")
+local invAfter = 0
+for _ in d1.Inventory do
+	invAfter += 1
+end
+check(invAfter == invCount + 1, "personagem do prêmio vai para a mochila")
+check(lastEvent("JackpotResult", p1) ~= nil, "cliente recebe o resultado do giro")
+local okG, gemItem = call("BuyGemItem", p1, "LuckBoost")
+check(okG and gemItem.kind == "LuckBoost" and d1.Boosts.Luck.Multiplier >= 2, "loja de gemas: boost de sorte")
+local okGI, codeGI = call("BuyGemItem", p1, "Nada")
+check(not okGI and codeGI == "invalid_item", "item inválido na loja de gemas")
+local incomeNoVip = Formulas:incomePerSecond(d1)
+local capNoPass = Formulas:capacity(d1)
+S.MonetizationService.Dev.GrantPass(p1, "VIP")
+S.MonetizationService.Dev.GrantPass(p1, "BigBackpack")
+check(Env.waitFor(function()
+	return d1.Runtime.Income and d1.Runtime.Income >= 1.5
+end, 1), "VIP aplica renda x1.5 (Runtime)")
+check(Formulas:incomePerSecond(d1) > incomeNoVip * 1.4, "renda com VIP maior")
+check(Formulas:capacity(d1) == capNoPass + 100, "Mochila Gigante: +100 espaços")
+check(d1.Runtime.Passes.VIP == true, "loja sabe que o VIP foi comprado")
+local moneyP = d1.Money
+check(S.MonetizationService.Dev.DeliverProduct(p1, "MoneySmall") and d1.Money >= moneyP + 10000, "produto Pacote de Dinheiro entregue")
+local gemsP = d1.Gems
+check(S.MonetizationService.Dev.DeliverProduct(p1, "Gems500") and d1.Gems == gemsP + 500, "produto 500 gemas entregue")
+-- Impulso de amigos
+function p1:IsFriendsWith(userId)
+	return userId == p2.UserId
+end
+S.BoostService.ClearFriendCache(p1)
+S.BoostService.Refresh(p1)
+check(d1.Runtime.Friends == 1 and math.abs(d1.Runtime.FriendBonus - 0.05) < 1e-9, "impulso de amigos: +5% com 1 amigo no servidor")
+-- Runtime salvo nunca é confiado
+d1.Runtime = { Income = 999 }
+S.BoostService.Refresh(p1)
+check(d1.Runtime.Income < 999, "Runtime é recalculado (valor salvo ignorado)")
 end
 
 ------------------------------------------------------------------------------------
