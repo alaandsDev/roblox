@@ -32,6 +32,13 @@ AnalyticsService.EVENTS = {
 	"OfflineRewardClaimed",
 	"DailyClaimed",
 	"IndexMilestone",
+	"TowerWin",
+	"TowerLoss",
+	"Rebirth",
+	"Fusion",
+	"TradeCompleted",
+	"MissionClaimed",
+	"PurchaseCompleted",
 }
 
 -- (player, nome, params)

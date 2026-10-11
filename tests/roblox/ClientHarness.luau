@@ -136,7 +136,7 @@ local Services = env.server.Services
 local ORDER = {
 	"PlayerDataService", "MonetizationService", "MapService", "BaseService", "AnalyticsService",
 	"EconomyService", "InventoryService", "IndexService", "SellService", "RollService",
-	"DiceService", "UpgradeService", "StationService", "DailyService",
+	"DiceService", "UpgradeService", "StationService", "DailyService", "TowerService",
 }
 local S = {}
 for _, name in ORDER do
@@ -179,7 +179,7 @@ local ClientControllers = env.client.Controllers
 local CLIENT_ORDER = {
 	"NotificationController", "DataController", "HudController", "NavigationController", "AmbientController",
 	"RevealController", "RollController", "InventoryController", "DiceShopController", "UpgradesController",
-	"SellController", "IndexController", "DailyController", "OfflineController", "SettingsController",
+	"SellController", "IndexController", "DailyController", "OfflineController", "SettingsController", "TowerController",
 	"FeedbackController", "LodController",
 }
 local C = {}
@@ -467,6 +467,29 @@ end
 check(Env.waitFor(function()
 	return data.Settings.ReducedEffects == true
 end, 2), "CONFIGURAÇÕES: Efeitos reduzidos salvo")
+UIKit.Windows.closeAll()
+
+-- Torres: abrir, lutar, animação da batalha, fechar
+S.InventoryService.Add(player, "eclipse_sovereign")
+local towers = openWindow("Towers")
+check(towers ~= nil and towers.isOpen, "TORRES abre")
+local fight = find(towers.content, "Fight_Ember")
+check(fight ~= nil, "botão LUTAR da Torre das Brasas")
+if fight then
+	click(fight)
+end
+check(Env.waitFor(function()
+	local battle = gui("Battle")
+	return battle ~= nil and battle.Enabled and find(battle, "Outcome") ~= nil
+end, 15), "batalha animada até VITÓRIA/DERROTA")
+check(data.TowerProgress.Ember == 1, "andar 1 vencido")
+local closeBattle = gui("Battle") and find(gui("Battle"), "CloseBattle")
+if closeBattle then
+	click(closeBattle)
+end
+check(Env.waitFor(function()
+	return not gui("Battle").Enabled
+end, 2), "fechar a batalha")
 UIKit.Windows.closeAll()
 
 -- Notificações agrupadas

@@ -248,4 +248,28 @@ return {
 
 	-- Estações
 	["station.level_up"] = "NÍVEL {level}!",
+
+	-- Torres (Fase 7)
+	["tower.title"] = "TORRES",
+	["tower.Ember"] = "Torre das Brasas",
+	["tower.Storm"] = "Torre da Tempestade",
+	["tower.Void"] = "Torre do Vazio",
+	["tower.floor"] = "ANDAR {floor}/{max}",
+	["tower.enemy_power"] = "Inimigos: ⚔️ {power}",
+	["tower.fight"] = "LUTAR",
+	["tower.locked"] = "BLOQUEADA",
+	["tower.done"] = "COMPLETA",
+	["tower.completed"] = "TORRE COMPLETA!",
+	["tower.auto_team"] = "TIME AUTO",
+	["tower.team_auto"] = "Time automático · ⚔️ {power}",
+	["tower.team_custom"] = "Seu time · ⚔️ {power}",
+	["tower.team_full"] = "O time da torre já tem 5 personagens.",
+	["tower.battle_title"] = "{tower} · ANDAR {floor}",
+	["tower.victory"] = "VITÓRIA!",
+	["tower.defeat"] = "DERROTA",
+	["inv.tower_team"] = "TIME DA TORRE",
+	["error.invalid_tower"] = "Torre inválida.",
+	["error.tower_locked"] = "Complete a torre anterior primeiro.",
+	["error.tower_complete"] = "Torre já completa!",
+	["error.no_team"] = "Você precisa de personagens para lutar.",
 }

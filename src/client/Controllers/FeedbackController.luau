@@ -23,7 +23,20 @@ local NotificationController = require(script.Parent.NotificationController)
 
 local FeedbackController = {}
 
-local MENUS = { DiceShop = true, Sell = true, Upgrades = true, Inventory = true, Index = true, Daily = true }
+local MENUS = {
+	DiceShop = true,
+	Sell = true,
+	Upgrades = true,
+	Inventory = true,
+	Index = true,
+	Daily = true,
+	Towers = true,
+	Rebirth = true,
+	Fusion = true,
+	Trade = true,
+	Missions = true,
+	Store = true,
+}
 
 local root: Frame
 local upgradeCombo = 0

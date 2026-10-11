@@ -144,6 +144,8 @@ local function refreshDetail()
 	UIKit.setButtonColor(detailButtons.Equip, if equipped then Theme.Colors.Orange else Theme.Colors.Success)
 	UIKit.setButtonText(detailButtons.Lock, (if item.Locked then "🔒 " else "🔓 ") .. Localization.t(if item.Locked then "inv.unlock" else "inv.lock"))
 	UIKit.setButtonText(detailButtons.Favorite, (if item.Favorite then "⭐ " else "☆ ") .. Localization.t(if item.Favorite then "inv.unfavorite" else "inv.favorite"))
+	local inTeam = table.find(data.TowerTeam or {}, selected) ~= nil
+	UIKit.setButtonText(detailButtons.Team, (if inTeam then "✓ " else "🗼 ") .. Localization.t("inv.tower_team"))
 	UIKit.setButtonText(detailButtons.Sell, Localization.t("inv.sell", { amount = NumberFormatter.money(Formulas:sellValue(item.Id, item.Variant)) }))
 end
 
@@ -354,6 +356,24 @@ local function build()
 			NotificationController.Show("inv.best_done", { count = result.data })
 		end
 	end })
+	detailButtons.Team = UIKit.button(actions, { text = "", color = Color3.fromRGB(120, 70, 220), order = 6, onClick = function()
+		local data = DataController.GetAll()
+		local uid = selected
+		if not data or not uid then
+			return
+		end
+		local team = table.clone(data.TowerTeam or {})
+		local index = table.find(team, uid)
+		if index then
+			table.remove(team, index)
+		elseif #team >= 5 then
+			NotificationController.Show("tower.team_full")
+			return
+		else
+			table.insert(team, uid)
+		end
+		request("SetTowerTeam", team)
+	end })
 	detailButtons.Sell.Name = "SellOne"
 	-- EQUIPAR MELHORES também na barra (sem precisar selecionar)
 	UIKit.button(top, {
@@ -396,7 +416,7 @@ function InventoryController.Start()
 	end
 	DataController.InventoryChanged:Connect(schedule)
 	DataController.Changed:Connect(function(key)
-		if key == "EquippedCharacters" or key == "Upgrades" then
+		if key == "EquippedCharacters" or key == "Upgrades" or key == "TowerTeam" then
 			schedule()
 		end
 	end)

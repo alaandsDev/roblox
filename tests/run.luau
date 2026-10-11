@@ -23,6 +23,7 @@ require("./DailyCore.spec")
 require("./RevealPlanner.spec")
 require("./Migrations.spec")
 require("./Economy.spec")
+require("./BattleCore.spec")
 
 if not T.report() then
 	error("testes falharam", 0)

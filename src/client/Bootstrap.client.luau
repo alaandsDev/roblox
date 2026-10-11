@@ -24,6 +24,7 @@ local ORDER = {
 	"DailyController",
 	"OfflineController",
 	"SettingsController",
+	"TowerController",
 	"FeedbackController",
 	"LodController",
 }

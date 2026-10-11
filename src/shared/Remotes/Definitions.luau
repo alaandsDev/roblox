@@ -91,8 +91,9 @@ local Definitions: Definitions = {
 		GetDailyStatus = { args = {}, rate = { capacity = 5, refill = 1 } },
 		ClaimDaily = { args = {}, rate = { capacity = 3, refill = 0.5 } },
 
-		-- Fase futura
-		RequestEnterTower = { args = { CONFIG_ID }, rate = { capacity = 3, refill = 0.5 } },
+		-- Torres (FASE 7): o servidor simula a batalha e devolve o registro para o cliente animar
+		RequestEnterTower = { args = { CONFIG_ID }, rate = { capacity = 3, refill = 1 } },
+		SetTowerTeam = { args = { { type = "array", maxItems = 5, of = UID } }, rate = { capacity = 5, refill = 2 } },
 	},
 
 	Events = {

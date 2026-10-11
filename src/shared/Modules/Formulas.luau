@@ -75,6 +75,28 @@ function Formulas:levelMultiplier(lvl: number?): number
 	return 1 + (l - 1) * self.c.Levels.IncomePerLevel
 end
 
+-- Poder de UMA unidade (Torres): BasePower * (1 + (Level-1) * PowerPerLevel) * Variante * bônus de Rebirth
+function Formulas:unitPower(item: any, data: any?): number
+	local character = item and self.c.Characters.ById[item.Id]
+	if not character then
+		return 0
+	end
+	local l = math.clamp(math.floor(tonumber(item.Level) or 1), 1, self.c.Levels.MaxLevel)
+	local power = character.BasePower * (1 + (l - 1) * self.c.Levels.PowerPerLevel) * self:variant(item.Variant).PowerMultiplier
+	return power * (if data then self:powerMultiplier(data) else 1)
+end
+
+-- Multiplicador global de poder (Rebirth / perks). Sem configuração = 1
+function Formulas:powerMultiplier(data: any): number
+	local rebirth = self.c.Rebirth
+	if not rebirth then
+		return 1
+	end
+	local perks = type(data.RebirthPerks) == "table" and data.RebirthPerks or {}
+	local perk = rebirth.PerksById and rebirth.PerksById.Power
+	return 1 + (data.Rebirths or 0) * (rebirth.PowerPerRebirth or 0) + (if perk then (perks.Power or 0) * perk.PerLevel else 0)
+end
+
 -- Renda/s de UMA unidade, sem multiplicadores globais (Level * Variant)
 function Formulas:unitIncome(item: any): number
 	local character = item and self.c.Characters.ById[item.Id]

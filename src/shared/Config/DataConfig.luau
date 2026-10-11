@@ -56,7 +56,9 @@ DataConfig.Template = {
 	-- Marcos do Index já recebidos: { [tostring(percentual)] = true }
 	IndexRewards = {},
 	Upgrades = { Luck = 0, Income = 0, RollSpeed = 0, Inventory = 0 },
+	-- Torres: { [towerId] = maior andar vencido }; time escolhido (até 5 uids; vazio = automático)
 	TowerProgress = {},
+	TowerTeam = {},
 	-- Contadores de pity (rolls seguidos sem a raridade)
 	Pity = { Legendary = 0, Mythic = 0 },
 

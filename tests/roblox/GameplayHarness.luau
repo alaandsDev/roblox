@@ -42,7 +42,7 @@ local Services = env.server.Services
 local ORDER = {
 	"PlayerDataService", "MonetizationService", "MapService", "BaseService", "AnalyticsService",
 	"EconomyService", "InventoryService", "IndexService", "SellService", "RollService",
-	"DiceService", "UpgradeService", "StationService", "DailyService",
+	"DiceService", "UpgradeService", "StationService", "DailyService", "TowerService",
 }
 local S = {}
 for _, name in ORDER do
@@ -439,6 +439,50 @@ d1.LastDailyClaim = dayNow
 dayNow += 86400
 local ok7, d7 = call("ClaimDaily", p1)
 check(ok7 and d7.day == 7 and d7.kind == "Dice" and d1.OwnedDice.Prism == true, "diário: Dia 7 = dado exclusivo Prism")
+
+------------------------------------------------------------------------------------
+-- TORRES (Fase 7)
+local towerClock = 5000
+S.TowerService._clock = function()
+	return towerClock
+end
+local okTL, codeTL = call("RequestEnterTower", p1, "Storm")
+check(not okTL and codeTL == "tower_locked", "torre 2 bloqueada até completar a 1ª")
+local okTI, codeTI = call("RequestEnterTower", p1, "Nada")
+check(not okTI and codeTI == "invalid_tower", "torre inválida recusada")
+S.InventoryService.Add(p1, "eclipse_sovereign")
+local moneyT = d1.Money
+local okT, battle = call("RequestEnterTower", p1, "Ember")
+check(okT and battle.floor == 1 and battle.won and #battle.log > 0, "andar 1 vencido com time forte (log de batalha)")
+check(d1.TowerProgress.Ember == 1 and d1.Money > moneyT, "progresso salvo e dinheiro entregue")
+local okTC, codeTC = call("RequestEnterTower", p1, "Ember")
+check(not okTC and codeTC == "cooldown", "cooldown entre batalhas")
+towerClock += 2
+local okT2, battle2 = call("RequestEnterTower", p1, "Ember")
+check(okT2 and battle2.floor == 2, "próxima batalha = próximo andar")
+d1.TowerProgress.Ember = 30
+towerClock += 2
+local okTD, codeTD = call("RequestEnterTower", p1, "Ember")
+check(not okTD and codeTD == "tower_complete", "torre completa não luta de novo")
+towerClock += 2
+check((call("RequestEnterTower", p1, "Storm")), "completar Brasas libera a Tempestade")
+local okTeam, codeTeam = call("SetTowerTeam", p1, { "c999999" })
+check(not okTeam and codeTeam == "not_owned", "time da torre só com personagens próprios")
+local someUid = next(d1.Inventory)
+check((call("SetTowerTeam", p1, { someUid, someUid })) and #d1.TowerTeam == 1, "time sem repetidos")
+call("SetTowerTeam", p1, {})
+-- time fraco perde e não avança
+local weakData = d2
+d2.Inventory = {}
+d2.EquippedCharacters = {}
+local okNT, codeNT = call("RequestEnterTower", p2, "Ember")
+check(not okNT and codeNT == "no_team", "sem personagens: sem batalha")
+S.InventoryService.Add(p2, "flame_rookie")
+d2.TowerProgress.Ember = 19
+towerClock += 2
+local okW, lost = call("RequestEnterTower", p2, "Ember")
+check(okW and lost.won == false and d2.TowerProgress.Ember == 19, "derrota não avança o andar")
+local _ = weakData
 
 ------------------------------------------------------------------------------------
 -- DEMO + SAÍDA
