@@ -6,9 +6,14 @@
 ReplicatedStorage
 └── Shared
     ├── Config/          GameConfig, DataConfig, MonetizationConfig, MapConfig, BaseConfig,
-    │                    BaseProgressionConfig (dados, sem lógica)
+    │                    BaseProgressionConfig, RarityConfig, RollConfig, CharacterConfig,
+    │                    CharacterLevelConfig, VariantConfig, DiceConfig, UpgradeConfig,
+    │                    EconomyConfig, OfflineIncomeConfig, DailyConfig, IndexConfig,
+    │                    RevealConfig, FriendBoostConfig (dados, sem lógica)
     ├── Modules/         TableUtil, NumberFormatter, RateLimiter, Validator, Signal,
-    │                    Logger, AssetLoader, Net, MapLayout, BaseLayout, BaseProgression
+    │                    Logger, AssetLoader, Net, MapLayout, BaseLayout, BaseProgression,
+    │                    RollCore, Formulas (+ GameFormulas), OfflineCore, DailyCore,
+    │                    RevealPlanner (puros) e CharacterModelFactory (modelos 3D)
     ├── Localization/    Localization (t/format), PtBR (padrão), EnUS
     └── Remotes/         Definitions (lista de remotes + schema); as instâncias são
                          criadas aqui em runtime pelo Net
@@ -17,17 +22,22 @@ ReplicatedStorage.Assets (assets/Assets.rbxm: Sounds, VFX, Icons, Sky)
 ServerScriptService
 └── Server
     ├── Bootstrap.server.luau   cria remotes e inicia os Services (Init -> Start)
-    ├── Services/               PlayerDataService, MonetizationService, MapService, BaseService
+    ├── Services/               PlayerDataService, MonetizationService, MapService, BaseService,
+    │                           AnalyticsService, EconomyService, InventoryService, IndexService,
+    │                           SellService, RollService, DiceService, UpgradeService,
+    │                           StationService, DailyService, DevService (Studio)
     ├── Map/                    construtores: Build, Decor, MapBuilder, BaseBuilder
     └── Core/                   lógica pura testável: ProfileCore, ReceiptCore, Migrations,
-                                BaseAllocator, MapValidator
+                                BaseAllocator, MapValidator, SpawnCoordinator, InventoryCore
 
 StarterPlayer.StarterPlayerScripts
 └── Client
     ├── Bootstrap.client.luau   inicia os Controllers
-    └── Controllers/            DataController, NotificationController,
-                                NavigationController (HUD CENTRO/CASA/LOJA), AmbientController
-                                (esteira + dado do Hub, só visual)
+    ├── UI/                     UITheme (design system) + UIKit (botões, janelas, confirmação, sons)
+    ├── Effects/                HeroLanding (cinemática), CameraShake, Pool
+    └── Controllers/            Notification, Data, Hud, Navigation, Ambient, Reveal, Roll,
+                                Inventory, DiceShop, Upgrades, Sell, Index, Daily, Offline,
+                                Settings, Feedback, Lod
 
 Workspace (gerado pelo MapService ao iniciar o servidor)
 ├── Map        Environment, Paths, Conveyor, Hub, Shops, Towers, Social
@@ -126,3 +136,39 @@ Floor02: SideA = Slot09..Slot12 | SideB = Slot13..Slot16
 - Andares sobem de 20 em 20 studs; a rampa fica num "poço" lateral que alterna de lado a
   cada andar (Floor01→02 pelo lado B, Floor02→03 pelo lado A…). A moldura do telhado fica
   sempre no andar mais alto, então a base cresce visivelmente.
+
+
+## Gameplay (Fases 3–6 + estações, offline, diário, cinemática)
+
+Ordem do servidor (`Bootstrap`): PlayerData → Monetization → Map → Base → Analytics → Economy →
+Inventory → Index → Sell → Roll → Dice → Upgrade → Station → Daily → Dev.
+
+| Service | Responsabilidade | Remotes |
+|---|---|---|
+| RollService | roll autoritativo (cooldown, inventário cheio antes do sorteio, Luck, pity, Index, auto-sell, histórico de sessão, anúncio) | RequestRoll |
+| InventoryService | unidades (uid), equipar/desequipar/melhores, travar/favoritar, **nível individual** | EquipCharacter, UnequipCharacter, EquipBest, SetCharacterFlag, UpgradeCharacter |
+| StationService | cada slot equipado vira **estação**: personagem 3D, billboard (variante/nome/raridade/nível/renda), placa (produzido + Nível N > N+1), pad de upgrade (pisar/prompt) | — |
+| EconomyService | dinheiro, renda passiva → coletor, coletar (pisar/prompt/remote perto), **dinheiro offline** | CollectMoney, ClaimOfflineReward |
+| DiceService | comprar/equipar dados, abre a LOJA DE DADOS | BuyDice, EquipDice |
+| UpgradeService | melhorias globais, abre MELHORIAS na base | BuyUpgrade |
+| SellService | vender, vender em massa (prévia + confirmação), auto-sell | SellCharacter, SellBatch, SetAutoSell |
+| IndexService | descobertas e marcos (25/50/75/100%) | — |
+| DailyService | recompensas diárias (7 dias, UTC do servidor) | GetDailyStatus, ClaimDaily |
+| AnalyticsService | ganchos internos (FirstRoll, Roll, RareObtained, …) | — |
+
+Interações do mapa: `MapService.RegisterInteraction(id, fn)` (DiceShop, Sell, UpgradeArea,
+MoneyCollector, StationUpgrade); o servidor responde com `OpenMenu` quando é uma janela.
+
+**Cliente**: `UITheme` + `UIKit` (um design system para toda janela). HUD segue a hierarquia
+da referência: topo centro CENTRO/CASA/LOJA, esquerda LOJA/RENASCER/ÍNDICE, baixo centro
+MOCHILA/ROLAR/MELHORIAS (+ AUTO/OCULTAR e histórico), topo direito OFFLINE/DIÁRIO/⚙️,
+baixo esquerda dinheiro/Luck/impulso de amigos, direita reservada (monetização futura).
+
+**Reveal**: `RevealPlanner` (puro) decide Normal / Enhanced / Compact / HeroLanding a partir
+do `RevealConfig`. A cinemática roda num **ViewportFrame local** com câmera própria: a câmera
+e os controles do jogador nunca são tocados; tudo é limpo em `Stop()` (pular, continuar,
+morrer, erro). Peças de impacto vêm de `Pool`.
+
+**Desempenho**: estações sem colisão/toque/consulta; um loop central por serviço (renda 1 s,
+placas 2 s, pads 0,4 s, coletor 0,25 s); textos só mudam quando o valor muda; billboards com
+`MaxDistance`; `LodController` (cliente, 0,5 s) esconde detalhe e partículas de longe.

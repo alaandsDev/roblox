@@ -16,26 +16,51 @@ O `SimuladorEscudo_v1` do protótipo **não é lido nem migrado**.
 }
 ```
 
-## Perfil — versão 1 (`Shared/Config/DataConfig.luau`)
+## Perfil — versão 2 (`Shared/Config/DataConfig.luau`)
 
 | Campo | Tipo | Descrição |
 |---|---|---|
-| `Version` | number | Versão do schema (= `DataConfig.SchemaVersion`) |
+| `Version` | number | Versão do schema (= `DataConfig.SchemaVersion` = 2) |
 | `Money`, `Gems`, `RebirthTokens` | number | Moedas |
 | `Rolls`, `Rebirths` | number | Contadores |
 | `EquippedDice` | string | Dado equipado (`"Normal"`) |
-| `Inventory` | map | Lutadores (formato definido na FASE 4) |
-| `EquippedCharacters` | map/lista | Lutadores na base |
-| `Index` | map | Lutadores descobertos |
-| `Upgrades` | map | Níveis de melhoria |
-| `TowerProgress` | map | Maior andar por torre |
-| `Pity` | map | Rolls desde a última raridade |
-| `Settings.AutoRoll` | boolean | |
-| `Settings.HideRollAnimation` | boolean | |
-| `Settings.AutoSell` | map | Raridades vendidas automaticamente |
-| `Daily` | map | Recompensa diária |
+| `OwnedDice` | map | `{ [diceId] = true }` (Normal sempre) |
+| `Inventory` | map | `{ [uid] = CharacterInstance }` (abaixo) |
+| `NextUid` | number | Próximo uid (`"c" .. NextUid`); nunca diminui, nunca repete |
+| `EquippedCharacters` | map | `{ [tostring(slotId)] = uid }` (chave string: compatível com JSON) |
+| `Index` | map | `{ [characterId] = { Count, FirstAt } }` |
+| `IndexRewards` | map | `{ ["25"] = true, ... }` marcos já pagos |
+| `Upgrades` | map | `{ Luck, Income, RollSpeed, Inventory }` níveis das melhorias GLOBAIS |
+| `TowerProgress` | map | Maior andar por torre (fase futura) |
+| `Pity` | map | `{ Legendary, Mythic }` rolls desde a raridade |
+| `UncollectedMoney` | number | Renda no coletor da base |
+| `LastKnownIncomePerSecond` | number | Renda/s da base (base do dinheiro offline) |
+| `PendingOfflineReward` | number | Dinheiro offline calculado e ainda não resgatado |
+| `LastDailyClaim`, `DailyStreak`, `DailyCycleDay` | number | Diário (os.time do servidor, sequência, último dia do ciclo 0–7) |
+| `Boosts` | map | `{ Luck = { Multiplier, ExpiresAt } }` |
+| `RevealViews` | map | `{ [rarity] = vezes }` (libera PULAR na cinemática) |
+| `Settings.AutoRoll`, `HideRollAnimation`, `CameraShake`, `ReducedEffects` | boolean | Configurações do cliente |
+| `Settings.AutoSell` | map | `{ Common..Divine = boolean }` (Secreto nunca) |
+| `Daily` | map | Reservado (legado) |
 | `ProcessedReceipts` | lista | Últimos PurchaseIds entregues (idempotência). **Privado**: nunca vai ao cliente |
-| `LastLogout`, `CreatedAt`, `LastSave` | number | `os.time()` do servidor |
+| `LastLogout` | number | "Visto por último": saída do jogador e a cada 30 s (os.time do servidor) |
+| `CreatedAt`, `LastSave` | number | `os.time()` do servidor |
+
+### CharacterInstance (`Inventory[uid]`)
+
+| Campo | Tipo | Descrição |
+|---|---|---|
+| `Id` | string | `CharacterConfig` id |
+| `Level` | number | Nível da estação (1..CharacterLevelConfig.MaxLevel) |
+| `Variant` | string | `Normal` (Silver/Gold/Diamond/Emerald/Void/Celestial preparadas em VariantConfig) |
+| `Locked`, `Favorite` | boolean | Proteções contra venda |
+| `ObtainedAt` | number | os.time do servidor |
+
+### Migração v1 → v2 (`Server/Core/Migrations.luau`)
+
+Unidades antigas ganham `Level = 1`, `Variant = "Normal"`, flags booleanas; itens inválidos são
+removidos; `NextUid` fica acima do maior uid existente; slots apontando para uids inexistentes
+são limpos. Os campos novos vêm do Template (reconcile). Teste: `tests/Migrations.spec.luau`.
 
 Tabelas vazias no Template são **mapas dinâmicos**: o carregamento só garante o tipo, não o conteúdo.
 

@@ -24,6 +24,16 @@
 | `tests/MapValidator.spec.luau` | **map validation**: detecta base faltando, ids repetidos, lado com 2 slots, peças faltando |
 | `tests/SpawnCoordinator.spec.luau` | **spawn**: cada jogador nasce na própria base, respawn na mesma base, nunca na base de outro, 10 entradas simultâneas em ordens misturadas, base atrasada (nasce no Hub e vai para casa), 11º jogador |
 | `tests/roblox/ServiceHarness.luau` (Lune) | **integração** PlayerDataService + MapService + BaseService reais com jogadores falsos: AssignBase → GetPlayerBase → GetBaseOwner → OwnerUserId → ReleaseBase → reatribuição; regressão da "cópia da Barra de comandos"; integridade |
+| `tests/RollCore.spec.luau` | pesos (soma 100.000 = 55/25/12/5/2/0,75/0,2/0,05%), Luck favorece raridades altas, pity 50/250 (maior vence, reset), **1.000.000 rolls** dentro de 5σ |
+| `tests/Formulas.spec.luau` | Luck (dado × upgrades × boost), cooldown mínimo, capacidade, renda por estação (Level × Variante), custo de nível x1/x5/MAX, venda, custos globais |
+| `tests/InventoryCore.spec.luau` | **uids únicos** (10.000), equipar (RB0 1–4, slot bloqueado/ocupado, dono, mover), EQUIPAR MELHORES, venda com proteções, duplicatas, comuns |
+| `tests/Characters.spec.luau` | roster 5/4/4/3/3/2/2/1, campos, renda cresce por raridade, dados e upgrades |
+| `tests/OfflineCore.spec.luau` | 0 s, 1 min, 1 h, 8 h, 24 h (limita), futuro, NaN/inf/texto, renda zero |
+| `tests/DailyCore.spec.luau` | primeiro login, Dia 1, double claim/spam, mesmo dia, dia seguinte (<24 h), ciclo de 7, streak perdido, timestamp futuro/inválido |
+| `tests/RevealPlanner.spec.luau` | Comum/Épico sem cinemática, Lendário/Mítico/Divino/Secreto com o preset certo, OCULTAR (Secreto força), AUTO pausa/continua, NOVO, PULAR, efeitos reduzidos, **odds = config** |
+| `tests/Migrations.spec.luau` | v1 → v2 (Level/Variant, NextUid, slots inválidos) + Template |
+| `tests/Economy.spec.luau` | simulação Casual/Ativo/Hardcore: progressão não quebra em 5 min/2 h, 8 h offline ≤ 1 h ativa |
+| `tests/roblox/GameplayHarness.luau` (Lune) | **integração** de todos os Services de gameplay reais: roll/cooldown/pity/inventário cheio/auto-sell, equipar + estações (billboard/pad/placa, sem colisão), **nível individual** (custo exato, spam, não equipado, máximo, pisar no pad), renda/coletor (pisar, longe), dados, upgrades, venda (protegidos, prévia = confirmado), Index (marco único), offline (claim único, futuro, fechar sem resgatar), diário (spam, dia seguinte, reset, Dia 7), base demo, saída |
 | `tests/roblox/MapHarness.luau` (Lune) | executa o **MapService/MapBuilder/BaseBuilder reais**; **map references**; estados RB0/RB5/dono; gera a imagem `build/map_preview.png` |
 
 Também rodar antes de cada commit:
@@ -76,8 +86,104 @@ Preparação: `git pull`, `python tools\run_tests.py` (gera também `build\map_p
 | 15 | Multiplayer | Teste > Servidor local com 2 a 4 jogadores (e 10 se a máquina aguentar) | Cada jogador recebe uma base diferente (ordem 3, 8, 2, 9…); placas certas; fechar um jogador → base volta a "BASE LIVRE" |
 | 16 | Mobile | Teste > Dispositivo: iPhone (em pé e deitado), iPad, 1366×768 | Os 3 botões cabem no topo sem cobrir a tela |
 
-## 4. Futuras fases
+## 4. Manual no Roblox Studio — FASES 3–6 + estações, offline, diário e cinemática
 
-Lista completa (bases, roll, auto roll, inventário cheio, venda, torres, rebirth, offline,
-daily, gamepass, produto, falha de DataStore, reconexão, UI mobile…) será detalhada aqui
-conforme cada fase entrar.
+**Antes**: feche o Studio, `git pull`, `python tools\run_tests.py`, `python tools\build_place.py`,
+abra `build\RollLegends.rbxlx` e clique em **Play**. Contexto **Servidor** = Barra de comandos
+com a visão "Server" (Test > Current: Server); **Cliente** = visão "Client" ou só olhando a tela.
+
+**Preparação (Servidor, rode uma vez por Play):**
+`_G.D = game.ServerStorage.RollLegendsDev _G.P = game.Players:GetPlayers()[1] print(_G.D:Invoke("Help"))`
+
+(Nunca use `require()` na Barra de comandos: ela recebe uma cópia vazia dos módulos.)
+
+| # | Seção | Ação | Resultado esperado | Contexto | Comando |
+|---|---|---|---|---|---|
+| 1 | A BOOT | Play; olhar a Saída | Sem erros vermelhos; "Roll Legends v… iniciado com 15 services"; "15+ controllers iniciados" | Servidor/Cliente | — |
+| 2 | A BOOT | Ver HUD | Topo: CENTRO/CASA/LOJA; esquerda: LOJA/RENASCER/ÍNDICE; baixo: MOCHILA/ROLAR/MELHORIAS + AUTO/OCULTAR; topo direito: DIÁRIO e ⚙️; baixo esquerda: $0, 🍀 1x, 💎 0, Impulso de Amigos +0% | Cliente | — |
+| 3 | B BASE | Conferir base do jogador | "alandias123: Base03 (BaseId 3, OwnerUserId …)" | Servidor | `print(_G.D:Invoke("GetPlayerBase", _G.P))` |
+| 4 | B BASE | Andar até o coletor (pad verde da frente, lado B) | Billboard "COLETAR" com "$0" embaixo | Cliente | — |
+| 5 | C MULTIPLAYER | Teste > Servidor local, 2 jogadores; rolar nos dois | Cada um com base própria; estações e coletor de um não aparecem/coletam na base do outro | Servidor | `for _,p in game.Players:GetPlayers() do print(_G.D:Invoke("GetPlayerBase", p)) end` |
+| 6 | D ROLL | Clicar ROLAR (ou tecla R) | Reveal toca; personagem novo na MOCHILA; histórico (chip) acima do botão | Cliente | — |
+| 7 | D ROLL | Clicar ROLAR várias vezes rápido | Só 1 roll por cooldown (barra escura no botão); nenhuma mensagem de erro em spam | Cliente | — |
+| 8 | D ROLL | Ver Rolls/Pity no servidor | Rolls subiu; Pity conta rolls sem Lendário | Servidor | `print(_G.D:Invoke("GetData", _G.P, "Rolls"), _G.D:Invoke("GetData", _G.P, "Pity"))` |
+| 9 | E RNG/REVEAL | 200 rolls instantâneos | Distribuição parecida com 55/25/12/5/2… (JSON) | Servidor | `print(_G.D:Invoke("Roll", _G.P, 200))` |
+| 10 | E RNG/REVEAL | Forçar pity Lendário e rolar 1 | Resultado Lendário+ (`{"Legendary":1}` ou maior) | Servidor | `_G.D:Invoke("SetPity", _G.P, 49, 0) print(_G.D:Invoke("Roll", _G.P, 1))` |
+| 11 | E RNG/REVEAL | Rolar Comum/Raro/Épico pelo botão | Comum/Incomum: dado gira, flash, nome (~1,2–1,3 s); Raro: raios pequenos; Épico: raios maiores e flash mais forte (~1,8 s) | Cliente | — |
+| 12 | F AUTO ROLL | Ligar AUTO | Rola sozinho no ritmo do cooldown; botão AUTO verde ✓ | Cliente | — |
+| 13 | F AUTO ROLL | Desligar AUTO | Para imediatamente | Cliente | — |
+| 14 | G HIDE ROLL | Ligar OCULTAR e rolar | Sem reveal grande: cartão compacto no topo (ícone, nome, raridade, NOVO) | Cliente | — |
+| 15 | G HIDE ROLL | Reabrir o Play (Studio sem API não salva; com API salva) | OCULTAR mantém o estado salvo | Cliente | — |
+| 16 | H INVENTÁRIO | Abrir MOCHILA | Grade com retrato, nome, raridade, renda/s; capacidade "N / 100" | Cliente | — |
+| 17 | H INVENTÁRIO | Filtros TODOS/RARIDADE/PODER/RENDA/RECENTES e busca "dragon" | Ordem muda; busca filtra por nome | Cliente | — |
+| 18 | H INVENTÁRIO | Encher inventário e tentar rolar | "SEU INVENTÁRIO ESTÁ CHEIO!" com [VENDER] [MOCHILA]; repetidas viram "[x2]"; AUTO desliga | Servidor + Cliente | `print(_G.D:Invoke("FillInventory", _G.P))` |
+| 19 | H INVENTÁRIO | Limpar inventário | Mochila vazia | Servidor | `print(_G.D:Invoke("ClearInventory", _G.P))` |
+| 20 | I EQUIP | Dar personagens e EQUIPAR um na MOCHILA | Vai para o 1º pedestal livre (Slot01, lado A) | Servidor + Cliente | `print(_G.D:Invoke("GiveCharacter", _G.P, "dragon_knight", 3))` |
+| 21 | I EQUIP | EQUIPAR MELHORES | Até 4 personagens (RB0) por maior renda; lado B (05–08) continua bloqueado | Cliente | — |
+| 22 | I EQUIP | DESEQUIPAR | Estação some do pedestal | Cliente | — |
+| 23 | J PERSONAGENS NA BASE | Olhar os pedestais | Modelo 3D placeholder (cores/arma/acessório do personagem), virado para o corredor, sem andar, sem colisão (dá para atravessar) | Cliente | — |
+| 24 | J PERSONAGENS NA BASE | Ver atributo TODO_ASSET | `true` nos placeholders | Servidor | `print(workspace.Bases.Base03.RuntimeCharacters:FindFirstChild("Station_1"):FindFirstChildWhichIsA("Model"):GetAttribute("TODO_ASSET"))` |
+| 25 | K RENDA | Ver renda | "renda X/s, não coletado Y" crescendo | Servidor | `print(_G.D:Invoke("Income", _G.P))` |
+| 26 | L COLETAR | Pisar no coletor | Moedas voam até o dinheiro, "+$X", som; coletor volta a $0 | Cliente | — |
+| 27 | L COLETAR | Usar o prompt "Coletar" no coletor de OUTRA base | "Essa não é a sua base." | Cliente | — |
+| 28 | M DICE SHOP | Ir à LOJA DE DADOS (Hub) e usar o prompt / botão LOJA | Janela com 6 dados: Luck, preço, requisito, COMPRAR/BLOQUEADO/EQUIPAR/EQUIPADO | Cliente | — |
+| 29 | M DICE SHOP | Comprar Sortudo | Precisa de 50 rolls e $2.5K; ao comprar fica EQUIPADO | Servidor + Cliente | `_G.D:Invoke("SetRolls", _G.P, 50) print(_G.D:Invoke("GiveMoney", _G.P, 3000))` |
+| 30 | N LUCK | Ver Luck | HUD "🍀 1.25x"; servidor 1.25 | Servidor | `print(_G.D:Invoke("GetLuck", _G.P))` |
+| 31 | O UPGRADES | Abrir MELHORIAS (botão ou área MELHORIAS da base) | 4 linhas, "NÍVEL 0/20", próximo benefício, custo; badge com quantos dá para comprar | Cliente | `print(_G.D:Invoke("GiveMoney", _G.P, 1e6))` |
+| 32 | O UPGRADES | Comprar Sorte 1x | NÍVEL 1/20; Luck do HUD sobe 8% | Cliente | — |
+| 33 | O UPGRADES | Comprar Velocidade até o fim | Cooldown nunca abaixo de 0,45 s; botão "MÁX" | Cliente | `print(_G.D:Invoke("GiveMoney", _G.P, 1e9))` |
+| 34 | P SELL | No stand VENDER (Hub) → janela VENDER | Botões Vender selecionado / duplicatas / comuns + AUTO-SELL | Cliente | — |
+| 35 | P SELL | Vender duplicatas | Confirmação "Vender N personagens por $X?" [CANCELAR] [VENDER]; travados/favoritos/equipados nunca saem | Cliente | `print(_G.D:Invoke("GiveCharacter", _G.P, "flame_rookie", 10))` |
+| 36 | P SELL | Travar um personagem e tentar vendê-lo na MOCHILA | "Personagem travado." | Cliente | — |
+| 37 | Q AUTO SELL | Ligar COMUM no AUTO-SELL e rolar 30 vezes | Comuns repetidos não entram na mochila; reveal mostra "VENDIDO"; primeira descoberta nunca é vendida | Servidor | `print(_G.D:Invoke("Roll", _G.P, 30))` |
+| 38 | Q AUTO SELL | Clicar SECRETO no AUTO-SELL | Fica bloqueado: "Secretos nunca são vendidos automaticamente." | Cliente | — |
+| 39 | R INDEX | Abrir ÍNDICE | 24 cards; não descobertos = silhueta preta + "???"; "N / 24 DESCOBERTOS (P%)"; marcos 25/50/75/100 | Cliente | — |
+| 40 | R INDEX | Rolar até 6 descobertas | Aviso "Index 25% completo! +10 gemas" uma única vez | Servidor | `print(_G.D:Invoke("Roll", _G.P, 40))` |
+| 41 | S SAVE/LOAD | (Place publicado + API ligada) jogar, sair, voltar | Inventário, nível das estações, dados, upgrades, Index, diário mantidos | Servidor | `print(_G.D:Invoke("GetData", _G.P, "Inventory"))` |
+| 42 | S SAVE/LOAD | Studio sem API | Aviso "Modo de teste: salvamento desativado" | Cliente | — |
+| 43 | T MOBILE | Test > Device: iPhone (em pé e deitado), iPad | HUD cabe sem sobrepor; botões ≥ 44 px; janelas centralizadas e escaladas | Cliente | — |
+| 44 | U PERFORMANCE | Base demo nos 10 jogadores (ou várias vezes) e Ctrl+Shift+F5 | FPS estável; estações não têm física; partículas somem de longe | Servidor | `print(_G.D:Invoke("PopulateDemoBase", _G.P, true))` |
+| 45 | V SEGURANÇA | Chamar remote com argumento inválido | `{ok=false, code="invalid_args"}` | Cliente | `print(game.ReplicatedStorage.Shared.Remotes.RequestRoll:InvokeServer("Secret"))` |
+| 46 | V SEGURANÇA | Equipar uid que não é seu | `not_owned` | Cliente | `print(game.ReplicatedStorage.Shared.Remotes.EquipCharacter:InvokeServer("c999999").code)` |
+| 47 | V SEGURANÇA | Ativar AUTO-SELL de Secreto pelo remote | `invalid_args` | Cliente | `print(game.ReplicatedStorage.Shared.Remotes.SetAutoSell:InvokeServer("Secret", true).code)` |
+| 48 | V SEGURANÇA | Spam de RequestRoll | Só rolls no ritmo do cooldown; resto `cooldown`/`rate_limited` | Cliente | `for i=1,30 do task.spawn(function() print(game.ReplicatedStorage.Shared.Remotes.RequestRoll:InvokeServer().code) end) end` |
+| 49 | W CHARACTER LEVEL | Equipar e ver nível | Novo personagem = Nível 1 no billboard | Cliente | `print(_G.D:Invoke("GiveCharacter", _G.P, "cyber_ronin", 1))` |
+| 50 | W CHARACTER LEVEL | Melhorar sem dinheiro | "Dinheiro insuficiente para melhorar." (uma vez a cada 3 s, sem spam) | Cliente | — |
+| 51 | W CHARACTER LEVEL | Melhorar personagem NÃO equipado pelo remote: dar um (anote o uid, ex. `c42`) e pedir no Cliente | `not_equipped` | Servidor → Cliente | Servidor: `print(_G.D:Invoke("GiveCharacter", _G.P, "leaf_ranger", 1))` · Cliente: `print(game.ReplicatedStorage.Shared.Remotes.UpgradeCharacter:InvokeServer("c42").code)` |
+| 52 | W CHARACTER LEVEL | Levar ao máximo | Nível 50; pad fica dourado "MÁX"; placa "NÍVEL MÁX" | Servidor | `print(_G.D:Invoke("GiveMoney", _G.P, 1e15))` e pisar no pad |
+| 53 | X PEDESTAL UPGRADE | Pisar no pad verde em frente ao pedestal | Sobe 1 nível a cada 0,4 s enquanto estiver em cima; pad pisca branco, faíscas, som subindo de tom, "NÍVEL N!" | Cliente | `print(_G.D:Invoke("GiveMoney", _G.P, 1e6))` |
+| 54 | X PEDESTAL UPGRADE | Prompt "Melhorar" no pad | +1 nível; custo novo no pad; renda nova no billboard | Cliente | — |
+| 55 | X PEDESTAL UPGRADE | Prompt no pad de OUTRO jogador | "Essa não é a sua base." | Cliente | — |
+| 56 | Y OFFLINE MONEY | Simular 1 h fora com renda 100/s | Pendente = 100 × 3600 × 12% = 43.200 | Servidor | `print(_G.D:Invoke("SimulateOffline", _G.P, 3600, 100))` |
+| 57 | Y OFFLINE MONEY | Ver popup | Botão 🎁 OFFLINE aparece no topo direito; clicar abre "BEM-VINDO DE VOLTA!" com $43.2K e RESGATAR | Cliente | — |
+| 58 | Y OFFLINE MONEY | Fechar no X | Valor continua; 🎁 OFFLINE reabre | Cliente | — |
+| 59 | Y OFFLINE MONEY | RESGATAR duas vezes rápido | Paga uma vez; 2ª: "Nada para resgatar." | Cliente | — |
+| 60 | Y OFFLINE MONEY | 24 h fora | Limita a 8 h (100 × 28800 × 12% = 345.600) | Servidor | `print(_G.D:Invoke("SimulateOffline", _G.P, 86400, 100))` |
+| 61 | Y OFFLINE MONEY | Timestamp no futuro | Pendente não muda (aviso "LastLogout inválido") | Servidor | `print(_G.D:Invoke("SimulateOffline", _G.P, -99999, 100))` |
+| 62 | Z DAILY | Abrir DIÁRIO (badge "1") | Grade Dia 1–6 + Dia 7 grande; Dia 1 com borda brilhando e "RESGATAR!" | Cliente | `_G.D:Invoke("SetDaily", _G.P, nil, 0)` |
+| 63 | Z DAILY | Clicar Dia 1 | Dinheiro entregue; ✔ verde no Dia 1; badge some; "Próxima recompensa em HH:MM:SS" | Cliente | — |
+| 64 | Z DAILY | Clicar de novo / spam | Nada é entregue ("Já resgatado hoje.") | Cliente | — |
+| 65 | Z DAILY | Simular "resgatou ontem, dia 3" | Dia 4 disponível; 1–3 com ✔ | Servidor | `print(_G.D:Invoke("SetDaily", _G.P, 1, 3))` |
+| 66 | Z DAILY | Simular "resgatou há 3 dias" | Volta ao Dia 1 (sequência perdida) | Servidor | `print(_G.D:Invoke("SetDaily", _G.P, 3, 5))` |
+| 67 | Z DAILY | Simular Dia 7 | Recebe o Dado Prisma (exclusivo); na LOJA aparece como EQUIPAR | Servidor | `print(_G.D:Invoke("SetDaily", _G.P, 1, 6))` |
+| 68 | AA BILLBOARDS | Olhar uma estação de perto | VARIANTE (se não Normal) / NOME / RARIDADE (cor) / Nível N / $X/s; placa "$produzido" + "Nível N > N+1"; pad "$custo" — renda e custo separados | Cliente | — |
+| 69 | AA BILLBOARDS | Afastar ~50 studs e ~100 studs | Médio: só a renda; longe: billboard some e auras param | Cliente | — |
+| 70 | AB BASE DEMO | Base demo (4 slots) | 4 estações com raridades/níveis diferentes | Servidor | `print(_G.D:Invoke("PopulateDemoBase", _G.P))` |
+| 71 | AB BASE DEMO | Base demo (8 slots, ignora bloqueio) | 8 estações: Comum, Raro (Prata), Épico, Lendário (Ouro), Mítico (Diamante), Divino (Esmeralda), Incomum, Secreto (Celestial) | Servidor | `print(_G.D:Invoke("PopulateDemoBase", _G.P, true))` |
+| 72 | AC RARE CINEMATIC | Lendário | Tela escurece, câmera olha o céu, silhueta, queda com rastros/speed lines, IMPACTO (flash, tremida, anel, poeira, destroços, rachaduras, som grave), ajoelhado → levanta → pose; LENDÁRIO / ✨ NOVO! ✨ / nome / "1 EM 150"; CONTINUAR (~2,3 s) | Servidor | `print(_G.D:Invoke("PlayReveal", _G.P, "Legendary"))` |
+| 73 | AC RARE CINEMATIC | Mítico | Texto "MÍTICO" antes da queda, luz vermelha na cena, anel maior, tremida maior (~3 s) | Servidor | `print(_G.D:Invoke("PlayReveal", _G.P, "Mythic", "void_emperor"))` |
+| 74 | AC RARE CINEMATIC | Divino | "DIVINO", feixes de luz no céu, silhueta brilhante, onda maior; odds + 🍀 Luck | Servidor | `print(_G.D:Invoke("PlayReveal", _G.P, "Divine", "celestial_monk"))` |
+| 75 | AC RARE CINEMATIC | Secreto | Tela quase preta, silêncio curto, glitch + "???", fenda, queda muito rápida, tela branca no impacto (~4,2 s) | Servidor | `print(_G.D:Invoke("PlayReveal", _G.P, "Secret"))` |
+| 76 | AC RARE CINEMATIC | Todas em sequência | Lendário → Mítico → Divino → Secreto, cada uma esperando CONTINUAR | Servidor | `print(_G.D:Invoke("PlayAllReveals", _G.P))` |
+| 77 | AC RARE CINEMATIC | Limpeza | Depois de fechar: câmera/movimento normais; nada sobra em PlayerGui | Cliente | `print(game.Players.LocalPlayer.PlayerGui:FindFirstChild("HeroLanding"))` → `nil` |
+| 78 | AC RARE CINEMATIC | Morrer durante a cinemática | Cinemática fecha sozinha, nada preso | Servidor | `_G.P.Character.Humanoid.Health = 0` (logo após o PlayReveal) |
+| 79 | AD HIDE ROLL + RARE | OCULTAR ligado e PlayReveal de cada raridade | Comum–Épico compacto; Lendário compacto especial; Mítico destacado; Divino premium (borda arco-íris); **Secreto toca a cinemática completa** | Servidor | `print(_G.D:Invoke("PlayReveal", _G.P, "Divine"))` |
+| 80 | AE AUTO ROLL + RARE | AUTO ligado; forçar pity e esperar | No Lendário o AUTO pausa durante a cinemática, que fecha sozinha ~1,2 s após CONTINUAR, e o AUTO continua | Servidor | `_G.D:Invoke("SetPity", _G.P, 49, 0)` |
+| 81 | AF MOBILE CINEMATIC | Device iPhone em pé/deitado + PlayReveal | Palco ocupa a tela; textos e botões visíveis; qualidade Medium (menos destroços) | Servidor | `print(_G.D:Invoke("PlayReveal", _G.P, "Mythic"))` |
+| 82 | AG REDUCED EFFECTS | ⚙️ → Efeitos reduzidos LIGADO e "Tremer a câmera" DESLIGADO; PlayReveal | Poucos destroços, sem rastros/rachaduras, sem tremida; impacto ainda tem flash/anel/som; auras das estações desligadas | Servidor | `print(_G.D:Invoke("PlayReveal", _G.P, "Divine"))` |
+
+### Diagnóstico rápido
+
+- `print(_G.D:Invoke("Analytics"))` — contagem dos eventos internos.
+- `print(_G.D:Invoke("RollHistory", _G.P))` — últimos 10 rolls da sessão.
+- Erros de handler aparecem como `[Roll Legends][Net] handler X falhou`.

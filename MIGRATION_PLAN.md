@@ -13,7 +13,11 @@
 | 0 — Auditoria | ✅ concluída (seção "Histórico: auditoria do protótipo" abaixo) |
 | 1 — Limpeza + arquitetura/fundação | ✅ concluída (commit 140794b) |
 | 2 — Mapa completo + 10 bases + Hub + cabanas + esteira | ✅ concluída |
-| 3 — Sistema de dados/RNG + primeira revelação | ⏳ próxima |
+| 3 — Roll/RNG/dados + revelação + cinemática Hero Landing | ✅ concluída |
+| 4 — Personagens 3D + inventário + estações da base + renda/coletor | ✅ concluída |
+| 5 — Luck + dados + melhorias globais + nível individual | ✅ concluída |
+| 6 — Venda + auto-sell + índice + HUD + offline + diário | ✅ concluída |
+| 7 — Torres + batalha | ⏳ próxima (não iniciada) |
 
 ## Ordem oficial das fases (atualizada)
 
@@ -25,7 +29,7 @@
 6. Venda + auto-sell + índice
 7. Torres + batalha de cards
 8. Rebirth + progressão avançada
-9. Missões + daily + offline
+9. Missões (daily e offline já entraram na Fase 6 pelo adendo)
 10. Monetização
 11. Conteúdo, VFX, áudio e polish
 12. Balanceamento, simulações e otimização
@@ -34,6 +38,17 @@ Cada fase termina com: `python tools\run_tests.py`, `luau-lsp analyze`, build, r
 `TEST_PLAN.md` no Studio, documentação e commit.
 
 ## Decisões de design registradas
+
+- **Estações individuais** (adendo): cada slot equipado tem billboard, placa, pad de upgrade
+  e **nível próprio**. Melhorias GLOBAIS (Luck/Renda/Velocidade/Capacidade) e de PERSONAGEM
+  (Level) são separadas. Só personagens na base podem subir de nível.
+- **Auto-sell nunca vende a primeira descoberta** de um personagem (o Index registra e ele vai
+  para a mochila); depois disso segue a configuração por raridade. Secreto sempre protegido.
+- **Dinheiro offline 12%** (não 50%): decisão pela simulação (ECONOMY.md).
+- **Diário por dia UTC do servidor**; perdeu um dia inteiro → volta ao Dia 1; Dia 7 = Dado
+  Prisma exclusivo (original).
+- **Odds do reveal = chance BASE** do personagem (Luck mostrada à parte).
+- **Cinemática em ViewportFrame local** (sem mexer na câmera/controles do jogador).
 
 - **UI em PT-BR**, textos centralizados em `Shared/Localization` (EN-US depois).
 - **Personagens: modelos 3D completos já na V1** (revelação, base, previews, batalhas);
