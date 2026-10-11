@@ -1,0 +1,67 @@
+--!strict
+--[[
+	UpgradeService: melhorias GLOBAIS (Luck, Income, RollSpeed, Inventory).
+	(As melhorias individuais de personagem ficam no InventoryService.UpgradeCharacter.)
+	Custo do próximo nível = BaseCost * Growth ^ nível (Formulas:upgradeCost), até MaxLevel.
+	A área MELHORIAS da base (só do dono) abre a janela.
+]]
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Shared = ReplicatedStorage.Shared
+local UpgradeConfig = require(Shared.Config.UpgradeConfig)
+local Formulas = require(Shared.Modules.GameFormulas)
+local TableUtil = require(Shared.Modules.TableUtil)
+local Signal = require(Shared.Modules.Signal)
+local Net = require(Shared.Modules.Net)
+
+local PlayerDataService = require(script.Parent.PlayerDataService)
+local EconomyService = require(script.Parent.EconomyService)
+local BaseService = require(script.Parent.BaseService)
+local MapService = require(script.Parent.MapService)
+local AnalyticsService = require(script.Parent.AnalyticsService)
+
+local UpgradeService = {}
+
+-- (player, upgradeId, nivel)
+UpgradeService.Purchased = Signal.new()
+
+function UpgradeService.Buy(player: Player, upgradeId: string)
+	local data = PlayerDataService.GetData(player)
+	if not data then
+		Net.fail(Net.Codes.NotReady)
+	end
+	assert(data)
+	if not UpgradeConfig.ById[upgradeId] then
+		Net.fail("invalid_upgrade")
+	end
+	local level = Formulas:upgradeLevel(data, upgradeId)
+	local cost = Formulas:upgradeCost(upgradeId, level)
+	if not cost then
+		Net.fail("max_level")
+	end
+	assert(cost)
+	if not EconomyService.TrySpend(player, cost) then
+		Net.fail("not_enough_money")
+	end
+	local upgrades = TableUtil.deepCopy(data.Upgrades)
+	upgrades[upgradeId] = level + 1
+	PlayerDataService.Set(player, "Upgrades", upgrades)
+	AnalyticsService.Track(player, "UpgradePurchased", { id = upgradeId, level = level + 1 })
+	UpgradeService.Purchased:Fire(player, upgradeId, level + 1)
+	return { id = upgradeId, level = level + 1 }
+end
+
+function UpgradeService.Init()
+	Net.handle("BuyUpgrade", UpgradeService.Buy)
+	MapService.RegisterInteraction("UpgradeArea", function(player, prompt)
+		local base = BaseService.GetPlayerBase(player)
+		if not base or not prompt:IsDescendantOf(base) then
+			Net.fire("Notify", player, "base.not_yours")
+			return
+		end
+		Net.fire("OpenMenu", player, "Upgrades")
+	end)
+end
+
+return UpgradeService
