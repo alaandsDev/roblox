@@ -7,6 +7,8 @@ Uso:  python tools\\run_tests.py
 3. Teste headless do mapa (runtime "Lune", que simula Instances do Roblox):
    tests/roblox/MapHarness.luau executa o MapService/MapBuilder/BaseBuilder REAIS,
    roda o MapValidator e testa RB0/RB5/dono. Gera build/map_preview.json.
+   tests/roblox/ServiceHarness.luau e GameplayHarness.luau: integração dos Services reais
+   (base, roll, inventário, estações, economia, venda, dados, offline, diário).
 4. Se o Pillow estiver instalado, desenha build/map_preview.png (vista de cima).
 Os binários (versões fixas) são baixados para tools/bin na primeira vez.
 """
@@ -76,6 +78,9 @@ def checar_textos() -> list[str]:
         texto = arquivo.read_text(encoding="utf-8")
         for padrao in padroes:
             for chave in re.findall(padrao, texto):
+                # "rarity." .. id = família dinâmica (conferida em tests/Config.spec.luau)
+                if chave.endswith("."):
+                    continue
                 if chave not in chaves:
                     erros.append(f"{arquivo.relative_to(RAIZ)}: chave de texto '{chave}' não existe no PtBR.luau")
     return erros
@@ -93,6 +98,7 @@ def main() -> None:
     lune = baixar_lune()
     mapa = subprocess.run([str(lune), "run", "tests/roblox/MapHarness.luau"], cwd=RAIZ)
     servicos = subprocess.run([str(lune), "run", "tests/roblox/ServiceHarness.luau"], cwd=RAIZ)
+    gameplay = subprocess.run([str(lune), "run", "tests/roblox/GameplayHarness.luau"], cwd=RAIZ)
 
     if mapa.returncode == 0:
         try:
@@ -102,7 +108,7 @@ def main() -> None:
         except ImportError:
             print("(Pillow não instalado: pulando a imagem do mapa)")
 
-    if erros or puros.returncode != 0 or mapa.returncode != 0 or servicos.returncode != 0:
+    if erros or puros.returncode != 0 or mapa.returncode != 0 or servicos.returncode != 0 or gameplay.returncode != 0:
         sys.exit(1)
 
 

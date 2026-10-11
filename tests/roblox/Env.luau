@@ -173,7 +173,11 @@ function Env.create()
 		},
 		BadgeService = {},
 		SoundService = {},
-		TweenService = {},
+		TweenService = {
+			Create = function()
+				return { Play = function() end, Cancel = function() end }
+			end,
+		},
 	}
 	local gameProxy = {
 		GameId = 0,
@@ -201,6 +205,33 @@ function Env.create()
 		end
 		return obj
 	end
+
+	-- Métodos que o Lune não implementa
+	local function descendantsParts(model)
+		local parts = {}
+		for _, d in model:GetDescendants() do
+			if d:IsA("BasePart") then
+				table.insert(parts, d)
+			end
+		end
+		return parts
+	end
+	pcall(roblox.implementMethod, "Model", "GetPivot", function(model)
+		return model.WorldPivot
+	end)
+	pcall(roblox.implementMethod, "Model", "PivotTo", function(model, target)
+		local delta = target * model.WorldPivot:Inverse()
+		for _, part in descendantsParts(model) do
+			part.CFrame = delta * part.CFrame
+		end
+		model.WorldPivot = target
+	end)
+	pcall(roblox.implementMethod, "BasePart", "GetPivot", function(part)
+		return part.CFrame
+	end)
+	pcall(roblox.implementMethod, "BasePart", "PivotTo", function(part, target)
+		part.CFrame = target
+	end)
 
 	local baseEnv = {
 		math = math, string = string, table = table, os = os, coroutine = coroutine, utf8 = utf8,

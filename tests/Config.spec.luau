@@ -69,6 +69,65 @@ describe("Localization", function()
 		expect(Localization.t("nao.existe")).toBe("nao.existe")
 	end)
 
+	it("famílias de chaves dinâmicas completas (raridade, variante, dado, upgrade, filtros, configs, anúncios)", function()
+		local RarityConfig = require("../src/shared/Config/RarityConfig")
+		local VariantConfig = require("../src/shared/Config/VariantConfig")
+		local DiceConfig = require("../src/shared/Config/DiceConfig")
+		local UpgradeConfig = require("../src/shared/Config/UpgradeConfig")
+		local RevealConfig = require("../src/shared/Config/RevealConfig")
+		local keys = {}
+		for _, r in RarityConfig.List do
+			table.insert(keys, "rarity." .. r.Id)
+		end
+		for _, v in VariantConfig.List do
+			table.insert(keys, "variant." .. v.Id)
+		end
+		for _, d in DiceConfig.List do
+			table.insert(keys, "dice." .. d.Id)
+		end
+		for _, u in UpgradeConfig.List do
+			table.insert(keys, "upg." .. u.Id)
+			table.insert(keys, "upg.benefit." .. u.Id)
+		end
+		for _, f in { "All", "Rarity", "Power", "Income", "Recent" } do
+			table.insert(keys, "inv.filter." .. f)
+		end
+		for _, k in DataConfig.ClientSettings do
+			if k ~= "AutoRoll" then
+				table.insert(keys, "settings." .. k)
+			end
+		end
+		for _, preset in RevealConfig.ByRarity do
+			if preset.Social ~= "None" then
+				table.insert(keys, "announce." .. preset.Social)
+			end
+		end
+		for _, c in RevealConfig.Cinematics do
+			if c.Intro then
+				table.insert(keys, c.Intro)
+			end
+		end
+		for _, key in keys do
+			if PtBR[key] == nil then
+				error("faltando no PtBR: " .. key)
+			end
+		end
+	end)
+
+	it("todo erro que o servidor pode devolver tem texto", function()
+		local codes = {
+			"cooldown", "inventory_full", "not_owned", "no_free_slot", "slot_locked", "slot_occupied", "not_equipped",
+			"invalid_flag", "max_level", "not_enough_money", "locked", "favorite", "equipped", "nothing_to_sell",
+			"protected", "invalid_dice", "exclusive", "already_owned", "requires_previous", "requires_rolls",
+			"invalid_upgrade", "already_claimed", "invalid_time", "nothing_to_claim", "too_far", "no_base", "no_character",
+		}
+		for _, code in codes do
+			if PtBR["error." .. code] == nil then
+				error("faltando error." .. code)
+			end
+		end
+	end)
+
 	it("todo código de erro do Net tem texto", function()
 		for _, code in { "rate_limited", "invalid_args", "not_ready", "not_implemented", "internal" } do
 			expect(PtBR["error." .. code] ~= nil).toBeTruthy()
