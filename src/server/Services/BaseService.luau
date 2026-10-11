@@ -73,9 +73,9 @@ local coordinator = SpawnCoordinator.new({
 	loadCharacter = function(player: Player)
 		task.spawn(function()
 			if player.Parent == Players then
-				local ok, err = pcall(player.LoadCharacter, player)
+				local ok, err = pcall(player.LoadCharacterAsync, player)
 				if not ok then
-					log:warn("LoadCharacter falhou para", player.Name, err)
+					log:warn("LoadCharacterAsync falhou para", player.Name, err)
 				end
 			end
 		end)
@@ -145,7 +145,7 @@ function BaseService.AssignBase(player: Player): number?
 	base:SetAttribute("OwnerUserId", player.UserId)
 	player:SetAttribute("BaseId", baseId)
 	-- Todo nascimento/respawn do jogador passa a ser no PlayerSpawn desta base
-	player.RespawnLocation = BaseBuilder.spawnLocation(base)
+	player.RespawnLocation = BaseBuilder.spawnLocation(base) :: any
 
 	local thumbnail: string? = nil
 	local ok, result = pcall(
@@ -174,7 +174,7 @@ function BaseService.ReleaseBase(player: Player)
 	local baseId = allocator:release(player.UserId)
 	lastTeleport[player] = nil
 	coordinator:playerLeft(player)
-	player.RespawnLocation = nil
+	player.RespawnLocation = nil :: any
 	if not baseId then
 		return
 	end
