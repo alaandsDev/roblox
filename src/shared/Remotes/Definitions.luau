@@ -27,6 +27,12 @@ local Definitions: Definitions = {
 		},
 		RequestPurchase = { args = { CONFIG_ID }, rate = { capacity = 3, refill = 0.5 } },
 
+		-- Mapa (FASE 2): botões CENTRO / CASA / LOJA
+		RequestTeleport = {
+			args = { { type = "string", enum = { "Center", "Home", "Shop" } } },
+			rate = { capacity = 3, refill = 1 },
+		},
+
 		-- Preparados para as próximas fases (respondem "Em breve!" até serem implementados)
 		RequestRoll = { args = {}, rate = { capacity = 10, refill = 10 } },
 		RequestEquipCharacter = { args = { ID, { type = "boolean" } }, rate = { capacity = 10, refill = 5 } },
@@ -44,6 +50,8 @@ local Definitions: Definitions = {
 		Notify = {},
 		-- Uma chave de primeiro nível dos dados mudou: (chave, novoValor)
 		DataChanged = {},
+		-- Um andar novo da base foi construído: (andar). Gancho para o efeito visual no cliente
+		FloorUnlocked = {},
 	},
 }
 

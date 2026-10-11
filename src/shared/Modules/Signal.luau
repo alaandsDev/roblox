@@ -7,7 +7,7 @@ Signal.__index = Signal
 
 export type Connection = { Disconnect: (self: Connection) -> (), Connected: boolean }
 
-function Signal.new()
+function Signal.new(): any
 	return setmetatable({ _listeners = {} :: { [any]: (...any) -> () } }, Signal)
 end
 

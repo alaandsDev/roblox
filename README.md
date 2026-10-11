@@ -1,7 +1,7 @@
 # Roll Legends
 
 Jogo Roblox de **dados + coleção de lutadores + bases + economia + torres + progressão**.
-Status: **FASE 1 concluída (fundação)**. Ainda não há gameplay; veja `MIGRATION_PLAN.md`.
+Status: **FASE 2 concluída (mapa, 10 bases, Hub, navegação)**. Ainda não há roll/personagens; veja `MIGRATION_PLAN.md`.
 
 ## Documentação
 
@@ -12,13 +12,14 @@ Status: **FASE 1 concluída (fundação)**. Ainda não há gameplay; veja `MIGRA
 | `DATA_SCHEMA.md` | Formato dos dados salvos, versões e migrações |
 | `SECURITY.md` | Regras server-authoritative, validação, rate limit, assets externos |
 | `TEST_PLAN.md` | Testes automáticos e roteiro de teste no Studio |
+| `ASSETS.md` | Assets externos auditados (IDs, uso, scripts removidos) |
 
 ## Comandos (Windows)
 
 ```
 cd C:\Users\aland\Desktop\projects\roblox
 git pull --no-edit origin claude/nice-dirac-ubdorh
-python tools\run_tests.py        # testes fora do Roblox (baixa o luau sozinho)
+python tools\run_tests.py        # testes fora do Roblox + mapa headless + build\map_preview.png
 python tools\build_place.py      # gera build\RollLegends.rbxlx (baixa o Rojo sozinho)
 .\build\RollLegends.rbxlx        # abre no Studio
 python tools\publish_place.py    # publica (precisa de publish.local.json com a api_key)

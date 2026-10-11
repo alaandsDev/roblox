@@ -11,6 +11,8 @@ local log = Logger.new("ClientBootstrap")
 local ORDER = {
 	"NotificationController",
 	"DataController",
+	"NavigationController",
+	"AmbientController",
 }
 
 local controllers = {}

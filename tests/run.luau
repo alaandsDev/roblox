@@ -8,6 +8,11 @@ require("./Validator.spec")
 require("./ProfileCore.spec")
 require("./ReceiptCore.spec")
 require("./Config.spec")
+require("./BaseAllocator.spec")
+require("./BaseLayout.spec")
+require("./BaseProgression.spec")
+require("./MapLayout.spec")
+require("./MapValidator.spec")
 
 if not T.report() then
 	error("testes falharam", 0)

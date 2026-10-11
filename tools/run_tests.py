@@ -1,11 +1,14 @@
-"""Roda os testes puros (fora do Roblox) + checagens estáticas.
+"""Roda os testes fora do Roblox + checagens estáticas.
 
 Uso:  python tools\\run_tests.py
 
-- Baixa o interpretador "luau" (versão fixa) para tools/bin na primeira vez.
-- Roda tests/run.luau (TableUtil, NumberFormatter, RateLimiter, Validator,
-  ProfileCore/session lock, ReceiptCore/idempotência, Configs, Localization).
-- Confere se toda chave de texto usada no código existe em Localization/PtBR.luau.
+1. Checagem de textos: toda chave usada no código existe em Localization/PtBR.luau.
+2. Testes puros (binário "luau"): tests/run.luau.
+3. Teste headless do mapa (runtime "Lune", que simula Instances do Roblox):
+   tests/roblox/MapHarness.luau executa o MapService/MapBuilder/BaseBuilder REAIS,
+   roda o MapValidator e testa RB0/RB5/dono. Gera build/map_preview.json.
+4. Se o Pillow estiver instalado, desenha build/map_preview.png (vista de cima).
+Os binários (versões fixas) são baixados para tools/bin na primeira vez.
 """
 
 import io
@@ -18,6 +21,7 @@ import zipfile
 from pathlib import Path
 
 LUAU_VERSION = "0.700"
+LUNE_VERSION = "0.10.4"
 RAIZ = Path(__file__).resolve().parent.parent
 
 
@@ -31,6 +35,24 @@ def baixar_luau() -> Path:
     if not executavel.exists():
         url = f"https://github.com/luau-lang/luau/releases/download/{LUAU_VERSION}/{nome_zip}"
         print(f"Baixando luau {LUAU_VERSION}...")
+        with urllib.request.urlopen(url) as resposta:
+            zipfile.ZipFile(io.BytesIO(resposta.read())).extractall(destino)
+        executavel.chmod(0o755)
+    return executavel
+
+
+def baixar_lune() -> Path:
+    sistema = platform.system()
+    maquina = platform.machine().lower()
+    arquitetura = "aarch64" if maquina in ("arm64", "aarch64") else "x86_64"
+    nome = {"Windows": "windows", "Linux": "linux", "Darwin": "macos"}.get(sistema)
+    if not nome:
+        sys.exit(f"Sistema {sistema} não suportado.")
+    destino = RAIZ / "tools" / "bin" / f"lune-{LUNE_VERSION}"
+    executavel = destino / ("lune.exe" if sistema == "Windows" else "lune")
+    if not executavel.exists():
+        url = f"https://github.com/lune-org/lune/releases/download/v{LUNE_VERSION}/lune-{LUNE_VERSION}-{nome}-{arquitetura}.zip"
+        print(f"Baixando lune {LUNE_VERSION}...")
         with urllib.request.urlopen(url) as resposta:
             zipfile.ZipFile(io.BytesIO(resposta.read())).extractall(destino)
         executavel.chmod(0o755)
@@ -66,8 +88,20 @@ def main() -> None:
     print(f"Checagem de textos: {'OK' if not erros else f'{len(erros)} erro(s)'}")
 
     luau = baixar_luau()
-    resultado = subprocess.run([str(luau), "tests/run.luau"], cwd=RAIZ)
-    if erros or resultado.returncode != 0:
+    puros = subprocess.run([str(luau), "tests/run.luau"], cwd=RAIZ)
+
+    lune = baixar_lune()
+    mapa = subprocess.run([str(lune), "run", "tests/roblox/MapHarness.luau"], cwd=RAIZ)
+
+    if mapa.returncode == 0:
+        try:
+            import PIL  # noqa: F401
+
+            subprocess.run([sys.executable, str(RAIZ / "tools" / "render_map_preview.py")], cwd=RAIZ)
+        except ImportError:
+            print("(Pillow não instalado: pulando a imagem do mapa)")
+
+    if erros or puros.returncode != 0 or mapa.returncode != 0:
         sys.exit(1)
 
 

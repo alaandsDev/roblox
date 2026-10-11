@@ -11,13 +11,14 @@
 | Fase | Status |
 |---|---|
 | 0 — Auditoria | ✅ concluída (seção "Histórico: auditoria do protótipo" abaixo) |
-| 1 — Limpeza + arquitetura/fundação | ✅ concluída |
-| 2 — Mapa completo + 10 bases + Hub + cabanas + esteira | ⏳ próxima |
+| 1 — Limpeza + arquitetura/fundação | ✅ concluída (commit 140794b) |
+| 2 — Mapa completo + 10 bases + Hub + cabanas + esteira | ✅ concluída |
+| 3 — Sistema de dados/RNG + primeira revelação | ⏳ próxima |
 
 ## Ordem oficial das fases (atualizada)
 
 1. Limpeza + arquitetura (fundação, DataStore, rede segura, monetização mínima) ✅
-2. Mapa completo + 10 bases + Hub + cabanas + esteira
+2. Mapa completo + 10 bases + Hub + cabanas + esteira ✅
 3. Sistema de dados/RNG + primeira revelação
 4. Personagens 3D + inventário + personagens na base + geração de dinheiro
 5. Luck + novos dados + upgrades + loja

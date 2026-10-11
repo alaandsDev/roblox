@@ -14,6 +14,8 @@ local log = Logger.new("Bootstrap")
 local ORDER = {
 	"PlayerDataService",
 	"MonetizationService",
+	"MapService",
+	"BaseService",
 }
 
 Net.initServer()

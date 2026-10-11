@@ -13,6 +13,12 @@
 | `tests/ProfileCore.spec.luau` | **schema default**, **save/load**, **session lock** (bloqueio, liberação, trava velha, lock perdido não sobrescreve, renovação), **migrations futuras**, versão do futuro, retry/backoff, corrupção com backup |
 | `tests/ReceiptCore.spec.luau` | **receipt idempotency** (duplicata, produto desconhecido, erro na entrega, save falhando + repetição sem reentregar, histórico limitado) |
 | `tests/Config.spec.luau` | schema completo, consistência DataConfig × Definitions, Localization (formato, fallback) |
+| `tests/BaseAllocator.spec.luau` | **base assignment, uniqueness, release, reassignment**, 11º jogador sem base |
+| `tests/BaseLayout.spec.luau` | **slot layout**: 4 slots no lado A + 4 no lado B, ids por andar (Floor02 = 09–16), posições, orientação, rampa sem invadir pedestais |
+| `tests/BaseProgression.spec.luau` | **RB0 = 1-4 liberados, 5-8 bloqueados**, RB1-4 sem invenção, **RB5 = Floor02 + Slot09**, validação da config |
+| `tests/MapLayout.spec.luau` | dimensões, 5+5 bases, sem sobreposição, Hub, lojas a 40-80, **teleport destinations**, esteira fechada |
+| `tests/MapValidator.spec.luau` | **map validation**: detecta base faltando, ids repetidos, lado com 2 slots, peças faltando |
+| `tests/roblox/MapHarness.luau` (Lune) | executa o **MapService/MapBuilder/BaseBuilder reais**; **map references**; estados RB0/RB5/dono; gera a imagem `build/map_preview.png` |
 
 Também rodar antes de cada commit:
 - `luau-lsp analyze` (checagem de tipos com definições do Roblox)
@@ -38,7 +44,31 @@ Janela > Saída aberta.
 | 11 | Session lock real | No jogo publicado, entrar, sair e entrar de novo rápido em outro servidor | Entra normalmente (a trava é liberada ao sair); se o servidor antigo ainda estiver salvando, a mensagem `data.session_locked` aparece e na segunda tentativa funciona |
 | 12 | BindToClose | Studio com API: Play e Stop | Saída mostra o save antes de fechar, sem aviso de timeout |
 
-## 3. Futuras fases
+## 3. Manual no Roblox Studio — FASE 2 (mapa, bases, Hub)
+
+Preparação: `git pull`, `python tools\run_tests.py` (gera também `build\map_preview.png`),
+`python tools\build_place.py`, abrir `build\RollLegends.rbxlx`, Janela > Saída.
+
+| # | O que verificar | Como | Esperado |
+|---|---|---|---|
+| 1 | Boot | Play | Saída: `mapa construído em …s (≈1200 peças)`, `mapa validado: OK (10 bases, 4 slots no lado A e 4 no lado B…)`, `<você> recebeu a Base03`. Sem erros vermelhos |
+| 2 | Nascimento | Logo após o Play | Você aparece na entrada da sua base, olhando para dentro; placa "BASE DE <seu nome>" com sua foto em cima da entrada |
+| 3 | Slots RB0 | Andar pela base | Lado esquerdo (de quem entra): 4 pedestais coloridos com aro brilhante. Lado direito: 4 pedestais cinza com 🔒 e "REBIRTH 5". Corredor livre no meio |
+| 4 | Sem 2º andar | Olhar para cima | Só a moldura do telhado; nenhum Floor02 |
+| 5 | HUD | Topo da tela | 3 botões [🎲 CENTRO] [🏠 CASA] [🛒 LOJA]; hover aumenta, clique "afunda", som de clique, barra escura de 1 s |
+| 6 | Teleportes | Clicar CENTRO / LOJA / CASA | Hub (olhando o dado) / entre o Hub e as cabanas (olhando as lojas) / entrada da sua base. Clicar rápido não teleporta 2x |
+| 7 | Hub | No centro | Praça circular clara, dado gigante branco com pontos girando e flutuando, brilhinhos, cristais e postes em volta |
+| 8 | Esteira | Do Hub e da base | Pista oval elevada passando entre o Hub e as bases, com ripas e dados/cristais andando; dá para passar por baixo |
+| 9 | Lojas | Perto das cabanas | MERCADO (laranja), LOJA DE DADOS (roxa, maior, com dado no telhado), VENDER (verde). Prompt "Abrir" → aviso "…: em breve!" |
+| 10 | Torres / social | Norte do Hub | Portal TORRES "DESAFIE OS ANDARES" + torre em degraus; FUSÃO (oeste), TROCAS (leste), MISSÕES e RANKINGS (3 painéis) |
+| 11 | Bordas | Correr até a areia | Parede invisível na borda da areia; água, ilhotas e pedras ao fundo |
+| 12 | Escala com bonecos | Barra de comandos, contexto **Servidor**: `local B=require(game.ServerScriptService.Server.Services.BaseService) B.Dev.ShowDummies(3,true)` | 8 bonecos ~5,5 studs nos 8 pedestais da Base03, todos olhando para o corredor (nariz vermelho), sem encostar uns nos outros |
+| 13 | Floor02 (prévia) | Servidor: `B.Dev.PreviewFloors(3,2)` e depois `B.Dev.ShowDummies(3,true)` | Andar de cima construído com efeito de partículas, rampa lateral no lado B, grades, 8 pedestais (Slot09 colorido, 10–16 com cadeado). Subir a rampa a pé |
+| 14 | Voltar | Servidor: `B.Dev.Reset(3)` | Base volta ao estado real (sem Floor02, sem bonecos) |
+| 15 | Multiplayer | Teste > Servidor local com 2 a 4 jogadores (e 10 se a máquina aguentar) | Cada jogador recebe uma base diferente (ordem 3, 8, 2, 9…); placas certas; fechar um jogador → base volta a "BASE LIVRE" |
+| 16 | Mobile | Teste > Dispositivo: iPhone (em pé e deitado), iPad, 1366×768 | Os 3 botões cabem no topo sem cobrir a tela |
+
+## 4. Futuras fases
 
 Lista completa (bases, roll, auto roll, inventário cheio, venda, torres, rebirth, offline,
 daily, gamepass, produto, falha de DataStore, reconexão, UI mobile…) será detalhada aqui

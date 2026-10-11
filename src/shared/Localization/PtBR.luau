@@ -20,4 +20,37 @@ return {
 
 	["purchase.not_configured"] = "Este item ainda não está à venda.",
 	["purchase.thanks"] = "Obrigado pela compra!",
+
+	-- Navegação (HUD)
+	["nav.center"] = "CENTRO",
+	["nav.home"] = "CASA",
+	["nav.shop"] = "LOJA",
+	["nav.no_base"] = "Você ainda não tem uma base neste servidor.",
+
+	-- Mapa
+	["map.game_title"] = "ROLL LEGENDS",
+	["map.hub_title"] = "ROLL LEGENDS",
+	["map.market"] = "MERCADO",
+	["map.sell"] = "VENDER",
+	["map.dice_shop"] = "LOJA DE DADOS",
+	["map.towers"] = "TORRES",
+	["map.towers_sub"] = "DESAFIE OS ANDARES",
+	["map.fusion"] = "FUSÃO",
+	["map.missions"] = "MISSÕES",
+	["map.trade"] = "TROCAS",
+	["map.rankings"] = "RANKINGS",
+	["map.lb_rebirths"] = "MAIS REBIRTHS",
+	["map.lb_tower"] = "MAIOR TORRE",
+	["map.lb_rolls"] = "MAIS ROLLS",
+	["map.coming_soon"] = "{name}: em breve!",
+	["prompt.open"] = "Abrir",
+
+	-- Base
+	["base.free"] = "BASE LIVRE",
+	["base.owner_title"] = "BASE DE",
+	["base.slot_locked"] = "REBIRTH NECESSÁRIO",
+	["base.slot_requires_rebirth"] = "REBIRTH {rebirth}",
+	["base.collector"] = "COLETAR",
+	["base.upgrades"] = "MELHORIAS",
+	["base.floor_unlocked"] = "Novo andar construído! (Andar {floor})",
 }
