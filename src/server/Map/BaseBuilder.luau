@@ -441,6 +441,7 @@ local function pad(base: Model, name: string, spot: any, color: Color3, labelKey
 	stroke.Thickness = 2
 	stroke.Parent = text
 	text.Parent = gui
+	Build.prompt(part, name, Localization.t(labelKey), Localization.t(if name == "MoneyCollector" then "prompt.collect" else "prompt.open"))
 	return part
 end
 
