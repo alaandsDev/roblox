@@ -79,9 +79,14 @@ function OfflineController.Start()
 		end
 	end)
 	-- Mostra ao entrar se houver dinheiro offline
+	-- (entra na fila: não abre por cima de reveal, outra janela ou passo do tutorial)
 	if (DataController.Get("PendingOfflineReward") or 0) > 0 then
 		task.wait(1.5)
-		window:Open()
+		NotificationController.QueueModal("Offline", NotificationController.Priority.REWARD, function()
+			if (DataController.Get("PendingOfflineReward") or 0) > 0 then
+				window:Open()
+			end
+		end)
 	end
 end
 

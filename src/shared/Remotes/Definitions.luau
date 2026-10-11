@@ -38,6 +38,8 @@ local Definitions: Definitions = {
 			rate = { capacity = 5, refill = 2 },
 		},
 		RequestPurchase = { args = { CONFIG_ID }, rate = { capacity = 3, refill = 0.5 } },
+		-- Tutorial (auditoria): só avança; sem recompensa
+		SetTutorialStep = { args = { { type = "number", integer = true, min = 1, max = 7 } }, rate = { capacity = 3, refill = 1 } },
 
 		-- Mapa (FASE 2): botões CENTRO / CASA / LOJA
 		RequestTeleport = {

@@ -23,6 +23,7 @@ local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage.Shared
 local DataConfig = require(Shared.Config.DataConfig)
+local TutorialConfig = require(Shared.Config.TutorialConfig)
 local GameConfig = require(Shared.Config.GameConfig)
 local TableUtil = require(Shared.Modules.TableUtil)
 local Signal = require(Shared.Modules.Signal)
@@ -264,6 +265,10 @@ local function onPlayerAdded(player: Player)
 
 	-- Multiplicadores de sessão nunca vêm do save (o BoostService recalcula)
 	profile.Data.Runtime = {}
+	-- Quem já jogava antes do tutorial existir não precisa dele
+	if (profile.Data.Tutorial or 0) < TutorialConfig.Total and (profile.Data.Rolls or 0) >= TutorialConfig.VeteranRolls then
+		profile.Data.Tutorial = TutorialConfig.Total
+	end
 	entries[player] = { profile = profile, offline = offline }
 	log:info(`perfil carregado: {player.Name} (novo: {profile.IsNew}, offline: {offline})`)
 	PlayerDataService.Loaded:Fire(player, profile.Data)
@@ -319,6 +324,20 @@ local function handleSetSetting(player: Player, key: string, value: boolean)
 	return settings
 end
 
+-- Tutorial: só avança (pular = mandar o último passo). Devolve o passo salvo
+local function handleSetTutorialStep(player: Player, step: number)
+	local data = PlayerDataService.GetData(player)
+	if not data then
+		Net.fail(Net.Codes.NotReady)
+	end
+	assert(data)
+	local target = math.clamp(math.floor(step), 0, TutorialConfig.Total)
+	if target > (data.Tutorial or 0) then
+		PlayerDataService.Set(player, "Tutorial", target)
+	end
+	return data.Tutorial
+end
+
 ------------------------------------------------------------------------------------
 
 function PlayerDataService.Init()
@@ -360,6 +379,7 @@ function PlayerDataService.Init()
 
 	Net.handle("GetSnapshot", handleGetSnapshot)
 	Net.handle("SetSetting", handleSetSetting)
+	Net.handle("SetTutorialStep", handleSetTutorialStep)
 end
 
 function PlayerDataService.Start()

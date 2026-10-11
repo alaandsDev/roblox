@@ -43,9 +43,9 @@ local log = Logger.new("Station")
 
 local StationService = {}
 
-local DISPLAY_INTERVAL = 2
-local BILLBOARD_DISTANCE = 140
-local PLATE_DISTANCE = 90
+local DISPLAY_INTERVAL = 3
+local BILLBOARD_DISTANCE = 90
+local PLATE_DISTANCE = 55
 local PAD_COLOR = Color3.fromRGB(60, 230, 90)
 local PAD_MAX_COLOR = Color3.fromRGB(255, 200, 60)
 

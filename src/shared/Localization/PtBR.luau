@@ -128,6 +128,17 @@ return {
 
 	-- HUD
 	["hud.shop"] = "LOJA",
+	["tutorial.step"] = "PASSO {step}/{total}",
+	["tutorial.roll"] = "Toque em ROLAR 🎲 para ganhar seu primeiro personagem!",
+	["tutorial.backpack"] = "Você ganhou um personagem! Abra a MOCHILA 🎒 para ver.",
+	["tutorial.equip"] = "Toque em EQUIPAR para colocar o personagem na sua base.",
+	["tutorial.base"] = "Vá até a sua BASE para ver o personagem produzindo dinheiro.",
+	["tutorial.collect"] = "Pise no COLETOR 💰 da base para pegar o dinheiro.",
+	["tutorial.upgrade"] = "Melhore! Pise no pad verde da estação ou abra MELHORIAS ⬆️.",
+	["tutorial.goal"] = "Próximo objetivo: junte $2.5K e compre o Dado da Sorte na LOJA 🎲.",
+	["tutorial.go_base"] = "🏠 IR",
+	["tutorial.ok"] = "OK!",
+	["tutorial.skip"] = "PULAR",
 	["hud.rebirth"] = "RENASCER",
 	["hud.rebirth_soon"] = "Renascimento: em breve!",
 	["hud.index"] = "ÍNDICE",

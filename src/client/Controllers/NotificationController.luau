@@ -7,6 +7,13 @@
 	    NotificationController.ShowAction("error.inventory_full", { {text, color, onClick}, ... })
 	Estilos: Error (vermelho), Info (branco), Success (verde), Reward (dourado).
 	No máximo MAX_LINES linhas ao mesmo tempo.
+
+	Prioridade (auditoria): CRITICAL > RARE_DROP > REWARD > WARNING > INFO.
+	  - Durante uma cinemática de raridade (RevealController.Busy) só CRITICAL/RARE_DROP/WARNING
+	    aparecem; REWARD/INFO esperam a cinemática acabar.
+	  - Janelas automáticas (offline, recompensas) entram em NotificationController.QueueModal e
+	    abrem UMA por vez, por prioridade, só quando não há reveal, janela aberta ou passo de
+	    tutorial bloqueando (NotificationController.AddBlocker).
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -15,6 +22,7 @@ local TweenService = game:GetService("TweenService")
 local Shared = ReplicatedStorage.Shared
 local Net = require(Shared.Modules.Net)
 local Localization = require(Shared.Localization.Localization)
+local RevealController = require(script.Parent.RevealController)
 
 local UI = script.Parent.Parent.UI
 local UIKit = require(UI.UIKit)
@@ -31,6 +39,15 @@ local COLORS = {
 
 local NotificationController = {}
 
+NotificationController.Priority = { CRITICAL = 1, RARE_DROP = 2, REWARD = 3, WARNING = 4, INFO = 5 }
+local PRIORITY = NotificationController.Priority
+
+type Modal = { name: string, priority: number, seq: number, open: () -> () }
+local modals: { Modal } = {}
+local modalSeq = 0
+local blockers: { () -> boolean } = {}
+local deferred: { { text: string, style: string? } } = {}
+
 type Line = { text: string, count: number, label: TextLabel, expires: number }
 local lines: { Line } = {}
 local stack: Frame
@@ -45,6 +62,72 @@ local function styleOf(key: string): string
 		return "Reward"
 	end
 	return "Info"
+end
+
+-- Prioridade de uma chave de texto
+function NotificationController.PriorityOf(key: string): number
+	if string.sub(key, 1, 9) == "critical." or key == "error.data_load" then
+		return PRIORITY.CRITICAL
+	elseif string.sub(key, 1, 5) == "rare." then
+		return PRIORITY.RARE_DROP
+	elseif string.sub(key, 1, 6) == "error." then
+		return PRIORITY.WARNING
+	elseif styleOf(key) == "Reward" or string.sub(key, 1, 8) == "mission." then
+		return PRIORITY.REWARD
+	end
+	return PRIORITY.INFO
+end
+
+local function blocked(): boolean
+	if RevealController.Busy() then
+		return true
+	end
+	for _, fn in blockers do
+		if fn() then
+			return true
+		end
+	end
+	return false
+end
+
+-- Algo (ex.: passo do tutorial) que impede janelas automáticas enquanto devolver true
+function NotificationController.AddBlocker(fn: () -> boolean)
+	table.insert(blockers, fn)
+end
+
+-- Janela automática na fila (uma por vez, maior prioridade primeiro; mesmo nome não repete)
+function NotificationController.QueueModal(name: string, priority: number, open: () -> ())
+	for _, modal in modals do
+		if modal.name == name then
+			return
+		end
+	end
+	modalSeq += 1
+	table.insert(modals, { name = name, priority = priority, seq = modalSeq, open = open })
+end
+
+function NotificationController.PendingModals(): { string }
+	local out = {}
+	for _, modal in modals do
+		table.insert(out, modal.name)
+	end
+	return out
+end
+
+local function pumpModals()
+	if #modals == 0 or blocked() or UIKit.Windows.anyOpen() then
+		return
+	end
+	table.sort(modals, function(a, b)
+		if a.priority ~= b.priority then
+			return a.priority < b.priority
+		end
+		return a.seq < b.seq
+	end)
+	local modal = table.remove(modals, 1)
+	if modal then
+		modal.open()
+	end
 end
 
 local function render(line: Line)
@@ -97,7 +180,13 @@ function NotificationController.ShowText(text: string, style: string?)
 end
 
 function NotificationController.Show(key: string, params: { [string]: any }?)
-	NotificationController.ShowText(Localization.t(key, params), styleOf(key))
+	local text = Localization.t(key, params)
+	local priority = NotificationController.PriorityOf(key)
+	if priority >= PRIORITY.REWARD and priority ~= PRIORITY.WARNING and RevealController.Busy() then
+		table.insert(deferred, { text = text, style = styleOf(key) })
+		return
+	end
+	NotificationController.ShowText(text, styleOf(key))
 end
 
 export type Action = { text: string, color: Color3?, onClick: () -> () }
@@ -170,6 +259,13 @@ function NotificationController.Start()
 	task.spawn(function()
 		while true do
 			task.wait(0.25)
+			if #deferred > 0 and not RevealController.Busy() then
+				for _, item in deferred do
+					NotificationController.ShowText(item.text, item.style)
+				end
+				table.clear(deferred)
+			end
+			pumpModals()
 			local now = os.clock()
 			for i = #lines, 1, -1 do
 				if lines[i].expires <= now then

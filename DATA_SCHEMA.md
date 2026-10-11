@@ -38,6 +38,7 @@ O `SimuladorEscudo_v1` do protótipo **não é lido nem migrado**.
 | `PendingOfflineReward` | number | Dinheiro offline calculado e ainda não resgatado |
 | `LastDailyClaim`, `DailyStreak`, `DailyCycleDay` | number | Diário (os.time do servidor, sequência, último dia do ciclo 0–7) |
 | `Boosts` | map | `{ Luck = { Multiplier, ExpiresAt } }` |
+| `Tutorial` | number | passos do tutorial concluídos (0..7; 7 = terminado). Só avança (`SetTutorialStep`); jogadores com 50+ rolls pulam |
 | `RevealViews` | map | `{ [rarity] = vezes }` (libera PULAR na cinemática) |
 | `Settings.AutoRoll`, `HideRollAnimation`, `CameraShake`, `ReducedEffects` | boolean | Configurações do cliente |
 | `Settings.AutoSell` | map | `{ Common..Divine = boolean }` (Secreto nunca) |

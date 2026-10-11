@@ -84,6 +84,8 @@ DataConfig.Template = {
 	DailyStreak = 0,
 	DailyCycleDay = 0,
 
+	-- Tutorial da 1ª sessão: passos concluídos (0..TutorialConfig.Total)
+	Tutorial = 0,
 	-- Boosts temporários: { Luck = { Multiplier, ExpiresAt } }
 	Boosts = {},
 	-- Quantas vezes cada raridade alta já saiu (libera PULAR na cinemática)

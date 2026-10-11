@@ -582,6 +582,16 @@ check(not okNS and codeNS == "trade_no_session", "confirmar de novo (spam): nada
 end
 
 do
+-- TUTORIAL: só avança
+d2.Tutorial = 0
+local okT1, t1 = call("SetTutorialStep", p2, 3)
+local okT2, t2 = call("SetTutorialStep", p2, 1)
+check(okT1 and t1 == 3 and okT2 and t2 == 3 and d2.Tutorial == 3, "tutorial: avança, nunca volta")
+call("SetTutorialStep", p2, 99)
+check(d2.Tutorial == 7, "tutorial: passo acima do total vira 'terminado'")
+end
+
+do
 -- AUDITORIA: casos de borda da TROCA
 check((call("RequestTrade", p1, p2.UserId)) and (call("RespondTrade", p2, p1.UserId, true)), "borda: nova sessão de troca")
 local x = S.InventoryService.Add(p1, "chrono_sage")

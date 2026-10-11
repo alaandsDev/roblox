@@ -189,3 +189,19 @@ morrer, erro). Peças de impacto vêm de `Pool`.
 **Desempenho**: estações sem colisão/toque/consulta; um loop central por serviço (renda 1 s,
 placas 2 s, pads 0,4 s, coletor 0,25 s); textos só mudam quando o valor muda; billboards com
 `MaxDistance`; `LodController` (cliente, 0,5 s) esconde detalhe e partículas de longe.
+
+## Auditoria pré-Studio — desempenho, mobile, fila de avisos e tutorial
+
+- **400 personagens (10 bases × 40 slots)**: nenhum loop por personagem. Servidor: 1 loop
+  central atualiza o "$ produzido" a cada 3 s (só se o texto mudou) e 1 loop checa pads.
+  Modelos procedurais: peças `Anchored`, sem `CanTouch/CanQuery/CastShadow`. Billboard some
+  a 90 studs, placa/pad a 55; LodController (cliente, a cada 0,5 s): < 40 studs completo,
+  < 75 sem detalhe, longe sem partículas/luz. Na prática o jogador vê ~1–2 bases com UI ativa.
+- **HUD responsivo** (`HudController.Layout`): escala única pela tela + 3 modos — largo,
+  compacto (< 1200 unidades: status sobem) e retrato (status no topo; somem atalhos da
+  direita e o histórico). HUD usa `ScreenInsets = DeviceSafeInsets` (notch).
+- **Prioridade de avisos** (`NotificationController`): CRITICAL > RARE_DROP > REWARD >
+  WARNING > INFO; REWARD/INFO esperam a cinemática. Janelas automáticas entram em
+  `QueueModal` (uma por vez, por prioridade, nunca sobre reveal/janela/tutorial).
+- **Tutorial** (`TutorialController` + `TutorialConfig`): 7 passos detectados pelos dados,
+  banner "PASSO X/7" com PULAR; HUD progressivo nos 3 primeiros passos.

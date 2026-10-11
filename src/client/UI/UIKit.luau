@@ -229,6 +229,10 @@ local function viewportSize(): Vector2
 	return if camera then camera.ViewportSize else Theme.ReferenceResolution
 end
 
+function UIKit.viewportSize(): Vector2
+	return viewportSize()
+end
+
 -- Escala da interface pelo tamanho da tela (PC, tablet, celular em pé/deitado)
 function UIKit.uiScale(): number
 	local size = viewportSize()
@@ -239,8 +243,13 @@ end
 local scaled: { UIScale } = {}
 local function refreshScales()
 	local value = UIKit.uiScale()
-	for _, s in scaled do
-		s.Scale = value
+	for i = #scaled, 1, -1 do
+		local s = scaled[i]
+		if s.Parent == nil then
+			table.remove(scaled, i) -- root já destruído
+		else
+			s.Scale = value
+		end
 	end
 end
 
@@ -280,10 +289,16 @@ function UIKit.scaledRoot(gui: Instance, name: string?): Frame
 	return root
 end
 
+-- Avisado quando a tela muda de tamanho/orientação (depois de reescalar). Usado pelo HUD.
+UIKit.ViewportChanged = Signal.new()
+
 task.spawn(function()
 	local camera = Workspace.CurrentCamera
 	if camera then
-		camera:GetPropertyChangedSignal("ViewportSize"):Connect(refreshScales)
+		camera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+			refreshScales()
+			UIKit.ViewportChanged:Fire(viewportSize())
+		end)
 	end
 end)
 

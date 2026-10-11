@@ -14,8 +14,8 @@ local DataController = require(script.Parent.DataController)
 
 local LodController = {}
 
-local NEAR = 45
-local FAR = 90
+local NEAR = 40
+local FAR = 75
 
 local function apply(station: Instance, distance: number, reduced: boolean)
 	local level = if distance < NEAR then 1 elseif distance < FAR then 2 else 3

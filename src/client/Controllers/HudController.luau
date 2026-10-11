@@ -84,8 +84,62 @@ local function refreshStats()
 	end
 end
 
+--[[
+	Layout responsivo (auditoria mobile). Medidas em "unidades da interface" (tela ÷ escala):
+	    largo (PC/tablet deitado) -> layout padrão
+	    estreito (< COMPACT_WIDTH) -> status (dinheiro/sorte) sobem para cima do histórico
+	    em pé (altura > largura)  -> status no topo à esquerda; some a coluna da direita
+	                                 (atalhos da loja; a loja continua no MERCADO) e o histórico
+]]
+local COMPACT_WIDTH = 1200
+HudController.Mode = "wide"
+local tutorialHidden = false
+
+-- Tutorial: esconde os botões secundários (esquerda e direita) nos primeiros passos
+function HudController.SetTutorialHidden(hidden: boolean)
+	if tutorialHidden ~= hidden then
+		tutorialHidden = hidden
+		HudController.Layout()
+	end
+end
+
+function HudController.Layout()
+	local root = HudController.Containers.Left and HudController.Containers.Left.Parent
+	if not root then
+		return
+	end
+	local viewport = UIKit.viewportSize()
+	local scale = UIKit.uiScale()
+	local width = viewport.X / scale
+	local mode = if viewport.Y > viewport.X then "portrait" elseif width < COMPACT_WIDTH then "compact" else "wide"
+	HudController.Mode = mode
+	root:SetAttribute("LayoutMode", mode)
+	local stats = HudController.Containers.BottomLeft
+	local right = HudController.Containers.Right
+	local history = root:FindFirstChild("History")
+	if mode == "portrait" then
+		stats.AnchorPoint = Vector2.new(0, 0)
+		stats.Position = UDim2.new(0, 16, 0, 70)
+	elseif mode == "compact" then
+		stats.AnchorPoint = Vector2.new(0, 1)
+		stats.Position = UDim2.new(0, 16, 1, -(Theme.ButtonSizes.Roll.Y + 130))
+	else
+		stats.AnchorPoint = Vector2.new(0, 1)
+		stats.Position = UDim2.new(0, 16, 1, -10)
+	end
+	right.Visible = mode ~= "portrait" and not tutorialHidden
+	HudController.Containers.Left.Visible = not tutorialHidden
+	if history and history:IsA("GuiObject") then
+		history.Visible = mode ~= "portrait"
+	end
+end
+
 function HudController.Init()
 	local gui = UIKit.screen("HUD", 5)
+	-- Celular com notch/ilha: o HUD respeita a área segura do aparelho
+	pcall(function()
+		(gui :: any).ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets
+	end)
 	local root = UIKit.scaledRoot(gui)
 
 	-- ESQUERDA
@@ -210,8 +264,11 @@ function HudController.Init()
 end
 
 function HudController.Start()
+	UIKit.ViewportChanged:Connect(HudController.Layout)
 	DataController.Wait()
 	refreshStats()
+	-- Depois que os outros controllers criaram seus widgets (histórico do roll)
+	task.defer(HudController.Layout)
 	DataController.Changed:Connect(function(key: string)
 		if key == "Money" or key == "Gems" or key == "EquippedDice" or key == "Upgrades" or key == "Boosts" or key == "Runtime" or key == "Rebirths" or key == "RebirthPerks" then
 			refreshStats()

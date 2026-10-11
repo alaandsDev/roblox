@@ -183,7 +183,7 @@ local CLIENT_ORDER = {
 	"RevealController", "RollController", "InventoryController", "DiceShopController", "UpgradesController",
 	"SellController", "IndexController", "DailyController", "OfflineController", "SettingsController", "TowerController",
 	"RebirthController", "FusionController", "TradeController", "MissionController", "StoreController", "MusicController",
-	"FeedbackController", "LodController",
+	"FeedbackController", "LodController", "TutorialController",
 }
 local C = {}
 for _, name in CLIENT_ORDER do
@@ -246,6 +246,13 @@ for _, name in { "Backpack", "Upgrades", "Shop", "Rebirth", "Index", "Daily", "S
 	check(find(hud, name) ~= nil, "HUD tem " .. name)
 end
 check(gui("NavigationHud") ~= nil, "barra CENTRO/CASA/LOJA")
+
+-- TUTORIAL (auditoria): jogador novo vê o passo 1 e o HUD reduzido
+check(Env.waitFor(function()
+	local t = gui("Tutorial")
+	return t ~= nil and t.Enabled and find(t, "Step") ~= nil and string.find(find(t, "Step").Text, "1/7", 1, true) ~= nil
+end, 2), "tutorial: jogador novo vê PASSO 1/7")
+check(hud:FindFirstChild("Root"):FindFirstChild("Left").Visible == false, "tutorial: botões secundários escondidos no começo")
 
 ------------------------------------------------------------------------------------
 -- ROLAR (reveal normal)
@@ -639,6 +646,63 @@ check(okUp, "upgrade da estação")
 task.wait(1.2)
 
 ------------------------------------------------------------------------------------
+
+do
+	-- Fila de janelas automáticas: nunca por cima de outra janela; maior prioridade primeiro
+	local NC = C.NotificationController
+	local opened = {}
+	UIKit.Windows.open("Settings")
+	NC.QueueModal("Info", NC.Priority.INFO, function()
+		table.insert(opened, "Info")
+	end)
+	NC.QueueModal("Reward", NC.Priority.REWARD, function()
+		table.insert(opened, "Reward")
+	end)
+	NC.QueueModal("Reward", NC.Priority.REWARD, function()
+		table.insert(opened, "RewardDup")
+	end)
+	task.wait(0.6)
+	check(#opened == 0, "fila: com janela aberta nada abre por cima")
+	UIKit.Windows.closeAll()
+	check(Env.waitFor(function()
+		return #opened >= 1
+	end, 2) and opened[1] == "Reward", "fila: abre a de maior prioridade primeiro")
+	check(Env.waitFor(function()
+		return #opened == 2
+	end, 2) and opened[2] == "Info" and table.find(opened, "RewardDup") == nil, "fila: uma por vez e sem repetir")
+	check(NC.PriorityOf("error.inventory_full") == NC.Priority.WARNING and NC.PriorityOf("daily.claimed") == NC.Priority.REWARD, "prioridade das mensagens por tipo")
+end
+
+do
+	-- TUTORIAL: os passos avançaram jogando; PULAR termina e devolve o HUD completo
+	local data2 = S.PlayerDataService.GetData(player)
+	check((data2.Tutorial or 0) >= 3, "tutorial: avançou sozinho jogando (passo " .. tostring(data2.Tutorial) .. ")")
+	click(find(gui("Tutorial"), "Skip"))
+	check(Env.waitFor(function()
+		return data2.Tutorial == 7 and gui("Tutorial").Enabled == false
+	end, 2), "tutorial: PULAR termina o tutorial")
+	check(gui("HUD"):FindFirstChild("Root"):FindFirstChild("Left").Visible == true, "tutorial terminado: HUD completo")
+end
+
+do
+	-- HUD responsivo (auditoria mobile): celular em pé e de volta ao PC
+	local hud = gui("HUD")
+	local hudRoot = hud and hud:FindFirstChild("Root")
+	Env.setViewport(camera, 390, 844)
+	task.wait(0.05)
+	local right = hudRoot and hudRoot:FindFirstChild("Right")
+	local stats = hudRoot and hudRoot:FindFirstChild("BottomLeft")
+	local history = hudRoot and hudRoot:FindFirstChild("History")
+	check(hudRoot ~= nil and hudRoot:GetAttribute("LayoutMode") == "portrait", "celular em pé: layout retrato")
+	check(right ~= nil and right.Visible == false and history ~= nil and history.Visible == false, "retrato: some a coluna da direita e o histórico")
+	check(stats ~= nil and stats.Position.Y.Scale == 0, "retrato: dinheiro/sorte vão para o topo")
+	Env.setViewport(camera, 1024, 768)
+	task.wait(0.05)
+	check(hudRoot:GetAttribute("LayoutMode") == "compact" or hudRoot:GetAttribute("LayoutMode") == "wide", "tablet deitado: sem modo retrato")
+	Env.setViewport(camera, 1280, 720)
+	task.wait(0.05)
+	check(hudRoot:GetAttribute("LayoutMode") == "wide" and right.Visible and history.Visible and stats.Position.Y.Scale == 1, "volta ao PC: layout padrão")
+end
 
 running = false
 task.wait(0.1)

@@ -128,9 +128,19 @@ end)
 pcall(roblox.implementProperty, "GuiBase2d", "AbsolutePosition", function()
 	return roblox.Vector2.new(0, 0)
 end)
+Env.viewport = roblox.Vector2.new(1280, 720)
 pcall(roblox.implementProperty, "Camera", "ViewportSize", function()
-	return roblox.Vector2.new(1280, 720)
+	return Env.viewport
 end)
+
+-- Simula girar/redimensionar a tela: muda o ViewportSize e avisa quem escuta a propriedade
+function Env.setViewport(camera, x, y)
+	Env.viewport = roblox.Vector2.new(x, y)
+	pcall(function()
+		camera.ViewportSize = Env.viewport
+	end)
+	eventOf(camera, "Changed:ViewportSize"):Fire()
+end
 
 function Env.create()
 	local game = Instance.new("DataModel")
