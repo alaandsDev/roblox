@@ -14,7 +14,10 @@ Serve para auditar packs da Creator Store antes de qualquer integração.
 python tools\audit_pack.py
 ```
 
-   (baixa o Lune se precisar; só LÊ o arquivo — nenhum script do pack roda)
+   (baixa o Lune se precisar; só LÊ o arquivo — nenhum script do pack roda). Se o Lune
+   recusar o arquivo (ex.: `Accessory.Tags should be SharedString`), o leitor tolerante
+   `tools/packaudit/rbxm_reader.py` cria `third_party/AnimePack_clean.rbxmx` e a auditoria
+   continua sozinha.
 3. Ele gera 3 arquivos pequenos. Faça commit + push **deles**:
 
 ```

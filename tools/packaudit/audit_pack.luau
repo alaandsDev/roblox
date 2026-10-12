@@ -16,6 +16,8 @@ local PackAudit = require("./PackAudit")
 
 local PACK_NAME = "Anime Pack"
 local file = process.args[1] or "third_party/AnimePack.rbxm"
+-- Nome mostrado no relatório (quando auditamos a cópia limpa feita pelo rbxm_reader.py)
+local label = process.args[2] or file
 if not fs.isFile(file) then
 	print("arquivo não encontrado: " .. file)
 	print("No Studio: botão direito em Workspace > Anime Pack > Save to File... > " .. file)
@@ -45,7 +47,7 @@ for _, root in roots do
 end
 
 local report = PackAudit.audit(roots)
-fs.writeFile("ANIME_PACK_AUDIT.md", PackAudit.markdown(report, PACK_NAME, "14679137059", file))
+fs.writeFile("ANIME_PACK_AUDIT.md", PackAudit.markdown(report, PACK_NAME, "14679137059", label))
 fs.writeDir("third_party")
 fs.writeFile("third_party/AnimePack_summary.json", serde.encode("json", PackAudit.summary(report), true))
 fs.writeFile("third_party/AnimePack_scripts.txt", PackAudit.scriptDump(roots))
