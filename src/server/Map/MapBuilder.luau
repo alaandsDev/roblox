@@ -663,7 +663,10 @@ local function buildSocial(parent: Folder)
 end
 
 ------------------------------------------------------------------------------------
--- Esteira (estrutura fixa; ripas e objetos andando são criados no cliente)
+-- Esteira TERRESTRE (estrutura fixa; ripas e objetos andando são criados no cliente).
+-- Mesma rota oval de sempre (MapLayout:conveyorPath), agora no chão: topo da esteira a
+-- MapLayout:conveyorTop() studs do chão, bordas baixas e SEM pilares. Onde a pista cruza um
+-- caminho (MapLayout:onPath), as bordas abrem para o jogador atravessar a pé.
 
 local function buildConveyor(parent: Folder)
 	local c = MapConfig.Conveyor
@@ -671,7 +674,41 @@ local function buildConveyor(parent: Folder)
 	local beltColor = rgb(55, 55, 70)
 	local railColor = rgb(255, 200, 60)
 	local y = c.Height
+	local railY = layout:conveyorTop() + c.RailHeight / 2
 	local count = #path.points
+	local railOffset = c.BeltWidth / 2 + 0.3
+
+	-- Borda de um lado de um trecho, quebrada onde passa um caminho
+	local function rails(from: Vector3, to: Vector3, side: number)
+		local length = (to - from).Magnitude
+		local dir = (to - from).Unit
+		local normal = Vector3.new(-dir.Z, 0, dir.X) * side * railOffset
+		local step = 1
+		local runStart: number? = nil
+		local function flush(runEnd: number)
+			if runStart and runEnd - runStart >= 1 then
+				local a = from + dir * runStart + normal
+				local b = from + dir * runEnd + normal
+				Build.decor(Build.part(Vector3.new(0.6, c.RailHeight, runEnd - runStart), CFrame.lookAt((a + b) / 2, b) + Vector3.new(0, railY - (a.Y + b.Y) / 2, 0), {
+					Name = "Rail",
+					Color = railColor,
+					Parent = parent,
+				}))
+			end
+			runStart = nil
+		end
+		local t = 0
+		while t <= length do
+			local point = from + dir * t + normal
+			if layout:onPath(point.X, point.Z, c.CrossingMargin) then
+				flush(t)
+			elseif runStart == nil then
+				runStart = t
+			end
+			t += step
+		end
+		flush(length)
+	end
 
 	for i, a in path.points do
 		local b = path.points[i % count + 1]
@@ -679,33 +716,16 @@ local function buildConveyor(parent: Folder)
 		local to = Vector3.new(b.x, y, b.z)
 		local length = (to - from).Magnitude
 		local cf = CFrame.lookAt((from + to) / 2, to)
-		Build.part(Vector3.new(c.BeltWidth, 1, length), cf, { Name = "Belt", Color = beltColor, Parent = parent })
+		Build.part(Vector3.new(c.BeltWidth, c.BeltThickness, length), cf, { Name = "Belt", Color = beltColor, Parent = parent })
 		for _, side in { -1, 1 } do
-			Build.decor(Build.part(Vector3.new(0.6, 1.4, length), cf * CFrame.new(side * (c.BeltWidth / 2 + 0.3), 0.6, 0), {
-				Name = "Rail",
-				Color = railColor,
-				Parent = parent,
-			}))
+			rails(from, to, side)
 		end
-		-- Junta redonda para fechar as emendas das curvas
-		Build.decor(Build.cylinder(c.BeltWidth + 1.2, 1.4, CFrame.new(a.x, y - 0.5, a.z), {
+		-- Disco na emenda das curvas (mesma altura da esteira: não vira degrau)
+		Build.decor(Build.cylinder(c.BeltWidth, c.BeltThickness, CFrame.new(a.x, y - c.BeltThickness / 2, a.z), {
 			Name = "Joint",
-			Color = railColor,
+			Color = beltColor,
 			Parent = parent,
 		}))
-	end
-
-	-- Pilares a cada PillarSpacing ao longo da pista
-	local d = 0
-	while d < path.length do
-		local x, z = MapLayout.pointAt(path, d)
-		Build.cylinder(2.4, y - 0.5, CFrame.new(x, 0, z), {
-			Name = "Pillar",
-			Color = rgb(230, 228, 240),
-			Material = Enum.Material.Metal,
-			Parent = parent,
-		})
-		d += c.PillarSpacing
 	end
 end
 

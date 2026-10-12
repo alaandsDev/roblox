@@ -95,6 +95,39 @@ function MapLayout:distanceToHub(x: number, z: number): number
 	return math.sqrt((x - c.x) ^ 2 + (z - c.z) ^ 2)
 end
 
+export type Rect = { minX: number, maxX: number, minZ: number, maxZ: number }
+
+-- Retângulos dos caminhos de chão (o MapBuilder desenha estes mesmos caminhos)
+function MapLayout:pathRects(): { Rect }
+	local p = self.map.Paths
+	local rects: { Rect } = {
+		{ minX = -p.MainWidth / 2, maxX = p.MainWidth / 2, minZ = p.MainFromZ, maxZ = p.MainToZ },
+	}
+	local reach = self.map.Bases.CenterX - self.baseConfig.Depth / 2
+	for row = 1, self.map.Bases.PerSide do
+		local z = self:base(row).z
+		table.insert(rects, { minX = -reach, maxX = reach, minZ = z - p.BranchWidth / 2, maxZ = z + p.BranchWidth / 2 })
+	end
+	return rects
+end
+
+-- Algum caminho de chão cobre (x, z)? margin aumenta cada retângulo
+function MapLayout:onPath(x: number, z: number, margin: number?): boolean
+	local m = margin or 0
+	for _, r in self:pathRects() do
+		if x >= r.minX - m and x <= r.maxX + m and z >= r.minZ - m and z <= r.maxZ + m then
+			return true
+		end
+	end
+	return false
+end
+
+-- Altura do topo da esteira (as ripas e itens do cliente andam sobre ela)
+function MapLayout:conveyorTop(): number
+	local c = self.map.Conveyor
+	return c.Height + c.BeltThickness / 2
+end
+
 -- Pista oval: duas retas em X = ±HalfX ligadas por semicírculos nas pontas
 function MapLayout:conveyorPath(): Path
 	local c = self.map.Conveyor

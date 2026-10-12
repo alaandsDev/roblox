@@ -101,7 +101,17 @@ function RandomStub.new(seed)
 	return obj
 end
 
+-- O CFrame.lookAt do Lune 0.10.4 espelha o eixo Z (lookAt(0 -> (1,0,1)) dá LookVector (0.7,0,-0.7)).
+-- No Roblox de verdade está certo; aqui trocamos por uma versão correta para os testes/prévia.
+local function fixedLookAt(position, target, up)
+	local look = (target - position).Unit
+	local right = look:Cross(up or roblox.Vector3.new(0, 1, 0)).Unit
+	return roblox.CFrame.fromMatrix(position, right, right:Cross(look), -look)
+end
+local FixedCFrame = setmetatable({ lookAt = fixedLookAt }, { __index = roblox.CFrame })
+
 local baseEnv = {
+	CFrame = FixedCFrame,
 	math = math, string = string, table = table, os = os, coroutine = coroutine, utf8 = utf8,
 	bit32 = bit32, buffer = buffer, debug = debug, print = print, warn = function(...) print("[warn]", ...) end,
 	error = error, assert = assert, pcall = pcall, xpcall = xpcall, select = select, type = type,
@@ -166,6 +176,42 @@ end
 local runtime = workspace:FindFirstChild("Runtime")
 for _, name in { "Characters", "Effects", "Temporary" } do
 	check(runtime and runtime:FindFirstChild(name) ~= nil, "Runtime/" .. name)
+end
+
+do
+	-- ESTEIRA TERRESTRE: no chão, sem pilares, bordas baixas, abertas nos cruzamentos
+	local MapCfg = requireModule(shared.Config.MapConfig)
+	local Layout = requireModule(shared.Modules.MapLayout).new(MapCfg, requireModule(shared.Config.BaseConfig))
+	local conveyor = map:FindFirstChild("Conveyor")
+	local highest, pillars, railsOnPath, belts, rails = -math.huge, 0, 0, 0, 0
+	for _, part in conveyor:GetDescendants() do
+		if part:IsA("BasePart") then
+			-- topo real da peça (cilindros deitados usam Size.X como altura)
+			local height = if part.Shape == roblox.Enum.PartType.Cylinder then part.Size.X else part.Size.Y
+			highest = math.max(highest, part.CFrame.Position.Y + height / 2)
+			if part.Name == "Pillar" then
+				pillars += 1
+			elseif part.Name == "Belt" then
+				belts += 1
+			elseif part.Name == "Rail" then
+				rails += 1
+				local half = part.Size.Z / 2 - 0.5
+				local look = part.CFrame.LookVector
+				for _, t in { -half, 0, half } do
+					local p = part.CFrame.Position + look * t
+					if Layout:onPath(p.X, p.Z) then
+						railsOnPath += 1
+					end
+				end
+			end
+		end
+	end
+	local top = Layout:conveyorTop()
+	check(pillars == 0, "esteira: nenhum pilar (pista terrestre)")
+	check(top >= 0.3 and top <= 0.8, string.format("esteira: superfície a %.2f stud do chão (0,3–0,8)", top))
+	check(highest <= 1.5, string.format("esteira: nada passa de %.2f stud (personagem R6 ~5 studs fica bem mais alto; não bloqueia a visão)", highest))
+	check(belts == #Layout:conveyorPath().points, "esteira: mesma rota fechada de antes (" .. belts .. " trechos)")
+	check(rails > 0 and railsOnPath == 0, "esteira: bordas abertas onde cruza caminhos (nenhuma borda em cima de caminho)")
 end
 
 local bases = workspace:FindFirstChild("Bases")

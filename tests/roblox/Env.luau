@@ -17,6 +17,15 @@ local Enum = roblox.Enum
 
 local Env = {}
 
+-- O CFrame.lookAt do Lune 0.10.4 espelha o eixo Z (lookAt(0 -> (1,0,1)) dá LookVector (0.7,0,-0.7)).
+-- No Roblox de verdade está certo; os módulos testados aqui recebem uma versão correta.
+local function fixedLookAt(position, target, up)
+	local look = (target - position).Unit
+	local right = look:Cross(up or roblox.Vector3.new(0, 1, 0)).Unit
+	return roblox.CFrame.fromMatrix(position, right, right:Cross(look), -look)
+end
+Env.FixedCFrame = setmetatable({ lookAt = fixedLookAt }, { __index = roblox.CFrame })
+
 -- Erros lançados dentro de callbacks de sinais/threads (os harnesses conferem no fim)
 Env.errors = {}
 function Env.record(err)
@@ -362,6 +371,7 @@ function Env.create()
 	end)
 
 	local baseEnv = {
+		CFrame = Env.FixedCFrame,
 		math = math, string = string, table = table, os = os, coroutine = coroutine, utf8 = utf8,
 		bit32 = bit32, buffer = buffer, debug = debug, print = print,
 		warn = function(...)

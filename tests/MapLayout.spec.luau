@@ -142,8 +142,44 @@ describe("MapLayout: Hub, lojas, torres e esteira", function()
 		end
 	end)
 
-	it("esteira passa alto o suficiente para jogadores andarem por baixo", function()
-		expect(MapConfig.Conveyor.Height >= 10).toBeTruthy()
+	it("esteira é TERRESTRE: topo 0,3–0,8 stud acima do chão e bordas abaixo da cintura do personagem", function()
+		local top = map:conveyorTop()
+		expect(top >= 0.3 and top <= 0.8).toBeTruthy()
+		-- personagem R6 tem ~5 studs; as bordas ficam abaixo de 1,5 (bem mais baixas que ele)
+		expect(top + MapConfig.Conveyor.RailHeight <= 1.5).toBeTruthy()
+		expect(MapConfig.Conveyor.PillarSpacing).toBeNil()
+	end)
+
+	it("esteira no chão não atravessa nenhuma base nem sai da ilha (largura inteira, a cada 2 studs)", function()
+		local path = map:conveyorPath()
+		local half = MapConfig.Conveyor.BeltWidth / 2 + 0.6
+		for d = 0, path.length, 2 do
+			local x, z, dx, dz = MapLayout.pointAt(path, d)
+			for _, side in { -1, 0, 1 } do
+				local px, pz = x - dz * half * side, z + dx * half * side
+				expect(map:insideAnyBase(px, pz)).toBeNil()
+				expect(map:insideIsland(px, pz, 5)).toBeTruthy()
+				expect(map:distanceToHub(px, pz) > MapConfig.Hub.Radius).toBeTruthy()
+			end
+		end
+	end)
+
+	it("cruzamentos com caminhos: pista rente ao caminho (dá para atravessar a pé)", function()
+		local path = map:conveyorPath()
+		local crossings = 0
+		local wasOn = false
+		for d = 0, path.length, 1 do
+			local x, z = MapLayout.pointAt(path, d)
+			local on = map:onPath(x, z)
+			if on and not wasOn then
+				crossings += 1
+			end
+			wasOn = on
+		end
+		-- caminho principal (curva sul) + ligações das 5 fileiras dos dois lados
+		expect(crossings).toBe(1 + 2 * MapConfig.Bases.PerSide)
+		-- degrau entre o caminho (topo 0,4) e a esteira: pequeno o bastante para andar por cima
+		expect(map:conveyorTop() - 0.4 <= 0.5).toBeTruthy()
 	end)
 
 	it("pointAt devolve direção unitária", function()

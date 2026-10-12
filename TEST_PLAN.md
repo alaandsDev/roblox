@@ -22,7 +22,7 @@
 | `tests/BaseAllocator.spec.luau` | **base assignment, uniqueness, release, reassignment**, 11º jogador sem base |
 | `tests/BaseLayout.spec.luau` | **slot layout**: 4 slots no lado A + 4 no lado B, ids por andar (Floor02 = 09–16), posições, orientação, rampa sem invadir pedestais |
 | `tests/BaseProgression.spec.luau` | **RB0 = 1-4 liberados, 5-8 bloqueados**, RB1-4 sem invenção, **RB5 = Floor02 + Slot09**, validação da config |
-| `tests/MapLayout.spec.luau` | dimensões, 5+5 bases, sem sobreposição, Hub, lojas a 40-80, **teleport destinations**, esteira fechada |
+| `tests/MapLayout.spec.luau` | dimensões, 5+5 bases, sem sobreposição, Hub, lojas a 40-80, **teleport destinations**, esteira fechada, **terrestre** (topo 0,3–0,8, bordas ≤ 1,5), sem atravessar bases, 11 cruzamentos com caminhos |
 | `tests/MapValidator.spec.luau` | **map validation**: detecta base faltando, ids repetidos, lado com 2 slots, peças faltando |
 | `tests/SpawnCoordinator.spec.luau` | **spawn**: cada jogador nasce na própria base, respawn na mesma base, nunca na base de outro, 10 entradas simultâneas em ordens misturadas, base atrasada (nasce no Hub e vai para casa), 11º jogador |
 | `tests/roblox/ServiceHarness.luau` (Lune) | **integração** PlayerDataService + MapService + BaseService reais com jogadores falsos: AssignBase → GetPlayerBase → GetBaseOwner → OwnerUserId → ReleaseBase → reatribuição; regressão da "cópia da Barra de comandos"; integridade |
@@ -87,7 +87,7 @@ Preparação: `git pull`, `python tools\run_tests.py` (gera também `build\map_p
 | 5 | HUD | Topo da tela | 3 botões [🎲 CENTRO] [🏠 CASA] [🛒 LOJA]; hover aumenta, clique "afunda", som de clique, barra escura de 1 s |
 | 6 | Teleportes | Clicar CENTRO / LOJA / CASA | Hub (olhando o dado) / entre o Hub e as cabanas (olhando as lojas) / entrada da sua base. Clicar rápido não teleporta 2x |
 | 7 | Hub | No centro | Praça circular clara, dado gigante branco com pontos girando e flutuando, brilhinhos, cristais e postes em volta |
-| 8 | Esteira | Do Hub e da base | Pista oval elevada passando entre o Hub e as bases, com ripas e dados/cristais andando; dá para passar por baixo |
+| 8 | Esteira | Do Hub e da base (câmera normal) | Pista oval NO CHÃO (topo ~0,5 stud, bordas baixas, sem pilares), mesma rota entre o Hub e as bases, com ripas e dados/cristais andando; o personagem fica bem mais alto que as bordas; atravessa a pé nos cruzamentos com caminhos; não tapa a visão da base |
 | 9 | Lojas | Perto das cabanas | MERCADO (laranja), LOJA DE DADOS (roxa, maior, com dado no telhado), VENDER (verde). Prompt "Abrir" → aviso "…: em breve!" |
 | 10 | Torres / social | Norte do Hub | Portal TORRES "DESAFIE OS ANDARES" + torre em degraus; FUSÃO (oeste), TROCAS (leste), MISSÕES e RANKINGS (3 painéis) |
 | 11 | Bordas | Correr até a areia | Parede invisível na borda da areia; água, ilhotas e pedras ao fundo |

@@ -42,7 +42,8 @@ end
 
 local function startConveyor()
 	local c = MapConfig.Conveyor
-	local path = MapLayout.new(MapConfig, BaseConfig):conveyorPath()
+	local layout = MapLayout.new(MapConfig, BaseConfig)
+	local path = layout:conveyorPath()
 	local runtime = workspace:WaitForChild("Runtime", 30)
 	local effects = runtime and runtime:WaitForChild("Effects", 30)
 	if not effects then
@@ -56,7 +57,7 @@ local function startConveyor()
 	local offsets: { number } = {}
 	local heights: { number } = {}
 	local spins: { number } = {}
-	local beltTop = c.Height + 0.5
+	local beltTop = layout:conveyorTop()
 
 	for i = 1, c.SlatCount do
 		local slat = makePart(Vector3.new(c.BeltWidth - 1.2, 0.15, 0.7), Color3.fromRGB(95, 95, 115), Enum.Material.SmoothPlastic, folder)

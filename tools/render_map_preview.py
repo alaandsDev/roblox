@@ -51,14 +51,15 @@ def main() -> None:
             r = p["sx"] / 2 * ESCALA
             draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=cor)
         else:
-            # retângulo girado pelo LookVector (yaw)
-            ang = math.atan2(p["lx"], p["lz"])
+            # retângulo girado pelo LookVector (yaw): Size.Z vai ao longo do LookVector,
+            # Size.X ao longo do vetor perpendicular (no plano XZ)
+            norma = math.hypot(p["lx"], p["lz"]) or 1.0
+            lx, lz = p["lx"] / norma, p["lz"] / norma
+            perp_x, perp_z = -lz, lx
             hx, hz = p["sx"] / 2, p["sz"] / 2
             pontos = []
             for dx, dz in ((-hx, -hz), (hx, -hz), (hx, hz), (-hx, hz)):
-                rx = dx * math.cos(ang) + dz * math.sin(ang)
-                rz = -dx * math.sin(ang) + dz * math.cos(ang)
-                pontos.append(para_tela(p["x"] + rx, p["z"] + rz))
+                pontos.append(para_tela(p["x"] + perp_x * dx + lx * dz, p["z"] + perp_z * dx + lz * dz))
             draw.polygon(pontos, fill=cor)
 
     try:

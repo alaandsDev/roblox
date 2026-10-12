@@ -74,17 +74,20 @@ MapConfig.Paths = {
 	MainToZ = 132,
 }
 
--- Esteira elevada em forma de pista oval passando entre o Hub e as bases
+-- Esteira TERRESTRE em forma de pista oval passando entre o Hub e as bases (no chão, sem
+-- pilares). Onde ela cruza um caminho, as bordas abrem e a esteira fica quase rente ao caminho.
 MapConfig.Conveyor = {
 	HalfX = 88, -- distância do centro até as retas da esteira
 	StraightHalfZ = 140, -- as retas vão de -140 a 140 em Z; depois, semicírculos
 	ArcSegments = 14, -- segmentos de cada semicírculo
-	Height = 12, -- altura da esteira (jogadores passam por baixo)
+	Height = 0.3, -- centro da esteira; topo = Height + BeltThickness/2 = 0.55 stud acima do chão
+	BeltThickness = 0.5,
+	RailHeight = 0.5, -- bordas laterais baixas (acima do topo da esteira)
+	CrossingMargin = 1.5, -- folga das bordas em volta de cada caminho cruzado
 	BeltWidth = 8,
 	Speed = 12, -- studs por segundo (animação no cliente)
 	SlatCount = 72, -- ripas que andam sobre a esteira (efeito de movimento)
 	ItemCount = 16, -- dados/cristais transportados
-	PillarSpacing = 40,
 }
 
 MapConfig.Decor = {
