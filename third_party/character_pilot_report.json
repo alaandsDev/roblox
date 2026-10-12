@@ -1,0 +1,437 @@
+[
+  {
+    "CharacterId": "char_barbalva_base",
+    "SourceModelName": "Whitebeard",
+    "SourcePath": "One Piece Pack.Whitebeard",
+    "accessories": 0,
+    "animationsRemoved": 11,
+    "bindablesRemoved": 0,
+    "boundsSize": [
+      5.850001811981201,
+      6.044191837310791,
+      8.614140510559082
+    ],
+    "decals": 2,
+    "guisRemoved": 2,
+    "hiddenPartsRemoved": 3,
+    "humanoidKept": true,
+    "meshes": 5,
+    "motors": 8,
+    "originalParts": 17,
+    "otherRemoved": {
+      "Attachment": 1
+    },
+    "problems": {},
+    "remotesRemoved": 4,
+    "sanitizedParts": 13,
+    "scaleFactor": 0.39001978783866215,
+    "scriptsRemoved": 1,
+    "soundsRemoved": 34,
+    "status": "OK",
+    "textures": 0,
+    "unattachedParts": {},
+    "valuesRemoved": 15,
+    "vfxPreserved": {},
+    "vfxRemoved": 15,
+    "visualOffset": [
+      0,
+      0,
+      0
+    ],
+    "warnings": {},
+    "welds": 136
+  },
+  {
+    "CharacterId": "char_goju_base",
+    "SourceModelName": "Gojo Satoru",
+    "SourcePath": "JJK.Gojo Satoru",
+    "accessories": 0,
+    "animationsRemoved": 11,
+    "bindablesRemoved": 0,
+    "boundsSize": [
+      4,
+      6.140096187591553,
+      2.256544828414917
+    ],
+    "decals": 2,
+    "guisRemoved": 2,
+    "hiddenPartsRemoved": 3,
+    "humanoidKept": true,
+    "meshes": 5,
+    "motors": 8,
+    "originalParts": 17,
+    "otherRemoved": {
+      "Attachment": 1
+    },
+    "problems": {},
+    "remotesRemoved": 4,
+    "sanitizedParts": 13,
+    "scaleFactor": 1,
+    "scriptsRemoved": 1,
+    "soundsRemoved": 34,
+    "status": "OK",
+    "textures": 0,
+    "unattachedParts": {},
+    "valuesRemoved": 14,
+    "vfxPreserved": {},
+    "vfxRemoved": 14,
+    "visualOffset": [
+      0,
+      0,
+      0
+    ],
+    "warnings": {},
+    "welds": 39
+  },
+  {
+    "CharacterId": "char_goko_base",
+    "SourceModelName": "Goku",
+    "SourcePath": "DBZ.Goku",
+    "accessories": 1,
+    "animationsRemoved": 11,
+    "bindablesRemoved": 0,
+    "boundsSize": [
+      4,
+      5.677192687988281,
+      1.2999191284179688
+    ],
+    "decals": 3,
+    "guisRemoved": 2,
+    "hiddenPartsRemoved": 2,
+    "humanoidKept": true,
+    "meshes": 1,
+    "motors": 8,
+    "originalParts": 12,
+    "otherRemoved": {
+      "Attachment": 1
+    },
+    "problems": {},
+    "remotesRemoved": 4,
+    "sanitizedParts": 9,
+    "scaleFactor": 1,
+    "scriptsRemoved": 1,
+    "soundsRemoved": 34,
+    "status": "OK",
+    "textures": 1,
+    "unattachedParts": {},
+    "valuesRemoved": 16,
+    "vfxPreserved": {},
+    "vfxRemoved": 14,
+    "visualOffset": [
+      0,
+      0,
+      0
+    ],
+    "warnings": {},
+    "welds": 29
+  },
+  {
+    "CharacterId": "char_ichiro_base",
+    "SourceModelName": "Ichigo",
+    "SourcePath": "Bleach Pack.Ichigo",
+    "accessories": 0,
+    "animationsRemoved": 11,
+    "bindablesRemoved": 0,
+    "boundsSize": [
+      4.0000152587890625,
+      5.741999626159668,
+      7.795937538146973
+    ],
+    "decals": 2,
+    "guisRemoved": 2,
+    "hiddenPartsRemoved": 3,
+    "humanoidKept": true,
+    "meshes": 3,
+    "motors": 8,
+    "originalParts": 14,
+    "otherRemoved": {
+      "Attachment": 1
+    },
+    "problems": {},
+    "remotesRemoved": 4,
+    "sanitizedParts": 10,
+    "scaleFactor": 1,
+    "scriptsRemoved": 1,
+    "soundsRemoved": 34,
+    "status": "OK",
+    "textures": 0,
+    "unattachedParts": {},
+    "valuesRemoved": 14,
+    "vfxPreserved": {},
+    "vfxRemoved": 15,
+    "visualOffset": [
+      0,
+      0,
+      0
+    ],
+    "warnings": {},
+    "welds": 12
+  },
+  {
+    "CharacterId": "char_ichiro_hollow",
+    "SourceModelName": "Hollow Ichigo",
+    "SourcePath": "Bleach Pack.Hollow Ichigo.Hollow Ichigo",
+    "accessories": 0,
+    "animationsRemoved": 23,
+    "bindablesRemoved": 0,
+    "boundsSize": [
+      4,
+      5.741999626159668,
+      6.348202705383301
+    ],
+    "decals": 3,
+    "guisRemoved": 2,
+    "hiddenPartsRemoved": 3,
+    "humanoidKept": true,
+    "meshes": 4,
+    "motors": 8,
+    "originalParts": 16,
+    "otherRemoved": {
+      "Attachment": 1,
+      "Folder": 1
+    },
+    "problems": {},
+    "remotesRemoved": 5,
+    "sanitizedParts": 12,
+    "scaleFactor": 1,
+    "scriptsRemoved": 2,
+    "soundsRemoved": 35,
+    "status": "OK",
+    "textures": 0,
+    "unattachedParts": {},
+    "valuesRemoved": 14,
+    "vfxPreserved": {},
+    "vfxRemoved": 15,
+    "visualOffset": [
+      0,
+      0,
+      0
+    ],
+    "warnings": {},
+    "welds": 33
+  },
+  {
+    "CharacterId": "char_killuo_base",
+    "SourceModelName": "Killua",
+    "SourcePath": "HXH.Killua",
+    "accessories": 0,
+    "animationsRemoved": 11,
+    "bindablesRemoved": 0,
+    "boundsSize": [
+      3.9999847412109375,
+      5.869026184082031,
+      2.089773654937744
+    ],
+    "decals": 2,
+    "guisRemoved": 2,
+    "hiddenPartsRemoved": 2,
+    "humanoidKept": true,
+    "meshes": 1,
+    "motors": 8,
+    "originalParts": 12,
+    "otherRemoved": {
+      "Attachment": 1
+    },
+    "problems": {},
+    "remotesRemoved": 4,
+    "sanitizedParts": 9,
+    "scaleFactor": 1,
+    "scriptsRemoved": 1,
+    "soundsRemoved": 34,
+    "status": "OK",
+    "textures": 0,
+    "unattachedParts": {},
+    "valuesRemoved": 14,
+    "vfxPreserved": {},
+    "vfxRemoved": 14,
+    "visualOffset": [
+      0,
+      0,
+      0
+    ],
+    "warnings": {},
+    "welds": 33
+  },
+  {
+    "CharacterId": "char_killuo_godspeed",
+    "SourceModelName": "Killua Godspeed",
+    "SourcePath": "HXH.Killua Godspeed",
+    "accessories": 0,
+    "animationsRemoved": 23,
+    "bindablesRemoved": 0,
+    "boundsSize": [
+      4,
+      6.099732875823975,
+      2.3285908699035645
+    ],
+    "decals": 2,
+    "guisRemoved": 2,
+    "hiddenPartsRemoved": 3,
+    "humanoidKept": true,
+    "meshes": 2,
+    "motors": 8,
+    "originalParts": 13,
+    "otherRemoved": {
+      "Attachment": 1,
+      "Folder": 1
+    },
+    "problems": {},
+    "remotesRemoved": 5,
+    "sanitizedParts": 9,
+    "scaleFactor": 1,
+    "scriptsRemoved": 2,
+    "soundsRemoved": 35,
+    "status": "OK",
+    "textures": 0,
+    "unattachedParts": {},
+    "valuesRemoved": 15,
+    "vfxPreserved": [
+      "ParticleEmitter Lightning (Light)",
+      "ParticleEmitter Lightning (Light)",
+      "ParticleEmitter Lightning (Full)",
+      "ParticleEmitter Lightning (Full)",
+      "ParticleEmitter Lightning (Full)",
+      "ParticleEmitter Lightning (Full)"
+    ],
+    "vfxRemoved": 24,
+    "visualOffset": [
+      0,
+      0,
+      0
+    ],
+    "warnings": {},
+    "welds": 9
+  },
+  {
+    "CharacterId": "char_sacha_base",
+    "SourceModelName": "Sasha",
+    "SourcePath": "AOT.Sasha",
+    "accessories": 0,
+    "animationsRemoved": 0,
+    "bindablesRemoved": 0,
+    "boundsSize": [
+      4,
+      5.0652313232421875,
+      1.4337310791015625
+    ],
+    "decals": 1,
+    "guisRemoved": 0,
+    "hiddenPartsRemoved": 0,
+    "humanoidKept": true,
+    "meshes": 1,
+    "motors": 6,
+    "originalParts": 8,
+    "otherRemoved": {},
+    "problems": {},
+    "remotesRemoved": 0,
+    "sanitizedParts": 7,
+    "scaleFactor": 1.0000015258812345,
+    "scriptsRemoved": 0,
+    "soundsRemoved": 0,
+    "status": "WARN",
+    "textures": 1,
+    "unattachedParts": [
+      "Handle"
+    ],
+    "valuesRemoved": 0,
+    "vfxPreserved": {},
+    "vfxRemoved": 0,
+    "visualOffset": [
+      0,
+      0,
+      0
+    ],
+    "warnings": [
+      "1 peça(s) sem junta (presas pelo osso mais próximo): Handle"
+    ],
+    "welds": 1
+  },
+  {
+    "CharacterId": "char_yamamotu_base",
+    "SourceModelName": "Yamamoto",
+    "SourcePath": "Bleach Pack.Yamamoto",
+    "accessories": 0,
+    "animationsRemoved": 11,
+    "bindablesRemoved": 0,
+    "boundsSize": [
+      4.0000152587890625,
+      5.881904602050781,
+      5.841033935546875
+    ],
+    "decals": 2,
+    "guisRemoved": 2,
+    "hiddenPartsRemoved": 2,
+    "humanoidKept": true,
+    "meshes": 2,
+    "motors": 8,
+    "originalParts": 15,
+    "otherRemoved": {
+      "Attachment": 1
+    },
+    "problems": {},
+    "remotesRemoved": 4,
+    "sanitizedParts": 12,
+    "scaleFactor": 1.0000068665022266,
+    "scriptsRemoved": 1,
+    "soundsRemoved": 34,
+    "status": "OK",
+    "textures": 0,
+    "unattachedParts": {},
+    "valuesRemoved": 14,
+    "vfxPreserved": [
+      "ParticleEmitter Fire (Light)",
+      "ParticleEmitter Fire (Light)",
+      "PointLight PointLight (Full)"
+    ],
+    "vfxRemoved": 16,
+    "visualOffset": [
+      0,
+      0,
+      0
+    ],
+    "warnings": {},
+    "welds": 101
+  },
+  {
+    "CharacterId": "char_zabuzo_base",
+    "SourceModelName": "Zabuza",
+    "SourcePath": "NARUTO.Zabuza",
+    "accessories": 0,
+    "animationsRemoved": 11,
+    "bindablesRemoved": 0,
+    "boundsSize": [
+      3.940993309020996,
+      5.848551273345947,
+      8.494125366210938
+    ],
+    "decals": 2,
+    "guisRemoved": 2,
+    "hiddenPartsRemoved": 3,
+    "humanoidKept": true,
+    "meshes": 5,
+    "motors": 8,
+    "originalParts": 16,
+    "otherRemoved": {
+      "Attachment": 1
+    },
+    "problems": {},
+    "remotesRemoved": 4,
+    "sanitizedParts": 12,
+    "scaleFactor": 0.9852259701212064,
+    "scriptsRemoved": 1,
+    "soundsRemoved": 34,
+    "status": "OK",
+    "textures": 0,
+    "unattachedParts": {},
+    "valuesRemoved": 14,
+    "vfxPreserved": {},
+    "vfxRemoved": 14,
+    "visualOffset": [
+      0,
+      0,
+      0
+    ],
+    "warnings": {},
+    "welds": 27
+  }
+]
