@@ -128,6 +128,27 @@ pcall(roblox.implementMethod, "Instance", "WaitForChild", function(instance, nam
 	until os.clock() > deadline
 	return nil
 end)
+-- BindableFunction: OnInvoke/Invoke (a interface DEV ServerStorage.RollLegendsDev usa isso)
+local bindableCallbacks = {}
+local function bindableKey(instance)
+	local id = instance:GetAttribute("__HarnessId")
+	if not id then
+		nextSignalId += 1
+		id = nextSignalId
+		instance:SetAttribute("__HarnessId", id)
+	end
+	return id
+end
+pcall(roblox.implementProperty, "BindableFunction", "OnInvoke", function(instance)
+	return bindableCallbacks[bindableKey(instance)]
+end, function(instance, callback)
+	bindableCallbacks[bindableKey(instance)] = callback
+end)
+pcall(roblox.implementMethod, "BindableFunction", "Invoke", function(instance, ...)
+	local callback = bindableCallbacks[bindableKey(instance)]
+	assert(callback, "BindableFunction sem OnInvoke")
+	return callback(...)
+end)
 pcall(roblox.implementMethod, "Sound", "Play", function() end)
 pcall(roblox.implementMethod, "Sound", "Stop", function() end)
 pcall(roblox.implementMethod, "ParticleEmitter", "Emit", function() end)

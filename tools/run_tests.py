@@ -14,7 +14,8 @@ Uso:  python tools\\run_tests.py
    tests/roblox/CharacterPipelineHarness.luau: pipeline de personagens com um pack SINTÉTICO
    (sanitização, .rbxm, jogo final SEM o pack, factory/variantes/poses/fallback) e
    tests/build_characters_test.py: a ferramenta tools/build_characters.py de ponta a ponta e
-   tests/build_characters_lune_test.py: Tags incompatível em várias classes (fallback do Lune).
+   tests/build_characters_lune_test.py: Tags incompatível em várias classes (fallback do Lune) e
+   tests/build_place_test.py: o build inclui ReplicatedStorage.CharacterAssets (10 pilotos).
 4. Se o Pillow estiver instalado, desenha build/map_preview.png (vista de cima).
 Os binários (versões fixas) são baixados para tools/bin na primeira vez.
 """
@@ -112,6 +113,7 @@ def main() -> None:
     leitor = subprocess.run([sys.executable, "tests/rbxm_reader_test.py"], cwd=RAIZ)
     ferramenta = subprocess.run([sys.executable, "tests/build_characters_test.py"], cwd=RAIZ)
     compat = subprocess.run([sys.executable, "tests/build_characters_lune_test.py"], cwd=RAIZ)
+    place = subprocess.run([sys.executable, "tests/build_place_test.py"], cwd=RAIZ)
 
     if mapa.returncode == 0:
         try:
@@ -121,7 +123,7 @@ def main() -> None:
         except ImportError:
             print("(Pillow não instalado: pulando a imagem do mapa)")
 
-    if erros or puros.returncode != 0 or mapa.returncode != 0 or servicos.returncode != 0 or gameplay.returncode != 0 or cliente.returncode != 0 or sessao.returncode != 0 or pack.returncode != 0 or personagens.returncode != 0 or leitor.returncode != 0 or ferramenta.returncode != 0 or compat.returncode != 0:
+    if erros or puros.returncode != 0 or mapa.returncode != 0 or servicos.returncode != 0 or gameplay.returncode != 0 or cliente.returncode != 0 or sessao.returncode != 0 or pack.returncode != 0 or personagens.returncode != 0 or leitor.returncode != 0 or ferramenta.returncode != 0 or compat.returncode != 0 or place.returncode != 0:
         sys.exit(1)
 
 

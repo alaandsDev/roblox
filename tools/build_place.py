@@ -62,26 +62,33 @@ def encontrar_rojo() -> str:
 
 
 def main() -> None:
-    projeto = json.loads((RAIZ / "default.project.json").read_text(encoding="utf-8"))
+    import argparse
 
+    parser = argparse.ArgumentParser(description="Gera o place a partir do código + assets/")
+    parser.add_argument("--assets", default=str(RAIZ / "assets"), help="pasta dos .rbxm (padrão: assets/)")
+    parser.add_argument("--out", default=str(SAIDA), help="arquivo .rbxlx de saída")
+    args = parser.parse_args()
+    pasta = Path(args.assets).resolve()
+    saida = Path(args.out).resolve()
+
+    projeto = json.loads((RAIZ / "default.project.json").read_text(encoding="utf-8"))
     for arquivo, (servico, nome) in ASSETS.items():
-        caminho = RAIZ / "assets" / arquivo
+        caminho = pasta / arquivo
         if caminho.exists():
             projeto["tree"].setdefault(servico, {"$className": servico})
-            projeto["tree"][servico][nome] = {"$path": f"assets/{arquivo}"}
-            print(f"Incluindo assets/{arquivo} em {servico}.{nome}")
+            projeto["tree"][servico][nome] = {"$path": os.path.relpath(caminho, RAIZ).replace(os.sep, "/")}
+            print(f"Incluindo {caminho.name} em {servico}.{nome}")
 
     # Projeto temporário na raiz para os caminhos relativos funcionarem
     temporario = RAIZ / "build.project.json"
     temporario.write_text(json.dumps(projeto, indent=2), encoding="utf-8")
-    BUILD.mkdir(exist_ok=True)
+    saida.parent.mkdir(parents=True, exist_ok=True)
     try:
-        subprocess.run([encontrar_rojo(), "build", str(temporario), "-o", str(SAIDA)], check=True)
+        subprocess.run([encontrar_rojo(), "build", str(temporario), "-o", str(saida)], check=True)
     finally:
         temporario.unlink(missing_ok=True)
 
-    print(f"Pronto: {SAIDA}")
-
+    print(f"Pronto: {saida}")
 
 if __name__ == "__main__":
     main()

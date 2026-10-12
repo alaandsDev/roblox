@@ -123,7 +123,7 @@ placeholder em blocos (o atual) + `warn` uma vez no Output. O jogo nunca quebra.
    `third_party/AnimePack.rbxm` (já feito na auditoria).
 2. `python tools/build_characters.py` → `assets/Characters.rbxm` + `CHARACTER_PILOT_AUDIT.md`.
 3. `python tools/build_place.py` → abrir `build/RollLegends.rbxlx` (sem o pack) → Play.
-4. `_G.dev("CharacterAssetReport")`, `_G.dev("SourcePackCheck")`, `_G.dev("CharacterGallery")`.
+4. `game.ServerStorage.RollLegendsDev:Invoke("CharacterAssetReport")`, `game.ServerStorage.RollLegendsDev:Invoke("SourcePackCheck")`, `game.ServerStorage.RollLegendsDev:Invoke("CharacterGallery")`.
 
 Alternativa sem Lune (Studio em modo **EDIÇÃO**, nunca no Play — no Play os scripts do pack rodam):
 `print(require(game.ReplicatedStorage.Shared.Modules.CharacterAssetPipeline).buildInStudio())`
@@ -144,14 +144,14 @@ iguais (leitura estruturada) e o arquivo original com o mesmo SHA-256.
 
 | Comando | O que faz |
 |---|---|
-| `_G.dev("CharacterGallery")` | Os 10 pilotos lado a lado (asset ou PLACEHOLDER na etiqueta) |
-| `_G.dev("ShowCharacterVariants", "char_ichiro_base")` | As 7 variantes lado a lado |
-| `_G.dev("ShowCharacterPoses", "char_zabuzo_base")` | Idle/Reveal/Combat/Crouch/Confident |
-| `_G.dev("ClearGallery")` | Remove a galeria |
-| `_G.dev("GivePilots")` / `_G.dev("GivePilots", "Gold")` | 1 de cada piloto no inventário e no Índice |
-| `_G.dev("CharacterAssetReport")` | Validação do runtime de cada asset |
-| `_G.dev("SourcePackCheck")` | Monta os pilotos com o pack escondido e procura dependências |
-| `_G.dev("PlayReveal", "Divine", "char_goju_base")` | Reveal/Hero Landing com um piloto |
+| `game.ServerStorage.RollLegendsDev:Invoke("CharacterGallery")` | Os 10 pilotos lado a lado (asset ou PLACEHOLDER na etiqueta) |
+| `game.ServerStorage.RollLegendsDev:Invoke("ShowCharacterVariants", "char_ichiro_base")` | As 7 variantes lado a lado |
+| `game.ServerStorage.RollLegendsDev:Invoke("ShowCharacterPoses", "char_zabuzo_base")` | Idle/Reveal/Combat/Crouch/Confident |
+| `game.ServerStorage.RollLegendsDev:Invoke("ClearGallery")` | Remove a galeria |
+| `game.ServerStorage.RollLegendsDev:Invoke("GivePilots")` / `game.ServerStorage.RollLegendsDev:Invoke("GivePilots", "Gold")` | 1 de cada piloto no inventário e no Índice |
+| `game.ServerStorage.RollLegendsDev:Invoke("CharacterAssetReport")` | Validação do runtime de cada asset |
+| `game.ServerStorage.RollLegendsDev:Invoke("SourcePackCheck")` | Monta os pilotos com o pack escondido e procura dependências |
+| `game.ServerStorage.RollLegendsDev:Invoke("PlayReveal", game.Players:GetPlayers()[1], "Divine", "char_goju_base")` | Reveal/Hero Landing com um piloto |
 
 ## Performance (meta: 40 por base × 10 bases = 400)
 

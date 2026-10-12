@@ -65,6 +65,9 @@ DevService.Register("Help", "lista os comandos", function()
 		table.insert(lines, `{name} — {command.description}`)
 	end
 	table.sort(lines)
+	table.insert(lines, 1, "USO: Play > aba TEST > Current: Server > Barra de comandos:")
+	table.insert(lines, 2, '  game.ServerStorage.RollLegendsDev:Invoke("Comando", args...)')
+	table.insert(lines, 3, "  ([player] = jogador opcional; sem [ ] o jogador vem primeiro: game.Players:GetPlayers()[1])")
 	return table.concat(lines, "\n")
 end)
 DevService.Register("GetPlayerBase", "(player) base do jogador", playerBaseInfo)
@@ -277,6 +280,18 @@ local CharacterAssetPipeline = require(Shared.Modules.CharacterAssetPipeline)
 local VariantConfigDev = require(Shared.Config.VariantConfig)
 local IndexService = require(script.Parent.IndexService)
 
+-- O jogador é OPCIONAL nos comandos dos pilotos: na Barra de comandos basta
+--   game.ServerStorage.RollLegendsDev:Invoke("ShowCharacterVariants", "char_ichiro_base")
+-- Se o 1º argumento for um jogador, ele é usado; senão, o primeiro jogador do servidor.
+local function splitPlayer(...: any): (Player?, ...any)
+	local first = ...
+	local isPlayer = (typeof(first) == "Instance" and first:IsA("Player")) or (type(first) == "table" and first.UserId ~= nil)
+	if isPlayer then
+		return ...
+	end
+	return game:GetService("Players"):GetPlayers()[1], ...
+end
+
 -- Área livre no caminho sul (entre a Loja de Dados e a entrada), longe das bases
 local GALLERY_Z = -205
 local GALLERY_SPACING = 7
@@ -350,7 +365,8 @@ local function assetStatus(id: string): string
 	return if CharacterModelFactory.hasAsset(id) then "asset" else "PLACEHOLDER"
 end
 
-DevService.Register("CharacterGallery", "(player, vfx?) pilotos lado a lado (asset ou placeholder)", function(player, vfx)
+DevService.Register("CharacterGallery", "([player], vfx?) pilotos lado a lado no Workspace (asset ou placeholder)", function(...)
+	local player, vfx = splitPlayer(...)
 	local entries = {}
 	for _, character in CharacterConfig.Pilots do
 		table.insert(entries, {
@@ -362,7 +378,8 @@ DevService.Register("CharacterGallery", "(player, vfx?) pilotos lado a lado (ass
 	end
 	return showRow(player, entries)
 end)
-DevService.Register("ShowCharacterVariants", "(player, characterId, vfx?) as 7 variantes lado a lado", function(player, id, vfx)
+DevService.Register("ShowCharacterVariants", "([player], characterId, vfx?) as 7 variantes lado a lado", function(...)
+	local player, id, vfx = splitPlayer(...)
 	assert(CharacterConfig.ById[id], "personagem inválido: " .. tostring(id))
 	local entries = {}
 	for _, variant in VariantConfigDev.List do
@@ -370,7 +387,8 @@ DevService.Register("ShowCharacterVariants", "(player, characterId, vfx?) as 7 v
 	end
 	return showRow(player, entries)
 end)
-DevService.Register("ShowCharacterPoses", "(player, characterId) Idle/Reveal/Combat/Crouch/Confident", function(player, id)
+DevService.Register("ShowCharacterPoses", "([player], characterId) Idle/Reveal/Combat/Crouch/Confident", function(...)
+	local player, id = splitPlayer(...)
 	assert(CharacterConfig.ById[id], "personagem inválido: " .. tostring(id))
 	local entries = {}
 	for _, pose in { "Idle", "Reveal", "Combat", "Crouch", "Confident" } do
@@ -385,7 +403,9 @@ DevService.Register("ClearGallery", "() remove Workspace.DevGallery", function()
 	end
 	return "ok"
 end)
-DevService.Register("GivePilots", "(player, variante?) 1 de cada piloto no inventário (e no Índice)", function(player, variant)
+DevService.Register("GivePilots", "([player], variante?) 1 de cada piloto no inventário (e no Índice)", function(...)
+	local player, variant = splitPlayer(...)
+	assert(player, "nenhum jogador no servidor (entre em Play)")
 	local uids = {}
 	for _, character in CharacterConfig.Pilots do
 		table.insert(uids, InventoryService.Add(player, character.Id, variant))
@@ -469,7 +489,12 @@ function DevService.Init()
 	end
 	local bindable = Instance.new("BindableFunction")
 	bindable.Name = "RollLegendsDev"
-	bindable.OnInvoke = DevService.Run
+	-- O resultado também vai para o Output (na Barra de comandos não precisa de print)
+	bindable.OnInvoke = function(name: string, ...: any): any
+		local result = DevService.Run(name, ...)
+		print(`[RollLegendsDev] {tostring(name)} ->\n{tostring(result)}`)
+		return result
+	end
 	bindable.Parent = ServerStorage
 	log:info('comandos de teste prontos: game.ServerStorage.RollLegendsDev:Invoke("Help")')
 end

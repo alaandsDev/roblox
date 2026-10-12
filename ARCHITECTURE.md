@@ -128,7 +128,7 @@ Sempre por `AssetLoader` (remove scripts, desliga colisão/física). Busca na St
   > Missões / Trocas / Rankings > decoração.
 - Vistas da câmera do jogador fora do Studio: `python tools/render_views.py` (lê
   `build/map_preview.json` do MapHarness; gera `build/views/*.png`). Aproximação, não substitui
-  o Studio. Tour no Studio: `_G.dev("VisualCheck", "Hub")` (Base, Conveyor, DiceShop, Market,
+  o Studio. Tour no Studio: `game.ServerStorage.RollLegendsDev:Invoke("VisualCheck", game.Players:GetPlayers()[1], "Hub")` (Base, Conveyor, DiceShop, Market,
   Sell, Fusion, Towers, Missions, Trades, Rankings).
 
 ## Pipeline de personagens (piloto)

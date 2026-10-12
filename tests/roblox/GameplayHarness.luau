@@ -1062,6 +1062,59 @@ local gave = Dev.Run("GivePilots", p1)
 check(gave == "10 pilotos adicionados" and d1.Index.char_goju_base ~= nil, "DEV GivePilots: 1 de cada no inventário e no índice")
 Dev.Run("ClearGallery")
 check(env.real.Workspace:FindFirstChild("DevGallery") == nil, "DEV ClearGallery limpa tudo")
+
+end
+
+do
+-- Interface da Barra de comandos: ServerStorage.RollLegendsDev (BindableFunction), só no Studio
+local Dev = req(env.server.Services.DevService)
+local function galleryModels()
+	local gallery = env.real.Workspace:FindFirstChild("DevGallery")
+	local models = {}
+	for _, child in (if gallery then gallery:GetChildren() else {}) do
+		if child:IsA("Model") then
+			table.insert(models, child)
+		end
+	end
+	return models
+end
+local storage = env.real.ServerStorage
+env.stubs.RunService.IsStudio = function()
+	return false
+end
+Dev.Init()
+check(storage:FindFirstChild("RollLegendsDev") == nil, "produção (fora do Studio): interface DEV NÃO é criada")
+env.stubs.RunService.IsStudio = function()
+	return true
+end
+local okInit, errInit = pcall(Dev.Init)
+local bindable = storage:FindFirstChild("RollLegendsDev")
+check(okInit and bindable ~= nil and bindable:IsA("BindableFunction"), "Studio: ServerStorage.RollLegendsDev (BindableFunction) criada " .. tostring(errInit or ""))
+local help = Dev.Run("Help")
+check(string.find(help, 'RollLegendsDev:Invoke("Comando"', 1, true) ~= nil and string.find(help, "CharacterGallery", 1, true) ~= nil, "Help explica o uso pela Barra de comandos")
+-- Mesmo formato que o usuário cola: sem o jogador no 1º argumento
+local noPlayer = {
+	{ "SourcePackCheck" },
+	{ "CharacterAssetReport" },
+	{ "CharacterGallery" },
+	{ "GivePilots" },
+	{ "ShowCharacterVariants", "char_ichiro_base" },
+	{ "ShowCharacterPoses", "char_zabuzo_base" },
+}
+for _, call_ in noPlayer do
+	-- Exatamente o que se cola na Barra de comandos (servidor)
+	local result = bindable and bindable:Invoke(table.unpack(call_))
+	local ok = type(result) == "string" and string.sub(result, 1, 5) ~= "erro:" and string.find(result, "desconhecido", 1, true) == nil
+	check(ok, `Invoke("{table.concat(call_, '", "')}") sem jogador: {string.sub(tostring(result), 1, 70)}`)
+end
+local shown = galleryModels()
+check(#shown == 5 and shown[1].Name == "char_zabuzo_base", "ShowCharacterPoses aceitou o CharacterId direto (5 poses do Zabuzo no Workspace)")
+Dev.Run("ShowCharacterVariants", "char_ichiro_base")
+check(#galleryModels() == 7 and galleryModels()[1].Name == "char_ichiro_base", "ShowCharacterVariants aceitou o CharacterId direto (7 variantes)")
+Dev.Run("CharacterGallery")
+check(#galleryModels() == 10 and env.real.Workspace:FindFirstChild("DevGallery") ~= nil, "CharacterGallery cria a galeria no Workspace (não abre o Índice)")
+check(bindable:Invoke("ShowCharacterVariants", p1, "char_goko_base") ~= nil and #galleryModels() == 7, "formato antigo (jogador primeiro) continua funcionando")
+Dev.Run("ClearGallery")
 end
 
 ------------------------------------------------------------------------------------
