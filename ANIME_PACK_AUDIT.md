@@ -1,3 +1,208 @@
+# ANIME_PACK_AUDIT — Anime Pack (Creator Store 14679137059)
+
+> Análise feita a partir do `third_party/AnimePack.rbxm` (Workspace › Anime Pack exportado do
+> Studio) com `python tools/audit_pack.py`. O arquivo foi só **lido**: nenhum script do pack
+> foi executado e o pack no Studio **não foi alterado**. Os dados brutos, personagem por
+> personagem, ficam na parte gerada no fim deste arquivo (depois do marcador AUTO).
+>
+> **Limite desta auditoria:** eu não vejo imagens. "Qualidade" aqui = complexidade medida
+> (malhas, texturas, efeitos próprios, armas). A beleza de cada modelo precisa ser confirmada
+> por você no Studio antes de fechar a lista.
+
+## 0. Conclusão rápida
+
+- **152 modelos** com Humanoid em **13 categorias**; **todos R6** (150 detectados pelas peças
+  R6 + 2 modelos de "Stand" sem membros R6).
+- O pack **não é um pack de skins**: é o **elenco de um jogo de luta (battlegrounds)**,
+  copiado de outro jogo. Cada personagem vem com o kit de combate do jogo original (golpes,
+  sons, partículas de impacto, valores de estado, RemoteFunctions).
+- **Visual aproveitável:** sim. Os personagens são R6 com roupa (Shirt/Pants), cabelo e
+  acessórios feitos de malhas soldadas (não Accessory) e, em vários, armas e auras próprias.
+  Mediana de **15 peças** por personagem → barato para 400 unidades na tela.
+- **Scripts: nenhum é malicioso, mas nenhum serve para nós** (ver §2). Todos devem sair.
+- **Animações próprias não funcionam no nosso jogo** (pertencem a outro criador; o Roblox só
+  toca animações do dono do jogo ou do próprio Roblox). Usamos as nossas poses.
+- **Atenção a direitos autorais** (ver §7): personagens de anime com nome e visual oficiais +
+  modelos copiados de outro jogo (os scripts foram descompilados com o exploit Synapse X).
+
+## 1. Estrutura do pack
+
+| Categoria | Modelos | Observação |
+|---|---:|---|
+| AOT | 12 | Mais simples (8–9 peças), **sem scripts, sem VFX** — roupa + cabelo |
+| Bleach Pack | 23 | Muitos com espada; formas (Hollow/Vasto/Mugetsu, Bankai, Resurrección, Shunko) |
+| DBZ | 15 | Auras Saiyajin; formas (LSSJ, Rosé, Blue) |
+| FATE | 10 | Armas duplas (Archer/Shirou), lança, arco |
+| Fairy Tail | 4 | Pares base + "Awakened" |
+| HXH | 8 | Pares base + forma (Godspeed, Adult Gon) |
+| JJK | 4 | Gojo (2 versões), Sukuna, Yuji |
+| JOJO | 21 | Personagens **+ Stands** (The World, King Crimson, GER, Stone Free, Killer Queen) |
+| My Hero Academia Pack | 11 | Pares base + Awakened/100% |
+| NARUTO | 19 | Versões pré/pós time-skip (pts/ts), Portões (5º/8º), KCM Minato |
+| OTHER | 8 | Rikka, Accel, Kazuma, Afro Samurai, Chika, Saitama, Tanjiro |
+| One Piece Pack | 13 | Pré/pós time-skip (pts/ts), almirantes, Shanks, Barba Branca |
+| YYH | 4 | Hiei (2), Yusuke (2) |
+
+Totais de classes (33.348 instâncias): Weld 8.452 · **Sound 4.669** · Attachment 4.142 ·
+Part 2.095 · **Animation 1.970** · **ParticleEmitter 1.603** · Motor6D 1.187 · StringValue 1.068 ·
+MeshPart 864 · SpecialMesh 770 · **RemoteFunction 589** · Trail 574 · Decal 417 · BoolValue 397 ·
+NumberValue 320 · Humanoid 282 · Animator 266 · UnionOperation 256 · Texture 191 · Pants 150 ·
+Shirt 149 · LocalScript 142 · BillboardGui 131 · Beam 108 · RemoteEvent 94 · ModuleScript 59 ·
+BodyColors 9 · BodyGyro/BodyPosition 5 · **Accessory 2** · SurfaceAppearance 1. Nenhum `Tool`.
+
+- **Rig:** R6 clássico (Torso + braços/pernas, Motor6D). Nenhum R15.
+- **Humanoid:** 282 no total para 152 modelos → há modelos **dentro** de outros (Stands do JOJO
+  e bonecos de efeitos). Confirmar no Studio quais são visuais.
+- **Cabelo/acessórios:** quase tudo é MeshPart/SpecialMesh/Union **soldado** (Weld/ManualWeld/
+  Snap), só 2 `Accessory` no pack todo. Por isso o detector de "cabelo" ficou vazio — o cabelo
+  existe, mas como peça soldada.
+- **Roupa:** 149 Shirt + 150 Pants (quase todos têm as duas).
+- **Rosto:** detectado em 39 (Decal "face" na cabeça). Os outros provavelmente usam rosto em
+  outra peça/textura — **verificar no Studio**.
+- **Kit de combate do jogo original em todo personagem** (NÃO é visual do personagem):
+  `Trail MoveT` ×4, partículas `Hit1/Hit2/Block/Break/Bubbles/Slider/Smoke/SoruP/LevelParticle/
+  SenzuEat`, ~30 sons de golpe em média, `StringValue/BoolValue/NumberValue` de estado, RemoteFunctions,
+  BillboardGui (barra/nome) e BodyGyro/BodyPosition. Tudo isso sai na importação.
+
+## 2. Segurança — scripts
+
+201 scripts, mas só **17 códigos diferentes** (copiados entre personagens). Nenhum `Script` de
+servidor. Nenhum padrão de risco ALTO (sem `require(<id>)`, `loadstring`, `getfenv`,
+`HttpService`, `InsertService`, Teleport, Marketplace, Kick ou DataStore). Li os 17 códigos:
+
+| Script | Qtde | Classe | O que faz | Só visual? | Remover? |
+|---|---:|---|---|---|---|
+| `Animate` (596 linhas) | 94 | LocalScript | Script **padrão de animação do Roblox** (andar/pular/emotes por `/emote` no chat), descompilado | Não (movimento de jogador) | **SIM** — usamos nossas poses |
+| `BattleScript` (11 variações, 205–378 linhas) | 34 | ModuleScript | **Golpes do jogo de luta**: toca animações, cria BodyVelocity, chama `radius(...)` com dano/arremesso. Faz `require(game.ServerScriptService.MainModule)` — módulo do jogo original que **não existe** aqui (quebraria se fosse exigido) | Não (combate) | **SIM** |
+| `LocalStand` (35 linhas) | 5 | LocalScript | Faz o Stand (JOJO) seguir o jogador a cada frame (BodyGyro/BodyPosition) | Não | **SIM** |
+| Vazios (`Animate` 38 · `BattleScript` 25 · `LocalStand` 5) | 68 | — | Só o comentário "Decompiling is disabled" / "Decompiler timeout": a descompilação falhou, não há código | — | **SIM** |
+
+Riscos reais (não maliciosos): loops infinitos a cada frame, escuta do chat, dependência do
+`MainModule` ausente, e **RemoteFunction/RemoteEvent soltos** (589/94) dentro dos modelos.
+Regra: **nenhum script, Remote, Value, Sound ou BodyMover do pack entra no jogo** — a
+importação copia só a lista branca de classes visuais (§9).
+
+Observação: os comentários `-- Decompiled with the Synapse X Luau decompiler` mostram que os
+scripts foram extraídos de outro jogo com uma ferramenta de exploit.
+
+## 3. Formas / transformações (podem virar unidades ou raridades diferentes)
+
+Confirmadas pela pasta-mãe e/ou pelo nome (a parte gerada lista também as pistas por roupa):
+
+| Franquia | Escada de formas no pack |
+|---|---|
+| Bleach | Ichigo → Hollow Ichigo → Vasto → **Mugetsu** · Toshiro → **Bankai Toshiro** · Ulquiorra: Ulq → R1 → R2 · Yoruichi → Shunko Yoruichi → Neko Yoru · Aizen → Final Aizen |
+| DBZ | Broly → **LSSJ Broly** · Goku Black → **SSJR (Rosé)** · Vegito → **Vegito Blue** · Goku / Buu Saga Goku · Vegeta / Majin Vegeta |
+| FATE | Saber → **SALTER (Saber Alter)** · Lancer → Lancer Mode · Shirou ↔ **Archer (EMIYA)** (mesmas armas e malhas) |
+| Fairy Tail | Natsu → Natsu Awakened · Gray → Grey Awakening |
+| HXH | Gon → Adult Gon · Killua → **Killua Godspeed** · Illumi → Illumi Awakened · Hisoka (2 cópias) |
+| JJK | Gojo → Gojo (Blindfold Off) · (Yuji / Sukuna: possível par, sem prova suficiente) |
+| JOJO | DIO → DIO Awakened (+ Stand The World ×2) · Jolyne → Awakened Jolyne (+ Stone Free ×2) · Giorno → Giorno (Boss) (+ **GER**) · Doppio (+ King Crimson) · Kira (+ Killer Queen) · Young Joseph → Old Joseph |
+| MHA | Deku → Deku Awakened → **100% Deku** · Bakugo → Awakened Bakugo · All Might → All Might (MODE) |
+| NARUTO | Might Guy → 5º Portão → **8º Portão** · Rock Lee → Rock Lee Gates · Minato → **KCM Minato** · Naruto: pts → ts → Sage Mode · Sasuke: pts → ts |
+| One Piece | Luffy: pts → ts → Snakeman · Zoro: pts → ts · Sanji: pts → ts |
+| OTHER / YYH | Rikka → Rikka Awakened · Hiei → Hiei (Jagan) · Yusuke → Yusuke Mode |
+| AOT | Eren → Eren pós time-skip / Attack Titan · Annie / Annie (Colegial) / Female Titan · Erwin, Mikasa, Sasha com roupa alternativa |
+
+**Possíveis duplicatas** (mesmas contagens de malhas/texturas): Giorno ×2, Hiei ×2, Gojo ×2,
+Hisoka ×2, ptsZoro/tsZoro — conferir no Studio se a diferença é visível (rosto, venda nos
+olhos etc.).
+
+## 4. Qualidade, armas e efeitos
+
+- **Mais complexos/detalhados** (nota da ferramenta): Bankai Toshiro 80 · Enrico 78 · Afro
+  Samurai 73 · Giorno 67 · Hellflame 67 · Zoro (pts/ts) 66 · Iskandar 65 · SALTER 65 ·
+  Kizaru 64 · Mugetsu 63 · Toshiro 63 · Hiei 62 · Archer/Shirou 59 · Grimmjow 59 · Ulquiorra R2 59.
+- **Com arma** (peça com nome de arma; nenhum Tool): quase todo Bleach (espadas), Archer/Shirou
+  (espadas duplas), Lancer (lança), Saber/SALTER, Iskandar, Rin/Chika/Rikka (arco), Trunks,
+  Zabuza, tsSasuke, Hiei, Shanks, Law, Ace (pistola), Tanjiro, Afro Samurai, Kazuma, Jonathan.
+- **Com efeitos PRÓPRIOS** (fora o kit de combate): Mugetsu (chama negra), Bankai Toshiro
+  (gelo), Yamamoto (fogo), Shunko/Neko Yoruichi, LSSJ Broly / Vegito Blue / Caulifa / Buu Saga
+  Goku / Majin Vegeta / Trunks (aura Saiyajin), SSJR (aura), Natsu/Grey Awakened, Killua
+  Godspeed (raios), Illumi Awakened, Adult Gon, 5º/8º Portão, Rock Lee Gates, Gaara (areia),
+  Lancer Mode, Archer, 100% Deku, Hellflame, Speed Guy, Tanjiro (água/fogo), Rikka, Stands do
+  JOJO (aura de Stand), Jonathan/Old Joseph (Hamon), Enrico.
+- **Com golpes animados** (BattleScript + Anims): ~60 modelos — **não aproveitáveis** (animações
+  de outro dono + lógica de combate).
+
+## 5. Compatibilidade com o Roll Legends
+
+| Situação | Modelos |
+|---|---|
+| **Aproveitar quase direto** (só limpar) | Toda a AOT (sem scripts/VFX, 8–9 peças), JOJO Enrico / Stone Free / Killer Queen (sem scripts) e os demais R6 com 12–30 peças depois de remover o kit de combate |
+| **Precisa de correção** | Speed Guy (220 peças, 178 SpecialMesh), KCM Minato (145 peças), GER (85 peças), Vegeta (43 peças) → conferir o que são e simplificar; Stands (2 sem membros R6; não posam com nossas poses); modelos sem rosto detectado → conferir; ptsLuffy sem Shirt (conferir se é intencional); duplicatas |
+| **Não usar** | Nada do código, animações próprias, sons, Remotes e Values |
+
+## 6. Top 24 sugerido (recomendação VISUAL — não altera o balanceamento)
+
+Critérios: franquias variadas, **escadas de formas** (base comum → forma rara), mais detalhe e
+efeitos próprios nas raridades altas, peças ≤ 30. Cotas = roster atual (5/4/4/3/3/2/2/1).
+
+| Raridade | Modelos |
+|---|---|
+| Common (5) | Eren (AOT) · Mikasa (AOT) · Sasha (AOT) · Gon (HXH) · Killua (HXH) |
+| Uncommon (4) | ptsNaruto · ptsSasuke · Rock Lee · Rukia |
+| Rare (4) | Kakashi · Ichigo · tsZoro · Gojo Satoru |
+| Epic (3) | Hollow Ichigo · Killua Godspeed · Yusuke Mode |
+| Legendary (3) | Bankai Toshiro · LSSJ Broly · Shunko Yoruichi |
+| Mythic (2) | Vegito Blue · 8º Portão (Might Guy) |
+| Divine (2) | SSJR (Goku Black Rosé) · Archer (EMIYA) |
+| Secret (1) | Mugetsu (Ichigo forma final) |
+
+Escadas que ficam dentro do top 24: Killua → Godspeed; Ichigo → Hollow → **Mugetsu**.
+Reservas fortes: Afro Samurai, Hellflame, Kizaru, Akainu, Whitebeard, SALTER, Iskandar,
+Grimmjow, Ulquiorra R2, 100% Deku, Natsu Awakened, Sukuna, Enrico. **Trocar qualquer um que
+não ficar bonito no Studio.**
+
+## 7. Riscos que você precisa decidir antes de integrar
+
+1. **Direitos autorais / marcas.** Goku, Naruto, Luffy etc. são propriedade dos donos dos
+   animes. Usar nome e visual oficiais num jogo com Robux pode gerar denúncia/DMCA e moderação
+   do Roblox. Prática comum para reduzir risco: **nomes próprios do Roll Legends** (ex.:
+   "Guardião do Gelo" em vez de "Toshiro") e visual alterado. Não é aconselhamento jurídico.
+2. **Origem do pack.** Os scripts foram descompilados com Synapse X → o conteúdo veio de outro
+   jogo. Estar na Creator Store não garante que quem publicou é o autor. O autor original pode
+   pedir remoção. Use com cautela e tenha o nosso placeholder como reserva (já existe).
+3. **Assets externos podem sumir.** Malhas, texturas e roupas apontam para ids de terceiros; se
+   forem moderados/apagados, o modelo fica "careca"/sem roupa. Conferir no Studio e, se for
+   usar a longo prazo, considerar reenviar as texturas pela nossa conta.
+
+## 8. Modelo completo × extrair skin
+
+**Recomendação: modelo completo LIMPO** (não extrair só roupa/acessórios).
+- Shirt/Pants sozinhos não fazem o personagem: o cabelo, máscaras, armas e capas são **peças
+  soldadas** ao corpo, e não `Accessory` — extrair "só a skin" exigiria remontar cada um à mão.
+- O corpo R6 limpo tem ~15 peças: dá para clonar 400 vezes com LOD.
+- O que muda: tirar tudo que não é visual (§9) e posar pelos Motor6D do R6.
+
+## 9. Integração técnica recomendada (para a próxima etapa — NÃO feito agora)
+
+1. **Importação no Studio (uma vez):** comando de dev `ImportAnimePack({ "Bleach Pack/Ichigo", ... })`
+   que **clona** os modelos escolhidos (o pack original fica intacto), aplica a limpeza e grava em
+   `ServerStorage.ImportedUnits`; você salva essa pasta como `assets/Characters.rbxm`.
+2. **Limpeza = lista branca de classes:** Model, Part, MeshPart, UnionOperation, WedgePart,
+   SpecialMesh, BlockMesh, Decal, Texture, Shirt, Pants, ShirtGraphic, BodyColors,
+   SurfaceAppearance, Motor6D, Weld/ManualWeld/WeldConstraint/Snap, Attachment (só se tiver
+   efeito próprio escolhido) e as partículas de **aura própria** (lista por personagem).
+   Todo o resto sai: scripts, Animation/Animator, Sound, Remote*, *Value, BindableEvent,
+   BillboardGui, Body* movers e o kit de combate (`MoveT`, `Hit1`...). Também **limpar as Tags**
+   (CollectionService) — foram elas que impediram o Lune de ler o arquivo, e o Rojo usa a mesma
+   biblioteca.
+3. **Humanoid:** remover (custa caro ×400 e mostra nome/vida). Pivô = HumanoidRootPart.
+4. **Nome no padrão do jogo:** `Assets.Characters.<ModelName>` (o gancho já existe no
+   `CharacterModelFactory.build` via `AssetLoader.model`). Escala automática para 6,3 studs.
+5. **Poses:** mapear Idle/Crouch/Confident para os Motor6D do R6 (Neck, Left/Right Shoulder,
+   Left/Right Hip) e ancorar tudo depois de posar (estações) — o reveal continua com as
+   nossas cinemáticas.
+6. **Variantes (Prata/Ouro/...):** como não dá para recolorir textura, usar `Highlight`/aura com
+   a cor da variante.
+7. **Teste automático:** checar que nenhum asset importado tem script, Remote, Sound ou Value e
+   que cada um tem ≤ 40 peças.
+
+---
+
+<!-- AUTO:BEGIN (gerado por tools/packaudit/audit_pack.luau — não editar à mão) -->
+
 # ANIME_PACK_AUDIT — Anime Pack (asset 14679137059)
 
 > Gerado por `tools/packaudit/audit_pack.luau` a partir de `third_party/AnimePack.rbxm`.

@@ -47,7 +47,16 @@ for _, root in roots do
 end
 
 local report = PackAudit.audit(roots)
-fs.writeFile("ANIME_PACK_AUDIT.md", PackAudit.markdown(report, PACK_NAME, "14679137059", label))
+-- A análise escrita à mão fica ANTES do marcador e é preservada; só a parte gerada é trocada
+local MARKER = "<!-- AUTO:BEGIN (gerado por tools/packaudit/audit_pack.luau — não editar à mão) -->"
+local generated = PackAudit.markdown(report, PACK_NAME, "14679137059", label)
+local previous = if fs.isFile("ANIME_PACK_AUDIT.md") then fs.readFile("ANIME_PACK_AUDIT.md") else ""
+local start = string.find(previous, MARKER, 1, true)
+if start then
+	fs.writeFile("ANIME_PACK_AUDIT.md", string.sub(previous, 1, start - 1) .. MARKER .. "\n\n" .. generated)
+else
+	fs.writeFile("ANIME_PACK_AUDIT.md", generated)
+end
 fs.writeDir("third_party")
 fs.writeFile("third_party/AnimePack_summary.json", serde.encode("json", PackAudit.summary(report), true))
 fs.writeFile("third_party/AnimePack_scripts.txt", PackAudit.scriptDump(roots))
