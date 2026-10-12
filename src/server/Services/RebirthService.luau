@@ -50,7 +50,9 @@ function RebirthService.Rebirth(player: Player)
 	-- Tudo sem yield: um segundo pedido simultâneo vê o novo custo
 	PlayerDataService.Set(player, "Money", 0)
 	data.UncollectedMoney = 0
-	PlayerDataService.Set(player, "Upgrades", { Luck = 0, Income = 0, RollSpeed = 0, Inventory = 0 })
+	-- A Mochila fica: zerar a capacidade deixaria o inventário acima do limite (achado da
+	-- sessão longa da auditoria: 199/100 depois de renascer)
+	PlayerDataService.Set(player, "Upgrades", { Luck = 0, Income = 0, RollSpeed = 0, Inventory = data.Upgrades.Inventory or 0 })
 	PlayerDataService.Set(player, "Rebirths", count)
 	PlayerDataService.Increment(player, "RebirthTokens", tokens)
 	BaseService.RefreshBase(player)

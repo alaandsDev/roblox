@@ -200,7 +200,7 @@ local function tryRebirth(data: any, margin: number?): boolean
 	end
 	data.Money = 0
 	data.UncollectedMoney = 0
-	data.Upgrades = { Luck = 0, Income = 0, RollSpeed = 0, Inventory = 0 }
+	data.Upgrades = { Luck = 0, Income = 0, RollSpeed = 0, Inventory = data.Upgrades.Inventory or 0 }
 	data.Rebirths += 1
 	data.RebirthTokens += formulas:rebirthTokens(data.Rebirths)
 	-- gasta fichas no perk mais barato (prioridade: Renda, Sorte, Poder, Capacidade, Velocidade)

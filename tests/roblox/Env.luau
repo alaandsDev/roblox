@@ -388,6 +388,7 @@ function Env.create()
 	end
 
 	local env = {
+		gameProxy = gameProxy,
 		game = game,
 		real = real,
 		stubs = stubs,

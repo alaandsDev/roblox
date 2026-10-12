@@ -497,12 +497,14 @@ local okR0, codeR0 = call("Rebirth", p1)
 check(not okR0 and codeR0 == "not_enough_money", "renascer sem dinheiro: recusado")
 d1.Money = RebirthCfg.BaseCost + 500
 d1.Upgrades.Luck = 5
+d1.Upgrades.Inventory = 3
 d1.UncollectedMoney = 999
 local rebirthsBefore = d1.Rebirths
 local incomeBeforeR = Formulas:incomePerSecond(d1)
 local okR, rb = call("Rebirth", p1)
 check(okR and d1.Rebirths == rebirthsBefore + 1 and rb.tokens >= 1 and d1.RebirthTokens >= 1, "renascer: +1 renascimento e fichas")
 check(d1.Money == 0 and d1.Upgrades.Luck == 0 and d1.UncollectedMoney == 0, "renascer reseta dinheiro, coletor e melhorias globais")
+check(d1.Upgrades.Inventory == 3, "renascer mantém a Mochila (inventário nunca fica acima da capacidade)")
 check(next(d1.Inventory) ~= nil and d1.OwnedDice.Prism == true and d1.TowerProgress.Ember ~= nil, "renascer mantém personagens, dados e torres")
 local base1R = S.BaseService.GetPlayerBase(p1)
 local slot5 = base1R.Floors.Floor01:FindFirstChild("Slot05", true)

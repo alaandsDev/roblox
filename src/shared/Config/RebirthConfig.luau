@@ -2,7 +2,7 @@
 --[[
 	Renascimento (Fase 8).
 	    Custo do próximo = BaseCost * Growth ^ rebirthsFeitos
-	    Reseta: Money, dinheiro no coletor e melhorias GLOBAIS (Luck/Renda/Velocidade/Capacidade).
+	    Reseta: Money, dinheiro no coletor e melhorias GLOBAIS (Luck/Renda/Velocidade). A Mochila fica.
 	    Mantém: personagens (com níveis e variantes), Índice, dados, torres, diário, gemas.
 	    Ganha (permanente): +IncomePerRebirth de renda, +LuckPerRebirth de sorte,
 	                        +PowerPerRebirth de poder, +1 slot na base (BaseProgressionConfig)

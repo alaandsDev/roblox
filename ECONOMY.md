@@ -65,10 +65,10 @@ Roll manual a cada 2.5 s, coleta a cada 120 s, decide a cada 60 s, gasta 30% em 
 | 30 min | 720 | Flame | 2.50 | $1.41K | $1.28M | $95.69K | 7/8/5/10 | 7.2 | 0 | 24/120 | Void Emperor (Mythic) | 20/24 | $4.88M |
 | 1 h | 1440 | Storm | 3.44 | $3.3K | $5.83M | $468.36K | 9/10/7/13 | 13.0 | 0 | 27/120 | Void Emperor (Mythic) | 21/24 | $5M |
 | 2 h | 2880 | Storm | 3.92 | $9.51K | $31.08M | $2.72M | 12/13/10/15 | 17.5 | 0 | 38/120 | Chrono Sage (Divine) | 22/24 | $5M |
-| 4 h | 5760 | Void | 6.35 | $40.67K | $203.51M | $11.56M | 14/15/11/19 | 23.7 | 2 | 46/120 | Chrono Sage (Divine) | 23/24 | $24.2M |
-| 8 h | 11520 | Celestial | 10.31 | $110.36K | $1.29B | $18.57M | 16/17/11/20 | 38.5 | 4 | 52/120 | Chrono Sage (Divine) | 23/24 | $117.12M |
+| 4 h | 5760 | Void | 6.11 | $40.38K | $187.48M | $17.81M | 13/15/11/18 | 23.7 | 2 | 46/120 | Chrono Sage (Divine) | 23/24 | $24.2M |
+| 8 h | 11520 | Celestial | 10.31 | $112.09K | $1.3B | $33.49M | 16/17/11/20 | 39.5 | 4 | 52/120 | Chrono Sage (Divine) | 23/24 | $117.12M |
 
-Renascimentos em: 144 min, 178 min, 256 min, 438 min. Próximo custa $234.25M.
+Renascimentos em: 144 min, 192 min, 254 min, 432 min. Próximo custa $234.25M.
 
 ### Ativo
 
@@ -80,11 +80,11 @@ Roll AUTO (cooldown), coleta a cada 30 s, decide a cada 15 s, gasta 50% em níve
 | 10 min | 616 | Flame | 2.24 | $1.05K | $552.3K | $27.65K | 5/6/4/8 | 5.5 | 0 | 23/120 | Void Emperor (Mythic) | 20/24 | $3.64M |
 | 30 min | 2048 | Flame | 2.62 | $4.23K | $4.06M | $196.35K | 8/9/6/11 | 14.2 | 0 | 29/120 | Void Emperor (Mythic) | 21/24 | $5M |
 | 1 h | 4528 | Storm | 3.76 | $6.46K | $14.79M | $792.31K | 11/11/9/14 | 12.2 | 0 | 34/120 | Astral Seraph (Divine) | 22/24 | $5M |
-| 2 h | 9841 | Void | 5.27 | $12.23K | $45.13M | $2.27M | 11/11/9/14 | 12.8 | 1 | 40/120 | Astral Seraph (Divine) | 22/24 | $11M |
-| 4 h | 21020 | Void | 5.98 | $59.19K | $250.82M | $43.35M | 12/13/10/16 | 22.4 | 3 | 51/120 | Astral Seraph (Divine) | 23/24 | $53.24M |
-| 8 h | 46753 | Celestial | 10.35 | $318.76K | $2.55B | $8.23M | 14/15/11/19 | 34.2 | 6 | 63/120 | Eclipse Sovereign (Secret) | 24/24 | $566.89M |
+| 2 h | 9811 | Void | 4.82 | $12.48K | $45.19M | $8.98M | 9/10/7/15 | 14.2 | 1 | 40/120 | Astral Seraph (Divine) | 22/24 | $11M |
+| 4 h | 20957 | Void | 6.23 | $67.17K | $249.57M | $18.46M | 13/15/11/18 | 20.6 | 3 | 52/120 | Astral Seraph (Divine) | 23/24 | $53.24M |
+| 8 h | 46789 | Celestial | 11.52 | $479.61K | $3.6B | $53.38M | 17/18/11/20 | 39.2 | 6 | 68/120 | Eclipse Sovereign (Secret) | 24/24 | $566.89M |
 
-Renascimentos em: 102 min, 155 min, 212 min, 289 min, 382 min, 473 min. Próximo custa $1.13B.
+Renascimentos em: 102 min, 169 min, 210 min, 282 min, 328 min, 412 min. Próximo custa $1.13B.
 
 ### Hardcore
 
@@ -96,11 +96,11 @@ Roll AUTO (cooldown), coleta a cada 5 s, decide a cada 3 s, gasta 60% em níveis
 | 10 min | 605 | Flame | 2.24 | $1.51K | $694.08K | $15.3K | 5/6/3/7 | 8.5 | 0 | 24/120 | Void Emperor (Mythic) | 20/24 | $5M |
 | 30 min | 2009 | Storm | 3.28 | $4.21K | $4.92M | $411.6K | 8/8/6/11 | 15.0 | 0 | 30/120 | Void Emperor (Mythic) | 21/24 | $5M |
 | 1 h | 4459 | Storm | 3.60 | $5.26K | $13.79M | $3.06M | 10/11/8/14 | 11.8 | 0 | 32/120 | Void Emperor (Mythic) | 21/24 | $5M |
-| 2 h | 9734 | Void | 4.60 | $9.19K | $38.78M | $6.86M | 8/9/7/11 | 6.8 | 1 | 46/120 | Eclipse Sovereign (Secret) | 23/24 | $11M |
-| 4 h | 19724 | Celestial | 8.35 | $44.4K | $251.05M | $45.98M | 11/11/8/14 | 12.4 | 3 | 55/120 | Eclipse Sovereign (Secret) | 24/24 | $53.24M |
-| 8 h | 44355 | Celestial | 11.91 | $508.21K | $3.93B | $569.14M | 18/19/11/20 | 35.3 | 6 | 70/120 | Eclipse Sovereign (Secret) | 24/24 | $566.89M |
+| 2 h | 9734 | Void | 4.82 | $9.57K | $38.39M | $6.55M | 9/9/7/14 | 7.2 | 1 | 45/120 | Eclipse Sovereign (Secret) | 23/24 | $11M |
+| 4 h | 20223 | Celestial | 8.70 | $46.14K | $266.33M | $54.14M | 12/13/10/16 | 13.9 | 3 | 55/120 | Eclipse Sovereign (Secret) | 24/24 | $53.24M |
+| 8 h | 45258 | Celestial | 11.13 | $477.22K | $3.49B | $154.92M | 16/17/11/20 | 37.1 | 6 | 69/120 | Eclipse Sovereign (Secret) | 24/24 | $566.89M |
 
-Renascimentos em: 108 min, 145 min, 189 min, 272 min, 316 min, 398 min. Próximo custa $1.13B.
+Renascimentos em: 108 min, 145 min, 185 min, 272 min, 320 min, 405 min. Próximo custa $1.13B.
 
 ### Nível de personagem (1 → 50)
 

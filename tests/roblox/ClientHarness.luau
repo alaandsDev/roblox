@@ -259,6 +259,12 @@ check(hud:FindFirstChild("Root"):FindFirstChild("Left").Visible == false, "tutor
 
 local rollButton = find(hud, "Roll")
 local data = S.PlayerDataService.GetData(player)
+-- Rolls do teste nunca passam de Raro: uma cinemática Lendária aleatória (1 em 77) travava os
+-- passos seguintes. As cinemáticas são testadas uma a uma mais abaixo.
+local realRollRand = S.RollService._rand
+S.RollService._rand = function()
+	return realRollRand() * 0.9
+end
 click(rollButton)
 check(Env.waitFor(function()
 	return data.Rolls == 1
