@@ -110,6 +110,7 @@ def main() -> None:
     sessao = subprocess.run([str(lune), "run", "tests/roblox/SessionHarness.luau"], cwd=RAIZ)
     pack = subprocess.run([str(lune), "run", "tests/roblox/PackAuditHarness.luau"], cwd=RAIZ)
     personagens = subprocess.run([str(lune), "run", "tests/roblox/CharacterPipelineHarness.luau"], cwd=RAIZ)
+    reais = subprocess.run([str(lune), "run", "tests/roblox/RealAssetsHarness.luau"], cwd=RAIZ)
     leitor = subprocess.run([sys.executable, "tests/rbxm_reader_test.py"], cwd=RAIZ)
     ferramenta = subprocess.run([sys.executable, "tests/build_characters_test.py"], cwd=RAIZ)
     compat = subprocess.run([sys.executable, "tests/build_characters_lune_test.py"], cwd=RAIZ)
@@ -123,7 +124,7 @@ def main() -> None:
         except ImportError:
             print("(Pillow não instalado: pulando a imagem do mapa)")
 
-    if erros or puros.returncode != 0 or mapa.returncode != 0 or servicos.returncode != 0 or gameplay.returncode != 0 or cliente.returncode != 0 or sessao.returncode != 0 or pack.returncode != 0 or personagens.returncode != 0 or leitor.returncode != 0 or ferramenta.returncode != 0 or compat.returncode != 0 or place.returncode != 0:
+    if erros or puros.returncode != 0 or mapa.returncode != 0 or servicos.returncode != 0 or gameplay.returncode != 0 or cliente.returncode != 0 or sessao.returncode != 0 or pack.returncode != 0 or personagens.returncode != 0 or reais.returncode != 0 or leitor.returncode != 0 or ferramenta.returncode != 0 or compat.returncode != 0 or place.returncode != 0:
         sys.exit(1)
 
 

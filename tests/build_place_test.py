@@ -83,6 +83,12 @@ def main() -> int:
 
     r, raiz = build(sem, tmp / "sem.rbxlx")
     check(r.returncode == 0 and raiz is not None and achar(raiz, ["ReplicatedStorage", "CharacterAssets"]) is None, "build sem Characters.rbxm: OK e sem CharacterAssets (placeholder)")
+    real = RAIZ / "assets" / "Characters.rbxm"
+    if real.exists():
+        r, raiz = build(RAIZ / "assets", tmp / "real.rbxlx")
+        pasta = achar(raiz, ["ReplicatedStorage", "CharacterAssets"]) if raiz is not None else None
+        nomes = sorted(nome(c) for c in filhos(pasta)) if pasta is not None else []
+        check(r.returncode == 0 and nomes == PILOTOS, "build REAL (assets/Characters.rbxm do repositório): CharacterAssets com os 10 pilotos")
     print(f"[Build com assets/Characters.rbxm] {'OK' if falhas == 0 else f'{falhas} falha(s)'}")
     return 1 if falhas else 0
 
