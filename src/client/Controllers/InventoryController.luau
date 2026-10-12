@@ -15,6 +15,7 @@ local CharacterConfig = require(Shared.Config.CharacterConfig)
 local RarityConfig = require(Shared.Config.RarityConfig)
 local Formulas = require(Shared.Modules.GameFormulas)
 local CharacterModelFactory = require(Shared.Modules.CharacterModelFactory)
+local CharacterAssetConfig = require(Shared.Config.CharacterAssetConfig)
 local NumberFormatter = require(Shared.Modules.NumberFormatter)
 local Localization = require(Shared.Localization.Localization)
 local Net = require(Shared.Modules.Net)
@@ -113,7 +114,7 @@ local function setPortrait(characterId: string?, variant: string?)
 		portraitModel = nil
 	end
 	if characterId then
-		local model = CharacterModelFactory.build(characterId, { variant = variant, aura = false })
+		local model = CharacterModelFactory.build(characterId, { variant = variant, aura = false, vfx = CharacterAssetConfig.VFXModes.Inventory })
 		model:PivotTo(CFrame.Angles(0, math.pi, 0))
 		model.Parent = portrait
 		portraitModel = model

@@ -1,24 +1,32 @@
 --!strict
 --[[
-	CharacterModelFactory: cria o modelo 3D de um personagem (servidor: estações da base;
-	cliente: reveal/cinemática, sempre LOCAL).
+	CharacterModelFactory: ÚNICA fonte do visual de um personagem (servidor: estações da base e
+	galeria DEV; cliente: reveal, inventário, índice, hero landing — sempre LOCAL).
 
-	    local model = CharacterModelFactory.build("dragon_knight", { variant = "Normal", aura = true })
+	    local model = CharacterModelFactory.build("char_ichiro_base", { variant = "Gold", vfx = "Light" })
 	    model:PivotTo(cframeNoPiso)                  -- pivô = centro dos pés, olhando para -Z
-	    CharacterModelFactory.pose(model, "Crouch")  -- Idle | Crouch (hero landing) | Confident
+	    CharacterModelFactory.spawn(id, cframe, opts) -- build + PivotTo (+ Parent opcional)
+	    CharacterModelFactory.pose(model, "Reveal")  -- Idle | Reveal | Combat | Crouch | Confident
 	    CharacterModelFactory.lerpPose(model, "Crouch", "Confident", 0.5)
 
-	Se existir ReplicatedStorage.Assets.Characters.<ModelName>, usa o asset (TODO_ASSET);
-	senão monta um placeholder em blocos a partir do VisualTheme (cabeça, tronco, braços e
-	pernas em 2 partes para poder posar, acessório de cabeça, arma, asas e aura).
-	Tudo ancorado, sem colisão/toque/consulta (barato para 80+ personagens no mapa).
+	Origem do visual:
+	  1. ReplicatedStorage.CharacterAssets.<CharacterId>: asset SANITIZADO pelo pipeline
+	     (CharacterAssetPipeline). O template é validado uma vez; inválido = não é usado.
+	  2. Placeholder em blocos a partir do VisualTheme (FALLBACK: asset ausente/inválido ou
+	     CharacterId desconhecido; avisa uma vez no Output).
+	Modos de VFX (opts.vfx): None | Light | Full (padrão: Light; aura = false -> None).
+	Tudo ancorado, sem colisão/toque/consulta, sem scripts (barato para 400 personagens).
 ]]
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = script.Parent.Parent
 local CharacterConfig = require(Shared.Config.CharacterConfig)
 local RarityConfig = require(Shared.Config.RarityConfig)
 local VariantConfig = require(Shared.Config.VariantConfig)
-local AssetLoader = require(script.Parent.AssetLoader)
+local CharacterAssetConfig = require(Shared.Config.CharacterAssetConfig)
+local Pipeline = require(script.Parent.CharacterAssetPipeline)
+local VariantVisualModifier = require(script.Parent.VariantVisualModifier)
 
 local CharacterModelFactory = {}
 
@@ -74,6 +82,23 @@ CharacterModelFactory.Poses = {
 			RightLowerArm = rx(8),
 			LeftUpperArm = rxz(55, -10),
 			LeftLowerArm = rx(55),
+		},
+	} :: Pose,
+	-- Reveal: braço direito erguido, cabeça levantada
+	Reveal = {
+		root = rx(3),
+		joints = { Head = rx(8), RightUpperArm = rxz(165, 10), RightLowerArm = rx(10), LeftUpperArm = rxz(-15, -25), LeftUpperLeg = rxz(0, -6), RightUpperLeg = rxz(0, 6) },
+	} :: Pose,
+	-- Combate/card: base aberta, braços à frente
+	Combat = {
+		root = CFrame.new(0, -0.15, 0) * rx(-6),
+		joints = {
+			RightUpperArm = rxz(80, 10),
+			RightLowerArm = rx(20),
+			LeftUpperArm = rxz(45, -15),
+			LeftLowerArm = rx(30),
+			RightUpperLeg = rxz(-15, 8),
+			LeftUpperLeg = rxz(20, -8),
 		},
 	} :: Pose,
 	-- Pose final confiante: peito aberto, punho direito erguido, mão esquerda na cintura
@@ -157,31 +182,137 @@ local function applyPose(model: Model, pose: Pose)
 	end
 end
 
-local function resolvePose(pose: string | Pose): Pose
+------------------------------------------------------------------------------------
+-- Poses do ASSET R6 (próprias do Roll Legends; nenhuma animação do pack é usada).
+-- Ossos: Head, LeftArm, RightArm, LeftLeg, RightLeg (+ root = tronco inteiro, a partir do quadril).
+-- Mesma convenção: X positivo = membro para a FRENTE; Z negativo no braço esquerdo = para fora.
+
+local R6_BONES = { "Head", "LeftArm", "RightArm", "LeftLeg", "RightLeg" }
+
+CharacterModelFactory.R6Poses = {
+	Idle = {
+		root = CFrame.new(),
+		joints = { LeftArm = rxz(0, -4), RightArm = rxz(0, 4) },
+	} :: Pose,
+	Reveal = {
+		root = rx(3),
+		joints = { Head = rx(8), RightArm = rxz(165, 10), LeftArm = rxz(-15, -25), LeftLeg = rxz(0, -6), RightLeg = rxz(0, 6) },
+	} :: Pose,
+	Combat = {
+		root = CFrame.new(0, -0.15, 0) * rx(-6),
+		joints = { RightArm = rxz(80, 10), LeftArm = rxz(45, -15), RightLeg = rxz(-15, 8), LeftLeg = rxz(20, -8) },
+	} :: Pose,
+	-- Aterrissagem de herói (R6 não dobra joelho: perna esquerda à frente, direita para trás)
+	Crouch = {
+		root = CFrame.new(0, -0.9, 0) * rx(-18),
+		joints = { Head = rx(-18), LeftLeg = rx(75), RightLeg = rx(-35), RightArm = rxz(45, 4), LeftArm = rxz(55, -10) },
+	} :: Pose,
+	Confident = {
+		root = rx(4),
+		joints = { Head = rx(6), RightArm = rxz(155, 15), LeftArm = rxz(-10, -35), LeftLeg = rxz(0, -6), RightLeg = rxz(0, 6) },
+	} :: Pose,
+}
+
+local function isAssetRig(model: Model): boolean
+	return model:GetAttribute("AssetRig") == true
+end
+
+-- Pivôs das juntas no espaço do pivô (pose de repouso, já escalada)
+local function restOf(part: Instance?): CFrame?
+	local rest = part and part:GetAttribute("Rest")
+	return if typeof(rest) == "CFrame" then rest else nil
+end
+
+local function assetJoints(model: Model): ({ [string]: CFrame }?, CFrame?)
+	local torso = model:FindFirstChild("Torso")
+	local torsoRest = restOf(torso)
+	if not torso or not torso:IsA("BasePart") or not torsoRest then
+		return nil
+	end
+	local hip = CFrame.new((torsoRest * CFrame.new(0, -torso.Size.Y / 2, 0)).Position)
+	local pivots: { [string]: CFrame } = {
+		Head = CFrame.new((torsoRest * CFrame.new(0, torso.Size.Y / 2, 0)).Position),
+	}
+	local limbs: { [string]: string } = { LeftArm = "Left Arm", RightArm = "Right Arm", LeftLeg = "Left Leg", RightLeg = "Right Leg" }
+	for bone, name in limbs do
+		local limb = model:FindFirstChild(name)
+		local rest = restOf(limb)
+		if limb and limb:IsA("BasePart") and rest then
+			local top = if string.find(bone, "Arm") then limb.Size.Y / 2 - limb.Size.X / 2 else limb.Size.Y / 2
+			pivots[bone] = CFrame.new((rest * CFrame.new(0, top, 0)).Position)
+		end
+	end
+	return pivots, hip
+end
+
+local function applyAssetPose(model: Model, pose: Pose)
+	local root = model.PrimaryPart
+	local joints, hip = assetJoints(model)
+	if not root or not joints or not hip then
+		return
+	end
+	local s = (model:GetAttribute("RuntimeScale") :: number?) or 1
+	local scaled = CFrame.new(pose.root.Position * s) * pose.root.Rotation
+	local base = root.CFrame * hip * scaled * hip:Inverse()
+	for _, part in model:GetDescendants() do
+		if part:IsA("BasePart") then
+			local bone = part:GetAttribute("Bone")
+			local rest = restOf(part)
+			if rest and bone ~= "Root" then
+				local pivot = joints[bone :: string]
+				if pivot then
+					local rotation = pose.joints[bone :: string] or CFrame.identity
+					part.CFrame = base * pivot * rotation * pivot:Inverse() * rest
+				else
+					part.CFrame = base * rest
+				end
+			end
+		end
+	end
+end
+
+local function resolvePose(pose: string | Pose, asset: boolean): Pose
 	if type(pose) == "string" then
-		return CharacterModelFactory.Poses[pose] or CharacterModelFactory.Poses.Idle
+		local poses = if asset then CharacterModelFactory.R6Poses else CharacterModelFactory.Poses
+		return poses[pose] or poses.Idle
 	end
 	return pose
 end
 
 function CharacterModelFactory.pose(model: Model, pose: string | Pose)
-	applyPose(model, resolvePose(pose))
+	if isAssetRig(model) then
+		applyAssetPose(model, resolvePose(pose, true))
+	else
+		applyPose(model, resolvePose(pose, false))
+	end
 end
 
 -- Interpola entre duas poses (t de 0 a 1)
 function CharacterModelFactory.lerpPose(model: Model, from: string | Pose, to: string | Pose, t: number)
-	local a, b = resolvePose(from), resolvePose(to)
+	local asset = isAssetRig(model)
+	local a, b = resolvePose(from, asset), resolvePose(to, asset)
 	local joints = {}
-	for _, bone in BONES do
-		local ja = a.joints[bone.name] or CFrame.identity
-		local jb = b.joints[bone.name] or CFrame.identity
-		joints[bone.name] = ja:Lerp(jb, t)
+	local names: { string } = if asset then R6_BONES else {}
+	if not asset then
+		for _, bone in BONES do
+			table.insert(names, bone.name)
+		end
 	end
-	applyPose(model, { root = a.root:Lerp(b.root, t), joints = joints })
+	for _, name in names do
+		local ja = a.joints[name] or CFrame.identity
+		local jb = b.joints[name] or CFrame.identity
+		joints[name] = ja:Lerp(jb, t)
+	end
+	local blended = { root = a.root:Lerp(b.root, t), joints = joints }
+	if asset then
+		applyAssetPose(model, blended)
+	else
+		applyPose(model, blended)
+	end
 end
 
 function CharacterModelFactory.isRigged(model: Model): boolean
-	return rigs[model] ~= nil
+	return rigs[model] ~= nil or isAssetRig(model)
 end
 
 ------------------------------------------------------------------------------------
@@ -314,21 +445,154 @@ end
 
 ------------------------------------------------------------------------------------
 
-export type BuildOptions = { variant: string?, aura: boolean?, scale: number? }
+export type BuildOptions = {
+	variant: string?,
+	aura: boolean?, -- false = sem aura de raridade (e VFX None, se vfx não for informado)
+	scale: number?,
+	vfx: string?, -- None | Light | Full
+	pose: string?, -- pose inicial (padrão Idle)
+}
+
+local VFX_CLASSES = { "ParticleEmitter", "Beam", "Trail", "Fire", "Smoke", "Sparkles", "PointLight", "SpotLight" }
+
+-- Avisos de desenvolvimento (uma vez por personagem)
+local warned: { [string]: boolean } = {}
+local function warnOnce(key: string, message: string)
+	if not warned[key] then
+		warned[key] = true
+		warn("[CharacterModelFactory] " .. message)
+	end
+end
+
+-- Template validado (cache por CharacterId): Model, ou false se ausente/inválido
+local templates: { [string]: Model | false } = {}
+
+local function storage(): Instance?
+	return ReplicatedStorage:FindFirstChild(CharacterAssetConfig.StorageName)
+end
+
+function CharacterModelFactory.template(characterId: string): Model?
+	local cached = templates[characterId]
+	if cached == false then
+		return nil
+	elseif cached ~= nil then
+		return cached :: Model
+	end
+	local folder = storage()
+	local template = folder and folder:FindFirstChild(characterId)
+	if not template then
+		templates[characterId] = false
+		if CharacterAssetConfig.Assets[characterId] then
+			warnOnce(characterId, `asset de {characterId} não encontrado em ReplicatedStorage.{CharacterAssetConfig.StorageName}: usando placeholder`)
+		end
+		return nil
+	end
+	local problems = Pipeline.validate(template)
+	if #problems > 0 then
+		templates[characterId] = false
+		warnOnce(characterId, `asset de {characterId} INVÁLIDO ({problems[1]}): usando placeholder`)
+		return nil
+	end
+	templates[characterId] = template :: Model
+	return template :: Model
+end
+
+-- Esquece o cache (DEV: depois de trocar ReplicatedStorage.CharacterAssets)
+function CharacterModelFactory.clearCache()
+	table.clear(templates)
+	table.clear(warned)
+end
+
+function CharacterModelFactory.hasAsset(characterId: string): boolean
+	return CharacterModelFactory.template(characterId) ~= nil
+end
+
+-- Remove/mantém efeitos conforme o modo (None | Light | Full)
+local function applyVFXMode(model: Model, mode: string)
+	for _, obj in model:GetDescendants() do
+		local isVFX = false
+		for _, className in VFX_CLASSES do
+			if obj:IsA(className) then
+				isVFX = true
+				break
+			end
+		end
+		if isVFX then
+			local tier = obj:GetAttribute("VFXTier")
+			if mode == "None" or (mode == "Light" and tier ~= "Light") then
+				obj:Destroy()
+			end
+		end
+	end
+	model:SetAttribute("VFXMode", mode)
+end
+
+local function buildAsset(template: Model, character: CharacterConfig.Character, opts: BuildOptions, mode: string): Model
+	local rarity = RarityConfig.ById[character.Rarity]
+	local scale = CharacterAssetConfig.RuntimeScale * rarity.ModelScale * CharacterAssetConfig.visualScale(character.Id) * (opts.scale or 1)
+	local model = template:Clone()
+	local root = model.PrimaryPart :: BasePart
+	-- O template fica no pivô de origem; o clone é escalado em volta do PivotRoot
+	local pivot = root.CFrame
+	Pipeline.scale(model, scale, pivot)
+	local offset = CharacterAssetConfig.visualOffset(character.Id)
+	local shift = Vector3.new(offset[1], offset[2], offset[3]) * scale
+	for _, part in Pipeline.basePartsOf(model) do
+		if part.Name ~= "PivotRoot" and shift.Magnitude > 0 then
+			part.CFrame = part.CFrame + pivot:VectorToWorldSpace(shift)
+		end
+	end
+	model.Name = character.Id
+	model:SetAttribute("CharacterId", character.Id)
+	model:SetAttribute("Rarity", character.Rarity)
+	model:SetAttribute("RuntimeScale", scale)
+	model:SetAttribute("AssetRig", true)
+	VariantVisualModifier.apply(model, opts.variant, mode, scale)
+	-- Pose de repouso de cada peça (relativa ao pivô) para as poses próprias
+	for _, part in Pipeline.basePartsOf(model) do
+		part:SetAttribute("Rest", pivot:ToObjectSpace(part.CFrame))
+	end
+	applyVFXMode(model, mode)
+	local torso = model:FindFirstChild("Torso")
+	if mode ~= "None" and opts.aura ~= false and rarity.Aura and torso and torso:IsA("BasePart") then
+		aura(model, torso, rarity.Aura, rgb(rarity.Color))
+	end
+	model.WorldPivot = pivot
+	return model
+end
+
+-- Personagem desconhecido: placeholder neutro (o jogo nunca quebra por um id inválido)
+local UNKNOWN: CharacterConfig.Character = {
+	Id = "unknown",
+	IndexNumber = 0,
+	Name = "?",
+	Rarity = "Common",
+	BasePower = 0,
+	BaseIncome = 0,
+	ModelName = "unknown",
+	Description = "",
+	VisualTheme = { Primary = { 120, 120, 130 }, Secondary = { 80, 80, 90 }, Skin = { 220, 220, 225 }, Headgear = "None", Weapon = "None", Wings = false, Icon = "❔" },
+}
 
 function CharacterModelFactory.build(characterId: string, options: BuildOptions?): Model
 	local opts: BuildOptions = options or {}
 	local character = CharacterConfig.ById[characterId]
-	assert(character, `personagem desconhecido: {characterId}`)
+	if not character then
+		warnOnce("unknown:" .. tostring(characterId), `CharacterId desconhecido: {characterId} (placeholder)`)
+		character = UNKNOWN
+	end
 	local rarity = RarityConfig.ById[character.Rarity]
 	local scale = BASE_SCALE * rarity.ModelScale * (opts.scale or 1)
+	local mode = opts.vfx or (if opts.aura == false then "None" else "Light")
 
-	-- Asset final (quando existir)
-	local asset = AssetLoader.model("Characters", character.ModelName, 6.3 * rarity.ModelScale * (opts.scale or 1))
-	if asset then
-		asset.Name = character.Id
-		asset:SetAttribute("CharacterId", character.Id)
-		return asset
+	local template = if character ~= UNKNOWN then CharacterModelFactory.template(character.Id) else nil
+	if template then
+		local ok, result = pcall(buildAsset, template, character, opts, mode)
+		if ok then
+			CharacterModelFactory.pose(result, opts.pose or "Idle")
+			return result
+		end
+		warnOnce("build:" .. character.Id, `falha ao montar o asset de {character.Id} ({result}): usando placeholder`)
 	end
 
 	local theme = character.VisualTheme
@@ -342,7 +606,8 @@ function CharacterModelFactory.build(characterId: string, options: BuildOptions?
 	model.Name = character.Id
 	model:SetAttribute("CharacterId", character.Id)
 	model:SetAttribute("Rarity", character.Rarity)
-	-- Placeholder: trocar pelo modelo final em Assets.Characters (ver ASSETS.md)
+	model:SetAttribute("Variant", opts.variant or "Normal")
+	-- Placeholder: o asset final vem do pipeline (ReplicatedStorage.CharacterAssets)
 	model:SetAttribute("TODO_ASSET", true)
 
 	local root = newPart(model, "Root", Vector3.new(1, 0.2, 1), primary, { Transparency = 1 })
@@ -389,15 +654,26 @@ function CharacterModelFactory.build(characterId: string, options: BuildOptions?
 			item.part.Size *= scale
 		end
 	end
-	if opts.aura ~= false and rarity.Aura then
+	if mode ~= "None" and opts.aura ~= false and rarity.Aura then
 		aura(model, rig.parts.Torso, rarity.Aura, rgb(rarity.Color))
 	end
 
 	root.CFrame = CFrame.new(0, 0.1, 0)
 	model.WorldPivot = CFrame.new()
-	applyPose(model, CharacterModelFactory.Poses.Idle)
+	applyPose(model, resolvePose(opts.pose or "Idle", false))
 	-- Pivô no centro dos pés (o Root fica no chão)
 	model.WorldPivot = root.CFrame * CFrame.new(0, -0.1, 0)
+	return model
+end
+
+-- SpawnCharacter: monta e coloca com os pés em targetCFrame (centralizado, em pé, virado
+-- para o LookVector do alvo). parent opcional.
+function CharacterModelFactory.spawn(characterId: string, target: CFrame, options: BuildOptions?, parent: Instance?): Model
+	local model = CharacterModelFactory.build(characterId, options)
+	model:PivotTo(target)
+	if parent then
+		model.Parent = parent
+	end
 	return model
 end
 
@@ -405,7 +681,16 @@ end
 function CharacterModelFactory.height(characterId: string): number
 	local character = CharacterConfig.ById[characterId]
 	local rarity = character and RarityConfig.ById[character.Rarity]
-	return 5.6 * BASE_SCALE * (if rarity then rarity.ModelScale else 1)
+	local modelScale = if rarity then rarity.ModelScale else 1
+	local template = character and CharacterModelFactory.template(characterId)
+	if template then
+		-- Corpo normalizado + cabelo/arma acima da cabeça (limitado a 40% a mais)
+		local bounds = template:GetAttribute("BoundsSize")
+		local body = CharacterAssetConfig.BodyHeight
+		local top = if typeof(bounds) == "Vector3" then math.clamp(bounds.Y, body, body * 1.4) else body
+		return (top + 0.3) * CharacterAssetConfig.RuntimeScale * modelScale * CharacterAssetConfig.visualScale(characterId)
+	end
+	return 5.6 * BASE_SCALE * modelScale
 end
 
 return CharacterModelFactory

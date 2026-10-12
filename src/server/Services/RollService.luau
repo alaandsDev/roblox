@@ -130,7 +130,7 @@ local function doRoll(player: Player, options: RollOptions?): RollResult
 	PlayerDataService.Set(player, "Pity", rolled.pity)
 	local rolls = PlayerDataService.Increment(player, "Rolls", 1)
 
-	local isNew = IndexService.Register(player, characterId)
+	local isNew = IndexService.Register(player, characterId, "Normal")
 	local views = TableUtil.deepCopy(data.RevealViews)
 	local timesSeen = views[rarity] or 0
 	views[rarity] = timesSeen + 1

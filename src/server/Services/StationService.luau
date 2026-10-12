@@ -27,6 +27,7 @@ local VariantConfig = require(Shared.Config.VariantConfig)
 local BaseConfig = require(Shared.Config.BaseConfig)
 local Formulas = require(Shared.Modules.GameFormulas)
 local CharacterModelFactory = require(Shared.Modules.CharacterModelFactory)
+local CharacterAssetConfig = require(Shared.Config.CharacterAssetConfig)
 local NumberFormatter = require(Shared.Modules.NumberFormatter)
 local Localization = require(Shared.Localization.Localization)
 local Logger = require(Shared.Modules.Logger)
@@ -142,7 +143,7 @@ local function build(player: Player, base: Model, slotId: number, uid: string): 
 	model:SetAttribute("Uid", uid)
 	model:SetAttribute("Station", true)
 
-	local figure = CharacterModelFactory.build(item.Id, { variant = item.Variant })
+	local figure = CharacterModelFactory.build(item.Id, { variant = item.Variant, vfx = CharacterAssetConfig.VFXModes.Base })
 	figure:PivotTo(point.CFrame)
 	figure.Parent = model
 

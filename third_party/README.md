@@ -34,3 +34,10 @@ acessórios, armas, VFX, animações, **formas/transformações do mesmo persona
 scripts com risco (require por id, loadstring, HttpService, Teleport, Marketplace,
 ofuscação...) e uma sugestão visual de raridade. O `AnimePack_scripts.txt` tem o código dos
 scripts como texto, para revisão manual.
+
+## Pipeline de personagens (pilotos)
+
+Com `third_party/AnimePack.rbxm` salvo: `python tools/build_characters.py` gera
+`assets/Characters.rbxm` (só os pilotos de `CharacterAssetConfig.Assets`, sanitizados) e
+`CHARACTER_PILOT_AUDIT.md`. Se o Lune recusar uma propriedade (ex.: `Accessory.Tags`), a
+ferramenta faz `build/AnimePack_lune.rbxm` sem ela e tenta de novo. Detalhes: `CHARACTER_PIPELINE.md`.

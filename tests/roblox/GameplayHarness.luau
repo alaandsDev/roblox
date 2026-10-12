@@ -916,6 +916,155 @@ check(filled, "painel MAIS ROLLS do Hub preenchido")
 end
 
 ------------------------------------------------------------------------------------
+do
+-- PILOTOS DO PIPELINE DE PERSONAGENS (assets sanitizados de um pack sintético, sem o pack no jogo)
+local SyntheticPack = require("./SyntheticPack")
+local Pipeline = req(env.shared.Modules.CharacterAssetPipeline)
+local Factory = req(env.shared.Modules.CharacterModelFactory)
+local CharacterConfig = req(env.shared.Config.CharacterConfig)
+local pack = SyntheticPack.build()
+local assets = Pipeline.buildAll(pack)
+pack:Destroy()
+assets.Parent = env.real.ReplicatedStorage
+Factory.clearCache()
+check(#CharacterConfig.List == 24 and CharacterConfig.Count == 24 and #CharacterConfig.Pilots >= 8, "roster do roll intacto (24); pilotos só em ById/Pilots")
+for _, pilot in CharacterConfig.Pilots do
+	local inList = false
+	for _, c in CharacterConfig.List do
+		inList = inList or c.Id == pilot.Id
+	end
+	assert(not inList)
+end
+
+-- Inventário guarda só o CharacterId (nada de Instance no save)
+local pid = S.InventoryService.Add(p1, "char_ichiro_base")
+local item = d1.Inventory[pid]
+local onlyData = item.Id == "char_ichiro_base"
+for _, value in item do
+	onlyData = onlyData and (type(value) == "string" or type(value) == "number" or type(value) == "boolean" or type(value) == "nil")
+end
+check(onlyData, "inventário: piloto guardado como CharacterId (sem modelo/instância)")
+
+-- Base: piloto no pedestal blocky (pés no topo, virado, nome/raridade/variante/renda/nível)
+for _, uid in table.clone(d1.EquippedCharacters) do
+	pcall(S.InventoryService.Unequip, p1, uid)
+end
+local okEq, slot = call("EquipCharacter", p1, pid, 1)
+local base = S.BaseService.GetPlayerBase(p1)
+local station = base and base.RuntimeCharacters:FindFirstChild("Station_" .. tostring(slot))
+local figure = station and station:FindFirstChild("char_ichiro_base")
+local point = base and base:FindFirstChild(string.format("Slot%02d", slot or 0), true)
+point = point and point:FindFirstChild("CharacterPoint")
+check(okEq and figure ~= nil and figure:GetAttribute("AssetRig") == true, "base: estação do piloto usa o asset sanitizado")
+if figure and point then
+	local legMin = Pipeline.boundsOf({ figure:FindFirstChild("Left Leg"), figure:FindFirstChild("Right Leg") }, point.CFrame)
+	local torso = figure:FindFirstChild("Torso")
+	local localTorso = point.CFrame:PointToObjectSpace(torso.CFrame.Position)
+	check(math.abs(legMin.Y) < 0.05, string.format("base: pés no topo do pedestal (%.3f), sem flutuar nem atravessar", legMin.Y))
+	check(math.abs(localTorso.X) < 0.05 and math.abs(localTorso.Z) < 0.1 and torso.CFrame.LookVector:Dot(point.CFrame.LookVector) > 0.99, "base: centralizado no pedestal e virado como o slot")
+	check(figure:GetAttribute("VFXMode") == "Light" and figure:GetAttribute("Variant") == "Normal", "base: VFX Light, variante Normal")
+	local detail = station.InfoAnchor.Info.Detail
+	check(detail.Title.Text == "Ichiro" and detail.Rarity.Text ~= "" and detail.Level.Text ~= "" and string.find(station.InfoAnchor.Info.Income.Text, "/s", 1, true) ~= nil, "base: nome (DisplayName), raridade, nível e renda no billboard")
+	local physics = 0
+	for _, part in figure:GetDescendants() do
+		if part:IsA("BasePart") and (part.CanCollide or part.CanTouch or not part.Anchored) then
+			physics += 1
+		end
+		if part:IsA("LuaSourceContainer") or part:IsA("Humanoid") and #part:GetChildren() > 0 then
+			physics += 1
+		end
+	end
+	check(physics == 0, "base: zero script, zero física no personagem")
+end
+-- Trocar o personagem do slot substitui o visual antigo
+local pid2 = S.InventoryService.Add(p1, "char_killuo_godspeed", "Gold")
+local okSwap = call("EquipCharacter", p1, pid2, slot)
+if not okSwap then
+	S.InventoryService.Unequip(p1, pid)
+	okSwap = call("EquipCharacter", p1, pid2, slot)
+end
+local swapped = base.RuntimeCharacters:FindFirstChild("Station_" .. tostring(slot))
+check(okSwap and swapped ~= nil and swapped:FindFirstChild("char_ichiro_base") == nil and swapped:FindFirstChild("char_killuo_godspeed") ~= nil, "trocar personagem do slot: visual antigo destruído, novo no lugar")
+check(swapped and swapped.char_killuo_godspeed:GetAttribute("Variant") == "Gold" and swapped.char_killuo_godspeed:FindFirstChild("VariantRing") ~= nil and swapped.InfoAnchor.Info.Detail.Variant.Text ~= "", "base: variante Gold aparece (anel + texto)")
+local stations = 0
+for _, child in base.RuntimeCharacters:GetChildren() do
+	if child:GetAttribute("Slot") == slot or child.Name == "Station_" .. tostring(slot) then
+		stations += 1
+	end
+end
+check(stations == 1, "um único modelo por slot (sem clone acumulado)")
+
+-- Índice: piloto registrado com variante, sem mexer no progresso do roster
+local discovered = S.IndexService.Discovered(p1)
+S.IndexService.Register(p1, "char_sacha_base", "Normal")
+check(S.IndexService.Discovered(p1) == discovered and d1.Index.char_sacha_base ~= nil and d1.Index.char_sacha_base.Variants.Normal == true, "índice: piloto descoberto (com variante) sem contar no progresso")
+
+-- Fusão pelo CharacterId: 3 Normal -> Silver, 3 Silver -> Gold (mesma regra/economia)
+d1.Money = 1e12
+local n1, n2, n3 = S.InventoryService.Add(p1, "char_sacha_base"), S.InventoryService.Add(p1, "char_sacha_base"), S.InventoryService.Add(p1, "char_sacha_base")
+local okFS, fusedS = call("Fuse", p1, { n1, n2, n3 })
+check(okFS and fusedS.characterId == "char_sacha_base" and fusedS.variant == "Silver", "fusão do piloto: 3 Normal -> Silver")
+local s1, s2 = S.InventoryService.Add(p1, "char_sacha_base", "Silver"), S.InventoryService.Add(p1, "char_sacha_base", "Silver")
+local okFG, fusedG = call("Fuse", p1, { fusedS.uid, s1, s2 })
+check(okFG and fusedG.variant == "Gold" and d1.Inventory[fusedG.uid].Id == "char_sacha_base", "fusão do piloto: 3 Silver -> Gold")
+check(d1.Index.char_sacha_base.Variants.Silver == true and d1.Index.char_sacha_base.Variants.Gold == true and d1.Index.char_sacha_base.Count == 1, "índice: variantes Silver/Gold descobertas pela fusão (Count intacto)")
+
+-- Torres: piloto no time, combate do Roll Legends (stats do config, nenhum script do pack)
+S.TowerService._clock = function()
+	return 9e9
+end
+local tid = S.InventoryService.Add(p1, "char_goju_base")
+check((call("SetTowerTeam", p1, { tid })), "torres: piloto aceito no time")
+local okTP, battleP = call("RequestEnterTower", p1, "Storm")
+check(okTP and battleP and #battleP.log > 0, "torres: batalha com o piloto roda no sistema atual")
+call("SetTowerTeam", p1, {})
+
+-- Ferramentas DEV: galeria, variantes, poses, relatório e prova de independência do pack
+local Dev = req(env.server.Services.DevService)
+local function galleryModels()
+	local gallery = env.real.Workspace:FindFirstChild("DevGallery")
+	local models = {}
+	for _, child in (if gallery then gallery:GetChildren() else {}) do
+		if child:IsA("Model") then
+			table.insert(models, child)
+		end
+	end
+	return models
+end
+local resultG = Dev.Run("CharacterGallery", p1)
+local models = galleryModels()
+local allAssets = #models == #CharacterConfig.Pilots
+for _, model in models do
+	allAssets = allAssets and model:GetAttribute("AssetRig") == true
+end
+check(allAssets, "DEV CharacterGallery: " .. tostring(resultG) .. " (todos do asset sanitizado)")
+Dev.Run("ShowCharacterVariants", p1, "char_ichiro_base")
+local variantsSeen = {}
+for _, model in galleryModels() do
+	variantsSeen[model:GetAttribute("Variant")] = true
+end
+local seven = 0
+for _ in variantsSeen do
+	seven += 1
+end
+check(#galleryModels() == 7 and seven == 7, "DEV ShowCharacterVariants: as 7 variantes lado a lado (galeria anterior substituída)")
+Dev.Run("ShowCharacterPoses", p1, "char_zabuzo_base")
+check(#galleryModels() == 5, "DEV ShowCharacterPoses: 5 poses")
+local report = Dev.Run("CharacterAssetReport")
+local okCount = 0
+for _ in string.gmatch(report, ": OK") do
+	okCount += 1
+end
+check(string.find(report, "10 assets", 1, true) ~= nil and okCount >= 8, "DEV CharacterAssetReport: assets validados no runtime")
+local packCheck = Dev.Run("SourcePackCheck")
+check(string.find(packCheck, "10/10 montados sem o pack", 1, true) ~= nil and string.find(packCheck, "10 do asset sanitizado", 1, true) ~= nil and string.find(packCheck, "problemas: nenhum", 1, true) ~= nil, "DEV SourcePackCheck: " .. packCheck)
+local gave = Dev.Run("GivePilots", p1)
+check(gave == "10 pilotos adicionados" and d1.Index.char_goju_base ~= nil, "DEV GivePilots: 1 de cada no inventário e no índice")
+Dev.Run("ClearGallery")
+check(env.real.Workspace:FindFirstChild("DevGallery") == nil, "DEV ClearGallery limpa tudo")
+end
+
+------------------------------------------------------------------------------------
 -- DEMO + SAÍDA
 local placedDemo = S.StationService.PopulateDemo(p2, true)
 local base2 = S.BaseService.GetPlayerBase(p2)

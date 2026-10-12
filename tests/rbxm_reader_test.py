@@ -106,6 +106,17 @@ def main() -> int:
         check(total == 8 and "Tags" not in xml and "require(123)" in xml, "cópia limpa sem Tags, com o código como texto")
         again = R.read_model(str(clean))
         check(again[0].children[0].children[0].name == "Goku SSJ", "cópia limpa (XML) relida")
+        # Cópia binária sem Accessory.Tags (para o Lune ler o pack inteiro no pipeline de personagens)
+        data = path.read_bytes()
+        stripped, removed = R.strip_properties(data, {("Accessory", "Tags")})
+        check(removed == ["Accessory.Tags"] and len(stripped) < len(data), "strip_properties remove só o chunk Accessory.Tags")
+        check(b"tagdata" in stripped and stripped.endswith(b"</roblox>"), "resto do arquivo (SSTR, END) preservado")
+        (Path(tmp) / "stripped.rbxm").write_bytes(stripped)
+        back = R.read_model(str(Path(tmp) / "stripped.rbxm"))
+        kids2 = {c.name: c for c in back[0].children[0].children[0].children}
+        check(kids2["Head"].props.get("MeshId") == "rbxassetid://111" and kids2["Hair"].props.get("AccessoryType") == 2, "cópia binária relida com malha e enums intactos")
+        same, nothing = R.strip_properties(data, {(None, "NaoExiste")})
+        check(same == data and nothing == [], "sem nada para remover: arquivo idêntico byte a byte")
     print(f"[Leitor tolerante de .rbxm] {'OK' if falhas == 0 else f'{falhas} falha(s)'}")
     return 1 if falhas else 0
 

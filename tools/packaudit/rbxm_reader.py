@@ -340,6 +340,47 @@ def read_model(path: str) -> list[Node]:
 
 
 # ---------------------------------------------------------------------------------
+# Cópia binária SEM algumas propriedades (para o Lune conseguir ler o arquivo inteiro)
+
+def strip_properties(data: bytes, drop: set[tuple[str | None, str]]) -> tuple[bytes, list[str]]:
+    """Copia um .rbxm binário chunk a chunk, pulando os chunks PROP de (classe, propriedade)
+    em "drop" (classe None = todas as classes). Todo o resto (geometria, malhas, texturas,
+    roupas) continua idêntico. Ex.: {("Accessory", "Tags")} — o Lune 0.10.4 recusa Tags
+    gravado como SharedString. Devolve (bytes, lista do que foi removido)."""
+    if data[:8] != MAGIC or data[8:14] != SIGNATURE:
+        raise ValueError("strip_properties só funciona com .rbxm binário")
+    out = bytearray(data[:32])
+    i = 32
+    classes: dict[int, str] = {}
+    removed: list[str] = []
+    while i < len(data):
+        start = i
+        name = data[i:i + 4].rstrip(b"\x00").decode("ascii", errors="replace")
+        compressed, size = struct.unpack_from("<II", data, i + 4)
+        i += 16
+        payload = data[i:i + (compressed or size)]
+        i += compressed or size
+        raw = data[start:i]
+        if name in ("INST", "PROP"):
+            body = payload if not compressed else (zstd_decompress(payload, size) if payload[:4] == ZSTD_MAGIC else lz4_block(payload, size))
+            c = Reader(body)
+            type_id = c.u32()
+            label = _text(c.string())
+            if name == "INST":
+                classes[type_id] = label
+            else:
+                cls = classes.get(type_id, "?")
+                if (cls, label) in drop or (None, label) in drop:
+                    removed.append(f"{cls}.{label}")
+                    continue
+        out += raw
+        if name == "END":
+            out += data[i:]
+            break
+    return bytes(out), removed
+
+
+# ---------------------------------------------------------------------------------
 # Cópia limpa (.rbxmx) só com o que a auditoria usa
 
 def _cdata(text: str) -> str:

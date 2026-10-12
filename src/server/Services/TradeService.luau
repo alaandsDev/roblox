@@ -204,10 +204,10 @@ function TradeService.Confirm(player: Player)
 	InventoryService.SendDelta(a, newA, offerA)
 	InventoryService.SendDelta(b, newB, offerB)
 	for _, uid in newA do
-		IndexService.Register(a, dataA.Inventory[uid].Id)
+		IndexService.Register(a, dataA.Inventory[uid].Id, dataA.Inventory[uid].Variant)
 	end
 	for _, uid in newB do
-		IndexService.Register(b, dataB.Inventory[uid].Id)
+		IndexService.Register(b, dataB.Inventory[uid].Id, dataB.Inventory[uid].Variant)
 	end
 	AnalyticsService.Track(a, "TradeCompleted", { given = #offerA, received = #offerB })
 	AnalyticsService.Track(b, "TradeCompleted", { given = #offerB, received = #offerA })

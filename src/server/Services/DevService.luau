@@ -268,9 +268,196 @@ DevService.Register("VisualCheck", "(player, ponto?) teleporta para conferir o v
 	return "ponto desconhecido; " .. table.concat(names, ", ")
 end)
 
+------------------------------------------------------------------------------------
+-- Pipeline de personagens (PILOTO): galeria, variantes, poses e checagens
+
+local CharacterAssetConfig = require(Shared.Config.CharacterAssetConfig)
+local CharacterModelFactory = require(Shared.Modules.CharacterModelFactory)
+local CharacterAssetPipeline = require(Shared.Modules.CharacterAssetPipeline)
+local VariantConfigDev = require(Shared.Config.VariantConfig)
+local IndexService = require(script.Parent.IndexService)
+
+-- Área livre no caminho sul (entre a Loja de Dados e a entrada), longe das bases
+local GALLERY_Z = -205
+local GALLERY_SPACING = 7
+
+local function galleryFolder(): Folder
+	local old = workspace:FindFirstChild("DevGallery")
+	if old then
+		old:Destroy()
+	end
+	local folder = Instance.new("Folder")
+	folder.Name = "DevGallery"
+	folder.Parent = workspace
+	return folder
+end
+
+local function galleryLabel(model: Model, title: string, subtitle: string)
+	local anchor = model:FindFirstChild("Head")
+	if not anchor or not anchor:IsA("BasePart") then
+		return
+	end
+	local gui = Instance.new("BillboardGui")
+	gui.Name = "GalleryLabel"
+	gui.Size = UDim2.fromOffset(220, 60)
+	gui.StudsOffsetWorldSpace = Vector3.new(0, 4, 0)
+	gui.AlwaysOnTop = true
+	gui.LightInfluence = 0
+	gui.Parent = anchor
+	for i, text in { title, subtitle } do
+		local label = Instance.new("TextLabel")
+		label.BackgroundTransparency = 1
+		label.Size = UDim2.fromScale(1, 0.5)
+		label.Position = UDim2.fromScale(0, (i - 1) * 0.5)
+		label.Font = Enum.Font.FredokaOne
+		label.TextScaled = true
+		label.TextColor3 = if i == 1 then Color3.new(1, 1, 1) else Color3.fromRGB(255, 220, 120)
+		label.TextStrokeTransparency = 0
+		label.Text = text
+		label.Parent = gui
+	end
+end
+
+-- Coloca uma fileira de personagens virados para +Z e o jogador olhando para eles
+local function showRow(player: Player?, entries: { { id: string, title: string, subtitle: string, opts: any, pose: string? } }): string
+	local folder = galleryFolder()
+	local floor = Instance.new("Part")
+	floor.Name = "GalleryFloor"
+	floor.Anchored = true
+	floor.CanCollide = true
+	floor.Size = Vector3.new(#entries * GALLERY_SPACING + 6, 1, 12)
+	floor.CFrame = CFrame.new(0, 0.5, GALLERY_Z)
+	floor.Color = Color3.fromRGB(60, 55, 80)
+	floor.Parent = folder
+	local width = (#entries - 1) * GALLERY_SPACING
+	for i, entry in entries do
+		local target = CFrame.new(-width / 2 + (i - 1) * GALLERY_SPACING, 1, GALLERY_Z) * CFrame.Angles(0, math.pi, 0)
+		local model = CharacterModelFactory.spawn(entry.id, target, entry.opts)
+		if entry.pose then
+			CharacterModelFactory.pose(model, entry.pose)
+		end
+		galleryLabel(model, entry.title, entry.subtitle)
+		model.Parent = folder
+	end
+	local character = player and player.Character
+	if character then
+		character:PivotTo(CFrame.lookAt(Vector3.new(0, 5, GALLERY_Z + 22), Vector3.new(0, 4, GALLERY_Z)))
+	end
+	return `{#entries} modelos em Workspace.DevGallery`
+end
+
+local function assetStatus(id: string): string
+	return if CharacterModelFactory.hasAsset(id) then "asset" else "PLACEHOLDER"
+end
+
+DevService.Register("CharacterGallery", "(player, vfx?) pilotos lado a lado (asset ou placeholder)", function(player, vfx)
+	local entries = {}
+	for _, character in CharacterConfig.Pilots do
+		table.insert(entries, {
+			id = character.Id,
+			title = character.Name,
+			subtitle = `{character.Rarity} · {assetStatus(character.Id)}`,
+			opts = { vfx = vfx or CharacterAssetConfig.VFXModes.Gallery },
+		})
+	end
+	return showRow(player, entries)
+end)
+DevService.Register("ShowCharacterVariants", "(player, characterId, vfx?) as 7 variantes lado a lado", function(player, id, vfx)
+	assert(CharacterConfig.ById[id], "personagem inválido: " .. tostring(id))
+	local entries = {}
+	for _, variant in VariantConfigDev.List do
+		table.insert(entries, { id = id, title = variant.Id, subtitle = CharacterConfig.ById[id].Name, opts = { variant = variant.Id, vfx = vfx or "Light" } })
+	end
+	return showRow(player, entries)
+end)
+DevService.Register("ShowCharacterPoses", "(player, characterId) Idle/Reveal/Combat/Crouch/Confident", function(player, id)
+	assert(CharacterConfig.ById[id], "personagem inválido: " .. tostring(id))
+	local entries = {}
+	for _, pose in { "Idle", "Reveal", "Combat", "Crouch", "Confident" } do
+		table.insert(entries, { id = id, title = pose, subtitle = CharacterConfig.ById[id].Name, opts = { vfx = "None" }, pose = pose })
+	end
+	return showRow(player, entries)
+end)
+DevService.Register("ClearGallery", "() remove Workspace.DevGallery", function()
+	local old = workspace:FindFirstChild("DevGallery")
+	if old then
+		old:Destroy()
+	end
+	return "ok"
+end)
+DevService.Register("GivePilots", "(player, variante?) 1 de cada piloto no inventário (e no Índice)", function(player, variant)
+	local uids = {}
+	for _, character in CharacterConfig.Pilots do
+		table.insert(uids, InventoryService.Add(player, character.Id, variant))
+		IndexService.Register(player, character.Id, variant or "Normal")
+	end
+	InventoryService.SendDelta(player, uids, nil)
+	return `{#uids} pilotos adicionados`
+end)
+DevService.Register("CharacterAssetReport", "() status dos assets dos pilotos (validação do runtime)", function()
+	CharacterModelFactory.clearCache()
+	local folder = game:GetService("ReplicatedStorage"):FindFirstChild(CharacterAssetConfig.StorageName)
+	local lines = { `ReplicatedStorage.{CharacterAssetConfig.StorageName}: {if folder then #folder:GetChildren() .. " assets" else "AUSENTE (rode python tools/build_characters.py)"}` }
+	for _, character in CharacterConfig.Pilots do
+		local template = folder and folder:FindFirstChild(character.Id)
+		local problems, warnings = {}, {}
+		if template then
+			problems, warnings = CharacterAssetPipeline.validate(template)
+		end
+		local status = if not template then "sem asset (placeholder)" elseif #problems > 0 then "INVÁLIDO: " .. problems[1] elseif #warnings > 0 then "AVISO: " .. warnings[1] else "OK"
+		local parts = template and template:GetAttribute("PartCount") or "-"
+		table.insert(lines, `{character.Id} ({character.Name}, {character.Rarity}): {status} · peças {parts}`)
+	end
+	return table.concat(lines, "\n")
+end)
+DevService.Register("SourcePackCheck", "() prova que o jogo não depende do Anime Pack em runtime", function()
+	local pack = workspace:FindFirstChild(CharacterAssetConfig.SourcePackName)
+	local previousParent = pack and pack.Parent
+	if pack then
+		pack.Parent = nil -- some temporariamente (volta no fim)
+	end
+	CharacterModelFactory.clearCache()
+	local ok, fromAsset, problems = 0, 0, {}
+	for _, character in CharacterConfig.Pilots do
+		local built, model = pcall(CharacterModelFactory.build, character.Id, { vfx = "Full" })
+		if built then
+			ok += 1
+			if model:GetAttribute("AssetRig") then
+				fromAsset += 1
+			end
+			for _, obj in model:GetDescendants() do
+				if obj:IsA("ObjectValue") or obj:IsA("LuaSourceContainer") then
+					table.insert(problems, `{character.Id}: {obj.ClassName} {obj.Name}`)
+				end
+			end
+			model:Destroy()
+		else
+			table.insert(problems, `{character.Id}: {model}`)
+		end
+	end
+	if pack then
+		pack.Parent = previousParent
+	end
+	return `Anime Pack no Workspace: {if pack then "sim (escondido durante o teste)" else "não"} · {ok}/{#CharacterConfig.Pilots} montados sem o pack · {fromAsset} do asset sanitizado · problemas: {if #problems == 0 then "nenhum" else table.concat(problems, "; ")}`
+end)
+
 DevService.Register("Analytics", "() contagem dos eventos de analytics", function()
 	return game:GetService("HttpService"):JSONEncode(AnalyticsService.Counts())
 end)
+
+-- Executa um comando (mesma porta do BindableFunction; usado também pelos testes)
+function DevService.Run(name: string, ...: any): any
+	local command = commands[name]
+	if not command then
+		return `comando desconhecido: {tostring(name)} (use "Help")`
+	end
+	local ok, result = pcall(command.run, ...)
+	if not ok then
+		log:warn("comando", name, "falhou:", result)
+		return "erro: " .. tostring(result)
+	end
+	return result
+end
 
 function DevService.Init()
 	if not RunService:IsStudio() then
@@ -282,18 +469,7 @@ function DevService.Init()
 	end
 	local bindable = Instance.new("BindableFunction")
 	bindable.Name = "RollLegendsDev"
-	bindable.OnInvoke = function(name: string, ...: any): any
-		local command = commands[name]
-		if not command then
-			return `comando desconhecido: {tostring(name)} (use "Help")`
-		end
-		local ok, result = pcall(command.run, ...)
-		if not ok then
-			log:warn("comando", name, "falhou:", result)
-			return "erro: " .. tostring(result)
-		end
-		return result
-	end
+	bindable.OnInvoke = DevService.Run
 	bindable.Parent = ServerStorage
 	log:info('comandos de teste prontos: game.ServerStorage.RollLegendsDev:Invoke("Help")')
 end

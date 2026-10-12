@@ -131,6 +131,16 @@ Sempre por `AssetLoader` (remove scripts, desliga colisão/física). Busca na St
   o Studio. Tour no Studio: `_G.dev("VisualCheck", "Hub")` (Base, Conveyor, DiceShop, Market,
   Sell, Fusion, Towers, Missions, Trades, Rankings).
 
+## Pipeline de personagens (piloto)
+
+- Visual de personagem tem UMA fonte: `CharacterModelFactory` (Base, Reveal, Mochila, Índice,
+  Hero Landing, galeria DEV). Ele usa `ReplicatedStorage.CharacterAssets.<CharacterId>` (gerado
+  por `tools/build_characters.py` a partir do Anime Pack, sanitizado e validado) ou o placeholder.
+- Fusão, Torres, Trocas, Inventário e save só conhecem o `CharacterId`.
+- Pilotos: `CharacterConfig.Pilots` (fora de `List`, logo fora do roll e do progresso do Índice).
+- Detalhes, regras de normalização/pivô/VFX/variantes e decisão de armazenamento:
+  `CHARACTER_PIPELINE.md`.
+
 ## Base do jogador
 
 Cada andar tem **2 lados com 4 slots cada (4 + 4 = 8)**:

@@ -28,7 +28,7 @@ O `SimuladorEscudo_v1` do protótipo **não é lido nem migrado**.
 | `Inventory` | map | `{ [uid] = CharacterInstance }` (abaixo) |
 | `NextUid` | number | Próximo uid (`"c" .. NextUid`); nunca diminui, nunca repete |
 | `EquippedCharacters` | map | `{ [tostring(slotId)] = uid }` (chave string: compatível com JSON) |
-| `Index` | map | `{ [characterId] = { Count, FirstAt } }` |
+| `Index` | map | `{ [characterId] = { Count, FirstAt, Variants? } }` — `Variants = { [variantId] = true }` é opcional (saves antigos válidos sem migração) |
 | `IndexRewards` | map | `{ ["25"] = true, ... }` marcos já pagos |
 | `Upgrades` | map | `{ Luck, Income, RollSpeed, Inventory }` níveis das melhorias GLOBAIS |
 | `TowerProgress` | map | Maior andar por torre (fase futura) |

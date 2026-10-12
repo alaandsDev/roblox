@@ -11,6 +11,9 @@ Uso:  python tools\\run_tests.py
    (base, roll, inventário, estações, economia, venda, dados, offline, diário).
    tests/roblox/ClientHarness.luau: servidor + interface do cliente de ponta a ponta.
    tests/roblox/SessionHarness.luau: smoke do ciclo completo (save/load) + sessão longa de 10 jogadores.
+   tests/roblox/CharacterPipelineHarness.luau: pipeline de personagens com um pack SINTÉTICO
+   (sanitização, .rbxm, jogo final SEM o pack, factory/variantes/poses/fallback) e
+   tests/build_characters_test.py: a ferramenta tools/build_characters.py de ponta a ponta.
 4. Se o Pillow estiver instalado, desenha build/map_preview.png (vista de cima).
 Os binários (versões fixas) são baixados para tools/bin na primeira vez.
 """
@@ -104,7 +107,9 @@ def main() -> None:
     cliente = subprocess.run([str(lune), "run", "tests/roblox/ClientHarness.luau"], cwd=RAIZ)
     sessao = subprocess.run([str(lune), "run", "tests/roblox/SessionHarness.luau"], cwd=RAIZ)
     pack = subprocess.run([str(lune), "run", "tests/roblox/PackAuditHarness.luau"], cwd=RAIZ)
+    personagens = subprocess.run([str(lune), "run", "tests/roblox/CharacterPipelineHarness.luau"], cwd=RAIZ)
     leitor = subprocess.run([sys.executable, "tests/rbxm_reader_test.py"], cwd=RAIZ)
+    ferramenta = subprocess.run([sys.executable, "tests/build_characters_test.py"], cwd=RAIZ)
 
     if mapa.returncode == 0:
         try:
@@ -114,7 +119,7 @@ def main() -> None:
         except ImportError:
             print("(Pillow não instalado: pulando a imagem do mapa)")
 
-    if erros or puros.returncode != 0 or mapa.returncode != 0 or servicos.returncode != 0 or gameplay.returncode != 0 or cliente.returncode != 0 or sessao.returncode != 0 or pack.returncode != 0 or leitor.returncode != 0:
+    if erros or puros.returncode != 0 or mapa.returncode != 0 or servicos.returncode != 0 or gameplay.returncode != 0 or cliente.returncode != 0 or sessao.returncode != 0 or pack.returncode != 0 or personagens.returncode != 0 or leitor.returncode != 0 or ferramenta.returncode != 0:
         sys.exit(1)
 
 

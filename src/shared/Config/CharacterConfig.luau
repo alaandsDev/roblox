@@ -13,6 +13,10 @@
 	    Wings:    true/false
 	    Icon:     emoji usado nos cards da interface
 	TODO_ASSET: substituir placeholders por modelos finais.
+
+	Personagens do PIPELINE de assets (pilotos abaixo; asset em CharacterAssetConfig.Assets) entram em ById/Pilots com
+	os metadados novos (DisplayName, SourceModelName, CharacterFamily, FormTier...), mas NÃO
+	em List: List continua sendo o roster do roll e do progresso do Índice (RNG intocado).
 ]]
 
 export type Character = {
@@ -35,6 +39,15 @@ export type Character = {
 		Wings: boolean,
 		Icon: string,
 	},
+	-- Metadados do pipeline de assets (nil nos 24 originais)
+	DisplayName: string?,
+	SourceModelName: string?,
+	CharacterFamily: string?,
+	FormTier: number?,
+	SourceCategory: string?,
+	DefaultDice: string?,
+	TechnicalStatus: string?,
+	Pilot: boolean?,
 }
 
 local SKIN_LIGHT = { 255, 214, 180 }
@@ -137,8 +150,60 @@ for _, character in list do
 	byId[character.Id] = character
 end
 
+-- PILOTO do pipeline de assets (ids próprios e estáveis; ver CharacterAssetConfig / CHARACTER_PIPELINE.md)
+local function pilot(index: number, id: string, displayName: string, sourceModelName: string, rarity: string, family: string, formTier: number, category: string, dice: string, power: number, income: number, icon: string, description: string): Character
+	return {
+		Id = id,
+		IndexNumber = index,
+		Name = displayName,
+		Rarity = rarity,
+		BasePower = power,
+		BaseIncome = income,
+		ModelName = id,
+		Description = description,
+		-- Cores do placeholder (fallback quando o asset não existe)
+		VisualTheme = { Primary = { 90, 90, 110 }, Secondary = { 200, 200, 215 }, Skin = SKIN_LIGHT, Headgear = "None", Weapon = "None", Wings = false, Icon = icon },
+		DisplayName = displayName,
+		SourceModelName = sourceModelName,
+		CharacterFamily = family,
+		FormTier = formTier,
+		SourceCategory = category,
+		DefaultDice = dice,
+		TechnicalStatus = "APPROVED",
+		Pilot = true,
+	}
+end
+
+local pilots: { Character } = {
+	pilot(901, "char_sacha_base", "Sacha", "Sasha", "Common", "sacha", 1, "AOT", "starter", 12, 1, "🥔",
+		"Recruta da tropa de exploração. Nunca recusa um lanche."),
+	pilot(902, "char_ichiro_base", "Ichiro", "Ichigo", "Uncommon", "ichiro", 1, "Bleach Pack", "blade", 50, 4, "🗡️",
+		"Substituto de ceifador com uma espada maior que ele."),
+	pilot(903, "char_ichiro_hollow", "Ichiro Mascarado", "Hollow Ichigo", "Mythic", "ichiro", 2, "Bleach Pack", "shadow", 12500, 160, "👹",
+		"A máscara assumiu o controle. A espada ficou ainda mais pesada."),
+	pilot(904, "char_goko_base", "Goko", "Goku", "Uncommon", "goko", 1, "DBZ", "fighter", 48, 4, "🥋",
+		"Treina o dia inteiro e come o dobro disso."),
+	pilot(905, "char_barbalva_base", "Barbalva", "Whitebeard", "Mythic", "barbalva", 1, "One Piece Pack", "forbidden", 13000, 170, "🏴‍☠️",
+		"Capitão lendário. O mar treme quando ele dá risada."),
+	pilot(906, "char_killuo_base", "Killuo", "Killua", "Rare", "killuo", 1, "HXH", "storm", 155, 9, "⚡",
+		"Assassino aposentado aos 12 anos. Ainda gosta de chocolate."),
+	pilot(907, "char_killuo_godspeed", "Killuo Relâmpago", "Killua Godspeed", "Legendary", "killuo", 2, "HXH", "storm", 2450, 60, "🌩️",
+		"Tão rápido que o trovão chega depois."),
+	pilot(908, "char_zabuzo_base", "Zabuzo", "Zabuza", "Rare", "zabuzo", 1, "NARUTO", "shinobi", 160, 9, "🌫️",
+		"Espadachim da névoa com uma espada do tamanho de uma porta."),
+	pilot(909, "char_yamamotu_base", "Yamamotu", "Yamamoto", "Epic", "yamamotu", 1, "Bleach Pack", "flame", 600, 25, "🔥",
+		"Capitão-comandante. A bengala esconde uma espada de fogo."),
+	pilot(910, "char_goju_base", "Goju", "Gojo Satoru", "Divine", "goju", 1, "JJK", "celestial", 60000, 425, "🕶️",
+		"O mais forte. Usa venda nos olhos por estilo."),
+}
+for _, character in pilots do
+	assert(byId[character.Id] == nil, "personagem repetido: " .. character.Id)
+	byId[character.Id] = character
+end
+
 return {
-	List = list,
-	ById = byId,
+	List = list, -- roster do roll e do Índice
+	ById = byId, -- todos (roster + pilotos)
 	Count = #list,
+	Pilots = pilots,
 }

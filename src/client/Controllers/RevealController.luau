@@ -22,6 +22,7 @@ local CharacterConfig = require(Shared.Config.CharacterConfig)
 local DiceConfig = require(Shared.Config.DiceConfig)
 local RevealPlanner = require(Shared.Modules.RevealPlanner)
 local CharacterModelFactory = require(Shared.Modules.CharacterModelFactory)
+local CharacterAssetConfig = require(Shared.Config.CharacterAssetConfig)
 local Localization = require(Shared.Localization.Localization)
 local NumberFormatter = require(Shared.Modules.NumberFormatter)
 local Net = require(Shared.Modules.Net)
@@ -226,7 +227,7 @@ local function playCard(result: any, plan: RevealPlanner.Plan)
 
 	local dice = diceModel()
 	dice.Parent = viewport
-	local figure = CharacterModelFactory.build(result.CharacterId, { variant = result.Variant, aura = false })
+	local figure = CharacterModelFactory.build(result.CharacterId, { variant = result.Variant, aura = false, vfx = CharacterAssetConfig.VFXModes.Reveal, pose = "Reveal" })
 	figure:PivotTo(CFrame.new(0, -60, 0))
 	figure.Parent = viewport
 

@@ -19,6 +19,18 @@ local env = Env.create()
 local T = Env.checker("Ponta a ponta: servidor + interface do cliente")
 local check = T.check
 
+-- Assets sanitizados dos PILOTOS (pack sintético -> pipeline -> ReplicatedStorage.CharacterAssets).
+-- O pack é destruído antes do jogo começar: o cliente só vê os assets.
+do
+	local SyntheticPack = require("./SyntheticPack")
+	local pipelineRequire = env.newContext()
+	local Pipeline = pipelineRequire(env.shared.Modules.CharacterAssetPipeline)
+	local pack = SyntheticPack.build()
+	local assets = Pipeline.buildAll(pack)
+	pack:Destroy()
+	assets.Parent = env.real.ReplicatedStorage
+end
+
 ------------------------------------------------------------------------------------
 -- Rede falsa (servidor <-> cliente) com cópia dos dados, como a serialização real
 
@@ -785,6 +797,98 @@ do
 	Env.setViewport(camera, 1280, 720)
 	task.wait(0.05)
 	check(hudRoot:GetAttribute("LayoutMode") == "wide" and right.Visible and history.Visible and stats.Position.Y.Scale == 1, "volta ao PC: layout padrão")
+end
+
+do
+	-- PILOTOS do pipeline de personagens no cliente: Reveal, Hero Landing, Mochila e Índice
+	local function count(root, name)
+		local n = 0
+		for _, d in root:GetDescendants() do
+			if d.Name == name then
+				n += 1
+			end
+		end
+		return n
+	end
+	UIKit.Windows.closeAll()
+	check(Env.waitFor(function()
+		return not C.RevealController.Busy()
+	end, 5), "pilotos: nenhum reveal pendente")
+
+	-- Reveal normal (Raro): modelo do asset, pose Reveal, limpa no fim
+	playDev("Rare", "char_killuo_base")
+	local revealModel
+	check(Env.waitFor(function()
+		local reveal = gui("Reveal")
+		revealModel = reveal and find(reveal, "char_killuo_base")
+		return revealModel ~= nil
+	end, 3), "Reveal: piloto aparece no reveal atual")
+	check(revealModel ~= nil and revealModel:GetAttribute("AssetRig") == true and revealModel:GetAttribute("VFXMode") == "Full", "Reveal: asset sanitizado com VFX Full")
+	check(Env.waitFor(function()
+		return not C.RevealController.Busy()
+	end, 6) and count(gui("Reveal"), "char_killuo_base") == 0, "Reveal: modelo destruído ao terminar")
+
+	-- Hero Landing (Divino): asset, pose própria, VFX controlado, limpeza total
+	local guisBefore = #playerGui:GetChildren()
+	local instancesBefore = #playerGui:GetDescendants()
+	playDev("Divine", "char_goju_base")
+	check(Env.waitFor(function()
+		return gui("HeroLanding") ~= nil
+	end, 2), "Hero Landing: cinemática do piloto Divino começou")
+	local stage = gui("HeroLanding")
+	local heroModel = stage and find(stage, "char_goju_base")
+	check(heroModel ~= nil and heroModel:GetAttribute("AssetRig") == true and heroModel:GetAttribute("VFXMode") == "Full", "Hero Landing: piloto do asset sanitizado (VFX Full)")
+	local continue = stage and find(stage, "Continue")
+	check(Env.waitFor(function()
+		return continue ~= nil and continue.Visible
+	end, 6), "Hero Landing: CONTINUAR aparece")
+	check(heroModel ~= nil and heroModel:FindFirstChildOfClass("Shirt") ~= nil and heroModel.Head:FindFirstChild("face") ~= nil and heroModel.Head:FindFirstChild("face").Transparency < 1, "Hero Landing: roupa e rosto voltam depois da silhueta")
+	if continue then
+		click(continue)
+	end
+	check(Env.waitFor(function()
+		return gui("HeroLanding") == nil and not C.RevealController.Busy()
+	end, 2), "Hero Landing: GUI destruída")
+	check(#playerGui:GetChildren() == guisBefore and #playerGui:GetDescendants() <= instancesBefore + 2 and count(gui("Reveal"), "char_goju_base") == 0 and count(env.real.Workspace, "char_goju_base") == 0, string.format("Hero Landing: nenhum modelo/partícula órfão (%d -> %d instâncias na PlayerGui)", instancesBefore, #playerGui:GetDescendants()))
+
+	-- Mochila: retrato do piloto; trocar a seleção não acumula clones
+	local uidA = S.InventoryService.Add(player, "char_ichiro_hollow")
+	local uidB = S.InventoryService.Add(player, "char_zabuzo_base")
+	S.InventoryService.SendDelta(player, { uidA, uidB }, nil)
+	task.wait(0.4)
+	local inv = openWindow("Inventory")
+	local function cardOf(uid)
+		for _, d in inv.content:GetDescendants() do
+			if d:IsA("TextButton") and d.Name == uid then
+				return d
+			end
+		end
+		return nil
+	end
+	for _, uid in { uidA, uidB, uidA, uidB } do
+		local card = cardOf(uid)
+		if card then
+			click(card)
+		end
+		task.wait(0.15)
+	end
+	local portraitZabuza = count(inv.gui, "char_zabuzo_base")
+	local portraitHollow = count(inv.gui, "char_ichiro_hollow")
+	check(C.InventoryController.Selected() == uidB and portraitZabuza == 1 and portraitHollow == 0, "Mochila: retrato do piloto selecionado, sem acumular clones")
+	local portraitModel = find(inv.gui, "char_zabuzo_base")
+	check(portraitModel ~= nil and portraitModel:GetAttribute("AssetRig") == true and portraitModel:GetAttribute("VFXMode") == "None", "Mochila: asset com VFX None")
+	UIKit.Windows.closeAll()
+
+	-- Índice: seção de pilotos (Studio), cards criados uma vez só
+	local index = openWindow("Index")
+	task.wait(0.2)
+	UIKit.Windows.closeAll()
+	openWindow("Index")
+	task.wait(0.2)
+	check(count(index.gui, "char_goju_base") == 1, "Índice: card do piloto (Studio) criado uma vez, sem clones ao reabrir")
+	local indexModel = find(index.gui, "char_goju_base")
+	check(indexModel ~= nil and indexModel:GetAttribute("AssetRig") == true and indexModel:GetAttribute("VFXMode") == "None", "Índice: asset com VFX None")
+	UIKit.Windows.closeAll()
 end
 
 running = false

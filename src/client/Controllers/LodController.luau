@@ -5,7 +5,7 @@
 	    perto  (< NEAR)  -> modelo + aura + billboard completo
 	    médio  (< FAR)   -> modelo + billboard reduzido (só renda)
 	    longe            -> sem partículas/luz de aura (o BillboardGui já some pelo MaxDistance)
-	"Efeitos reduzidos" desliga as auras sempre.
+	"Efeitos reduzidos" desliga as auras sempre (e os VFX próprios dos personagens: atributo VFXTier).
 ]]
 
 local Workspace = game:GetService("Workspace")
@@ -36,6 +36,9 @@ local function apply(station: Instance, distance: number, reduced: boolean)
 			obj.Enabled = auraOn
 		elseif obj:IsA("PointLight") and obj.Name == "AuraLight" then
 			obj.Enabled = auraOn
+		elseif obj:GetAttribute("VFXTier") ~= nil and (obj:IsA("ParticleEmitter") or obj:IsA("Beam") or obj:IsA("Trail") or obj:IsA("Fire") or obj:IsA("Light")) then
+			-- VFX próprio do personagem (pipeline de assets) e brilho de variante: mesma regra da aura
+			(obj :: any).Enabled = auraOn
 		end
 	end
 end

@@ -28,6 +28,7 @@ local RarityConfig = require(Shared.Config.RarityConfig)
 local CharacterConfig = require(Shared.Config.CharacterConfig)
 local VariantConfig = require(Shared.Config.VariantConfig)
 local CharacterModelFactory = require(Shared.Modules.CharacterModelFactory)
+local CharacterAssetConfig = require(Shared.Config.CharacterAssetConfig)
 local NumberFormatter = require(Shared.Modules.NumberFormatter)
 local Localization = require(Shared.Localization.Localization)
 local Signal = require(Shared.Modules.Signal)
@@ -161,7 +162,7 @@ function HeroLanding.play(opts: Options): Handle
 	ground.Parent = world
 
 	------------------------------------------------------------------ personagem
-	local model = CharacterModelFactory.build(opts.characterId, { variant = opts.variant, aura = false })
+	local model = CharacterModelFactory.build(opts.characterId, { variant = opts.variant, aura = false, vfx = CharacterAssetConfig.VFXModes.HeroLanding })
 	model.Parent = world
 	local facing = CFrame.Angles(0, math.pi, 0) -- de frente para a câmera
 	-- Silhueta: cores originais guardadas e trocadas por sombra (ou luz, no Divino)
@@ -174,6 +175,26 @@ function HeroLanding.play(opts: Options): Handle
 			part.Material = if preset.SkyEffect == "Heaven" then Enum.Material.Neon else Enum.Material.SmoothPlastic
 		end
 	end
+	-- Asset do pipeline: texturas, rosto e roupas também somem na silhueta (voltam no reveal)
+	local hiddenTextures: { { any } } = {}
+	local hiddenDecals: { [Decal]: number } = {}
+	local hiddenClothing: { Instance } = {}
+	for _, obj in model:GetDescendants() do
+		if obj:IsA("MeshPart") and obj.TextureID ~= "" then
+			table.insert(hiddenTextures, { obj :: any, "TextureID", obj.TextureID })
+			obj.TextureID = ""
+		elseif obj:IsA("SpecialMesh") and obj.TextureId ~= "" then
+			table.insert(hiddenTextures, { obj :: any, "TextureId", obj.TextureId })
+			obj.TextureId = ""
+		elseif obj:IsA("Decal") then
+			hiddenDecals[obj] = obj.Transparency
+			obj.Transparency = 1
+		elseif obj:IsA("Clothing") or obj:IsA("ShirtGraphic") then
+			local clothing = obj :: Instance
+			table.insert(hiddenClothing, clothing)
+			clothing.Parent = nil
+		end
+	end
 	local revealed = false
 	local function revealColors()
 		if revealed then
@@ -184,6 +205,16 @@ function HeroLanding.play(opts: Options): Handle
 			part.Color = saved[1] :: Color3
 			part.Material = saved[2] :: Enum.Material
 		end
+		for _, saved in hiddenTextures do
+			saved[1][saved[2]] = saved[3]
+		end
+		for decal, transparency in hiddenDecals do
+			decal.Transparency = transparency
+		end
+		for _, clothing in hiddenClothing do
+			clothing.Parent = model
+		end
+		table.clear(hiddenClothing)
 	end
 
 	-- Brilho atrás da silhueta
@@ -449,6 +480,11 @@ function HeroLanding.play(opts: Options): Handle
 			entry.pool:Release(entry.item)
 		end
 		table.clear(pooled)
+		-- Roupas tiradas para a silhueta (se a cinemática acabou antes do reveal)
+		for _, clothing in hiddenClothing do
+			clothing:Destroy()
+		end
+		table.clear(hiddenClothing)
 		gui:Destroy() -- palco, modelo, rastros, UI, câmera do viewport
 		handle.Finished:Fire()
 	end

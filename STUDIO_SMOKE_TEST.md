@@ -134,6 +134,20 @@ jogar/clicar e para **Server** para colar comandos.
 | M4 | `VisualCheck` com DiceShop, Market, Sell, Fusion, Towers, Missions, Trades, Rankings | Cada landmark distinto e legível; prompts funcionando; caminho principal passa por baixo do portal da Dice Shop | [ ] |
 | M5 | Andar do Hub até a base e até a borda da ilha | Nenhuma árvore/pedra prende o personagem nos caminhos; borda com recortes de areia e palmeiras | [ ] |
 
+## PILOTOS DO PIPELINE DE PERSONAGENS (extra, não conta nos 32)
+
+Antes: `python tools/build_characters.py` (gera `assets/Characters.rbxm`) e `python tools/build_place.py`.
+Abra o place gerado (SEM o Anime Pack no Workspace).
+
+| # | Ação | Esperado | OK |
+|---|---|---|---|
+| P1 | `_G.dev("CharacterAssetReport")` | `ReplicatedStorage.CharacterAssets: 10 assets` e os 10 pilotos OK/AVISO | [ ] |
+| P2 | `_G.dev("SourcePackCheck")` | `10/10 montados sem o pack · 10 do asset sanitizado · problemas: nenhum` | [ ] |
+| P3 | `_G.dev("CharacterGallery")` | 10 pilotos lado a lado, mesma escala de corpo (maiores por raridade), etiqueta "asset" | [ ] |
+| P4 | `_G.dev("ShowCharacterVariants", "char_ichiro_base")` | 7 variantes; rosto/roupa iguais; anel e acentos mudam | [ ] |
+| P5 | `_G.dev("GivePilots")` e equipar pela MOCHILA | Piloto em pé no pedestal, nome/raridade/renda/nível certos | [ ] |
+| P6 | `_G.dev("PlayReveal", "Divine", "char_goju_base")` | Hero Landing com o Goju, limpa no fim | [ ] |
+
 ---
 
 **Passou tudo?** Então vale rodar os 108 testes do `TEST_PLAN.md`. **Falhou algo?** Mande o

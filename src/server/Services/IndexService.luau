@@ -3,8 +3,10 @@
 	IndexService: coleção de personagens descobertos.
 	    IndexService.Register(player, characterId) -> true se é a PRIMEIRA vez (NOVO!)
 	    IndexService.Discovered(player) -> quantos personagens diferentes
-	data.Index = { [characterId] = { Count, FirstAt } }. Personagens vendidos (inclusive no
+	data.Index = { [characterId] = { Count, FirstAt, Variants? } }. Personagens vendidos (inclusive no
 	auto-sell) continuam descobertos. Marcos (IndexConfig) dão recompensa uma única vez.
+	Variants = { [variantId] = true } (campo novo e opcional: saves antigos continuam válidos,
+	sem migração). Pilotos do pipeline de assets são registrados, mas NÃO contam no progresso.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -24,7 +26,8 @@ function IndexService.Discovered(player: Player): number
 	local n = 0
 	if data then
 		for id in data.Index do
-			if CharacterConfig.ById[id] then
+			local character = CharacterConfig.ById[id]
+			if character and not character.Pilot then
 				n += 1
 			end
 		end
@@ -49,7 +52,21 @@ local function checkMilestones(player: Player, data: any)
 	end
 end
 
-function IndexService.Register(player: Player, characterId: string): boolean
+-- Variante descoberta (não mexe em Count nem nos marcos). Ex.: Fusão Normal -> Silver.
+function IndexService.RegisterVariant(player: Player, characterId: string, variant: string?)
+	local data = PlayerDataService.GetData(player)
+	local entry = data and data.Index[characterId]
+	if not entry or not variant then
+		return
+	end
+	entry.Variants = entry.Variants or {}
+	if not entry.Variants[variant] then
+		entry.Variants[variant] = true
+		PlayerDataService.Replicate(player, "Index")
+	end
+end
+
+function IndexService.Register(player: Player, characterId: string, variant: string?): boolean
 	local data = PlayerDataService.GetData(player)
 	if not data or not CharacterConfig.ById[characterId] then
 		return false
@@ -57,9 +74,14 @@ function IndexService.Register(player: Player, characterId: string): boolean
 	local entry = data.Index[characterId]
 	local isNew = entry == nil
 	if isNew then
-		data.Index[characterId] = { Count = 1, FirstAt = os.time() }
+		entry = { Count = 1, FirstAt = os.time() }
+		data.Index[characterId] = entry
 	else
 		entry.Count = (entry.Count or 0) + 1
+	end
+	if variant then
+		entry.Variants = entry.Variants or {}
+		entry.Variants[variant] = true
 	end
 	PlayerDataService.Replicate(player, "Index")
 	if isNew then

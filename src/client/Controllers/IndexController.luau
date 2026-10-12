@@ -4,14 +4,18 @@
 	Não descoberto: silhueta (ViewportFrame tingido de preto) e "???".
 	Topo: "12 / 24 DESCOBERTOS" + % + marcos (25/50/75/100%) com recompensa.
 	Os ViewportFrames só são criados quando a janela abre pela primeira vez.
+	No Studio, os PILOTOS do pipeline de assets aparecem no fim (🧪), fora do progresso.
+	"✦N" = variantes descobertas (Index[id].Variants, opcional).
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage.Shared
 local CharacterConfig = require(Shared.Config.CharacterConfig)
 local IndexConfig = require(Shared.Config.IndexConfig)
 local CharacterModelFactory = require(Shared.Modules.CharacterModelFactory)
+local CharacterAssetConfig = require(Shared.Config.CharacterAssetConfig)
 local Localization = require(Shared.Localization.Localization)
 
 local UI = script.Parent.Parent.UI
@@ -29,9 +33,20 @@ local milestoneRow: Frame
 local cards: { [string]: { viewport: ViewportFrame, name: TextLabel, rarity: TextLabel, count: TextLabel, stroke: UIStroke } } = {}
 local built = false
 
+-- Roster do Índice + pilotos (só no Studio: validação do pipeline, não contam no progresso)
+local function visibleCharacters(): { CharacterConfig.Character }
+	local list = table.clone(CharacterConfig.List)
+	if RunService:IsStudio() then
+		for _, pilot in CharacterConfig.Pilots do
+			table.insert(list, pilot)
+		end
+	end
+	return list
+end
+
 local function buildCards()
 	built = true
-	for _, character in CharacterConfig.List do
+	for _, character in visibleCharacters() do
 		local frame = UIKit.new("Frame", { BackgroundColor3 = Theme.Colors.Card, LayoutOrder = character.IndexNumber }, grid)
 		UIKit.corner(frame, Theme.CornerRadiusSmall)
 		local stroke = UIKit.stroke(frame, 3, Theme.Colors.Locked, true)
@@ -46,7 +61,7 @@ local function buildCards()
 		camera.CFrame = CFrame.lookAt(Vector3.new(0, 4.5, 15), Vector3.new(0, 3.6, 0))
 		camera.Parent = viewport
 		viewport.CurrentCamera = camera
-		local model = CharacterModelFactory.build(character.Id, { aura = false })
+		local model = CharacterModelFactory.build(character.Id, { aura = false, vfx = CharacterAssetConfig.VFXModes.Index })
 		model:PivotTo(CFrame.Angles(0, math.pi * 0.85, 0))
 		model.Parent = viewport
 		UIKit.text(frame, { text = "#" .. character.IndexNumber, size = UDim2.fromOffset(40, 20), position = UDim2.fromOffset(6, 4), align = Enum.TextXAlignment.Left, color = Theme.Colors.TextMuted })
@@ -67,17 +82,23 @@ function IndexController.Refresh()
 	local index = DataController.Get("Index") or {}
 	local rewards = DataController.Get("IndexRewards") or {}
 	local found = 0
-	for _, character in CharacterConfig.List do
+	for _, character in visibleCharacters() do
 		local entry = index[character.Id]
 		local card = cards[character.Id]
 		local color = UIKit.rarityColor(character.Rarity)
 		if entry then
-			found += 1
+			if not character.Pilot then
+				found += 1
+			end
+			local variants = 0
+			for _ in entry.Variants or {} do
+				variants += 1
+			end
 			card.viewport.ImageColor3 = Color3.new(1, 1, 1)
-			card.name.Text = character.Name
+			card.name.Text = (if character.Pilot then "🧪 " else "") .. character.Name
 			card.rarity.Text = Localization.t("rarity." .. character.Rarity)
 			card.rarity.TextColor3 = color
-			card.count.Text = "x" .. tostring(entry.Count or 1)
+			card.count.Text = "x" .. tostring(entry.Count or 1) .. (if variants > 1 then ` ✦{variants}` else "")
 			card.stroke.Color = color
 		else
 			card.viewport.ImageColor3 = Color3.new(0, 0, 0)

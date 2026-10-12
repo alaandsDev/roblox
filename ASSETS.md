@@ -3,6 +3,10 @@
 Todo asset de terceiros é auditado antes de entrar no jogo (ver `SECURITY.md`).
 Arquivo versionado: `assets/Assets.rbxm` → `ReplicatedStorage.Assets`.
 
+**Personagens:** não vêm de `Assets.Characters`. O pipeline (`CHARACTER_PIPELINE.md`) gera
+`assets/Characters.rbxm` → `ReplicatedStorage.CharacterAssets` (sanitizados, validados de novo
+em runtime); sem eles o `CharacterModelFactory` usa o placeholder.
+
 Auditoria: o `.rbxm` é convertido para XML com o Rojo e as classes são contadas.
 Na FASE 1 foram removidos 1 modelo de demonstração (rig R15 com `AnimationController`,
 `Animator` e `KeyframeSequence` com 1.024 poses) e todos os modelos do protótipo.

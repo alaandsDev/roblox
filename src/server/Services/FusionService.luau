@@ -21,6 +21,7 @@ local InventoryService = require(script.Parent.InventoryService)
 local EconomyService = require(script.Parent.EconomyService)
 local MapService = require(script.Parent.MapService)
 local AnalyticsService = require(script.Parent.AnalyticsService)
+local IndexService = require(script.Parent.IndexService)
 
 local FusionService = {}
 
@@ -44,6 +45,8 @@ function FusionService.Fuse(player: Player, uids: { string })
 	local uid = InventoryService.Add(player, plan.characterId, plan.toVariant)
 	data.Inventory[uid].Level = plan.level
 	InventoryService.SendDelta(player, { uid }, nil)
+	-- Índice: variante nova descoberta (não conta como novo personagem nem mexe nos marcos)
+	IndexService.RegisterVariant(player, plan.characterId, plan.toVariant)
 	AnalyticsService.Track(player, "Fusion", { id = plan.characterId, variant = plan.toVariant })
 	PlayerDataService.SaveSoon(player)
 	return { uid = uid, characterId = plan.characterId, variant = plan.toVariant, level = plan.level, cost = plan.cost }
