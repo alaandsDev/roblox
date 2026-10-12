@@ -39,5 +39,5 @@ scripts como texto, para revisão manual.
 
 Com `third_party/AnimePack.rbxm` salvo: `python tools/build_characters.py` gera
 `assets/Characters.rbxm` (só os pilotos de `CharacterAssetConfig.Assets`, sanitizados) e
-`CHARACTER_PILOT_AUDIT.md`. Se o Lune recusar uma propriedade (ex.: `Accessory.Tags`), a
-ferramenta faz `build/AnimePack_lune.rbxm` sem ela e tenta de novo. Detalhes: `CHARACTER_PIPELINE.md`.
+`CHARACTER_PILOT_AUDIT.md`. A propriedade `Tags` (que o Lune recusa em todas as classes) sai
+de uma vez de uma cópia temporária (`build/AnimePack_lune.rbxm`); o original não é tocado. Detalhes: `CHARACTER_PIPELINE.md`.

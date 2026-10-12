@@ -22,6 +22,8 @@ local input = args[1] or "third_party/AnimePack.rbxm"
 local output = args[2] or "assets/Characters.rbxm"
 local reportMd = args[3] or "CHARACTER_PILOT_AUDIT.md"
 local reportJson = args[4] or "third_party/character_pilot_report.json"
+-- Nome do arquivo de origem para o relatório (a ferramenta passa o original, não a cópia temporária)
+local sourceLabel = args[5] or input
 
 if not fs.isFile(input) then
 	print("Arquivo não encontrado: " .. input)
@@ -74,7 +76,7 @@ end
 local lines = {
 	"# CHARACTER PILOT AUDIT — Roll Legends",
 	"",
-	`Gerado por \`python tools/build_characters.py\` a partir de \`{input}\` (nenhum script do pack é executado).`,
+	`Gerado por \`python tools/build_characters.py\` a partir de \`{sourceLabel}\` (nenhum script do pack é executado).`,
 	`Assets aprovados em \`{output}\` → \`ReplicatedStorage.{Config.StorageName}\` no build.`,
 	"",
 	`Regras: corpo normalizado para {Config.BodyHeight} studs (pés ao topo da Head), pivô no centro dos pés olhando para -Z, tudo ancorado sem colisão/toque/consulta, soldas assadas, sem scripts/remotes/sons/animações/estado. Meta de peças: <= {Config.PreferredMaxParts}.`,

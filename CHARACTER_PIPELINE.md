@@ -30,7 +30,7 @@ Base (estações) · Roll Reveal · Mochila · Índice · Hero Landing · Galeri
 | `src/shared/Modules/CharacterModelFactory.luau` | `build`, `spawn`, `pose`, `lerpPose`, `template`, `hasAsset`, `height`. Asset → senão placeholder. |
 | `src/shared/Modules/VariantVisualModifier.luau` | Variantes sobre o mesmo modelo base. |
 | `tools/build_characters.py` + `tools/characters/build_characters.luau` | Gera `assets/Characters.rbxm` + `CHARACTER_PILOT_AUDIT.md` + `third_party/character_pilot_report.json`. |
-| `tools/packaudit/rbxm_reader.py` | `strip_properties`: cópia binária sem a propriedade que o Lune recusa (ex.: `Accessory.Tags`). |
+| `tools/packaudit/rbxm_reader.py` | `strip_properties`/`iter_chunks`/`dropped_properties`: cópia binária TEMPORÁRIA sem metadados que o Lune recusa (ver abaixo). |
 
 ## Chaves (sem rename destrutivo)
 
@@ -128,6 +128,17 @@ placeholder em blocos (o atual) + `warn` uma vez no Output. O jogo nunca quebra.
 Alternativa sem Lune (Studio em modo **EDIÇÃO**, nunca no Play — no Play os scripts do pack rodam):
 `print(require(game.ReplicatedStorage.Shared.Modules.CharacterAssetPipeline).buildInStudio())`
 e salve `ReplicatedStorage.CharacterAssets` com **Save to File...** em `assets/Characters.rbxm`.
+
+## Compatibilidade com o Lune (cópia temporária)
+
+O Studio grava a propriedade `Tags` (tags do CollectionService) com um tipo que o Lune 0.10.4
+recusa, em TODAS as classes. A ferramenta faz `build/AnimePack_lune.rbxm` sem os chunks `Tags`
+(preventivo, de uma vez) e, se o Lune ainda recusar outro **metadado não visual conhecido**
+(`Capabilities`, `DefinesCapabilities`, `SourceAssetId`, `HistoryId`), remove-o também e tenta
+de novo — uma vez por propriedade, sem limite arbitrário. Propriedade **visual** ou
+**desconhecida** recusada → aborta com diagnóstico; o mesmo erro depois da remoção → aborta.
+No fim confere: chunks mantidos idênticos byte a byte, nomes/MeshId/TextureId/Decals/roupas
+iguais (leitura estruturada) e o arquivo original com o mesmo SHA-256.
 
 ## Comandos DEV (Studio)
 

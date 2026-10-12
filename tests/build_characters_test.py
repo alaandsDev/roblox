@@ -33,9 +33,9 @@ def main() -> int:
         [sys.executable, "tools/build_characters.py", str(pack), "--out", str(saida), "--report", str(md), "--json", str(js), "--strip", "Part.Anchored"],
         cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
-    print("    " + "\n    ".join(r.stdout.strip().splitlines()[:3]))
+    print("    " + "\n    ".join(r.stdout.strip().splitlines()[-14:-11]))
     check(r.returncode == 0, f"ferramenta terminou sem falhas (código {r.returncode})")
-    check("sem: Part.Anchored" in r.stdout, "cópia binária sem a propriedade recusada (caminho do Accessory.Tags)")
+    check("- Part.Anchored" in r.stdout and "Original Anime Pack modified: NO" in r.stdout, "cópia binária sem a propriedade pedida (--strip), original intacto")
     check("10/10 personagens gerados" in r.stdout, "10/10 pilotos gerados")
     check(saida.exists() and saida.stat().st_size > 0, "assets .rbxm gravado")
     relatorio = json.loads(js.read_text(encoding="utf-8")) if js.exists() else []

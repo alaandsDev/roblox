@@ -342,17 +342,13 @@ def read_model(path: str) -> list[Node]:
 # ---------------------------------------------------------------------------------
 # Cópia binária SEM algumas propriedades (para o Lune conseguir ler o arquivo inteiro)
 
-def strip_properties(data: bytes, drop: set[tuple[str | None, str]]) -> tuple[bytes, list[str]]:
-    """Copia um .rbxm binário chunk a chunk, pulando os chunks PROP de (classe, propriedade)
-    em "drop" (classe None = todas as classes). Todo o resto (geometria, malhas, texturas,
-    roupas) continua idêntico. Ex.: {("Accessory", "Tags")} — o Lune 0.10.4 recusa Tags
-    gravado como SharedString. Devolve (bytes, lista do que foi removido)."""
+def iter_chunks(data: bytes):
+    """Percorre um .rbxm binário: (nome, bytes brutos do chunk, classe, propriedade).
+    Para INST, "classe" é o nome da classe; para PROP, (classe, propriedade); senão None."""
     if data[:8] != MAGIC or data[8:14] != SIGNATURE:
-        raise ValueError("strip_properties só funciona com .rbxm binário")
-    out = bytearray(data[:32])
+        raise ValueError("não é um .rbxm binário")
     i = 32
     classes: dict[int, str] = {}
-    removed: list[str] = []
     while i < len(data):
         start = i
         name = data[i:i + 4].rstrip(b"\x00").decode("ascii", errors="replace")
@@ -360,7 +356,7 @@ def strip_properties(data: bytes, drop: set[tuple[str | None, str]]) -> tuple[by
         i += 16
         payload = data[i:i + (compressed or size)]
         i += compressed or size
-        raw = data[start:i]
+        cls = prop = None
         if name in ("INST", "PROP"):
             body = payload if not compressed else (zstd_decompress(payload, size) if payload[:4] == ZSTD_MAGIC else lz4_block(payload, size))
             c = Reader(body)
@@ -368,16 +364,74 @@ def strip_properties(data: bytes, drop: set[tuple[str | None, str]]) -> tuple[by
             label = _text(c.string())
             if name == "INST":
                 classes[type_id] = label
+                cls = label
             else:
-                cls = classes.get(type_id, "?")
-                if (cls, label) in drop or (None, label) in drop:
-                    removed.append(f"{cls}.{label}")
-                    continue
-        out += raw
+                cls, prop = classes.get(type_id, "?"), label
         if name == "END":
-            out += data[i:]
-            break
+            yield name, data[start:], cls, prop
+            return
+        yield name, data[start:i], cls, prop
+
+
+def strip_properties(data: bytes, drop: set[tuple[str | None, str]]) -> tuple[bytes, list[str]]:
+    """Copia um .rbxm binário chunk a chunk, pulando os chunks PROP de (classe, propriedade)
+    em "drop" (classe None = a propriedade em TODAS as classes). Nada é reescrito: os chunks
+    mantidos são copiados byte a byte (geometria, malhas, texturas, roupas idênticas).
+    Devolve (bytes, lista "Classe.Prop" do que foi removido)."""
+    out = bytearray(data[:32])
+    removed: list[str] = []
+    for _name, raw, cls, prop in iter_chunks(data):
+        if prop is not None and ((cls, prop) in drop or (None, prop) in drop):
+            removed.append(f"{cls}.{prop}")
+            continue
+        out += raw
     return bytes(out), removed
+
+
+# Metadados NÃO visuais que o Lune 0.10.4 pode recusar e que podem sair da cópia temporária.
+# Tags = tags do CollectionService gravadas pelo Studio (o pipeline não usa; os assets finais
+# não carregam nada disso). Os outros são metadados de edição/segurança do Studio.
+LUNE_METADATA_PROPS = {"Tags", "Capabilities", "DefinesCapabilities", "SourceAssetId", "HistoryId"}
+# Retirada preventiva (sempre, antes da 1ª leitura): Tags em todas as classes
+LUNE_PREVENTIVE_PROPS = {"Tags"}
+# Propriedades VISUAIS (nunca removidas automaticamente: se o Lune recusar uma delas, aborta)
+VISUAL_PROPS = {
+    "CFrame", "size", "Size", "Color3uint8", "Color", "Transparency", "Reflectance", "Material", "Shape",
+    "MeshId", "MeshContent", "TextureID", "TextureId", "TextureContent", "Texture", "ColorMapContent",
+    "ShirtTemplate", "PantsTemplate", "Graphic", "Face", "Scale", "Offset", "VertexColor", "MeshType",
+    "C0", "C1", "Part0", "Part1", "Position", "Orientation", "Axis", "SecondaryAxis",
+    "HeadColor3", "TorsoColor3", "LeftArmColor3", "RightArmColor3", "LeftLegColor3", "RightLegColor3",
+    "StudsPerTileU", "StudsPerTileV", "OffsetStudsU", "OffsetStudsV", "MaterialVariant", "MaterialVariantSerialized",
+    "InitialSize", "PhysicalConfigData", "ChildData", "ChildData2", "MeshData", "MeshData2", "AssetId",
+    "Name", "AttributesSerialize",
+}
+
+
+def classify_property(prop: str) -> str:
+    """'metadata' (pode sair da cópia), 'visual' (nunca) ou 'unknown' (aborta para revisar)."""
+    if prop in LUNE_METADATA_PROPS:
+        return "metadata"
+    if prop in VISUAL_PROPS:
+        return "visual"
+    return "unknown"
+
+
+def dropped_properties(original: bytes, stripped: bytes) -> list[str]:
+    """Confere por estrutura que a cópia só PERDEU chunks PROP inteiros (todos os outros iguais
+    byte a byte, na mesma ordem). Devolve "Classe.Prop" dos removidos; ValueError se algo mudou."""
+    kept = [raw for _n, raw, _c, _p in iter_chunks(stripped)]
+    removed: list[str] = []
+    k = 0
+    for _name, raw, cls, prop in iter_chunks(original):
+        if k < len(kept) and kept[k] == raw:
+            k += 1
+        elif prop is not None:
+            removed.append(f"{cls}.{prop}")
+        else:
+            raise ValueError("a cópia temporária alterou um chunk que não é de propriedade")
+    if k != len(kept) or original[:32] != stripped[:32]:
+        raise ValueError("a cópia temporária tem chunks que não existem no original")
+    return removed
 
 
 # ---------------------------------------------------------------------------------
