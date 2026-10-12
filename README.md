@@ -15,6 +15,7 @@ renascimento, fusão, trocas, missões, monetização (IDs a criar no Creator Hu
 | `DATA_SCHEMA.md` | Formato dos dados salvos, versões e migrações |
 | `SECURITY.md` | Regras server-authoritative, validação, rate limit, assets externos |
 | `TEST_PLAN.md` | Testes automáticos e roteiro de teste no Studio |
+| `STUDIO_SMOKE_TEST.md` | **Roteiro curto (32 testes) para rodar primeiro no Studio** |
 | `ASSETS.md` | Assets externos auditados (IDs, uso, scripts removidos) |
 | `RNG.md` | Raridades, fórmula da Luck, pity, fluxo do roll |
 | `RNG_SIMULATION.md` | 1.000.000 rolls por cenário (gerado) |

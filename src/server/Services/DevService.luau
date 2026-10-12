@@ -136,7 +136,8 @@ DevService.Register("SetPity", "(player, lendario, mitico) contadores de pity", 
 	return "ok"
 end)
 DevService.Register("GetLuck", "(player) Luck efetiva", function(player)
-	return Formulas:luck(data(player), os.time())
+	local d = data(player)
+	return string.format("Luck %.2f (efetiva no sorteio %.2f)", Formulas:luck(d, os.time()), Formulas:effectiveLuck(d, os.time()))
 end)
 DevService.Register("Income", "(player) renda/s e dinheiro não coletado", function(player)
 	local d = data(player)
@@ -218,6 +219,11 @@ DevService.Register("SetTowerFloor", "(player, torre, andar) progresso da torre"
 	PlayerDataService.Set(player, "TowerProgress", progress)
 	return "ok"
 end)
+DevService.Register("SetTutorial", "(player, passos) passos do tutorial feitos (0 = recomeçar, 7 = terminado)", function(player: Player, steps: number)
+	PlayerDataService.Set(player, "Tutorial", math.clamp(math.floor(tonumber(steps) or 0), 0, 7))
+	return "tutorial = " .. tostring((PlayerDataService.GetData(player) :: any).Tutorial)
+end)
+
 DevService.Register("Analytics", "() contagem dos eventos de analytics", function()
 	return game:GetService("HttpService"):JSONEncode(AnalyticsService.Counts())
 end)

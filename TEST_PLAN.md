@@ -1,5 +1,7 @@
 # Plano de testes — Roll Legends
 
+> **Antes dos testes completos, rode o roteiro curto `STUDIO_SMOKE_TEST.md` (~30 testes).**
+
 > ⚠️ **Nunca use `require(...)` na Barra de comandos para ler o estado do jogo.** Ela roda em
 > outra máquina Luau e recebe uma cópia nova (vazia) dos módulos. Use
 > `game.ServerStorage.RollLegendsDev:Invoke("Help")` (DevService, só no Studio).
@@ -24,7 +26,9 @@
 | `tests/MapValidator.spec.luau` | **map validation**: detecta base faltando, ids repetidos, lado com 2 slots, peças faltando |
 | `tests/SpawnCoordinator.spec.luau` | **spawn**: cada jogador nasce na própria base, respawn na mesma base, nunca na base de outro, 10 entradas simultâneas em ordens misturadas, base atrasada (nasce no Hub e vai para casa), 11º jogador |
 | `tests/roblox/ServiceHarness.luau` (Lune) | **integração** PlayerDataService + MapService + BaseService reais com jogadores falsos: AssignBase → GetPlayerBase → GetBaseOwner → OwnerUserId → ReleaseBase → reatribuição; regressão da "cópia da Barra de comandos"; integridade |
-| `tests/RollCore.spec.luau` | pesos (soma 100.000 = 55/25/12/5/2/0,75/0,2/0,05%), Luck favorece raridades altas, pity 50/250 (maior vence, reset), **1.000.000 rolls** dentro de 5σ |
+| `tests/RollCore.spec.luau` | pesos (soma 10.000.000; Secreto 1 em 200.000), Luck com retornos decrescentes (satura em 11), expoentes crescentes, pity 50/800 com **piso exato** (maior vence, reset), **1.000.000 rolls** dentro de 5σ |
+| `tests/Odds.spec.luau` | odds reais por cenário A–G (novo → monetizado): Secretos/h, Divinos/h, limite de pay-to-win, pity não cria Secreto |
+| `tests/DataSize.spec.luau` | tamanho do save de fim de jogo (600 personagens) < 256 KB (≈ 79 KB) |
 | `tests/Formulas.spec.luau` | Luck (dado × upgrades × boost), cooldown mínimo, capacidade, renda por estação (Level × Variante), custo de nível x1/x5/MAX, venda, custos globais |
 | `tests/InventoryCore.spec.luau` | **uids únicos** (10.000), equipar (RB0 1–4, slot bloqueado/ocupado, dono, mover), EQUIPAR MELHORES, venda com proteções, duplicatas, comuns |
 | `tests/Characters.spec.luau` | roster 5/4/4/3/3/2/2/1, campos, renda cresce por raridade, dados e upgrades |
@@ -40,6 +44,7 @@
 | `tests/MissionCore.spec.luau` | diárias determinísticas por jogador/dia, virada do dia, progresso por evento, conquistas |
 | `tests/JackpotCore.spec.luau` | chances (200.000 giros), extremos, regra dos boosts, IDs sem repetição |
 | `tests/roblox/ClientHarness.luau` (Lune) | **ponta a ponta**: Services do servidor + Controllers REAIS do cliente, ligados por uma rede falsa que copia os dados. Clica nos botões de verdade: HUD completo, ROLAR, reveal normal e compacto, as 4 cinemáticas (palco, CONTINUAR, limpeza), morrer no meio, MOCHILA (selecionar/EQUIPAR), todas as janelas, DIÁRIO, OFFLINE, venda com confirmação, configurações, notificações agrupadas; falha com qualquer erro de execução |
+| `tests/roblox/SessionHarness.luau` (Lune) | **smoke do ciclo completo** (novo → roll → equipar → coletar → melhorar → dado → 5 renascimentos → andar novo → torre → fusão → troca → diário → missão → sair/voltar com DataStore em memória JSON) + **sessão longa**: 10 jogadores, 4 h lógicas, ~14.400 ações, invariantes (NaN, negativo, UID, slot, base, troca, capacidade) |
 | `tests/roblox/MapHarness.luau` (Lune) | executa o **MapService/MapBuilder/BaseBuilder reais**; **map references**; estados RB0/RB5/dono; gera a imagem `build/map_preview.png` |
 
 Também rodar antes de cada commit:

@@ -75,6 +75,13 @@ function OfflineController.Start()
 			refresh()
 			if (DataController.Get("PendingOfflineReward") or 0) <= 0 then
 				window:Close()
+			elseif not window.isOpen then
+				-- Recompensa nova (ex.: SimulateOffline no Studio): entra na fila de janelas
+				NotificationController.QueueModal("Offline", NotificationController.Priority.REWARD, function()
+					if (DataController.Get("PendingOfflineReward") or 0) > 0 then
+						window:Open()
+					end
+				end)
 			end
 		end
 	end)
