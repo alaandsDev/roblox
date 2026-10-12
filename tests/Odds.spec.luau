@@ -28,8 +28,15 @@ describe("Odds reais por cenário (todos os multiplicadores + velocidade do AUTO
 	it("Secreto: máximo absoluto (F2P e com monetização) nunca vira drop comum (< 1 por hora)", function()
 		expect(results.F.rarity.Secret.perHour < 1).toBeTruthy()
 		expect(results.G.rarity.Secret.perHour < 1).toBeTruthy()
-		-- monetização ajuda pouco no topo (retornos decrescentes): < 25% acima do F2P
-		expect(results.G.rarity.Secret.perHour < results.F.rarity.Secret.perHour * 1.25).toBeTruthy()
+	end)
+
+	it("Pay-to-win limitado: sorte paga < 25% por roll; Roll Rápido = no máximo 2x rolls por hora", function()
+		-- chance POR ROLL (1 em X): retornos decrescentes da Luck seguram a monetização
+		expect(results.G.rarity.Secret.oneIn > results.F.rarity.Secret.oneIn / 1.25).toBeTruthy()
+		-- cadência: normal 60/min, Roll Rápido 120/min (RollConfig.RollSpeed), nunca mais que isso
+		expect(results.F.perMinute).toBe(60)
+		expect(results.G.perMinute).toBe(120)
+		expect(results.G.rarity.Secret.perHour < results.F.rarity.Secret.perHour * 2 * 1.25).toBeTruthy()
 	end)
 
 	it("Divino é um grande acontecimento (novo < 0.5/h, máximo < 3/h)", function()

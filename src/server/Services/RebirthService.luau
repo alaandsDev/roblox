@@ -70,6 +70,9 @@ function RebirthService.BuyPerk(player: Player, perkId: string)
 	if not RebirthConfig.PerksById[perkId] then
 		Net.fail("invalid_perk")
 	end
+	if not Formulas:perkEnabled(perkId) then
+		Net.fail("upgrade_disabled")
+	end
 	local level = Formulas:perkLevel(data, perkId)
 	local cost = Formulas:perkCost(perkId, level)
 	if not cost then

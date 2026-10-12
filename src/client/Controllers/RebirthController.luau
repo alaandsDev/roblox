@@ -73,6 +73,9 @@ function RebirthController.Refresh()
 		end
 	end
 	for _, perk in RebirthConfig.Perks do
+		if not Formulas:perkEnabled(perk.Id) then
+			continue
+		end
 		local level = Formulas:perkLevel(data, perk.Id)
 		local perkCost = Formulas:perkCost(perk.Id, level)
 		local row = UIKit.new("Frame", { BackgroundColor3 = Theme.Colors.Card, Size = UDim2.new(1, 0, 0, 52), LayoutOrder = perk.Order }, perkList)

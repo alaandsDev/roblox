@@ -92,12 +92,36 @@ function Formulas:effectiveLuck(data: any, now: number?): number
 	return l
 end
 
+-- Tem o gamepass Roll Rápido nesta sessão? (posto pelo BoostService em data.Runtime)
+function Formulas:hasFastRoll(data: any): boolean
+	local runtime = data.Runtime
+	return type(runtime) == "table" and runtime.FastRoll == true
+end
+
+-- Intervalo mínimo entre rolls (segundos). Ver RollConfig.RollSpeed
 function Formulas:rollCooldown(data: any): number
-	local roll = self.c.Roll
-	local upgrade = self.c.Upgrades.ById.RollSpeed
-	local speedPerk = if self.c.Rebirth then perkLevel(data, "Speed") * self.c.Rebirth.PerksById.Speed.PerLevel else 0
-	local base = roll.BaseCooldown * (1 - level(data, "RollSpeed") * upgrade.PerLevel) * (1 - speedPerk)
-	return math.max(roll.MinCooldown, base * self:runtime(data, "Cooldown"))
+	local speed = self.c.Roll.RollSpeed
+	local interval = if self:hasFastRoll(data) then speed.FastRollInterval else speed.BaseInterval
+	if speed.UpgradesAffectInterval then
+		local upgrade = self.c.Upgrades.ById.RollSpeed
+		local speedPerk = if self.c.Rebirth then perkLevel(data, "Speed") * self.c.Rebirth.PerksById.Speed.PerLevel else 0
+		interval = math.max(speed.MinInterval, interval * (1 - level(data, "RollSpeed") * upgrade.PerLevel) * (1 - speedPerk))
+	end
+	return interval
+end
+
+-- Rolls por segundo no máximo (para simulações/HUD)
+function Formulas:rollsPerSecond(data: any): number
+	return 1 / self:rollCooldown(data)
+end
+
+-- Melhorias/perks de velocidade só existem se a config permitir (sem empilhar por acidente)
+function Formulas:upgradeEnabled(id: string): boolean
+	return id ~= "RollSpeed" or self.c.Roll.RollSpeed.UpgradesAffectInterval == true
+end
+
+function Formulas:perkEnabled(id: string): boolean
+	return id ~= "Speed" or self.c.Roll.RollSpeed.UpgradesAffectInterval == true
 end
 
 function Formulas:capacity(data: any): number

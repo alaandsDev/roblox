@@ -7,7 +7,7 @@
 -- Gamepass: { Id, Name, PriceRobux, Effects }  (efeitos aplicados pelo BoostService)
 -- Produto:  { Id, Name, PriceRobux }  (entregue por quem chama MonetizationService.RegisterProduct)
 
-export type Item = { Id: number, Name: string, PriceRobux: number, Order: number, Icon: string, Effects: { [string]: number }? }
+export type Item = { Id: number, Name: string, PriceRobux: number, Order: number, Icon: string, Effects: { [string]: any }? }
 
 local MonetizationConfig = {
 	GamePasses = {
@@ -17,8 +17,8 @@ local MonetizationConfig = {
 		LuckX2 = { Id = 0, Name = "Sorte x2", PriceRobux = 299, Order = 2, Icon = "🍀", Effects = { Luck = 2 } },
 		-- +100 espaços na mochila
 		BigBackpack = { Id = 0, Name = "Mochila Gigante", PriceRobux = 149, Order = 3, Icon = "🎒", Effects = { Capacity = 100 } },
-		-- Rolls 15% mais rápidos (o mínimo seguro do RollConfig continua valendo)
-		FastRoll = { Id = 0, Name = "Roll Rápido", PriceRobux = 199, Order = 4, Icon = "⚡", Effects = { Cooldown = 0.85 } },
+		-- Roll Rápido: 2 rolls/s (RollConfig.RollSpeed.FastRollInterval); flag, não empilha
+		FastRoll = { Id = 0, Name = "Roll Rápido", PriceRobux = 199, Order = 4, Icon = "⚡", Effects = { FastRoll = true } },
 	} :: { [string]: Item },
 
 	Products = {

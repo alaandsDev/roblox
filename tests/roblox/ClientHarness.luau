@@ -680,6 +680,83 @@ do
 end
 
 do
+	-- AUTO / OCULTAR / ROLL RÁPIDO no cliente de verdade (tempo real curto) + cinemática pausando o AUTO
+	local RC = C.RollController
+	local d = S.PlayerDataService.GetData(player)
+	UIKit.Windows.closeAll()
+	d.Pity = { Legendary = 0, Mythic = 0 }
+	S.PlayerDataService.Set(player, "Inventory", {})
+	S.PlayerDataService.Set(player, "EquippedCharacters", {})
+	local function autoFor(seconds: number): number
+		local before = d.Rolls
+		RC.SetAuto(true)
+		task.wait(seconds)
+		RC.SetAuto(false)
+		Env.waitFor(function()
+			return not C.RevealController.Busy()
+		end, 3)
+		return d.Rolls - before
+	end
+	task.wait(1.1)
+	local normal = autoFor(3.2)
+	check(normal >= 2 and normal <= 4, "AUTO: ~1 roll/s (3,2 s -> " .. normal .. " rolls, máximo 4)")
+	task.spawn(DataController.SetSetting, "HideRollAnimation", true)
+	Env.waitFor(function()
+		return (DataController.Get("Settings") or {}).HideRollAnimation == true
+	end, 2)
+	task.wait(1.1)
+	local hidden = autoFor(3.2)
+	check(hidden >= 2 and hidden <= 4, "OCULTAR + AUTO: mesma cadência de 1 roll/s (" .. hidden .. " rolls)")
+	local runtime = table.clone(d.Runtime or {})
+	runtime.FastRoll = true
+	S.PlayerDataService.Set(player, "Runtime", runtime)
+	Env.waitFor(function()
+		return (DataController.Get("Runtime") or {}).FastRoll == true
+	end, 2)
+	task.wait(1.1)
+	local fast = autoFor(3.2)
+	check(fast >= 4 and fast <= 7, "ROLL RÁPIDO + AUTO: ~2 rolls/s (3,2 s -> " .. fast .. " rolls, máximo 7)")
+	runtime = table.clone(d.Runtime)
+	runtime.FastRoll = false
+	S.PlayerDataService.Set(player, "Runtime", runtime)
+	task.spawn(DataController.SetSetting, "HideRollAnimation", false)
+	Env.waitFor(function()
+		return (DataController.Get("Settings") or {}).HideRollAnimation == false and (DataController.Get("Runtime") or {}).FastRoll == false
+	end, 2)
+	-- Cinemática (Lendário) pausa o AUTO e ele volta sozinho depois
+	task.wait(1.1)
+	local capped = S.RollService._rand
+	local forced = false
+	S.RollService._rand = function()
+		if not forced then
+			forced = true
+			return 0.9985 -- Lendário (1º sorteio = raridade)
+		end
+		return capped()
+	end
+	local startRolls = d.Rolls
+	RC.SetAuto(true)
+	check(Env.waitFor(function()
+		return gui("HeroLanding") ~= nil
+	end, 3), "Lendário no AUTO: cinemática começa")
+	local duringStart = d.Rolls
+	local maxDuring = duringStart
+	while gui("HeroLanding") ~= nil do
+		maxDuring = math.max(maxDuring, d.Rolls)
+		task.wait(0.05)
+	end
+	check(maxDuring == duringStart and duringStart == startRolls + 1, "AUTO fica pausado durante a cinemática (nenhum roll a mais, sem comprimir a cinemática)")
+	check(Env.waitFor(function()
+		return d.Rolls > duringStart
+	end, 3), "depois da cinemática o AUTO volta sozinho")
+	RC.SetAuto(false)
+	S.RollService._rand = capped
+	Env.waitFor(function()
+		return not C.RevealController.Busy()
+	end, 3)
+end
+
+do
 	-- TUTORIAL: os passos avançaram jogando; PULAR termina e devolve o HUD completo
 	local data2 = S.PlayerDataService.GetData(player)
 	check((data2.Tutorial or 0) >= 3, "tutorial: avançou sozinho jogando (passo " .. tostring(data2.Tutorial) .. ")")

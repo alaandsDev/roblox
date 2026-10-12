@@ -11,13 +11,13 @@ decrescentes (LuckSoftCap). "1 em X" = essa raridade OU MELHOR (com pity no Lend
 
 | Cenário | Luck | Luck efetiva | Rolls/min | Lendário+ | Mítico+ | Divino+ | Secreto | Secreto/hora |
 |---|---:|---:|---:|---|---|---|---|---:|
-| A) Jogador novo | 1.00 | 1.00 | 55 | 1 em 36 (0.7 min) | 1 em 623 (11.4 min) | 1 em 18182 (5.6 h) | 1 em 200000 (2.5 dias) | 0.02 |
-| B) 30 minutos | 3.60 | 3.06 | 80 | 1 em 28 (0.4 min) | 1 em 478 (6.0 min) | 1 em 6962 (1.5 h) | 1 em 56718 (11.8 h) | 0.08 |
-| C) 1 hora | 5.77 | 4.23 | 92 | 1 em 25 (0.3 min) | 1 em 430 (4.7 min) | 1 em 5336 (57.8 min) | 1 em 39958 (7.2 h) | 0.14 |
-| D) Midgame (~4 h) | 11.22 | 6.05 | 109 | 1 em 23 (0.2 min) | 1 em 376 (3.4 min) | 1 em 3993 (36.6 min) | 1 em 27254 (4.2 h) | 0.24 |
-| E) Late game (~RB 15) | 17.68 | 7.25 | 109 | 1 em 21 (0.2 min) | 1 em 349 (3.2 min) | 1 em 3459 (31.7 min) | 1 em 22552 (3.4 h) | 0.29 |
-| F) Máximo F2P (RB máx + boost diário 2x) | 41.60 | 9.02 | 109 | 1 em 20 (0.2 min) | 1 em 317 (2.9 min) | 1 em 2916 (26.7 min) | 1 em 17985 (2.7 h) | 0.36 |
-| G) Máximo com monetização (F + VIP + Sorte x2 + Roll Rápido) | 91.52 | 10.01 | 109 | 1 em 19 (0.2 min) | 1 em 303 (2.8 min) | 1 em 2692 (24.7 min) | 1 em 16181 (2.5 h) | 0.40 |
+| A) Jogador novo | 1.00 | 1.00 | 60 | 1 em 36 (0.6 min) | 1 em 623 (10.4 min) | 1 em 18182 (5.1 h) | 1 em 200000 (2.3 dias) | 0.02 |
+| B) 30 minutos | 3.60 | 3.06 | 60 | 1 em 28 (0.5 min) | 1 em 478 (8.0 min) | 1 em 6962 (1.9 h) | 1 em 56718 (15.8 h) | 0.06 |
+| C) 1 hora | 5.77 | 4.23 | 60 | 1 em 25 (0.4 min) | 1 em 430 (7.2 min) | 1 em 5336 (1.5 h) | 1 em 39958 (11.1 h) | 0.09 |
+| D) Midgame (~4 h) | 11.22 | 6.05 | 60 | 1 em 23 (0.4 min) | 1 em 376 (6.3 min) | 1 em 3993 (1.1 h) | 1 em 27254 (7.6 h) | 0.13 |
+| E) Late game (~RB 15) | 17.68 | 7.25 | 60 | 1 em 21 (0.4 min) | 1 em 349 (5.8 min) | 1 em 3459 (57.7 min) | 1 em 22552 (6.3 h) | 0.16 |
+| F) Máximo F2P (RB máx + boost diário 2x) | 41.60 | 9.02 | 60 | 1 em 20 (0.3 min) | 1 em 317 (5.3 min) | 1 em 2916 (48.6 min) | 1 em 17985 (5.0 h) | 0.20 |
+| G) Máximo com monetização (F + VIP + Sorte x2 + Roll Rápido) | 91.52 | 10.01 | 120 | 1 em 19 (0.2 min) | 1 em 303 (2.5 min) | 1 em 2692 (22.4 min) | 1 em 16181 (2.2 h) | 0.44 |
 
 ## Sem Luck (dado Normal, Luck 1.00)
 

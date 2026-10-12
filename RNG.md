@@ -66,7 +66,7 @@ consistente entre jogadores; a Luck usada aparece ao lado no Divino/Secreto.
 ## Fluxo do servidor (RequestRoll)
 
 1. Jogador e dados carregados.
-2. Cooldown: `Formulas:rollCooldown` (1,0 s → mínimo 0,45 s pelo upgrade) com folga de 0,06 s.
+2. Intervalo: `RollConfig.RollSpeed` — **1 roll/s** (Roll Rápido: 2 rolls/s), validado no servidor sem folga e sem crédito (`nextRollAt` = último roll aceito + intervalo). Vale para manual, AUTO e OCULTAR.
 3. Inventário cheio → recusa **antes** de sortear (`inventory_full`).
 4. Luck → `RollCore:roll(luck, pity, Random)` → raridade, personagem, novo pity.
 5. Rolls + 1, Index (NOVO?), contagem de reveals por raridade (libera PULAR).
@@ -79,3 +79,22 @@ consistente entre jogadores; a Luck usada aparece ao lado no Divino/Secreto.
 `RNG_SIMULATION.md`: 1 000 000 rolls por cenário (sem Luck, Luck média, Luck alta, com pity),
 gerado por `tools/sim/simulate_rng.luau`. O teste `RollCore.spec` também roda 1 000 000 rolls
 e exige cada raridade dentro de 5 desvios-padrão do teórico.
+
+## Velocidade do roll (cadência oficial)
+
+| Situação | Intervalo mínimo | Rolls/min | Rolls/h (teórico, sem pausas) |
+|---|---:|---:|---:|
+| Normal (manual, AUTO, OCULTAR) | 1,0 s | 60 | 3.600 |
+| Gamepass Roll Rápido | 0,5 s | 120 | 7.200 |
+
+- Fonte única: `RollConfig.RollSpeed` (`BaseInterval`, `FastRollInterval`). Nada mais acelera:
+  a melhoria "Velocidade de Roll" e o perk "Mãos Rápidas" ficam fora da loja enquanto
+  `UpgradesAffectInterval = false` (níveis antigos no save são ignorados, sem migração).
+- Servidor: `nextRollAt[jogador] = agora + intervalo` a cada roll ACEITO; pedido antes disso =
+  `cooldown`. Sem folga de rede e sem crédito: ficar 5 s sem resposta e mandar 5 pedidos juntos
+  rende 1 roll. Testes: `GameplayHarness` (relógio simulado: spam 100/s, 240 FPS, macro, latência,
+  Roll Rápido) e `ClientHarness` (AUTO, OCULTAR, Roll Rápido e cinemática pausando o AUTO).
+- Cinemáticas (Lendário+) continuam pausando o AUTO pelo tempo inteiro delas: 1 roll/s é a
+  cadência MÁXIMA, sessões reais rendem menos.
+- Prêmios (Jackpot/produtos) que entregam personagem não usam o intervalo do roll: têm custo e
+  limite próprios.

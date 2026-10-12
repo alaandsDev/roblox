@@ -105,6 +105,7 @@ return {
 	["error.not_equipped"] = "Coloque o personagem na base para melhorar.",
 	["error.invalid_flag"] = "Pedido inválido.",
 	["error.max_level"] = "Nível máximo!",
+	["error.upgrade_disabled"] = "Esta melhoria não está disponível.",
 	["error.not_enough_money"] = "Dinheiro insuficiente.",
 	["error.locked"] = "Personagem travado.",
 	["error.favorite"] = "Personagem favorito.",

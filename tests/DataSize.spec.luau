@@ -57,7 +57,7 @@ local function endgameProfile(): (any, number)
 	for _, perk in RebirthConfig.Perks do
 		data.RebirthPerks[perk.Id] = perk.MaxLevel
 	end
-	data.Runtime = { Capacity = 100, Luck = 2.2, Income = 1.5, Cooldown = 0.85 }
+	data.Runtime = { Capacity = 100, Luck = 2.2, Income = 1.5, FastRoll = true }
 	local capacity = Odds.formulas:capacity(data)
 	local now = 1_800_000_000
 	for i = 1, capacity do

@@ -62,14 +62,16 @@ function BoostService.FriendCount(player: Player): number
 end
 
 function BoostService.Compute(player: Player): { [string]: any }
-	local runtime: { [string]: any } = { Income = 1, Luck = 1, Cooldown = 1, Capacity = 0, Friends = 0, FriendBonus = 0, Passes = {} }
+	local runtime: { [string]: any } = { Income = 1, Luck = 1, FastRoll = false, Capacity = 0, Friends = 0, FriendBonus = 0, Passes = {} }
 	for key, pass in MonetizationConfig.GamePasses do
 		if MonetizationService.OwnsPass(player, key) then
 			runtime.Passes[key] = true
 		end
 		if MonetizationService.OwnsPass(player, key) and pass.Effects then
 			for effect, value in pass.Effects do
-				if effect == "Capacity" then
+				if type(value) == "boolean" then
+					runtime[effect] = runtime[effect] == true or value -- flags (FastRoll): nunca empilham
+				elseif effect == "Capacity" then
 					runtime.Capacity += value
 				else
 					runtime[effect] = (runtime[effect] or 1) * value

@@ -20,7 +20,7 @@ a compra é recusada com o aviso "Este item ainda não está à venda" (nada que
 | VIP | Gamepass | Renda x1.5, sorte x1.1 |
 | LuckX2 | Gamepass | Sorte x2 |
 | BigBackpack | Gamepass | +100 espaços na mochila |
-| FastRoll | Gamepass | Cooldown do roll x0.85 (o mínimo seguro continua valendo) |
+| FastRoll | Gamepass | Roll Rápido: **2 rolls/s** (intervalo 0,5 s em vez de 1,0 s — `RollConfig.RollSpeed`); não empilha com mais nada |
 | MoneySmall | Produto | max($10K, 15 min de renda) |
 | MoneyLarge | Produto | max($150K, 2 h de renda) |
 | LuckBoost | Produto | Sorte 2x por 30 min (soma tempo se repetido; auditoria: era 3x) |

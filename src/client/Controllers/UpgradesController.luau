@@ -44,7 +44,7 @@ local function affordable(data: any): number
 	local n = 0
 	for _, upgrade in UpgradeConfig.List do
 		local cost = Formulas:upgradeCost(upgrade.Id, Formulas:upgradeLevel(data, upgrade.Id))
-		if cost and data.Money >= cost then
+		if cost and data.Money >= cost and Formulas:upgradeEnabled(upgrade.Id) then
 			n += 1
 		end
 	end
@@ -67,6 +67,9 @@ function UpgradesController.Refresh()
 		end
 	end
 	for _, upgrade in UpgradeConfig.List do
+		if not Formulas:upgradeEnabled(upgrade.Id) then
+			continue
+		end
 		local level = Formulas:upgradeLevel(data, upgrade.Id)
 		local cost = Formulas:upgradeCost(upgrade.Id, level)
 		local row = UIKit.new("Frame", { BackgroundColor3 = Theme.Colors.Card, Size = UDim2.new(1, 0, 0, 92), LayoutOrder = upgrade.Order }, list)

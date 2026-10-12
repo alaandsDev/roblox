@@ -1,7 +1,7 @@
 --!strict
 --[[
 	RollService: o roll (autoritativo). O cliente só pede RequestRoll() — sem argumentos.
-	Fluxo: valida jogador/dados -> cooldown (Formulas:rollCooldown + folga de rede) ->
+	Fluxo: valida jogador/dados -> intervalo (RollConfig.RollSpeed: 1 roll/s, Roll Rápido 2/s; sem folga) ->
 	inventário cheio? (bloqueia ANTES de sortear) -> Luck (dado + upgrades + boost) ->
 	RollCore (Random do servidor + pity) -> Index -> auto-sell ou inventário (uid) -> resposta.
 	Não grava no DataStore a cada roll (autosave); drops Míticos+ pedem um save em breve.
@@ -48,7 +48,10 @@ end
 local core = RollCore.new(RarityConfig, CharacterConfig, RollConfig)
 local planner = RevealPlanner.new(RevealConfig, RarityConfig, CharacterConfig)
 
-local lastRoll: { [Player]: number } = {}
+-- Momento (RollService._clock) a partir do qual o próximo roll do jogador é aceito.
+-- Sempre "agora + intervalo" do último roll ACEITO: sem folga, sem crédito acumulado (atraso
+-- de rede ou spam nunca viram rajada). Ver RollConfig.RollSpeed.
+local nextRollAt: { [Player]: number } = {}
 local history: { [Player]: { any } } = {}
 local lastFullWarning: { [Player]: number } = {}
 local lastAnnounce: { [Player]: number } = {}
@@ -99,8 +102,7 @@ local function doRoll(player: Player, options: RollOptions?): RollResult
 
 	local now = RollService._clock()
 	if not opts.granted then
-		local cooldown = Formulas:rollCooldown(data)
-		if now - (lastRoll[player] or -math.huge) < cooldown - RollConfig.CooldownTolerance then
+		if now < (nextRollAt[player] or -math.huge) then
 			Net.fail("cooldown")
 		end
 		-- Inventário cheio: bloqueia ANTES de gerar o resultado (roll de prêmio pode passar do limite)
@@ -111,7 +113,7 @@ local function doRoll(player: Player, options: RollOptions?): RollResult
 			end
 			Net.fail("inventory_full")
 		end
-		lastRoll[player] = now
+		nextRollAt[player] = now + Formulas:rollCooldown(data)
 	end
 
 	local luck = Formulas:luck(data, os.time())
@@ -202,7 +204,7 @@ end
 
 -- Para testes/DEV: zera o cooldown do jogador
 function RollService.ResetCooldown(player: Player)
-	lastRoll[player] = nil
+	nextRollAt[player] = nil
 end
 
 function RollService.Init()
@@ -211,7 +213,7 @@ end
 
 function RollService.Start()
 	Players.PlayerRemoving:Connect(function(player)
-		lastRoll[player] = nil
+		nextRollAt[player] = nil
 		history[player] = nil
 		lastFullWarning[player] = nil
 		lastAnnounce[player] = nil

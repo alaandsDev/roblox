@@ -139,6 +139,87 @@ check(not ok2 and code == "cooldown", "roll imediato recusado (cooldown no servi
 clock += 1.0
 check((call("RequestRoll", p1)), "depois do cooldown: roll aceito")
 
+do
+	-- VELOCIDADE DO ROLL (servidor autoritativo, relógio simulado: nada espera de verdade)
+	local RollCfg = req(env.shared.Config.RollConfig)
+	check(RollCfg.RollSpeed.BaseInterval == 1 and RollCfg.RollSpeed.FastRollInterval == 0.5, "config central: 1 roll/s normal, 2 rolls/s com Roll Rápido")
+	local savedCapacity = d1.Runtime.Capacity
+	d1.Runtime.Capacity = 1e6 -- o teste é de cadência, não de inventário
+	local existing = {}
+	for uid in d1.Inventory do
+		existing[uid] = true
+	end
+	-- Estado que os rolls do teste mexem (restaurado no fim para não afetar os testes seguintes)
+	local saved = table.clone({ Index = table.clone(d1.Index), IndexRewards = table.clone(d1.IndexRewards), Rolls = d1.Rolls, Pity = table.clone(d1.Pity), Gems = d1.Gems, Money = d1.Money, Missions = d1.Missions })
+	-- Janela de `seconds` com pedidos a cada `step` s (perStep pedidos juntos). Conta os aceitos
+	local function window(seconds: number, step: number, perStep: number): number
+		local accepted = 0
+		local t0 = clock + 5 -- longe do último roll aceito
+		for i = 0, math.floor(seconds / step + 0.5) - 1 do
+			clock = t0 + i * step
+			for _ = 1, perStep do
+				if (call("RequestRoll", p1)) then
+					accepted += 1
+				end
+			end
+		end
+		clock = t0 + seconds
+		return accepted
+	end
+	local spam = window(60, 0.01, 1)
+	check(spam == 60, "NORMAL: spam de clique/Remote a 100/s por 60 s = 60 rolls (veio " .. spam .. ")")
+	local fps = window(60, 1 / 240, 1)
+	check(fps == 60, "NORMAL: pedido a cada frame (240 FPS) = 60 rolls (veio " .. fps .. ")")
+	local macro = window(60, 0.25, 4)
+	check(macro <= 60, "NORMAL: macro com 4 pedidos simultâneos 4x/s: no máximo 60 (veio " .. macro .. ")")
+	local fake = window(60, 0.5, 1)
+	check(fake <= 60, "sem Roll Rápido tentando cadência de Roll Rápido (0,5 s): no máximo 60 (veio " .. fake .. ")")
+	d1.Settings.HideRollAnimation = true
+	local hidden = window(60, 0.01, 1)
+	d1.Settings.HideRollAnimation = false
+	check(hidden == 60, "OCULTAR não acelera: 60 rolls em 60 s (veio " .. hidden .. ")")
+	-- Latência: 5 s sem nada e depois 5 pedidos de uma vez -> só 1 (sem crédito/rajada)
+	clock += 10
+	local burst = 0
+	for _ = 1, 5 do
+		if (call("RequestRoll", p1)) then
+			burst += 1
+		end
+	end
+	check(burst == 1, "atraso de 5 s não vira rajada: 5 pedidos juntos = 1 roll (veio " .. burst .. ")")
+	clock += 0.999
+	local early = call("RequestRoll", p1)
+	clock += 0.001
+	local onTime = call("RequestRoll", p1)
+	check(not early and onTime, "cooldown exato no servidor: 0,999 s recusado, 1,0 s aceito (sem folga)")
+	-- Roll Rápido (gamepass): 2 rolls/s, nunca mais
+	d1.Runtime.FastRoll = true
+	local fast = window(60, 0.01, 1)
+	check(fast == 120, "ROLL RÁPIDO: spam por 60 s = 120 rolls (veio " .. fast .. ")")
+	local fastMacro = window(60, 0.1, 5)
+	check(fastMacro <= 120, "ROLL RÁPIDO: macro com 5 pedidos juntos 10x/s: no máximo 120 (veio " .. fastMacro .. ")")
+	d1.Upgrades.RollSpeed = 11
+	d1.RebirthPerks.Speed = 5
+	local stacked = window(60, 0.01, 1)
+	check(stacked == 120, "Roll Rápido + níveis antigos de velocidade no save: não empilha (veio " .. stacked .. ")")
+	d1.Upgrades.RollSpeed = 0
+	d1.RebirthPerks.Speed = nil
+	d1.Runtime.FastRoll = false
+	-- Limpa o que o teste criou
+	local created = {}
+	for uid in d1.Inventory do
+		if not existing[uid] then
+			table.insert(created, uid)
+		end
+	end
+	S.InventoryService.Remove(p1, created)
+	d1.Runtime.Capacity = savedCapacity
+	for key, value in saved do
+		d1[key] = value
+	end
+	clock += 5
+end
+
 -- Pity
 clock += 2
 d1.Pity = { Legendary = 49, Mythic = 10 }
@@ -330,11 +411,17 @@ check((call("EquipDice", p1, "Normal")) and d1.EquippedDice == "Normal", "trocar
 -- UPGRADES GLOBAIS
 d1.Money = Formulas:upgradeCost("Luck", 0)
 check((call("BuyUpgrade", p1, "Luck")) and d1.Upgrades.Luck == 1 and d1.Money == 0, "upgrade global de Luck: nível 1, custo descontado")
-d1.Upgrades.RollSpeed = 11
+d1.Upgrades.Inventory = 20
 d1.Money = 1e15
-local okUM, codeUM = call("BuyUpgrade", p1, "RollSpeed")
+local okUM, codeUM = call("BuyUpgrade", p1, "Inventory")
 check(not okUM and codeUM == "max_level", "upgrade global no máximo: recusado")
-check(Formulas:rollCooldown(d1) >= 0.45, "cooldown nunca abaixo do mínimo seguro")
+d1.Upgrades.Inventory = 0
+local moneyRS = d1.Money
+local okRS, codeRS = call("BuyUpgrade", p1, "RollSpeed")
+check(not okRS and codeRS == "upgrade_disabled" and d1.Money == moneyRS, "melhoria de velocidade fora da loja (velocidade fixa por config): nada é cobrado")
+d1.Upgrades.RollSpeed = 11
+check(Formulas:rollCooldown(d1) == 1, "nível antigo de 'Velocidade de Roll' no save não acelera o roll")
+d1.Upgrades.RollSpeed = 0
 
 ------------------------------------------------------------------------------------
 -- VENDA

@@ -142,7 +142,7 @@ com a visão "Server" (Test > Current: Server); **Cliente** = visão "Client" ou
 | 30 | N LUCK | Ver Luck | HUD "🍀 1.25x"; servidor 1.25 | Servidor | `print(_G.D:Invoke("GetLuck", _G.P))` |
 | 31 | O UPGRADES | Abrir MELHORIAS (botão ou área MELHORIAS da base) | 4 linhas, "NÍVEL 0/20", próximo benefício, custo; badge com quantos dá para comprar | Cliente | `print(_G.D:Invoke("GiveMoney", _G.P, 1e6))` |
 | 32 | O UPGRADES | Comprar Sorte 1x | NÍVEL 1/20; Luck do HUD sobe 8% | Cliente | — |
-| 33 | O UPGRADES | Comprar Velocidade até o fim | Cooldown nunca abaixo de 0,45 s; botão "MÁX" | Cliente | `print(_G.D:Invoke("GiveMoney", _G.P, 1e9))` |
+| 33 | O UPGRADES | Abrir MELHORIAS | "Velocidade de Roll" não aparece (velocidade fixa: 1 roll/s; Roll Rápido 2/s); botão "MÁX" nas outras | Cliente | `print(_G.D:Invoke("GiveMoney", _G.P, 1e9))` |
 | 34 | P SELL | No stand VENDER (Hub) → janela VENDER | Botões Vender selecionado / duplicatas / comuns + AUTO-SELL | Cliente | — |
 | 35 | P SELL | Vender duplicatas | Confirmação "Vender N personagens por $X?" [CANCELAR] [VENDER]; travados/favoritos/equipados nunca saem | Cliente | `print(_G.D:Invoke("GiveCharacter", _G.P, "flame_rookie", 10))` |
 | 36 | P SELL | Travar um personagem e tentar vendê-lo na MOCHILA | "Personagem travado." | Cliente | — |

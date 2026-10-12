@@ -60,15 +60,15 @@ Roll manual a cada 2.5 s, coleta a cada 120 s, decide a cada 60 s, gasta 30% em 
 
 | Tempo | Rolls | Dado | Luck | Renda/s | Ganho total | Saldo | Upg L/I/S/C | Nível médio estação | Renasc. | Andares (torres) | Melhor | Index | 8 h offline |
 |---|---:|---|---:|---:|---:|---:|---|---:|---:|---:|---|---:|---:|
-| 5 min | 120 | Lucky | 1.55 | $247.1 | $64.18K | $4.59K | 3/4/1/5 | 1.2 | 0 | 18/120 | Solar Paladin (Legendary) | 16/24 | $853.97K |
-| 10 min | 240 | Lucky | 1.75 | $405.37 | $206.32K | $10.83K | 5/5/3/7 | 1.2 | 0 | 20/120 | Solar Paladin (Legendary) | 19/24 | $1.4M |
-| 30 min | 720 | Flame | 2.50 | $1.41K | $1.28M | $95.69K | 7/8/5/10 | 7.2 | 0 | 24/120 | Void Emperor (Mythic) | 20/24 | $4.88M |
-| 1 h | 1440 | Storm | 3.44 | $3.3K | $5.83M | $468.36K | 9/10/7/13 | 13.0 | 0 | 27/120 | Void Emperor (Mythic) | 21/24 | $5M |
-| 2 h | 2880 | Storm | 3.92 | $9.51K | $31.08M | $2.72M | 12/13/10/15 | 17.5 | 0 | 38/120 | Chrono Sage (Divine) | 22/24 | $5M |
-| 4 h | 5760 | Void | 6.11 | $40.38K | $187.48M | $17.81M | 13/15/11/18 | 23.7 | 2 | 46/120 | Chrono Sage (Divine) | 23/24 | $24.2M |
-| 8 h | 11520 | Celestial | 10.31 | $112.09K | $1.3B | $33.49M | 16/17/11/20 | 39.5 | 4 | 52/120 | Chrono Sage (Divine) | 23/24 | $117.12M |
+| 5 min | 120 | Lucky | 1.55 | $255.85 | $64.18K | $6.5K | 3/4/0/5 | 1.8 | 0 | 18/120 | Solar Paladin (Legendary) | 16/24 | $884.21K |
+| 10 min | 240 | Lucky | 1.75 | $361.5 | $205.43K | $10.34K | 5/6/0/7 | 1.2 | 0 | 20/120 | Solar Paladin (Legendary) | 19/24 | $1.24M |
+| 30 min | 720 | Flame | 2.62 | $1.29K | $1.27M | $59.48K | 8/8/0/10 | 7.5 | 0 | 22/120 | Solar Paladin (Legendary) | 19/24 | $4.46M |
+| 1 h | 1440 | Storm | 3.44 | $2.75K | $5.38M | $420.07K | 9/10/0/13 | 13.2 | 0 | 26/120 | Celestial Monk (Mythic) | 20/24 | $5M |
+| 2 h | 2880 | Storm | 3.92 | $8.4K | $29.86M | $6.2M | 12/13/0/15 | 18.5 | 0 | 34/120 | Celestial Monk (Mythic) | 21/24 | $5M |
+| 4 h | 5760 | Void | 6.11 | $31.55K | $162.44M | $5.18M | 13/15/0/17 | 27.2 | 2 | 40/120 | Celestial Monk (Mythic) | 21/24 | $24.2M |
+| 8 h | 11520 | Celestial | 10.67 | $141.22K | $1.62B | $51.76M | 17/18/0/20 | 40.4 | 4 | 60/120 | Eclipse Sovereign (Secret) | 22/24 | $117.12M |
 
-Renascimentos em: 144 min, 192 min, 254 min, 432 min. Próximo custa $234.25M.
+Renascimentos em: 138 min, 206 min, 254 min, 354 min. Próximo custa $234.25M.
 
 ### Ativo
 
@@ -76,15 +76,15 @@ Roll AUTO (cooldown), coleta a cada 30 s, decide a cada 15 s, gasta 50% em níve
 
 | Tempo | Rolls | Dado | Luck | Renda/s | Ganho total | Saldo | Upg L/I/S/C | Nível médio estação | Renasc. | Andares (torres) | Melhor | Index | 8 h offline |
 |---|---:|---|---:|---:|---:|---:|---|---:|---:|---:|---|---:|---:|
-| 5 min | 290 | Lucky | 1.75 | $612 | $268.39K | $18.87K | 5/6/3/7 | 2.5 | 0 | 23/120 | Void Emperor (Mythic) | 20/24 | $2.11M |
-| 10 min | 616 | Flame | 2.24 | $1.05K | $552.3K | $27.65K | 5/6/4/8 | 5.5 | 0 | 23/120 | Void Emperor (Mythic) | 20/24 | $3.64M |
-| 30 min | 2048 | Flame | 2.62 | $4.23K | $4.06M | $196.35K | 8/9/6/11 | 14.2 | 0 | 29/120 | Void Emperor (Mythic) | 21/24 | $5M |
-| 1 h | 4528 | Storm | 3.76 | $6.46K | $14.79M | $792.31K | 11/11/9/14 | 12.2 | 0 | 34/120 | Astral Seraph (Divine) | 22/24 | $5M |
-| 2 h | 9811 | Void | 4.82 | $12.48K | $45.19M | $8.98M | 9/10/7/15 | 14.2 | 1 | 40/120 | Astral Seraph (Divine) | 22/24 | $11M |
-| 4 h | 20957 | Void | 6.23 | $67.17K | $249.57M | $18.46M | 13/15/11/18 | 20.6 | 3 | 52/120 | Astral Seraph (Divine) | 23/24 | $53.24M |
-| 8 h | 46789 | Celestial | 11.52 | $479.61K | $3.6B | $53.38M | 17/18/11/20 | 39.2 | 6 | 68/120 | Eclipse Sovereign (Secret) | 24/24 | $566.89M |
+| 5 min | 300 | Flame | 2.24 | $708 | $280.06K | $12.51K | 5/6/0/7 | 3.2 | 0 | 23/120 | Void Emperor (Mythic) | 20/24 | $2.44M |
+| 10 min | 600 | Flame | 2.37 | $1.14K | $583.07K | $35.8K | 6/6/0/8 | 6.0 | 0 | 23/120 | Void Emperor (Mythic) | 20/24 | $3.93M |
+| 30 min | 1800 | Flame | 2.62 | $4.26K | $4.21M | $129.92K | 8/9/0/11 | 15.0 | 0 | 29/120 | Void Emperor (Mythic) | 20/24 | $5M |
+| 1 h | 3600 | Storm | 3.76 | $5.59K | $14.32M | $2.35M | 11/11/0/14 | 13.2 | 0 | 32/120 | Void Emperor (Mythic) | 21/24 | $5M |
+| 2 h | 7200 | Void | 5.27 | $13.48K | $43.73M | $5.37M | 11/12/0/15 | 17.6 | 1 | 35/120 | Void Emperor (Mythic) | 21/24 | $11M |
+| 4 h | 14400 | Void | 6.59 | $30.94K | $225.34M | $28.93M | 15/16/0/19 | 21.2 | 2 | 42/120 | Chrono Sage (Divine) | 22/24 | $24.2M |
+| 8 h | 28800 | Celestial | 10.12 | $200.45K | $1.52B | $7.16M | 15/17/0/20 | 37.7 | 5 | 60/120 | Eclipse Sovereign (Secret) | 23/24 | $257.68M |
 
-Renascimentos em: 102 min, 169 min, 210 min, 282 min, 328 min, 412 min. Próximo custa $1.13B.
+Renascimentos em: 98 min, 140 min, 266 min, 341 min, 452 min. Próximo custa $515.36M.
 
 ### Hardcore
 
@@ -92,15 +92,15 @@ Roll AUTO (cooldown), coleta a cada 5 s, decide a cada 3 s, gasta 60% em níveis
 
 | Tempo | Rolls | Dado | Luck | Renda/s | Ganho total | Saldo | Upg L/I/S/C | Nível médio estação | Renasc. | Andares (torres) | Melhor | Index | 8 h offline |
 |---|---:|---|---:|---:|---:|---:|---|---:|---:|---:|---|---:|---:|
-| 5 min | 289 | Lucky | 1.75 | $830.25 | $301.98K | $16.42K | 5/5/3/7 | 4.5 | 0 | 23/120 | Void Emperor (Mythic) | 20/24 | $2.86M |
-| 10 min | 605 | Flame | 2.24 | $1.51K | $694.08K | $15.3K | 5/6/3/7 | 8.5 | 0 | 24/120 | Void Emperor (Mythic) | 20/24 | $5M |
-| 30 min | 2009 | Storm | 3.28 | $4.21K | $4.92M | $411.6K | 8/8/6/11 | 15.0 | 0 | 30/120 | Void Emperor (Mythic) | 21/24 | $5M |
-| 1 h | 4459 | Storm | 3.60 | $5.26K | $13.79M | $3.06M | 10/11/8/14 | 11.8 | 0 | 32/120 | Void Emperor (Mythic) | 21/24 | $5M |
-| 2 h | 9734 | Void | 4.82 | $9.57K | $38.39M | $6.55M | 9/9/7/14 | 7.2 | 1 | 45/120 | Eclipse Sovereign (Secret) | 23/24 | $11M |
-| 4 h | 20223 | Celestial | 8.70 | $46.14K | $266.33M | $54.14M | 12/13/10/16 | 13.9 | 3 | 55/120 | Eclipse Sovereign (Secret) | 24/24 | $53.24M |
-| 8 h | 45258 | Celestial | 11.13 | $477.22K | $3.49B | $154.92M | 16/17/11/20 | 37.1 | 6 | 69/120 | Eclipse Sovereign (Secret) | 24/24 | $566.89M |
+| 5 min | 300 | Flame | 2.24 | $879.75 | $313.51K | $4.85K | 5/5/0/7 | 4.8 | 0 | 23/120 | Void Emperor (Mythic) | 20/24 | $3.04M |
+| 10 min | 600 | Flame | 2.24 | $1.57K | $734.44K | $13.74K | 5/6/0/8 | 9.0 | 0 | 24/120 | Void Emperor (Mythic) | 20/24 | $5M |
+| 30 min | 1800 | Storm | 3.28 | $4.29K | $4.89M | $182.07K | 8/9/0/11 | 14.8 | 0 | 30/120 | Void Emperor (Mythic) | 21/24 | $5M |
+| 1 h | 3600 | Storm | 3.76 | $4.81K | $13.3M | $2.58M | 11/11/0/14 | 10.5 | 0 | 31/120 | Void Emperor (Mythic) | 21/24 | $5M |
+| 2 h | 7200 | Void | 5.39 | $4.83K | $32.54M | $8.17M | 12/13/0/15 | 8.0 | 0 | 32/120 | Astral Seraph (Divine) | 22/24 | $5M |
+| 4 h | 14400 | Void | 5.74 | $44.47K | $187.38M | $42.66M | 11/12/0/15 | 23.1 | 3 | 47/120 | Astral Seraph (Divine) | 23/24 | $53.24M |
+| 8 h | 28800 | Celestial | 10.49 | $192.95K | $1.9B | $25.01M | 16/17/0/20 | 41.4 | 5 | 57/120 | Astral Seraph (Divine) | 23/24 | $257.68M |
 
-Renascimentos em: 108 min, 145 min, 185 min, 272 min, 320 min, 405 min. Próximo custa $1.13B.
+Renascimentos em: 126 min, 165 min, 211 min, 300 min, 362 min. Próximo custa $515.36M.
 
 ### Nível de personagem (1 → 50)
 

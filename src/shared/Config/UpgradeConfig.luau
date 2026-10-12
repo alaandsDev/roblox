@@ -11,7 +11,7 @@ local list: { Upgrade } = {
 	{ Id = "Luck", Order = 1, BaseCost = 2000, Growth = 1.9, MaxLevel = 20, PerLevel = 0.08 },
 	-- +10% de renda por nível
 	{ Id = "Income", Order = 2, BaseCost = 1500, Growth = 1.85, MaxLevel = 25, PerLevel = 0.10 },
-	-- -5% no tempo entre rolls por nível (limitado por RollConfig.MinCooldown)
+	-- -5% no tempo entre rolls por nível — DESLIGADO enquanto RollConfig.RollSpeed.UpgradesAffectInterval = false
 	{ Id = "RollSpeed", Order = 3, BaseCost = 5000, Growth = 2.0, MaxLevel = 11, PerLevel = 0.05 },
 	-- +10 de espaço no inventário por nível
 	{ Id = "Inventory", Order = 4, BaseCost = 1000, Growth = 1.7, MaxLevel = 20, PerLevel = 10 },

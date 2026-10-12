@@ -30,10 +30,12 @@ Odds.formulas = Formulas.new({
 })
 
 local function profile(dice: string, luckLevel: number, speedLevel: number, rebirths: number, perks: { [string]: number }, boost: number, passes: { string }): any
-	local runtime = { Income = 1, Luck = 1, Cooldown = 1, Capacity = 0 }
+	local runtime: { [string]: any } = { Income = 1, Luck = 1, FastRoll = false, Capacity = 0 }
 	for _, key in passes do
 		for effect, value in MonetizationConfig.GamePasses[key].Effects or {} do
-			if effect ~= "Capacity" then
+			if type(value) == "boolean" then
+				runtime[effect] = value
+			elseif effect ~= "Capacity" then
 				runtime[effect] *= value
 			end
 		end

@@ -35,6 +35,10 @@ function UpgradeService.Buy(player: Player, upgradeId: string)
 	if not UpgradeConfig.ById[upgradeId] then
 		Net.fail("invalid_upgrade")
 	end
+	-- Velocidade do roll é fixa por config (RollConfig.RollSpeed): melhoria de velocidade fora da loja
+	if not Formulas:upgradeEnabled(upgradeId) then
+		Net.fail("upgrade_disabled")
+	end
 	local level = Formulas:upgradeLevel(data, upgradeId)
 	local cost = Formulas:upgradeCost(upgradeId, level)
 	if not cost then

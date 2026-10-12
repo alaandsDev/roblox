@@ -2,8 +2,8 @@
 --[[
 	RollController: botão ROLAR (baixo centro), AUTO, OCULTAR e histórico da sessão.
 	O cliente só PEDE (RequestRoll sem argumentos); o resultado vem do servidor e o
-	RevealController apresenta. AUTO: o servidor valida cada roll; o intervalo segue o
-	cooldown + RollConfig.AutoRollExtraDelay. Raridades com AutoRoll = "Pause" (RevealConfig)
+	RevealController apresenta. Cadência: RollConfig.RollSpeed (1 roll/s; Roll Rápido 2/s) para
+	manual, AUTO e OCULTAR — o servidor valida cada roll. Raridades com AutoRoll = "Pause" (RevealConfig)
 	pausam o AUTO enquanto a cinemática toca e ele continua depois.
 	Inventário cheio: para o AUTO e mostra a ação [VENDER] [MOCHILA] (sem spam).
 ]]
@@ -76,7 +76,7 @@ end
 
 local function cooldownSeconds(): number
 	local data = DataController.GetAll()
-	return if data then Formulas:rollCooldown(data) else RollConfig.BaseCooldown
+	return if data then Formulas:rollCooldown(data) else RollConfig.RollSpeed.BaseInterval
 end
 
 local function animateCooldown(seconds: number)
@@ -108,6 +108,7 @@ function RollController.Roll(): boolean
 		return false
 	end
 	requesting = true
+	local sentAt = os.clock()
 	local result = Net.request("RequestRoll")
 	requesting = false
 	if not result.ok then
@@ -120,7 +121,9 @@ function RollController.Roll(): boolean
 	end
 	local roll = result.data
 	local seconds = cooldownSeconds()
-	readyAt = os.clock() + seconds
+	-- Conta do ENVIO: com latência a cadência fica perto de 1/intervalo (o servidor é quem
+	-- garante o limite; se chegar cedo ele recusa com "cooldown" e o AUTO tenta de novo)
+	readyAt = sentAt + seconds
 	animateCooldown(seconds)
 	table.insert(history, 1, roll)
 	while #history > RollConfig.HistorySize do

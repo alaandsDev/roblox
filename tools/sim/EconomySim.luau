@@ -137,7 +137,7 @@ local function tryBuyUpgrade(data: any): boolean
 	local bestId, bestCost = nil, math.huge
 	for _, upgrade in UpgradeConfig.List do
 		local cost = formulas:upgradeCost(upgrade.Id, data.Upgrades[upgrade.Id] or 0)
-		if cost and cost < bestCost then
+		if cost and cost < bestCost and formulas:upgradeEnabled(upgrade.Id) then
 			bestId, bestCost = upgrade.Id, cost
 		end
 	end
@@ -208,7 +208,7 @@ local function tryRebirth(data: any, margin: number?): boolean
 		local bought = false
 		for _, id in { "Income", "Luck", "Power", "Capacity", "Speed" } do
 			local cost2 = formulas:perkCost(id, formulas:perkLevel(data, id))
-			if cost2 and data.RebirthTokens >= cost2 then
+			if cost2 and data.RebirthTokens >= cost2 and formulas:perkEnabled(id) then
 				data.RebirthTokens -= cost2
 				data.RebirthPerks[id] = formulas:perkLevel(data, id) + 1
 				bought = true
