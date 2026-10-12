@@ -1,0 +1,3460 @@
+[
+ {
+  "source": "Sasha",
+  "sourcePath": "AOT.Sasha",
+  "display": "Sacha",
+  "id": "sacha",
+  "family": "sacha",
+  "tier": 1,
+  "rarity": "Common",
+  "dest": "starter",
+  "status": "APPROVED",
+  "category": "AOT",
+  "parts": 8,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 24,
+  "notes": [
+   "Uniforme; base perfeita para Comum."
+  ]
+ },
+ {
+  "source": "Sasha (Suit)",
+  "sourcePath": "AOT.Sasha (Suit)",
+  "display": "Sacha (Terno)",
+  "id": "sacha_suit",
+  "family": "sacha",
+  "tier": 1,
+  "rarity": "Common",
+  "dest": "starter",
+  "status": "APPROVED",
+  "category": "AOT",
+  "parts": 8,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 24,
+  "notes": [
+   "Roupa alternativa (mesma forma)."
+  ]
+ },
+ {
+  "source": "Annie (Junior High)",
+  "sourcePath": "AOT.Annie (Junior High)",
+  "display": "Anny (Colegial)",
+  "id": "anny_school",
+  "family": "anny",
+  "tier": 1,
+  "rarity": "Common",
+  "dest": "starter",
+  "status": "APPROVED",
+  "category": "AOT",
+  "parts": 8,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 24,
+  "notes": [
+   "Roupa alternativa."
+  ]
+ },
+ {
+  "source": "Mikasa (Formal)",
+  "sourcePath": "AOT.Mikasa (Formal)",
+  "display": "Mikaza (Formal)",
+  "id": "mikaza_formal",
+  "family": "mikaza",
+  "tier": 1,
+  "rarity": "Common",
+  "dest": "starter",
+  "status": "APPROVED",
+  "category": "AOT",
+  "parts": 9,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 27,
+  "notes": [
+   "Roupa alternativa."
+  ]
+ },
+ {
+  "source": "Erwin (Alt)",
+  "sourcePath": "AOT.Erwin (Alt)",
+  "display": "Erwyn (Gala)",
+  "id": "erwyn_gala",
+  "family": "erwyn",
+  "tier": 1,
+  "rarity": "Uncommon",
+  "dest": "starter",
+  "status": "APPROVED",
+  "category": "AOT",
+  "parts": 8,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 24,
+  "notes": [
+   "Roupa alternativa."
+  ]
+ },
+ {
+  "source": "Eren",
+  "sourcePath": "AOT.Eren",
+  "display": "Erem",
+  "id": "erem",
+  "family": "erem",
+  "tier": 1,
+  "rarity": "Common",
+  "dest": "rampart",
+  "status": "APPROVED",
+  "category": "AOT",
+  "parts": 8,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 24,
+  "notes": []
+ },
+ {
+  "source": "Mikasa",
+  "sourcePath": "AOT.Mikasa",
+  "display": "Mikaza",
+  "id": "mikaza",
+  "family": "mikaza",
+  "tier": 1,
+  "rarity": "Uncommon",
+  "dest": "rampart",
+  "status": "APPROVED",
+  "category": "AOT",
+  "parts": 9,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 27,
+  "notes": []
+ },
+ {
+  "source": "Annie",
+  "sourcePath": "AOT.Annie",
+  "display": "Anny",
+  "id": "anny",
+  "family": "anny",
+  "tier": 1,
+  "rarity": "Uncommon",
+  "dest": "rampart",
+  "status": "APPROVED",
+  "category": "AOT",
+  "parts": 8,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 24,
+  "notes": []
+ },
+ {
+  "source": "Erwin",
+  "sourcePath": "AOT.Erwin",
+  "display": "Erwyn",
+  "id": "erwyn",
+  "family": "erwyn",
+  "tier": 1,
+  "rarity": "Rare",
+  "dest": "rampart",
+  "status": "APPROVED",
+  "category": "AOT",
+  "parts": 9,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 27,
+  "notes": [
+   "Mesma camisa do uniforme da Sacha (normal: mesma tropa)."
+  ]
+ },
+ {
+  "source": "Eren Post-time skip",
+  "sourcePath": "AOT.Eren Post-time skip",
+  "display": "Erem (Veterano)",
+  "id": "erem_veteran",
+  "family": "erem",
+  "tier": 2,
+  "rarity": "Rare",
+  "dest": "rampart",
+  "status": "APPROVED",
+  "category": "AOT",
+  "parts": 8,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 24,
+  "notes": []
+ },
+ {
+  "source": "Female Titan",
+  "sourcePath": "AOT.Female Titan",
+  "display": "Titã Feminina",
+  "id": "anny_titan",
+  "family": "anny",
+  "tier": 2,
+  "rarity": "Epic",
+  "dest": "rampart",
+  "status": "APPROVED",
+  "category": "AOT",
+  "parts": 8,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 24,
+  "notes": [
+   "Forma titã da Anny."
+  ]
+ },
+ {
+  "source": "Attack Titan",
+  "sourcePath": "AOT.Attack Titan",
+  "display": "Titã de Ataque",
+  "id": "erem_titan",
+  "family": "erem",
+  "tier": 3,
+  "rarity": "Epic",
+  "dest": "rampart",
+  "status": "APPROVED",
+  "category": "AOT",
+  "parts": 9,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 27,
+  "notes": [
+   "Forma titã do Erem."
+  ]
+ },
+ {
+  "source": "Ichigo",
+  "sourcePath": "Bleach Pack.Ichigo",
+  "display": "Ichiro",
+  "id": "ichiro",
+  "family": "ichiro",
+  "tier": 1,
+  "rarity": "Uncommon",
+  "dest": "blade",
+  "status": "APPROVED",
+  "category": "Bleach Pack",
+  "parts": 14,
+  "vfx": 1,
+  "vfxNames": [
+   "Trail"
+  ],
+  "weapons": [
+   "Sword"
+  ],
+  "score": 41,
+  "notes": [
+   "Mesma roupa e contagens da Rukya: confirmar cabelo no Studio.",
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Hollow Ichigo",
+  "sourcePath": "Bleach Pack.Hollow Ichigo.Hollow Ichigo",
+  "display": "Ichiro Mascarado",
+  "id": "ichiro_hollow",
+  "family": "ichiro",
+  "tier": 2,
+  "rarity": "Mythic",
+  "dest": "shadow",
+  "status": "APPROVED",
+  "category": "Bleach Pack",
+  "parts": 16,
+  "vfx": 1,
+  "vfxNames": [
+   "Trail"
+  ],
+  "weapons": [
+   "Sword"
+  ],
+  "score": 53,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Vasto",
+  "sourcePath": "Bleach Pack.Hollow Ichigo.Vasto",
+  "display": "Ichiro Vasto",
+  "id": "ichiro_vasto",
+  "family": "ichiro",
+  "tier": 3,
+  "rarity": "Divine",
+  "dest": "void",
+  "status": "APPROVED",
+  "category": "Bleach Pack",
+  "parts": 17,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [
+   "Sword"
+  ],
+  "score": 53,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Mugetsu",
+  "sourcePath": "Bleach Pack.Hollow Ichigo.Mugetsu",
+  "display": "Ichiro Mugetsu",
+  "id": "ichiro_mugetsu",
+  "family": "ichiro",
+  "tier": 4,
+  "rarity": "Secret",
+  "dest": "forbidden",
+  "status": "APPROVED",
+  "category": "Bleach Pack",
+  "parts": 17,
+  "vfx": 2,
+  "vfxNames": [
+   "BlackFlame"
+  ],
+  "weapons": [
+   "Sword"
+  ],
+  "score": 63,
+  "notes": [
+   "Chama negra própria; forma final.",
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Rukia",
+  "sourcePath": "Bleach Pack.Rukia",
+  "display": "Rukya",
+  "id": "rukya",
+  "family": "rukya",
+  "tier": 1,
+  "rarity": "Rare",
+  "dest": "lucky",
+  "status": "APPROVED",
+  "category": "Bleach Pack",
+  "parts": 14,
+  "vfx": 1,
+  "vfxNames": [
+   "Trail"
+  ],
+  "weapons": [
+   "Sword"
+  ],
+  "score": 41,
+  "notes": [
+   "Mesma roupa e contagens do Ichiro: confirmar cabelo no Studio.",
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Kisuke",
+  "sourcePath": "Bleach Pack.Kisuke",
+  "display": "Kisuko",
+  "id": "kisuko",
+  "family": "kisuko",
+  "tier": 1,
+  "rarity": "Rare",
+  "dest": "blade",
+  "status": "APPROVED",
+  "category": "Bleach Pack",
+  "parts": 17,
+  "vfx": 2,
+  "vfxNames": [
+   "NoBlade2",
+   "Trail"
+  ],
+  "weapons": [
+   "Blade"
+  ],
+  "score": 41,
+  "notes": [
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Gin",
+  "sourcePath": "Bleach Pack.Gin",
+  "display": "Ginn",
+  "id": "ginn",
+  "family": "ginn",
+  "tier": 1,
+  "rarity": "Rare",
+  "dest": "blade",
+  "status": "APPROVED",
+  "category": "Bleach Pack",
+  "parts": 15,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [
+   "Blade",
+   "ExtendingBlade"
+  ],
+  "score": 38,
+  "notes": [
+   "Lâmina extensível.",
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Shinji",
+  "sourcePath": "Bleach Pack.Shinji",
+  "display": "Shinjo",
+  "id": "shinjo",
+  "family": "shinjo",
+  "tier": 1,
+  "rarity": "Epic",
+  "dest": "shadow",
+  "status": "APPROVED",
+  "category": "Bleach Pack",
+  "parts": 19,
+  "vfx": 1,
+  "vfxNames": [
+   "Trail"
+  ],
+  "weapons": [
+   "Sword"
+  ],
+  "score": 58,
+  "notes": [
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Toshiro",
+  "sourcePath": "Bleach Pack.Toshiro.Toshiro",
+  "display": "Toshiru",
+  "id": "toshiru",
+  "family": "toshiru",
+  "tier": 1,
+  "rarity": "Rare",
+  "dest": "spirit",
+  "status": "APPROVED",
+  "category": "Bleach Pack",
+  "parts": 17,
+  "vfx": 1,
+  "vfxNames": [
+   "Trail"
+  ],
+  "weapons": [
+   "Sword"
+  ],
+  "score": 63,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Bankai Toshiro",
+  "sourcePath": "Bleach Pack.Toshiro.Bankai Toshiro",
+  "display": "Toshiru Bankai",
+  "id": "toshiru_bankai",
+  "family": "toshiru",
+  "tier": 2,
+  "rarity": "Secret",
+  "dest": "premium",
+  "status": "APPROVED",
+  "category": "Bleach Pack",
+  "parts": 24,
+  "vfx": 3,
+  "vfxNames": [
+   "Trail",
+   "Twirl1",
+   "Twirl2"
+  ],
+  "weapons": [
+   "Sword"
+  ],
+  "score": 80,
+  "notes": [
+   "Maior nota do pack (asas de gelo).",
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Byakuya",
+  "sourcePath": "Bleach Pack.Byakuya",
+  "display": "Byakuto",
+  "id": "byakuto",
+  "family": "byakuto",
+  "tier": 1,
+  "rarity": "Epic",
+  "dest": "spirit",
+  "status": "APPROVED",
+  "category": "Bleach Pack",
+  "parts": 15,
+  "vfx": 3,
+  "vfxNames": [
+   "NoBlade",
+   "NoBlade2",
+   "Trail"
+  ],
+  "weapons": [
+   "Blade",
+   "Sword"
+  ],
+  "score": 44,
+  "notes": [
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Shunsui",
+  "sourcePath": "Bleach Pack.Shunsui",
+  "display": "Shunzo",
+  "id": "shunzo",
+  "family": "shunzo",
+  "tier": 1,
+  "rarity": "Epic",
+  "dest": "spirit",
+  "status": "APPROVED",
+  "category": "Bleach Pack",
+  "parts": 22,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [
+   "LBlade",
+   "RBlade"
+  ],
+  "score": 56,
+  "notes": [
+   "Duas lâminas.",
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Starrk",
+  "sourcePath": "Bleach Pack.Starrk",
+  "display": "Starko",
+  "id": "starko",
+  "family": "starko",
+  "tier": 1,
+  "rarity": "Epic",
+  "dest": "spirit",
+  "status": "APPROVED",
+  "category": "Bleach Pack",
+  "parts": 16,
+  "vfx": 3,
+  "vfxNames": [
+   "Trail"
+  ],
+  "weapons": [
+   "EnergySwordL",
+   "EnergySwordR",
+   "Sword"
+  ],
+  "score": 44,
+  "notes": [
+   "Espadas de energia.",
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Yoruichi",
+  "sourcePath": "Bleach Pack.Yoruichi.Yoruichi",
+  "display": "Yoruka",
+  "id": "yoruka",
+  "family": "yoruka",
+  "tier": 1,
+  "rarity": "Legendary",
+  "dest": "spirit",
+  "status": "APPROVED",
+  "category": "Bleach Pack",
+  "parts": 13,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 27,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Shunko Yoruichi",
+  "sourcePath": "Bleach Pack.Yoruichi.Shunko Yoruichi",
+  "display": "Yoruka Shunko",
+  "id": "yoruka_shunko",
+  "family": "yoruka",
+  "tier": 2,
+  "rarity": "Mythic",
+  "dest": "premium",
+  "status": "APPROVED",
+  "category": "Bleach Pack",
+  "parts": 13,
+  "vfx": 4,
+  "vfxNames": [
+   "Shunko1",
+   "Shunko2",
+   "Shunko3",
+   "Shunko4"
+  ],
+  "weapons": [],
+  "score": 27,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Neko Yoru",
+  "sourcePath": "Bleach Pack.Yoruichi.Neko Yoru",
+  "display": "Yoruka Felina",
+  "id": "yoruka_neko",
+  "family": "yoruka",
+  "tier": 3,
+  "rarity": "Mythic",
+  "dest": "limited",
+  "status": "APPROVED",
+  "category": "Bleach Pack",
+  "parts": 26,
+  "vfx": 13,
+  "vfxNames": [
+   "Beam",
+   "Shunko1",
+   "Shunko2",
+   "Shunko3",
+   "Shunko4"
+  ],
+  "weapons": [],
+  "score": 27,
+  "notes": [
+   "Forma felina com raios.",
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Grimmjow",
+  "sourcePath": "Bleach Pack.Grimmjow",
+  "display": "Grimjau",
+  "id": "grimjau",
+  "family": "grimjau",
+  "tier": 1,
+  "rarity": "Epic",
+  "dest": "shadow",
+  "status": "APPROVED",
+  "category": "Bleach Pack",
+  "parts": 21,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [
+   "FakeSword",
+   "Sword"
+  ],
+  "score": 59,
+  "notes": [
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Ulq",
+  "sourcePath": "Bleach Pack.Ulquiorra.Ulq",
+  "display": "Ulkiorra",
+  "id": "ulkiorra",
+  "family": "ulkiorra",
+  "tier": 1,
+  "rarity": "Epic",
+  "dest": "shadow",
+  "status": "APPROVED",
+  "category": "Bleach Pack",
+  "parts": 18,
+  "vfx": 1,
+  "vfxNames": [
+   "Trail"
+  ],
+  "weapons": [
+   "Sword",
+   "Swords"
+  ],
+  "score": 56,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "R1",
+  "sourcePath": "Bleach Pack.Ulquiorra.R1",
+  "display": "Ulkiorra Liberado",
+  "id": "ulkiorra_release",
+  "family": "ulkiorra",
+  "tier": 2,
+  "rarity": "Mythic",
+  "dest": "void",
+  "status": "APPROVED",
+  "category": "Bleach Pack",
+  "parts": 18,
+  "vfx": 1,
+  "vfxNames": [
+   "Trail"
+  ],
+  "weapons": [
+   "Sword"
+  ],
+  "score": 53,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "R2",
+  "sourcePath": "Bleach Pack.Ulquiorra.R2",
+  "display": "Ulkiorra Segunda Forma",
+  "id": "ulkiorra_second",
+  "family": "ulkiorra",
+  "tier": 3,
+  "rarity": "Divine",
+  "dest": "event",
+  "status": "APPROVED",
+  "category": "Bleach Pack",
+  "parts": 19,
+  "vfx": 1,
+  "vfxNames": [
+   "Trail"
+  ],
+  "weapons": [
+   "Sword"
+  ],
+  "score": 59,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Aizen",
+  "sourcePath": "Bleach Pack.Aizen.Aizen",
+  "display": "Aizo",
+  "id": "aizo",
+  "family": "aizo",
+  "tier": 1,
+  "rarity": "Divine",
+  "dest": "forbidden",
+  "status": "APPROVED",
+  "category": "Bleach Pack",
+  "parts": 14,
+  "vfx": 1,
+  "vfxNames": [
+   "Trail"
+  ],
+  "weapons": [
+   "Sword"
+  ],
+  "score": 38,
+  "notes": [
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Final Aizen",
+  "sourcePath": "Bleach Pack.Aizen.Final Aizen",
+  "display": "Aizo Transcendido",
+  "id": "aizo_final",
+  "family": "aizo",
+  "tier": 2,
+  "rarity": "Secret",
+  "dest": "event",
+  "status": "APPROVED",
+  "category": "Bleach Pack",
+  "parts": 26,
+  "vfx": 1,
+  "vfxNames": [
+   "Trail"
+  ],
+  "weapons": [
+   "Sword"
+  ],
+  "score": 38,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Yamamoto",
+  "sourcePath": "Bleach Pack.Yamamoto",
+  "display": "Yamamotu",
+  "id": "yamamotu",
+  "family": "yamamotu",
+  "tier": 1,
+  "rarity": "Epic",
+  "dest": "flame",
+  "status": "APPROVED",
+  "category": "Bleach Pack",
+  "parts": 15,
+  "vfx": 5,
+  "vfxNames": [
+   "Beam",
+   "Fire",
+   "PointLight",
+   "Trail"
+  ],
+  "weapons": [
+   "Sword"
+  ],
+  "score": 38,
+  "notes": [
+   "Fogo próprio.",
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Krillin",
+  "sourcePath": "DBZ.Krillin",
+  "display": "Kurilo",
+  "id": "kurilo",
+  "family": "kurilo",
+  "tier": 1,
+  "rarity": "Rare",
+  "dest": "starter",
+  "status": "APPROVED",
+  "category": "DBZ",
+  "parts": 11,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 21,
+  "notes": [
+   "Mesma roupa do Goko.",
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Goku",
+  "sourcePath": "DBZ.Goku",
+  "display": "Goko",
+  "id": "goko",
+  "family": "goko",
+  "tier": 1,
+  "rarity": "Uncommon",
+  "dest": "fighter",
+  "status": "APPROVED",
+  "category": "DBZ",
+  "parts": 12,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 33,
+  "notes": [
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Buu Saga Goku",
+  "sourcePath": "DBZ.Buu Saga Goku",
+  "display": "Goko (Saga Majin)",
+  "id": "goko_majin_saga",
+  "family": "goko",
+  "tier": 2,
+  "rarity": "Epic",
+  "dest": "storm",
+  "status": "APPROVED",
+  "category": "DBZ",
+  "parts": 14,
+  "vfx": 2,
+  "vfxNames": [
+   "Lightning",
+   "SaiyanAura"
+  ],
+  "weapons": [],
+  "score": 37,
+  "notes": [
+   "Aura e raios.",
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Gohan",
+  "sourcePath": "DBZ.Gohan",
+  "display": "Gohin",
+  "id": "gohin",
+  "family": "gohin",
+  "tier": 1,
+  "rarity": "Epic",
+  "dest": "colossus",
+  "status": "APPROVED",
+  "category": "DBZ",
+  "parts": 13,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 27,
+  "notes": [
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Piccolo",
+  "sourcePath": "DBZ.Piccolo",
+  "display": "Pikkolo",
+  "id": "pikkolo",
+  "family": "pikkolo",
+  "tier": 1,
+  "rarity": "Epic",
+  "dest": "fighter",
+  "status": "APPROVED",
+  "category": "DBZ",
+  "parts": 17,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 45,
+  "notes": [
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Trunks",
+  "sourcePath": "DBZ.Trunks",
+  "display": "Trunkz",
+  "id": "trunkz",
+  "family": "trunkz",
+  "tier": 1,
+  "rarity": "Rare",
+  "dest": "blade",
+  "status": "APPROVED",
+  "category": "DBZ",
+  "parts": 19,
+  "vfx": 1,
+  "vfxNames": [
+   "SaiyanAura"
+  ],
+  "weapons": [
+   "SwordPack",
+   "Swordy"
+  ],
+  "score": 38,
+  "notes": [
+   "Espada nas costas.",
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Caulifa",
+  "sourcePath": "DBZ.Caulifa",
+  "display": "Kaulifa",
+  "id": "kaulifa",
+  "family": "kaulifa",
+  "tier": 1,
+  "rarity": "Epic",
+  "dest": "storm",
+  "status": "APPROVED",
+  "category": "DBZ",
+  "parts": 13,
+  "vfx": 3,
+  "vfxNames": [
+   "Lightning",
+   "SaiyanAura",
+   "SaiyanAura2"
+  ],
+  "weapons": [],
+  "score": 27,
+  "notes": [
+   "Aura e raios.",
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Vegeta",
+  "sourcePath": "DBZ.Vegeta",
+  "display": "Vejita",
+  "id": "vejita",
+  "family": "vejita",
+  "tier": 1,
+  "rarity": "Epic",
+  "dest": "void",
+  "status": "NEEDS_OPTIMIZATION",
+  "category": "DBZ",
+  "parts": 43,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 21,
+  "notes": [
+   "43 peças (meta ≤ 40 depois de limpar)",
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Majin Vegeta",
+  "sourcePath": "DBZ.Majin Vegeta",
+  "display": "Vejita Majin",
+  "id": "vejita_majin",
+  "family": "vejita",
+  "tier": 2,
+  "rarity": "Legendary",
+  "dest": "void",
+  "status": "APPROVED",
+  "category": "DBZ",
+  "parts": 13,
+  "vfx": 1,
+  "vfxNames": [
+   "SaiyanAura"
+  ],
+  "weapons": [],
+  "score": 24,
+  "notes": [
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "VEGITO",
+  "sourcePath": "DBZ.Vegito.VEGITO",
+  "display": "Vegitto",
+  "id": "vegitto",
+  "family": "vegitto",
+  "tier": 1,
+  "rarity": "Divine",
+  "dest": "celestial",
+  "status": "APPROVED",
+  "category": "DBZ",
+  "parts": 15,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 42,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "VEGITO BLUE",
+  "sourcePath": "DBZ.Vegito.VEGITO BLUE",
+  "display": "Vegitto Azul",
+  "id": "vegitto_blue",
+  "family": "vegitto",
+  "tier": 2,
+  "rarity": "Secret",
+  "dest": "forbidden",
+  "status": "APPROVED",
+  "category": "DBZ",
+  "parts": 15,
+  "vfx": 1,
+  "vfxNames": [
+   "SaiyanAura"
+  ],
+  "weapons": [],
+  "score": 42,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Broly",
+  "sourcePath": "DBZ.Broly.Broly",
+  "display": "Brolli",
+  "id": "brolli",
+  "family": "brolli",
+  "tier": 1,
+  "rarity": "Legendary",
+  "dest": "colossus",
+  "status": "APPROVED",
+  "category": "DBZ",
+  "parts": 13,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 30,
+  "notes": [
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "LSSJ BROLY",
+  "sourcePath": "DBZ.Broly.LSSJ BROLY",
+  "display": "Brolli Lendário",
+  "id": "brolli_legend",
+  "family": "brolli",
+  "tier": 2,
+  "rarity": "Divine",
+  "dest": "forbidden",
+  "status": "APPROVED",
+  "category": "DBZ",
+  "parts": 14,
+  "vfx": 2,
+  "vfxNames": [
+   "SaiyanAura",
+   "SaiyanAura2"
+  ],
+  "weapons": [],
+  "score": 33,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Goku Black [NEW]",
+  "sourcePath": "DBZ.Goku Black.Goku Black [NEW]",
+  "display": "Goko Sombrio",
+  "id": "goko_dark",
+  "family": "goko_dark",
+  "tier": 1,
+  "rarity": "Mythic",
+  "dest": "shadow",
+  "status": "APPROVED",
+  "category": "DBZ",
+  "parts": 19,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 21,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "SSJR",
+  "sourcePath": "DBZ.Goku Black.SSJR",
+  "display": "Goko Sombrio Rosé",
+  "id": "goko_dark_rose",
+  "family": "goko_dark",
+  "tier": 2,
+  "rarity": "Mythic",
+  "dest": "premium",
+  "status": "APPROVED",
+  "category": "DBZ",
+  "parts": 21,
+  "vfx": 2,
+  "vfxNames": [
+   "FinAura2",
+   "Particle"
+  ],
+  "weapons": [],
+  "score": 24,
+  "notes": [
+   "Aura rosé.",
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Shirou",
+  "sourcePath": "FATE.Fate Pack.Shirou",
+  "display": "Shiro",
+  "id": "shiro",
+  "family": "shiro",
+  "tier": 1,
+  "rarity": "Rare",
+  "dest": "arcane",
+  "status": "APPROVED",
+  "category": "FATE",
+  "parts": 18,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [
+   "LeftSword",
+   "LeftSwordEX",
+   "RightSword",
+   "RightSwordEX"
+  ],
+  "score": 59,
+  "notes": [
+   "Lâminas duplas.",
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Archer (EMIYA)",
+  "sourcePath": "FATE.Archer (EMIYA)",
+  "display": "Emyia Arqueiro",
+  "id": "shiro_archer",
+  "family": "shiro",
+  "tier": 2,
+  "rarity": "Mythic",
+  "dest": "arcane",
+  "status": "APPROVED",
+  "category": "FATE",
+  "parts": 18,
+  "vfx": 4,
+  "vfxNames": [
+   "PointLight",
+   "SmallShoot"
+  ],
+  "weapons": [
+   "LeftSword",
+   "LeftSwordEX",
+   "RightSword",
+   "RightSwordEX"
+  ],
+  "score": 59,
+  "notes": [
+   "Mesmas lâminas e malhas do Shiro (forma futura).",
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Saber",
+  "sourcePath": "FATE.Fate Pack.Saber",
+  "display": "Seiba",
+  "id": "seiba",
+  "family": "seiba",
+  "tier": 1,
+  "rarity": "Rare",
+  "dest": "arcane",
+  "status": "APPROVED",
+  "category": "FATE",
+  "parts": 16,
+  "vfx": 1,
+  "vfxNames": [
+   "Charge"
+  ],
+  "weapons": [
+   "SpecialBlade"
+  ],
+  "score": 44,
+  "notes": [
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "SALTER",
+  "sourcePath": "FATE.SALTER",
+  "display": "Seiba Sombria",
+  "id": "seiba_alter",
+  "family": "seiba",
+  "tier": 2,
+  "rarity": "Divine",
+  "dest": "premium",
+  "status": "APPROVED",
+  "category": "FATE",
+  "parts": 22,
+  "vfx": 1,
+  "vfxNames": [
+   "Charge"
+  ],
+  "weapons": [
+   "Blade",
+   "SpecialBlade"
+  ],
+  "score": 65,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Gilgamesh",
+  "sourcePath": "FATE.Fate Pack.Gilgamesh",
+  "display": "Gilgamex",
+  "id": "gilgamex",
+  "family": "gilgamex",
+  "tier": 1,
+  "rarity": "Legendary",
+  "dest": "arcane",
+  "status": "APPROVED",
+  "category": "FATE",
+  "parts": 16,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 39,
+  "notes": [
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Iskandar",
+  "sourcePath": "FATE.Iskandar",
+  "display": "Iskander",
+  "id": "iskander",
+  "family": "iskander",
+  "tier": 1,
+  "rarity": "Epic",
+  "dest": "premium",
+  "status": "APPROVED",
+  "category": "FATE",
+  "parts": 20,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [
+   "MySword"
+  ],
+  "score": 65,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Kiritsugu",
+  "sourcePath": "FATE.Kiritsugu",
+  "display": "Kiritsugo",
+  "id": "kiritsugo",
+  "family": "kiritsugo",
+  "tier": 1,
+  "rarity": "Rare",
+  "dest": "arcane",
+  "status": "APPROVED",
+  "category": "FATE",
+  "parts": 13,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 24,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Rin",
+  "sourcePath": "FATE.Rin",
+  "display": "Rinn",
+  "id": "rinn",
+  "family": "rinn",
+  "tier": 1,
+  "rarity": "Uncommon",
+  "dest": "lucky",
+  "status": "APPROVED",
+  "category": "FATE",
+  "parts": 13,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [
+   "Bow"
+  ],
+  "score": 35,
+  "notes": [
+   "Arco.",
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Lancer",
+  "sourcePath": "FATE.Lancer",
+  "display": "Lanseiro",
+  "id": "lanseiro",
+  "family": "lanseiro",
+  "tier": 1,
+  "rarity": "Rare",
+  "dest": "storm",
+  "status": "APPROVED",
+  "category": "FATE",
+  "parts": 18,
+  "vfx": 7,
+  "vfxNames": [
+   "ChargeParticle",
+   "ChargeParticle2",
+   "ShootParticle",
+   "Trail",
+   "Trail1",
+   "Trail2"
+  ],
+  "weapons": [
+   "Spear",
+   "SwordDrawn1"
+  ],
+  "score": 50,
+  "notes": [
+   "Lança.",
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Lancer Mode",
+  "sourcePath": "FATE.Lancer Mode",
+  "display": "Lanseiro Ardente",
+  "id": "lanseiro_mode",
+  "family": "lanseiro",
+  "tier": 2,
+  "rarity": "Legendary",
+  "dest": "premium",
+  "status": "APPROVED",
+  "category": "FATE",
+  "parts": 18,
+  "vfx": 16,
+  "vfxNames": [
+   "ChargeParticle",
+   "ChargeParticle2",
+   "Reiatsu",
+   "ShootParticle",
+   "Trail",
+   "Trail1",
+   "Trail2"
+  ],
+  "weapons": [
+   "Spear",
+   "SwordDrawn1"
+  ],
+  "score": 50,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Natsu",
+  "sourcePath": "Fairy Tail.Natsu",
+  "display": "Natzu",
+  "id": "natzu",
+  "family": "natzu",
+  "tier": 1,
+  "rarity": "Uncommon",
+  "dest": "flame",
+  "status": "APPROVED",
+  "category": "Fairy Tail",
+  "parts": 14,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 33,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Natsu Awakened",
+  "sourcePath": "Fairy Tail.Natsu Awakened",
+  "display": "Natzu Desperto",
+  "id": "natzu_awakened",
+  "family": "natzu",
+  "tier": 2,
+  "rarity": "Mythic",
+  "dest": "awakened",
+  "status": "APPROVED",
+  "category": "Fairy Tail",
+  "parts": 14,
+  "vfx": 16,
+  "vfxNames": [
+   "CircleParticle",
+   "Fire",
+   "Particle",
+   "RyujinLight",
+   "SaiyanAura",
+   "ShootParticle",
+   "SmallShoot"
+  ],
+  "weapons": [],
+  "score": 33,
+  "notes": [
+   "Fogo próprio.",
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Gray",
+  "sourcePath": "Fairy Tail.Gray",
+  "display": "Grei",
+  "id": "grei",
+  "family": "grei",
+  "tier": 1,
+  "rarity": "Rare",
+  "dest": "lucky",
+  "status": "APPROVED",
+  "category": "Fairy Tail",
+  "parts": 13,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 27,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Grey Awakening",
+  "sourcePath": "Fairy Tail.Grey Awakening",
+  "display": "Grei Desperto",
+  "id": "grei_awakened",
+  "family": "grei",
+  "tier": 2,
+  "rarity": "Legendary",
+  "dest": "awakened",
+  "status": "APPROVED",
+  "category": "Fairy Tail",
+  "parts": 13,
+  "vfx": 14,
+  "vfxNames": [
+   "SaiyanAura",
+   "SaiyanAura2",
+   "dust",
+   "dust2"
+  ],
+  "weapons": [],
+  "score": 30,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Gon",
+  "sourcePath": "HXH.Gon",
+  "display": "Gom",
+  "id": "gom",
+  "family": "gom",
+  "tier": 1,
+  "rarity": "Common",
+  "dest": "lucky",
+  "status": "APPROVED",
+  "category": "HXH",
+  "parts": 12,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 31,
+  "notes": [
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Adult Gon",
+  "sourcePath": "HXH.Adult Gon",
+  "display": "Gom Adulto",
+  "id": "gom_adult",
+  "family": "gom",
+  "tier": 2,
+  "rarity": "Mythic",
+  "dest": "awakened",
+  "status": "APPROVED",
+  "category": "HXH",
+  "parts": 12,
+  "vfx": 3,
+  "vfxNames": [
+   "SaiyanAura",
+   "SaiyanAura2",
+   "SaiyanAura3"
+  ],
+  "weapons": [],
+  "score": 24,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Killua",
+  "sourcePath": "HXH.Killua",
+  "display": "Killuo",
+  "id": "killuo",
+  "family": "killuo",
+  "tier": 1,
+  "rarity": "Rare",
+  "dest": "storm",
+  "status": "APPROVED",
+  "category": "HXH",
+  "parts": 12,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 27,
+  "notes": [
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Killua Godspeed",
+  "sourcePath": "HXH.Killua Godspeed",
+  "display": "Killuo Relâmpago",
+  "id": "killuo_godspeed",
+  "family": "killuo",
+  "tier": 2,
+  "rarity": "Legendary",
+  "dest": "storm",
+  "status": "APPROVED",
+  "category": "HXH",
+  "parts": 13,
+  "vfx": 16,
+  "vfxNames": [
+   "Lightning",
+   "Reiatsu"
+  ],
+  "weapons": [],
+  "score": 33,
+  "notes": [
+   "Raios próprios.",
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Illumi",
+  "sourcePath": "HXH.Illumi",
+  "display": "Ilumi",
+  "id": "ilumi",
+  "family": "ilumi",
+  "tier": 1,
+  "rarity": "Epic",
+  "dest": "void",
+  "status": "APPROVED",
+  "category": "HXH",
+  "parts": 13,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 24,
+  "notes": [
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Illumi Awakened",
+  "sourcePath": "HXH.Illumi Awakened",
+  "display": "Ilumi Desperto",
+  "id": "ilumi_awakened",
+  "family": "ilumi",
+  "tier": 2,
+  "rarity": "Legendary",
+  "dest": "void",
+  "status": "APPROVED",
+  "category": "HXH",
+  "parts": 15,
+  "vfx": 17,
+  "vfxNames": [
+   "Beam"
+  ],
+  "weapons": [],
+  "score": 30,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Hisoka",
+  "sourcePath": "HXH.Hisoka (2ª ocorrência)",
+  "display": "Hizoka",
+  "id": "hizoka",
+  "family": "hizoka",
+  "tier": 1,
+  "rarity": "Epic",
+  "dest": "lucky",
+  "status": "APPROVED",
+  "category": "HXH",
+  "parts": 12,
+  "vfx": 1,
+  "vfxNames": [
+   "Aura"
+  ],
+  "weapons": [],
+  "score": 31,
+  "notes": [
+   "Versão com aura (rosto diferente).",
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Hisoka",
+  "sourcePath": "HXH.Hisoka (1ª ocorrência)",
+  "display": "Hizoka",
+  "id": null,
+  "family": "hizoka",
+  "tier": 1,
+  "rarity": null,
+  "dest": null,
+  "status": "DUPLICATE",
+  "category": "HXH",
+  "parts": 12,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 31,
+  "notes": [
+   "Mesma roupa e malhas da outra Hizoka; muda só o rosto e não tem aura.",
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Gojo Satoru",
+  "sourcePath": "JJK.Gojo Satoru",
+  "display": "Goju",
+  "id": "goju",
+  "family": "goju",
+  "tier": 1,
+  "rarity": "Divine",
+  "dest": "celestial",
+  "status": "APPROVED",
+  "category": "JJK",
+  "parts": 17,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 51,
+  "notes": [
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Gojo Satoru (Blindfold Off)",
+  "sourcePath": "JJK.Gojo Satoru (Blindfold Off)",
+  "display": "Goju (Sem Venda)",
+  "id": null,
+  "family": "goju",
+  "tier": 2,
+  "rarity": null,
+  "dest": null,
+  "status": "DUPLICATE",
+  "category": "JJK",
+  "parts": 17,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 51,
+  "notes": [
+   "Idêntico ao Goju em roupa, peças, malhas e texturas medidas. Se os olhos forem diferentes no Studio, vira forma 2.",
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Yuji",
+  "sourcePath": "JJK.Yuji",
+  "display": "Yujo",
+  "id": "yujo",
+  "family": "yujo",
+  "tier": 1,
+  "rarity": "Legendary",
+  "dest": "celestial",
+  "status": "APPROVED",
+  "category": "JJK",
+  "parts": 15,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 46,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Sukuna",
+  "sourcePath": "JJK.Sukuna",
+  "display": "Sukano",
+  "id": "sukano",
+  "family": "sukano",
+  "tier": 1,
+  "rarity": "Divine",
+  "dest": "banner",
+  "status": "APPROVED",
+  "category": "JJK",
+  "parts": 16,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 52,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Jonathan",
+  "sourcePath": "JOJO.Jonathan",
+  "display": "Jonatan",
+  "id": "jonatan",
+  "family": "jonatan",
+  "tier": 1,
+  "rarity": "Epic",
+  "dest": "future",
+  "status": "APPROVED",
+  "category": "JOJO",
+  "parts": 13,
+  "vfx": 5,
+  "vfxNames": [
+   "BigSparks",
+   "Glow",
+   "HamonSparks",
+   "PointLight",
+   "Trail"
+  ],
+  "weapons": [
+   "Sword"
+  ],
+  "score": 32,
+  "notes": [
+   "Hamon.",
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Young Joseph",
+  "sourcePath": "JOJO.Young Joseph",
+  "display": "Josef",
+  "id": "josef",
+  "family": "josef",
+  "tier": 1,
+  "rarity": "Rare",
+  "dest": "future",
+  "status": "APPROVED",
+  "category": "JOJO",
+  "parts": 17,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 33,
+  "notes": [
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Old Joseph",
+  "sourcePath": "JOJO.Old Joseph",
+  "display": "Josef Veterano",
+  "id": "josef_old",
+  "family": "josef",
+  "tier": 2,
+  "rarity": "Legendary",
+  "dest": "future",
+  "status": "APPROVED",
+  "category": "JOJO",
+  "parts": 16,
+  "vfx": 10,
+  "vfxNames": [
+   "Glow",
+   "Hamon",
+   "Sparks",
+   "Vine"
+  ],
+  "weapons": [],
+  "score": 33,
+  "notes": [
+   "Hamon e vinhas.",
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Jotaro",
+  "sourcePath": "JOJO.Jotaro.Model.Jotaro",
+  "display": "Jotaru",
+  "id": "jotaru",
+  "family": "jotaru",
+  "tier": 1,
+  "rarity": "Mythic",
+  "dest": "banner",
+  "status": "APPROVED",
+  "category": "JOJO",
+  "parts": 32,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 54,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Josuke",
+  "sourcePath": "JOJO.Josuke.Josuke",
+  "display": "Jozuke",
+  "id": "jozuke",
+  "family": "jozuke",
+  "tier": 1,
+  "rarity": "Legendary",
+  "dest": "future",
+  "status": "APPROVED",
+  "category": "JOJO",
+  "parts": 27,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 54,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "DIO",
+  "sourcePath": "JOJO.DIO.DIO",
+  "display": "Dyo",
+  "id": "dyo",
+  "family": "dyo",
+  "tier": 1,
+  "rarity": "Mythic",
+  "dest": "future",
+  "status": "APPROVED",
+  "category": "JOJO",
+  "parts": 37,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 33,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "DIO AWAKENED",
+  "sourcePath": "JOJO.DIO.DIO AWAKENED",
+  "display": "Dyo Desperto",
+  "id": "dyo_awakened",
+  "family": "dyo",
+  "tier": 2,
+  "rarity": "Divine",
+  "dest": "event",
+  "status": "APPROVED",
+  "category": "JOJO",
+  "parts": 11,
+  "vfx": 8,
+  "vfxNames": [
+   "Aura"
+  ],
+  "weapons": [],
+  "score": 27,
+  "notes": [
+   "3 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Kira Yoshikage",
+  "sourcePath": "JOJO.Kira Yoshikage.Kira Yoshikage",
+  "display": "Kiro Yoshi",
+  "id": "kiro_yoshi",
+  "family": "kiro_yoshi",
+  "tier": 1,
+  "rarity": "Mythic",
+  "dest": "future",
+  "status": "APPROVED",
+  "category": "JOJO",
+  "parts": 22,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 51,
+  "notes": [
+   "3 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Giorno",
+  "sourcePath": "JOJO.Giorno.Giorno",
+  "display": "Jorno",
+  "id": "jorno",
+  "family": "jorno",
+  "tier": 1,
+  "rarity": "Mythic",
+  "dest": "banner",
+  "status": "APPROVED",
+  "category": "JOJO",
+  "parts": 31,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 67,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Giorno",
+  "sourcePath": "JOJO.Giorno (BUT BOSS).Giorno",
+  "display": "Jorno Chefe",
+  "id": "jorno_boss",
+  "family": "jorno",
+  "tier": 2,
+  "rarity": "Divine",
+  "dest": "limited",
+  "status": "APPROVED",
+  "category": "JOJO",
+  "parts": 31,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 67,
+  "notes": [
+   "Mesmas malhas do Jorno com terno diferente.",
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Doppio",
+  "sourcePath": "JOJO.Doppio/Diavolo.Doppio",
+  "display": "Dopio",
+  "id": "dopio",
+  "family": "dopio",
+  "tier": 1,
+  "rarity": "Legendary",
+  "dest": "future",
+  "status": "APPROVED",
+  "category": "JOJO",
+  "parts": 35,
+  "vfx": 2,
+  "vfxNames": [
+   "Trail"
+  ],
+  "weapons": [],
+  "score": 43,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Enrico",
+  "sourcePath": "JOJO.Enrico",
+  "display": "Enriko",
+  "id": "enriko",
+  "family": "enriko",
+  "tier": 1,
+  "rarity": "Divine",
+  "dest": "limited",
+  "status": "APPROVED",
+  "category": "JOJO",
+  "parts": 37,
+  "vfx": 7,
+  "vfxNames": [
+   "ParticleEmitter"
+  ],
+  "weapons": [],
+  "score": 78,
+  "notes": [
+   "Sem scripts; único SurfaceAppearance do pack."
+  ]
+ },
+ {
+  "source": "Jolyne",
+  "sourcePath": "JOJO.Jolyne.Jolyne.Jolyne",
+  "display": "Jolene",
+  "id": "jolene",
+  "family": "jolene",
+  "tier": 1,
+  "rarity": "Legendary",
+  "dest": "future",
+  "status": "APPROVED",
+  "category": "JOJO",
+  "parts": 27,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 54,
+  "notes": [
+   "3 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Awakened Jolyne",
+  "sourcePath": "JOJO.Jolyne.Awakened Jolyne",
+  "display": "Jolene Desperta",
+  "id": "jolene_awakened",
+  "family": "jolene",
+  "tier": 2,
+  "rarity": "Mythic",
+  "dest": "future",
+  "status": "APPROVED",
+  "category": "JOJO",
+  "parts": 27,
+  "vfx": 8,
+  "vfxNames": [
+   "Aura"
+  ],
+  "weapons": [],
+  "score": 54,
+  "notes": [
+   "3 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Morph",
+  "sourcePath": "JOJO.DIO.TW.Morph",
+  "display": "Stand: Mundo",
+  "id": null,
+  "family": "dyo",
+  "tier": 0,
+  "rarity": null,
+  "dest": "future",
+  "status": "STAND_ONLY",
+  "category": "JOJO",
+  "parts": 4,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 12,
+  "notes": [
+   "4 peças, sem membros R6 nem roupa."
+  ]
+ },
+ {
+  "source": "Morph",
+  "sourcePath": "JOJO.DIO.TW AURA.Morph",
+  "display": "Stand: Mundo (Aura)",
+  "id": null,
+  "family": "dyo",
+  "tier": 0,
+  "rarity": null,
+  "dest": "future",
+  "status": "STAND_ONLY",
+  "category": "JOJO",
+  "parts": 4,
+  "vfx": 1,
+  "vfxNames": [
+   "Stand Aura"
+  ],
+  "weapons": [],
+  "score": 14,
+  "notes": [
+   "Igual ao anterior + aura."
+  ]
+ },
+ {
+  "source": "KC AURA",
+  "sourcePath": "JOJO.Doppio/Diavolo.KC AURA",
+  "display": "Stand: Rei Carmesim",
+  "id": null,
+  "family": "dopio",
+  "tier": 0,
+  "rarity": null,
+  "dest": "future",
+  "status": "STAND_ONLY",
+  "category": "JOJO",
+  "parts": 57,
+  "vfx": 9,
+  "vfxNames": [
+   "Stand Aura",
+   "Trail"
+  ],
+  "weapons": [],
+  "score": 53,
+  "notes": [
+   "57 peças e sem Humanoid."
+  ]
+ },
+ {
+  "source": "GER",
+  "sourcePath": "JOJO.Giorno (BUT BOSS).GER",
+  "display": "Stand: Réquiem Dourado",
+  "id": null,
+  "family": "jorno",
+  "tier": 0,
+  "rarity": null,
+  "dest": "future",
+  "status": "STAND_ONLY",
+  "category": "JOJO",
+  "parts": 85,
+  "vfx": 8,
+  "vfxNames": [
+   "Giorno Giovanna"
+  ],
+  "weapons": [],
+  "score": 50,
+  "notes": [
+   "85 peças."
+  ]
+ },
+ {
+  "source": "STONE FREE",
+  "sourcePath": "JOJO.Jolyne.STONE FREE",
+  "display": "Stand: Pedra Livre",
+  "id": null,
+  "family": "jolene",
+  "tier": 0,
+  "rarity": null,
+  "dest": "future",
+  "status": "STAND_ONLY",
+  "category": "JOJO",
+  "parts": 34,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 47,
+  "notes": []
+ },
+ {
+  "source": "STONE FREE AURA",
+  "sourcePath": "JOJO.Jolyne.STONE FREE AURA",
+  "display": "Stand: Pedra Livre (Aura)",
+  "id": null,
+  "family": "jolene",
+  "tier": 0,
+  "rarity": null,
+  "dest": "future",
+  "status": "STAND_ONLY",
+  "category": "JOJO",
+  "parts": 34,
+  "vfx": 9,
+  "vfxNames": [
+   "JOLYNE KUJO"
+  ],
+  "weapons": [],
+  "score": 57,
+  "notes": []
+ },
+ {
+  "source": "Killer Queen",
+  "sourcePath": "JOJO.Kira Yoshikage.Killer Queen",
+  "display": "Stand: Rainha Assassina",
+  "id": null,
+  "family": "kiro_yoshi",
+  "tier": 0,
+  "rarity": null,
+  "dest": "future",
+  "status": "STAND_ONLY",
+  "category": "JOJO",
+  "parts": 38,
+  "vfx": 9,
+  "vfxNames": [
+   "Kira Yoshikage"
+  ],
+  "weapons": [],
+  "score": 54,
+  "notes": []
+ },
+ {
+  "source": "Deku",
+  "sourcePath": "My Hero Academia Pack.Deku",
+  "display": "Deko",
+  "id": "deko",
+  "family": "deko",
+  "tier": 1,
+  "rarity": "Uncommon",
+  "dest": "fighter",
+  "status": "APPROVED",
+  "category": "My Hero Academia Pack",
+  "parts": 15,
+  "vfx": 1,
+  "vfxNames": [
+   "ChargeParticle2"
+  ],
+  "weapons": [],
+  "score": 30,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Deku Awakened",
+  "sourcePath": "My Hero Academia Pack.Deku Awakened",
+  "display": "Deko Desperto",
+  "id": "deko_awakened",
+  "family": "deko",
+  "tier": 2,
+  "rarity": "Legendary",
+  "dest": "storm",
+  "status": "APPROVED",
+  "category": "My Hero Academia Pack",
+  "parts": 15,
+  "vfx": 7,
+  "vfxNames": [
+   "ChargeParticle2",
+   "ShootParticle"
+  ],
+  "weapons": [],
+  "score": 30,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "100% Deku",
+  "sourcePath": "My Hero Academia Pack.100% Deku",
+  "display": "Deko 100%",
+  "id": "deko_full",
+  "family": "deko",
+  "tier": 3,
+  "rarity": "Divine",
+  "dest": "celestial",
+  "status": "APPROVED",
+  "category": "My Hero Academia Pack",
+  "parts": 21,
+  "vfx": 9,
+  "vfxNames": [
+   "SaiyanAura",
+   "ShootParticle",
+   "SmallShoot"
+  ],
+  "weapons": [],
+  "score": 36,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Bakugo",
+  "sourcePath": "My Hero Academia Pack.Bakugo",
+  "display": "Bakugu",
+  "id": "bakugu",
+  "family": "bakugu",
+  "tier": 1,
+  "rarity": "Rare",
+  "dest": "flame",
+  "status": "APPROVED",
+  "category": "My Hero Academia Pack",
+  "parts": 24,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 24,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Awakened Bakugo",
+  "sourcePath": "My Hero Academia Pack.Awakened Bakugo",
+  "display": "Bakugu Desperto",
+  "id": "bakugu_awakened",
+  "family": "bakugu",
+  "tier": 2,
+  "rarity": "Legendary",
+  "dest": "awakened",
+  "status": "APPROVED",
+  "category": "My Hero Academia Pack",
+  "parts": 24,
+  "vfx": 2,
+  "vfxNames": [
+   "Sparky"
+  ],
+  "weapons": [],
+  "score": 24,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Todoroki",
+  "sourcePath": "My Hero Academia Pack.Todoroki",
+  "display": "Todoruki",
+  "id": "todoruki",
+  "family": "todoruki",
+  "tier": 1,
+  "rarity": "Uncommon",
+  "dest": "flame",
+  "status": "APPROVED",
+  "category": "My Hero Academia Pack",
+  "parts": 14,
+  "vfx": 1,
+  "vfxNames": [
+   "ChargeParticle2"
+  ],
+  "weapons": [],
+  "score": 27,
+  "notes": [
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "All Might",
+  "sourcePath": "My Hero Academia Pack.All Might",
+  "display": "Ol Maito",
+  "id": "olmaito",
+  "family": "olmaito",
+  "tier": 1,
+  "rarity": "Legendary",
+  "dest": "fighter",
+  "status": "APPROVED",
+  "category": "My Hero Academia Pack",
+  "parts": 12,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 34,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "All Might (MODE)",
+  "sourcePath": "My Hero Academia Pack.All Might (MODE)",
+  "display": "Ol Maito Poder Total",
+  "id": "olmaito_mode",
+  "family": "olmaito",
+  "tier": 2,
+  "rarity": "Mythic",
+  "dest": "celestial",
+  "status": "APPROVED",
+  "category": "My Hero Academia Pack",
+  "parts": 13,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 37,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Lemillion",
+  "sourcePath": "My Hero Academia Pack.Lemillion",
+  "display": "Lemilio",
+  "id": "lemilio",
+  "family": "lemilio",
+  "tier": 1,
+  "rarity": "Rare",
+  "dest": "fighter",
+  "status": "APPROVED",
+  "category": "My Hero Academia Pack",
+  "parts": 15,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 42,
+  "notes": [
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Hellflame",
+  "sourcePath": "My Hero Academia Pack.Hellflame",
+  "display": "Infernus",
+  "id": "infernus",
+  "family": "infernus",
+  "tier": 1,
+  "rarity": "Epic",
+  "dest": "premium",
+  "status": "APPROVED",
+  "category": "My Hero Academia Pack",
+  "parts": 25,
+  "vfx": 13,
+  "vfxNames": [
+   "Particle1"
+  ],
+  "weapons": [],
+  "score": 67,
+  "notes": [
+   "Chamas próprias.",
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Speed Guy",
+  "sourcePath": "My Hero Academia Pack.Speed Guy",
+  "display": "Velocista",
+  "id": "velocista",
+  "family": "velocista",
+  "tier": 1,
+  "rarity": "Legendary",
+  "dest": "future",
+  "status": "NEEDS_OPTIMIZATION",
+  "category": "My Hero Academia Pack",
+  "parts": 220,
+  "vfx": 18,
+  "vfxNames": [
+   "Beam"
+  ],
+  "weapons": [],
+  "score": 30,
+  "notes": [
+   "220 peças (178 SpecialMesh): otimizar antes.",
+   "220 peças (meta ≤ 40 depois de limpar)",
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "ptsNaruto",
+  "sourcePath": "NARUTO.ptsNaruto",
+  "display": "Narotu (Jovem)",
+  "id": "narotu_young",
+  "family": "narotu",
+  "tier": 1,
+  "rarity": "Common",
+  "dest": "shinobi",
+  "status": "APPROVED",
+  "category": "NARUTO",
+  "parts": 12,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 27,
+  "notes": [
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "tsNaruto",
+  "sourcePath": "NARUTO.tsNaruto",
+  "display": "Narotu",
+  "id": "narotu",
+  "family": "narotu",
+  "tier": 2,
+  "rarity": "Epic",
+  "dest": "shinobi",
+  "status": "APPROVED",
+  "category": "NARUTO",
+  "parts": 12,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 27,
+  "notes": [
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Sage Mode",
+  "sourcePath": "NARUTO.Sage Mode",
+  "display": "Narotu Sábio",
+  "id": "narotu_sage",
+  "family": "narotu",
+  "tier": 3,
+  "rarity": "Mythic",
+  "dest": "celestial",
+  "status": "APPROVED",
+  "category": "NARUTO",
+  "parts": 13,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 33,
+  "notes": [
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "ptsSasuke",
+  "sourcePath": "NARUTO.ptsSasuke",
+  "display": "Sasuko (Jovem)",
+  "id": "sasuko_young",
+  "family": "sasuko",
+  "tier": 1,
+  "rarity": "Common",
+  "dest": "shinobi",
+  "status": "APPROVED",
+  "category": "NARUTO",
+  "parts": 13,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 33,
+  "notes": [
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "tsSasuke",
+  "sourcePath": "NARUTO.tsSasuke",
+  "display": "Sasuko",
+  "id": "sasuko",
+  "family": "sasuko",
+  "tier": 2,
+  "rarity": "Legendary",
+  "dest": "colossus",
+  "status": "APPROVED",
+  "category": "NARUTO",
+  "parts": 25,
+  "vfx": 4,
+  "vfxNames": [
+   "ChargeParticle2",
+   "ParticleEmitter"
+  ],
+  "weapons": [
+   "Blade1",
+   "Blade2"
+  ],
+  "score": 35,
+  "notes": [
+   "Duas lâminas.",
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Neji",
+  "sourcePath": "NARUTO.Neji",
+  "display": "Nejo",
+  "id": "nejo",
+  "family": "nejo",
+  "tier": 1,
+  "rarity": "Uncommon",
+  "dest": "shinobi",
+  "status": "APPROVED",
+  "category": "NARUTO",
+  "parts": 13,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 33,
+  "notes": [
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Rock Lee",
+  "sourcePath": "NARUTO.Rock Lee.Rock Lee",
+  "display": "Roque Li",
+  "id": "roqueli",
+  "family": "roqueli",
+  "tier": 1,
+  "rarity": "Uncommon",
+  "dest": "shinobi",
+  "status": "APPROVED",
+  "category": "NARUTO",
+  "parts": 17,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 33,
+  "notes": [
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "ROCK LEE GATES",
+  "sourcePath": "NARUTO.Rock Lee.ROCK LEE GATES",
+  "display": "Roque Li dos Portões",
+  "id": "roqueli_gates",
+  "family": "roqueli",
+  "tier": 2,
+  "rarity": "Mythic",
+  "dest": "awakened",
+  "status": "APPROVED",
+  "category": "NARUTO",
+  "parts": 17,
+  "vfx": 2,
+  "vfxNames": [
+   "Aura",
+   "ParticleEmitter"
+  ],
+  "weapons": [],
+  "score": 33,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Gaara",
+  "sourcePath": "NARUTO.Gaara",
+  "display": "Gaaro",
+  "id": "gaaro",
+  "family": "gaaro",
+  "tier": 1,
+  "rarity": "Rare",
+  "dest": "shinobi",
+  "status": "APPROVED",
+  "category": "NARUTO",
+  "parts": 21,
+  "vfx": 2,
+  "vfxNames": [
+   "FeetParticle",
+   "Particle"
+  ],
+  "weapons": [],
+  "score": 30,
+  "notes": [
+   "Areia.",
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Zabuza",
+  "sourcePath": "NARUTO.Zabuza",
+  "display": "Zabuzo",
+  "id": "zabuzo",
+  "family": "zabuzo",
+  "tier": 1,
+  "rarity": "Rare",
+  "dest": "shinobi",
+  "status": "APPROVED",
+  "category": "NARUTO",
+  "parts": 16,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [
+   "BackSword"
+  ],
+  "score": 50,
+  "notes": [
+   "Espadão.",
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Kakashi",
+  "sourcePath": "NARUTO.Kakashi",
+  "display": "Kakaxi",
+  "id": "kakaxi",
+  "family": "kakaxi",
+  "tier": 1,
+  "rarity": "Epic",
+  "dest": "shinobi",
+  "status": "APPROVED",
+  "category": "NARUTO",
+  "parts": 17,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 39,
+  "notes": [
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Itachi",
+  "sourcePath": "NARUTO.Itachi",
+  "display": "Itaxi",
+  "id": "itaxi",
+  "family": "itaxi",
+  "tier": 1,
+  "rarity": "Legendary",
+  "dest": "shadow",
+  "status": "APPROVED",
+  "category": "NARUTO",
+  "parts": 13,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 36,
+  "notes": [
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Pain",
+  "sourcePath": "NARUTO.Pain",
+  "display": "Peinn",
+  "id": "peinn",
+  "family": "peinn",
+  "tier": 1,
+  "rarity": "Legendary",
+  "dest": "shadow",
+  "status": "APPROVED",
+  "category": "NARUTO",
+  "parts": 13,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 30,
+  "notes": [
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Madara",
+  "sourcePath": "NARUTO.Madara",
+  "display": "Madaro",
+  "id": "madaro",
+  "family": "madaro",
+  "tier": 1,
+  "rarity": "Divine",
+  "dest": "forbidden",
+  "status": "APPROVED",
+  "category": "NARUTO",
+  "parts": 15,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 30,
+  "notes": [
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Minato",
+  "sourcePath": "NARUTO.Minato.Minato",
+  "display": "Minatu",
+  "id": "minatu",
+  "family": "minatu",
+  "tier": 1,
+  "rarity": "Rare",
+  "dest": "storm",
+  "status": "APPROVED",
+  "category": "NARUTO",
+  "parts": 14,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 39,
+  "notes": [
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "KCM MINATO",
+  "sourcePath": "NARUTO.Minato.KCM MINATO",
+  "display": "Minatu Manto de Chakra",
+  "id": "minatu_cloak",
+  "family": "minatu",
+  "tier": 2,
+  "rarity": "Divine",
+  "dest": "future",
+  "status": "NEEDS_OPTIMIZATION",
+  "category": "NARUTO",
+  "parts": 145,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 54,
+  "notes": [
+   "145 peças: otimizar antes.",
+   "145 peças (meta ≤ 40 depois de limpar)",
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Might Guy",
+  "sourcePath": "NARUTO.Might Guy.Might Guy",
+  "display": "Mighto",
+  "id": "mighto",
+  "family": "mighto",
+  "tier": 1,
+  "rarity": "Epic",
+  "dest": "colossus",
+  "status": "APPROVED",
+  "category": "NARUTO",
+  "parts": 13,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 27,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "5TH GATE",
+  "sourcePath": "NARUTO.Might Guy.5TH GATE",
+  "display": "Mighto 5º Portão",
+  "id": "mighto_gate5",
+  "family": "mighto",
+  "tier": 2,
+  "rarity": "Mythic",
+  "dest": "colossus",
+  "status": "NEEDS_OPTIMIZATION",
+  "category": "NARUTO",
+  "parts": 16,
+  "vfx": 31,
+  "vfxNames": [
+   "Aura",
+   "Beam1",
+   "Beam10",
+   "Beam11",
+   "Beam12",
+   "Beam13",
+   "Beam14",
+   "Beam15",
+   "Beam16",
+   "Beam17",
+   "Beam18",
+   "Beam19",
+   "Beam2",
+   "Beam20",
+   "Beam21",
+   "Beam22",
+   "Beam23",
+   "Beam24",
+   "Beam25",
+   "Beam26",
+   "Beam27",
+   "Beam3",
+   "Beam4",
+   "Beam5",
+   "Beam6",
+   "Beam7",
+   "Beam8",
+   "Beam9",
+   "LeftEyeTrail",
+   "ParticleEmitter",
+   "RightEyeTrail"
+  ],
+  "weapons": [],
+  "score": 39,
+  "notes": [
+   "31 efeitos próprios (LOD/efeitos reduzidos)",
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "8TH GATE",
+  "sourcePath": "NARUTO.Might Guy.8TH GATE",
+  "display": "Mighto 8º Portão",
+  "id": "mighto_gate8",
+  "family": "mighto",
+  "tier": 3,
+  "rarity": "Secret",
+  "dest": "forbidden",
+  "status": "NEEDS_OPTIMIZATION",
+  "category": "NARUTO",
+  "parts": 14,
+  "vfx": 32,
+  "vfxNames": [
+   "Aura",
+   "Beam1",
+   "Beam10",
+   "Beam11",
+   "Beam12",
+   "Beam13",
+   "Beam14",
+   "Beam15",
+   "Beam16",
+   "Beam17",
+   "Beam18",
+   "Beam19",
+   "Beam2",
+   "Beam20",
+   "Beam21",
+   "Beam22",
+   "Beam23",
+   "Beam24",
+   "Beam25",
+   "Beam26",
+   "Beam27",
+   "Beam28",
+   "Beam3",
+   "Beam4",
+   "Beam5",
+   "Beam6",
+   "Beam7",
+   "Beam8",
+   "Beam9",
+   "LeftEyeTrail",
+   "ParticleEmitter",
+   "RightEyeTrail"
+  ],
+  "weapons": [],
+  "score": 36,
+  "notes": [
+   "32 efeitos próprios (LOD/efeitos reduzidos)",
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Chika",
+  "sourcePath": "OTHER.MISC.Chika",
+  "display": "Chiko",
+  "id": "chiko",
+  "family": "chiko",
+  "tier": 1,
+  "rarity": "Uncommon",
+  "dest": "starter",
+  "status": "APPROVED",
+  "category": "OTHER",
+  "parts": 13,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [
+   "Bow"
+  ],
+  "score": 42,
+  "notes": [
+   "Arco.",
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Saitama",
+  "sourcePath": "OTHER.MISC.Saitama",
+  "display": "Saitano",
+  "id": "saitano",
+  "family": "saitano",
+  "tier": 1,
+  "rarity": "Epic",
+  "dest": "starter",
+  "status": "APPROVED",
+  "category": "OTHER",
+  "parts": 13,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 27,
+  "notes": [
+   "Piada interna: herói 'comum' que é Épico.",
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Kazuma",
+  "sourcePath": "OTHER.Kazuma",
+  "display": "Kazumo",
+  "id": "kazumo",
+  "family": "kazumo",
+  "tier": 1,
+  "rarity": "Uncommon",
+  "dest": "lucky",
+  "status": "APPROVED",
+  "category": "OTHER",
+  "parts": 13,
+  "vfx": 1,
+  "vfxNames": [
+   "Trail"
+  ],
+  "weapons": [
+   "Sword"
+  ],
+  "score": 35,
+  "notes": [
+   "Aventureiro sortudo.",
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Tanjiro",
+  "sourcePath": "OTHER.MISC.Tanjiro",
+  "display": "Tanjiru",
+  "id": "tanjiru",
+  "family": "tanjiru",
+  "tier": 1,
+  "rarity": "Epic",
+  "dest": "blade",
+  "status": "APPROVED",
+  "category": "OTHER",
+  "parts": 16,
+  "vfx": 5,
+  "vfxNames": [
+   "FireTrail1",
+   "FireTrail2",
+   "Trail",
+   "WaterTrail1",
+   "WaterTrail2"
+  ],
+  "weapons": [
+   "Blade",
+   "Sword"
+  ],
+  "score": 47,
+  "notes": [
+   "Trilhas de água e fogo.",
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Afro Samurai",
+  "sourcePath": "OTHER.MISC.Afro Samurai",
+  "display": "Samurai Afro",
+  "id": "samurai_afro",
+  "family": "samurai_afro",
+  "tier": 1,
+  "rarity": "Legendary",
+  "dest": "premium",
+  "status": "APPROVED",
+  "category": "OTHER",
+  "parts": 25,
+  "vfx": 4,
+  "vfxNames": [
+   "Beam",
+   "ParticleEmitter"
+  ],
+  "weapons": [
+   "Blade"
+  ],
+  "score": 73,
+  "notes": [
+   "3ª maior nota do pack.",
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Accel",
+  "sourcePath": "OTHER.Accel",
+  "display": "Akcel",
+  "id": "akcel",
+  "family": "akcel",
+  "tier": 1,
+  "rarity": "Epic",
+  "dest": "arcane",
+  "status": "APPROVED",
+  "category": "OTHER",
+  "parts": 14,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 30,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Rikka",
+  "sourcePath": "OTHER.Rikka",
+  "display": "Rika",
+  "id": "rika",
+  "family": "rika",
+  "tier": 1,
+  "rarity": "Epic",
+  "dest": "arcane",
+  "status": "APPROVED",
+  "category": "OTHER",
+  "parts": 15,
+  "vfx": 8,
+  "vfxNames": [
+   "ChargeParticle",
+   "ChargeParticle2",
+   "CircleParticle",
+   "FireOutParticle",
+   "ShootParticle"
+  ],
+  "weapons": [
+   "Bow"
+  ],
+  "score": 44,
+  "notes": [
+   "Arco.",
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Rikka Awakened",
+  "sourcePath": "OTHER.Rikka Awakened",
+  "display": "Rika Desperta",
+  "id": "rika_awakened",
+  "family": "rika",
+  "tier": 2,
+  "rarity": "Legendary",
+  "dest": "awakened",
+  "status": "APPROVED",
+  "category": "OTHER",
+  "parts": 20,
+  "vfx": 10,
+  "vfxNames": [
+   "Blood",
+   "ChargeParticle",
+   "ChargeParticle2",
+   "CircleParticle",
+   "FireOutParticle",
+   "ShootParticle"
+  ],
+  "weapons": [
+   "Bow"
+  ],
+  "score": 53,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "ptsLuffy",
+  "sourcePath": "One Piece Pack.ptsLuffy",
+  "display": "Lufy (Jovem)",
+  "id": null,
+  "family": "lufy",
+  "tier": 1,
+  "rarity": null,
+  "dest": null,
+  "status": "BROKEN",
+  "category": "One Piece Pack",
+  "parts": 16,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 33,
+  "notes": [
+   "Sem Shirt (só Pants). Se o peito nu for intencional no Studio, vira APPROVED.",
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "tsLuffy",
+  "sourcePath": "One Piece Pack.TS Luffy.tsLuffy",
+  "display": "Lufy",
+  "id": "lufy",
+  "family": "lufy",
+  "tier": 2,
+  "rarity": "Rare",
+  "dest": "fighter",
+  "status": "APPROVED",
+  "category": "One Piece Pack",
+  "parts": 17,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 36,
+  "notes": [
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Snakeman",
+  "sourcePath": "One Piece Pack.TS Luffy.Snakeman",
+  "display": "Lufy Serpente",
+  "id": "lufy_snake",
+  "family": "lufy",
+  "tier": 3,
+  "rarity": "Mythic",
+  "dest": "colossus",
+  "status": "APPROVED",
+  "category": "One Piece Pack",
+  "parts": 22,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 27,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "ptsSanji",
+  "sourcePath": "One Piece Pack.ptsSanji",
+  "display": "Sanjo (Jovem)",
+  "id": "sanjo_young",
+  "family": "sanjo",
+  "tier": 1,
+  "rarity": "Common",
+  "dest": "lucky",
+  "status": "APPROVED",
+  "category": "One Piece Pack",
+  "parts": 12,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 27,
+  "notes": [
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "TS SANJI",
+  "sourcePath": "One Piece Pack.TS SANJI",
+  "display": "Sanjo",
+  "id": "sanjo",
+  "family": "sanjo",
+  "tier": 2,
+  "rarity": "Legendary",
+  "dest": "celestial",
+  "status": "APPROVED",
+  "category": "One Piece Pack",
+  "parts": 12,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 27,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "ptsZoro",
+  "sourcePath": "One Piece Pack.ptsZoro",
+  "display": "Zoru (Jovem)",
+  "id": "zoru_young",
+  "family": "zoru",
+  "tier": 1,
+  "rarity": "Uncommon",
+  "dest": "blade",
+  "status": "APPROVED",
+  "category": "One Piece Pack",
+  "parts": 22,
+  "vfx": 3,
+  "vfxNames": [
+   "Trail"
+  ],
+  "weapons": [],
+  "score": 66,
+  "notes": [
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "tsZoro",
+  "sourcePath": "One Piece Pack.tsZoro",
+  "display": "Zoru",
+  "id": "zoru",
+  "family": "zoru",
+  "tier": 2,
+  "rarity": "Epic",
+  "dest": "blade",
+  "status": "APPROVED",
+  "category": "One Piece Pack",
+  "parts": 22,
+  "vfx": 3,
+  "vfxNames": [
+   "Trail"
+  ],
+  "weapons": [],
+  "score": 66,
+  "notes": [
+   "Roupa e rosto diferentes do Zoru Jovem (não é duplicata).",
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "ptsLaw",
+  "sourcePath": "One Piece Pack.ptsLaw",
+  "display": "Lau",
+  "id": "lau",
+  "family": "lau",
+  "tier": 1,
+  "rarity": "Epic",
+  "dest": "arcane",
+  "status": "APPROVED",
+  "category": "One Piece Pack",
+  "parts": 15,
+  "vfx": 1,
+  "vfxNames": [
+   "Trail"
+  ],
+  "weapons": [
+   "SwordDrawn1",
+   "SwordHilt"
+  ],
+  "score": 44,
+  "notes": [
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Ace",
+  "sourcePath": "One Piece Pack.Ace",
+  "display": "Ase",
+  "id": "ase",
+  "family": "ase",
+  "tier": 1,
+  "rarity": "Rare",
+  "dest": "flame",
+  "status": "APPROVED",
+  "category": "One Piece Pack",
+  "parts": 15,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [
+   "Pistol"
+  ],
+  "score": 44,
+  "notes": [
+   "Pistola.",
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Shanks",
+  "sourcePath": "One Piece Pack.Shanks",
+  "display": "Shankz",
+  "id": "shankz",
+  "family": "shankz",
+  "tier": 1,
+  "rarity": "Legendary",
+  "dest": "blade",
+  "status": "APPROVED",
+  "category": "One Piece Pack",
+  "parts": 25,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [
+   "Blade",
+   "BladeUnion",
+   "SheathedBlade"
+  ],
+  "score": 48,
+  "notes": [
+   "Três lâminas.",
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Akainu",
+  "sourcePath": "One Piece Pack.Akainu",
+  "display": "Akaino",
+  "id": "akaino",
+  "family": "akaino",
+  "tier": 1,
+  "rarity": "Legendary",
+  "dest": "flame",
+  "status": "APPROVED",
+  "category": "One Piece Pack",
+  "parts": 27,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 58,
+  "notes": [
+   "Magma.",
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Kizaru",
+  "sourcePath": "One Piece Pack.Kizaru",
+  "display": "Kizaro",
+  "id": "kizaro",
+  "family": "kizaro",
+  "tier": 1,
+  "rarity": "Legendary",
+  "dest": "premium",
+  "status": "APPROVED",
+  "category": "One Piece Pack",
+  "parts": 21,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 64,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Whitebeard",
+  "sourcePath": "One Piece Pack.Whitebeard",
+  "display": "Barbalva",
+  "id": "barbalva",
+  "family": "barbalva",
+  "tier": 1,
+  "rarity": "Mythic",
+  "dest": "forbidden",
+  "status": "APPROVED",
+  "category": "One Piece Pack",
+  "parts": 17,
+  "vfx": 1,
+  "vfxNames": [
+   "FX"
+  ],
+  "weapons": [],
+  "score": 58,
+  "notes": [
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Yusuke",
+  "sourcePath": "YYH.Yusuke",
+  "display": "Yuzuke",
+  "id": "yuzuke",
+  "family": "yuzuke",
+  "tier": 1,
+  "rarity": "Uncommon",
+  "dest": "fighter",
+  "status": "APPROVED",
+  "category": "YYH",
+  "parts": 12,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [],
+  "score": 31,
+  "notes": [
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Yusuke Mode",
+  "sourcePath": "YYH.Yusuke Mode",
+  "display": "Yuzuke Demônio",
+  "id": "yuzuke_demon",
+  "family": "yuzuke",
+  "tier": 2,
+  "rarity": "Mythic",
+  "dest": "spirit",
+  "status": "APPROVED",
+  "category": "YYH",
+  "parts": 13,
+  "vfx": 2,
+  "vfxNames": [
+   "BigParticle",
+   "SmallParticle"
+  ],
+  "weapons": [],
+  "score": 37,
+  "notes": [
+   "2 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Hiei",
+  "sourcePath": "YYH.Hiei",
+  "display": "Hiey",
+  "id": "hiey",
+  "family": "hiey",
+  "tier": 1,
+  "rarity": "Legendary",
+  "dest": "spirit",
+  "status": "APPROVED",
+  "category": "YYH",
+  "parts": 21,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [
+   "Blade",
+   "Blade2"
+  ],
+  "score": 62,
+  "notes": [
+   "Duas lâminas.",
+   "1 script(s) do jogo original: remover"
+  ]
+ },
+ {
+  "source": "Hiei (Jagan Eye)",
+  "sourcePath": "YYH.Hiei (Jagan Eye)",
+  "display": "Hiey (Terceiro Olho)",
+  "id": null,
+  "family": "hiey",
+  "tier": 2,
+  "rarity": null,
+  "dest": null,
+  "status": "DUPLICATE",
+  "category": "YYH",
+  "parts": 21,
+  "vfx": 0,
+  "vfxNames": [],
+  "weapons": [
+   "Blade",
+   "Blade2"
+  ],
+  "score": 62,
+  "notes": [
+   "Idêntico ao Hiey em roupa, peças, malhas, texturas e armas medidas. Se o olho for visível no Studio, vira forma 2.",
+   "1 script(s) do jogo original: remover"
+  ]
+ }
+]

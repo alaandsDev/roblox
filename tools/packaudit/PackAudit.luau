@@ -552,6 +552,8 @@ function PackAudit.summary(report: any): any
 		table.insert(characters, {
 			name = c.name, category = c.category, path = c.path, rig = c.rig, score = c.score,
 			parts = c.parts, meshParts = c.meshParts, specialMeshes = c.specialMeshes, meshIds = #c.meshIds,
+			-- listas completas: permitem provar duplicatas exatas (mesmas malhas/texturas)
+			meshIdList = c.meshIds, textureIdList = c.textureIds,
 			textureIds = #c.textureIds, accessories = c.accessories, hair = c.hair, shirt = c.shirt, pants = c.pants,
 			face = c.face, weapons = c.weapons, vfx = c.vfx, animations = c.animations, motors = c.motors,
 			humanoid = c.humanoid, animationController = c.animationController, surfaceAppearance = c.surfaceAppearance,
