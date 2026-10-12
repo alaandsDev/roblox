@@ -20,3 +20,9 @@ build/
 tools/bin/
 publish.local.json
 __pycache__/
+
+# Packs de terceiros exportados do Studio (grandes; auditar com tools/audit_pack.py)
+third_party/*.rbxm
+third_party/*.rbxmx
+third_party/*.rbxl
+third_party/*.rbxlx

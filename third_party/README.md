@@ -3,18 +3,31 @@
 Esta pasta **não** está no `default.project.json`: nada aqui vai para o place.
 Serve para auditar packs da Creator Store antes de qualquer integração.
 
-## Anime Pack (asset 14679137059)
+## Anime Pack (asset 14679137059) — auditoria SEM executar nada do pack
 
-1. No Studio, com o pack inserido (ainda sem mexer nele), clique com o botão direito na
-   pasta/modelo do pack no Explorer → **Save to File...** → salve como
-   `third_party/AnimePack.rbxm`.
-2. Commit + push do arquivo (ou me envie o arquivo).
-3. Auditoria (só LÊ o arquivo; nenhum script do pack é executado):
+1. No Studio: botão direito em **Workspace > Anime Pack** → **Save to File...** →
+   `third_party/AnimePack.rbxm` (o pack no Studio não é alterado).
+   (Também funciona com o place inteiro salvo em `.rbxl`: a ferramenta usa `Workspace.Anime Pack`.)
+2. Na pasta do projeto:
 
 ```
-tools\bin\lune-0.10.4\lune run tools/packaudit/audit_pack.luau third_party/AnimePack.rbxm
+python tools\audit_pack.py
 ```
 
-Gera `ANIME_PACK_AUDIT.md` na raiz: estrutura, rigs, malhas, roupas, rostos, acessórios,
-armas, VFX, animações, TODOS os scripts com risco (require por id, loadstring, HttpService,
-Teleport, Marketplace, ofuscação...) e uma sugestão visual de raridade.
+   (baixa o Lune se precisar; só LÊ o arquivo — nenhum script do pack roda)
+3. Ele gera 3 arquivos pequenos. Faça commit + push **deles**:
+
+```
+git add ANIME_PACK_AUDIT.md third_party/AnimePack_summary.json third_party/AnimePack_scripts.txt
+git commit -m "Auditoria do Anime Pack"
+git push
+```
+
+O `.rbxm` fica fora do Git (`.gitignore`) porque packs grandes passam do limite do GitHub
+(100 MB). Se ele for pequeno e você quiser enviar mesmo assim: `git add -f third_party/AnimePack.rbxm`.
+
+O relatório traz: categorias (DBZ, NARUTO...), estrutura, rigs, malhas, roupas, rostos,
+acessórios, armas, VFX, animações, **formas/transformações do mesmo personagem**, TODOS os
+scripts com risco (require por id, loadstring, HttpService, Teleport, Marketplace,
+ofuscação...) e uma sugestão visual de raridade. O `AnimePack_scripts.txt` tem o código dos
+scripts como texto, para revisão manual.

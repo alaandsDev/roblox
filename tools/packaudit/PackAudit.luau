@@ -404,12 +404,180 @@ local function auditCharacter(model): any
 end
 
 ------------------------------------------------------------------------------------
+-- Categorias (pastas do pack: DBZ, NARUTO...) e formas/transformações
+
+-- Pasta logo abaixo da raiz do pack onde o personagem está ("(raiz)" se estiver solto)
+function PackAudit.categoryOf(model, roots: { any }): string
+	-- (instâncias do Lune não servem como chave de tabela: compara com ==)
+	local function isRoot(node): boolean
+		for _, root in roots do
+			if node == root then
+				return true
+			end
+		end
+		return false
+	end
+	local current = model
+	while current.Parent and not isRoot(current.Parent) do
+		current = current.Parent
+	end
+	if current == model or isRoot(current) or not current.Parent then
+		return "(raiz)"
+	end
+	return current.Name
+end
+
+-- Palavras que indicam forma/transformação/versão (removidas para achar o "nome base")
+PackAudit.FormWords = {
+	"ssj", "ssj1", "ssj2", "ssj3", "ssj4", "ssjb", "ssjg", "ssgss", "ssg", "ssb", "ssr", "lssj", "super", "saiyan", "saiyajin",
+	"ultra", "instinct", "ui", "mui", "base", "form", "forma", "mode", "modo", "sage", "kyuubi", "kurama", "chakra",
+	"bankai", "shikai", "hollow", "hollowfied", "vasto", "lorde", "resurreccion", "gear", "awakened", "awakening",
+	"awaken", "transformed", "transformation", "final", "full", "power", "god", "blue", "rose", "golden", "gold",
+	"black", "evil", "dark", "kid", "young", "old", "adult", "teen", "child", "armor", "armored", "titan", "dragon",
+	"force", "etherion", "release", "released", "susanoo", "rinnegan", "sharingan", "mangekyo", "six", "paths",
+	"baryon", "boss", "rage", "berserk", "true", "perfect", "imperfect", "max", "mk", "alt", "alternate", "skin",
+	"outfit", "costume", "version", "ver", "v", "ii", "iii", "iv", "the", "of", "and",
+}
+local formWordSet = {}
+for _, word in PackAudit.FormWords do
+	formWordSet[word] = true
+end
+
+function PackAudit.baseName(name: string): string
+	local text = string.lower(name)
+	text = string.gsub(text, "[%(%)%[%]{}_%-%.,:/|]", " ")
+	text = string.gsub(text, "(%a)(%d)", "%1 %2")
+	text = string.gsub(text, "(%d)(%a)", "%1 %2")
+	local kept = {}
+	for word in string.gmatch(text, "%S+") do
+		if not formWordSet[word] and not string.match(word, "^%d+$") then
+			table.insert(kept, word)
+		end
+	end
+	return table.concat(kept, " ")
+end
+
+-- Grupos com 2+ modelos que parecem o mesmo personagem (mesma categoria + mesmo nome base,
+-- ou mesma roupa/rosto). Só pistas: confirmar no Studio.
+function PackAudit.forms(characters: { any }): { any }
+	local groups: { [string]: { any } } = {}
+	local order = {}
+	for _, c in characters do
+		local base = PackAudit.baseName(c.name)
+		if base == "" then
+			base = string.lower(c.name)
+		end
+		c.baseName = base
+		local key = c.category .. "|" .. base
+		if not groups[key] then
+			groups[key] = {}
+			table.insert(order, key)
+		end
+		table.insert(groups[key], c)
+	end
+	local out = {}
+	for _, key in order do
+		local members = groups[key]
+		if #members >= 2 then
+			local names = {}
+			for _, c in members do
+				table.insert(names, c.name)
+				c.formGroup = members[1].baseName
+			end
+			table.insert(out, { category = members[1].category, base = members[1].baseName, members = names, reason = "nome" })
+		end
+	end
+	-- Mesma roupa (Shirt+Pants) ou mesmo rosto em nomes diferentes
+	local byLook: { [string]: { any } } = {}
+	for _, c in characters do
+		if c.shirt or c.face then
+			local look = tostring(c.shirt) .. "|" .. tostring(c.pants) .. "|" .. tostring(c.face)
+			byLook[look] = byLook[look] or {}
+			table.insert(byLook[look], c)
+		end
+	end
+	for _, members in byLook do
+		if #members >= 2 then
+			local sameBase = true
+			for _, c in members do
+				if c.baseName ~= members[1].baseName then
+					sameBase = false
+				end
+			end
+			if not sameBase then
+				local names = {}
+				for _, c in members do
+					table.insert(names, c.name)
+				end
+				table.sort(names)
+				table.insert(out, { category = members[1].category, base = members[1].baseName, members = names, reason = "mesma roupa/rosto" })
+			end
+		end
+	end
+	table.sort(out, function(a, b)
+		if a.category ~= b.category then
+			return a.category < b.category
+		end
+		return a.base < b.base
+	end)
+	return out
+end
+
+-- Texto com o código de TODOS os scripts (só para leitura humana; nunca executado)
+function PackAudit.scriptDump(roots: { any }): string
+	local out = {}
+	local function walk(node)
+		if node.ClassName == "Script" or node.ClassName == "LocalScript" or node.ClassName == "ModuleScript" then
+			local info = auditScript(node)
+			table.insert(out, string.rep("=", 80))
+			table.insert(out, string.format("%s  [%s]  risco %s  linhas %d", info.path, info.className, info.risk, info.lines))
+			table.insert(out, string.rep("=", 80))
+			table.insert(out, tostring(prop(node, "Source") or ""))
+			table.insert(out, "")
+		end
+		for _, child in node:GetChildren() do
+			walk(child)
+		end
+	end
+	for _, root in roots do
+		walk(root)
+	end
+	return table.concat(out, "\n")
+end
+
+-- Resumo compacto (JSON) para análise fora do Studio
+function PackAudit.summary(report: any): any
+	local characters = {}
+	for _, c in report.characters do
+		table.insert(characters, {
+			name = c.name, category = c.category, path = c.path, rig = c.rig, score = c.score,
+			parts = c.parts, meshParts = c.meshParts, specialMeshes = c.specialMeshes, meshIds = #c.meshIds,
+			textureIds = #c.textureIds, accessories = c.accessories, hair = c.hair, shirt = c.shirt, pants = c.pants,
+			face = c.face, weapons = c.weapons, vfx = c.vfx, animations = c.animations, motors = c.motors,
+			humanoid = c.humanoid, animationController = c.animationController, surfaceAppearance = c.surfaceAppearance,
+			scripts = #c.scripts, problems = c.problems, compatibility = c.compatibility, formGroup = c.formGroup,
+		})
+	end
+	local scripts = {}
+	for _, s in report.scripts do
+		local flags = {}
+		for _, f in s.flags do
+			table.insert(flags, f.id)
+		end
+		table.insert(scripts, { path = s.path, class = s.className, risk = s.risk, purpose = s.purpose, lines = s.lines, disabled = s.disabled, flags = flags })
+	end
+	return { totalInstances = report.totalInstances, classes = report.classes, rigs = report.rigs, categories = report.categories, forms = report.forms, characters = characters, scripts = scripts }
+end
+
+------------------------------------------------------------------------------------
 -- Relatório
 
 function PackAudit.audit(roots: { any }): any
 	local report = { characters = {}, scripts = {}, classes = {}, totalInstances = 0, looseScripts = {} }
 	for _, root in roots do
-		for _, d in { root, table.unpack(descendants(root)) } do
+		local all = descendants(root)
+		table.insert(all, 1, root)
+		for _, d in all do
 			report.totalInstances += 1
 			report.classes[d.ClassName] = (report.classes[d.ClassName] or 0) + 1
 			if d.ClassName == "Script" or d.ClassName == "LocalScript" or d.ClassName == "ModuleScript" then
@@ -418,7 +586,14 @@ function PackAudit.audit(roots: { any }): any
 		end
 	end
 	for _, model in PackAudit.findCharacters(roots) do
-		table.insert(report.characters, auditCharacter(model))
+		local c = auditCharacter(model)
+		c.category = PackAudit.categoryOf(model, roots)
+		table.insert(report.characters, c)
+	end
+	report.forms = PackAudit.forms(report.characters)
+	report.categories = {}
+	for _, c in report.characters do
+		report.categories[c.category] = (report.categories[c.category] or 0) + 1
 	end
 	table.sort(report.scripts, function(a, b)
 		return a.path < b.path
@@ -498,6 +673,32 @@ function PackAudit.markdown(report: any, packName: string, assetIdText: string, 
 	line("- Classes: " .. table.concat(classText, ", "))
 	line()
 
+	local categoryNames = {}
+	for name in report.categories or {} do
+		table.insert(categoryNames, name)
+	end
+	table.sort(categoryNames)
+	line("## Categorias")
+	line()
+	line("| Categoria | Personagens |")
+	line("|---|---:|")
+	for _, name in categoryNames do
+		line(string.format("| %s | %d |", name, report.categories[name]))
+	end
+	line()
+	line("## Formas / transformações (mesmo personagem em versões diferentes — pistas, confirmar no Studio)")
+	line()
+	if #(report.forms or {}) == 0 then
+		line("Nenhum grupo encontrado pelos nomes/roupas.")
+	else
+		line("| Categoria | Personagem base | Versões | Pista |")
+		line("|---|---|---|---|")
+		for _, group in report.forms do
+			line(string.format("| %s | %s | %s | %s |", group.category, group.base, table.concat(group.members, ", "), group.reason))
+		end
+	end
+	line()
+
 	line("## 1. Segurança — todos os scripts")
 	line()
 	if #report.scripts == 0 then
@@ -520,7 +721,7 @@ function PackAudit.markdown(report: any, packName: string, assetIdText: string, 
 
 	line("## 2. Personagens")
 	line()
-	line("| # | Nome atual | Rig | Nota | Peças (Mesh) | Cabelo | Roupa | Rosto | Arma | Acessórios | VFX | Animações | Scripts | Compatibilidade |")
+	line("| # | Categoria | Nome atual | Rig | Nota | Peças (Mesh) | Cabelo | Roupa | Rosto | Arma | Acessórios | VFX | Animações | Scripts | Compatibilidade |")
 	line("|---:|---|---|---:|---|---|---|---|---|---|---:|---:|---:|---|")
 	for i, c in report.characters do
 		local clothes = {}
@@ -533,14 +734,14 @@ function PackAudit.markdown(report: any, packName: string, assetIdText: string, 
 		if c.tshirt then
 			table.insert(clothes, "T-Shirt " .. c.tshirt)
 		end
-		line(string.format("| %d | %s | %s | %d | %d (%d) | %s | %s | %s | %s | %d | %d | %d | %d | %s |", i, c.name, c.rig, c.score, c.parts, c.meshParts + c.specialMeshes,
+		line(string.format("| %d | %s | %s | %s | %d | %d (%d) | %s | %s | %s | %s | %d | %d | %d | %d | %s |", i, c.category or "—", c.name, c.rig, c.score, c.parts, c.meshParts + c.specialMeshes,
 			list(c.hair), if #clothes > 0 then table.concat(clothes, ", ") else "—", c.face or "—", list(c.weapons), #c.accessories, #c.vfx, #c.animations, #c.scripts, c.compatibility))
 	end
 	line()
 	for i, c in report.characters do
 		line(string.format("### %d. %s", i, c.name))
 		line()
-		line("- Caminho: `" .. c.path .. "`")
+		line("- Caminho: `" .. c.path .. "` · Categoria: " .. tostring(c.category) .. (if c.formGroup then " · Forma de: **" .. c.formGroup .. "**" else ""))
 		line(string.format("- Rig: %s · Humanoid: %s · AnimationController: %s · Motor6D: %d · peças ancoradas: %d", c.rig, if c.humanoid then "sim" else "não", if c.animationController then "sim" else "não", c.motors, c.anchoredParts))
 		line(string.format("- Malhas: %d MeshPart, %d SpecialMesh, %d MeshIds únicos · Texturas únicas: %d · Decals: %d · SurfaceAppearance: %d", c.meshParts, c.specialMeshes, #c.meshIds, #c.textureIds, c.decals, c.surfaceAppearance))
 		line("- Acessórios: " .. list(c.accessories))

