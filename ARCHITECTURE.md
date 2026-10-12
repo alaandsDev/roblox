@@ -115,6 +115,21 @@ Sempre por `AssetLoader` (remove scripts, desliga colisão/física). Busca na St
 - Tags (CollectionService): `PlayerBase`, `CharacterSlot`, `LockedCharacterSlot`,
   `TeleportPoint`, `ShopStand`, `Interactable`, `TowerEntrance`, `HubDice`.
 - Teste headless: `tests/roblox/MapHarness.luau` roda o código real com o Lune.
+- Visual BLOCKY SIMULATOR (sobre o layout existente, sem mover nada funcional):
+  `MapConfig.Visual` centraliza paleta, folgas da decoração (`DecorClearance`), densidade e
+  semente; `MapConfig.Landmarks` lista as áreas funcionais. `MapLayout.decorSpots()` /
+  `edgeBites()` decidem ONDE plantar (determinístico, testado: nada em caminhos, bases,
+  esteira, Hub, landmarks ou spawns; árvores só fora de `OpenCenterRadius`; entre a esteira e as
+  bases só flores). `Decor` é a biblioteca de peças blocky (BlockyTree, BlockyPalm, BlockyBush,
+  BlockyRockCluster, BlockyFlowerPatch, pilar, borda chunky, placa, dado pequeno). Decoração perto
+  de caminho tem `CanCollide = false`; só troncos/rochas principais longe dos caminhos colidem.
+- Hierarquia visual: Hub (altar de 3 degraus + pedestal + dado 18) > base do jogador > Dice Shop
+  (portal sobre o caminho principal) / Torres (portal + espada + escudo) > Fusão / Mercado / Vender
+  > Missões / Trocas / Rankings > decoração.
+- Vistas da câmera do jogador fora do Studio: `python tools/render_views.py` (lê
+  `build/map_preview.json` do MapHarness; gera `build/views/*.png`). Aproximação, não substitui
+  o Studio. Tour no Studio: `_G.dev("VisualCheck", "Hub")` (Base, Conveyor, DiceShop, Market,
+  Sell, Fusion, Towers, Missions, Trades, Rankings).
 
 ## Base do jogador
 

@@ -118,13 +118,14 @@ local function buildSlot(parent: Instance, origin: CFrame, slotId: number): Mode
 
 	local floorY = baseLayout:floorY(info.floor)
 	local ground = origin * CFrame.new(p.x, floorY, p.z)
-	local pedestal = Build.cylinder(BaseConfig.PedestalSize, BaseConfig.PedestalHeight, ground, {
+	-- Pedestal blocky (topo = floorY + PedestalHeight, onde o personagem R6 fica) + rodapé na cor do tema
+	local size = BaseConfig.PedestalSize
+	local pedestal = Build.part(Vector3.new(size, BaseConfig.PedestalHeight, size), ground * CFrame.new(0, BaseConfig.PedestalHeight / 2, 0), {
 		Name = "Pedestal",
 		Parent = slot,
 	})
-	local rim = Build.cylinder(BaseConfig.PedestalSize + 0.8, 0.3, ground * CFrame.new(0, BaseConfig.PedestalHeight - 0.45, 0), {
+	local rim = Build.part(Vector3.new(size + 0.8, 0.35, size + 0.8), ground * CFrame.new(0, 0.175, 0), {
 		Name = "Rim",
-		Material = Enum.Material.Neon,
 		Parent = slot,
 	})
 	Build.decor(rim)
@@ -172,6 +173,9 @@ end
 
 local function rail(parent: Instance, size: Vector3, cf: CFrame, color: Color3)
 	Build.part(size, cf, { Name = "Rail", Color = color, Parent = parent })
+	-- Tampo mais largo em cima da grade (leitura "chunky")
+	local cap = Vector3.new(if size.X > size.Z then size.X else size.X + 0.5, 0.5, if size.Z > size.X then size.Z else size.Z + 0.5)
+	Build.decor(Build.part(cap, cf * CFrame.new(0, size.Y / 2 + 0.25, 0), { Name = "RailCap", Color = color:Lerp(Color3.new(0, 0, 0), 0.2), Parent = parent }))
 end
 
 local function buildFloor(base: Model, origin: CFrame, floor: number, progression: ProgressionLike): Model
@@ -211,7 +215,35 @@ local function buildFloor(base: Model, origin: CFrame, floor: number, progressio
 				Parent = structure,
 			})
 			Decor.flag(structure, origin * CFrame.new(side * (W / 2 - 1.5), y + BaseConfig.BackWallHeight, D / 2 - 1), 8, theme)
+			-- Tampo grosso da parede lateral
+			Build.decor(Build.part(Vector3.new(1.8, 0.6, D), origin * CFrame.new(side * (W / 2 - 0.5), y + BaseConfig.WallHeight + 0.3, 0), {
+				Name = "WallCap",
+				Color = theme,
+				Parent = structure,
+			}))
+			-- Pilastras chunky por fora da parede (frente, meio e fundo)
+			for _, z in { -D / 2 + 1.2, 0, D / 2 - 1.2 } do
+				Decor.pillar(structure, origin * CFrame.new(side * (W / 2 + 0.4), y - 1, z), 2, BaseConfig.WallHeight + 2.5, lighten(theme, 0.55), theme)
+			end
+			-- Mureta baixa na frente, dos lados da entrada (a entrada continua aberta, sem porta)
+			local e = BaseConfig.Entrance
+			local from, to = e.halfWidth + 2, W / 2 - 1
+			Build.part(Vector3.new(to - from, BaseConfig.FrontWallHeight, 1.2), origin * CFrame.new(side * (from + to) / 2, y + BaseConfig.FrontWallHeight / 2, -D / 2 + 0.6), {
+				Name = "FrontWall",
+				Color = lighten(theme, 0.4),
+				Parent = structure,
+			})
+			Build.decor(Build.part(Vector3.new(to - from + 0.6, 0.5, 1.8), origin * CFrame.new(side * (from + to) / 2, y + BaseConfig.FrontWallHeight + 0.25, -D / 2 + 0.6), {
+				Name = "WallCap",
+				Color = theme,
+				Parent = structure,
+			}))
 		end
+		Build.decor(Build.part(Vector3.new(W, 0.6, 1.8), origin * CFrame.new(0, y + BaseConfig.BackWallHeight + 0.3, D / 2 - 0.5), {
+			Name = "WallCap",
+			Color = theme,
+			Parent = structure,
+		}))
 	else
 		-- Piso superior com o "poço" por onde chega a rampa do andar de baixo
 		local well = baseLayout:rampRect(floor - 1)
@@ -245,11 +277,16 @@ local function buildFloor(base: Model, origin: CFrame, floor: number, progressio
 		local below = baseLayout:floorY(floor - 1)
 		for _, sx in { -1, 1 } do
 			for _, sz in { -1, 1 } do
-				Build.cylinder(2.2, y - 1 - below, origin * CFrame.new(sx * (W / 2 - 1.5), below, sz * (D / 2 - 1.5)), {
+				Build.part(Vector3.new(2.4, y - 1 - below, 2.4), origin * CFrame.new(sx * (W / 2 - 1.5), (below + y - 1) / 2, sz * (D / 2 - 1.5)), {
 					Name = "Pillar",
 					Color = rgb(240, 238, 245),
 					Parent = structure,
 				})
+				Build.decor(Build.part(Vector3.new(3.2, 0.8, 3.2), origin * CFrame.new(sx * (W / 2 - 1.5), y - 1.4, sz * (D / 2 - 1.5)), {
+					Name = "PillarCap",
+					Color = theme,
+					Parent = structure,
+				}))
 			end
 		end
 	end
@@ -300,7 +337,7 @@ local function buildRoof(base: Model, origin: CFrame, topFloor: number)
 	local y = baseLayout:floorY(topFloor)
 	for _, sx in { -1, 1 } do
 		for _, sz in { -1, 1 } do
-			Build.decor(Build.cylinder(1.6, ROOF_HEIGHT, origin * CFrame.new(sx * (W / 2 - 1.5), y, sz * (D / 2 - 1.5)), {
+			Build.decor(Build.part(Vector3.new(1.8, ROOF_HEIGHT, 1.8), origin * CFrame.new(sx * (W / 2 - 1.5), y + ROOF_HEIGHT / 2, sz * (D / 2 - 1.5)), {
 				Name = "RoofPost",
 				Color = rgb(240, 238, 245),
 				Parent = roof,
@@ -309,14 +346,14 @@ local function buildRoof(base: Model, origin: CFrame, topFloor: number)
 	end
 	local top = y + ROOF_HEIGHT
 	for _, sz in { -1, 1 } do
-		Build.decor(Build.part(Vector3.new(W - 1, 1.2, 1.2), origin * CFrame.new(0, top, sz * (D / 2 - 1.5)), {
+		Build.decor(Build.part(Vector3.new(W - 1, 1.6, 1.8), origin * CFrame.new(0, top, sz * (D / 2 - 1.5)), {
 			Name = "RoofBeam",
 			Color = theme,
 			Parent = roof,
 		}))
 	end
 	for _, sx in { -1, 1 } do
-		Build.decor(Build.part(Vector3.new(1.2, 1.2, D - 1), origin * CFrame.new(sx * (W / 2 - 1.5), top, 0), {
+		Build.decor(Build.part(Vector3.new(1.8, 1.6, D - 1), origin * CFrame.new(sx * (W / 2 - 1.5), top, 0), {
 			Name = "RoofBeam",
 			Color = theme,
 			Parent = roof,
@@ -336,6 +373,12 @@ local function buildOwnerSign(base: Model, origin: CFrame)
 		Parent = sign,
 	})
 	sign.PrimaryPart = board
+	-- Moldura blocky atrás da placa (escura por dentro, dourada por fora) + ameias em cima
+	local frameCf = origin * CFrame.new(0, 1 + e.height + 3, -D / 2 + 1.2)
+	Build.decor(Build.part(Vector3.new(e.halfWidth * 2 + 6, 7.6, 0.6), frameCf, { Name = "SignFrame", Color = rgb(255, 200, 70), Parent = sign }))
+	for i = -2, 2 do
+		Build.decor(Build.part(Vector3.new(2, 1.2, 1.2), frameCf * CFrame.new(i * (e.halfWidth + 1) / 2, 4.4, 0), { Name = "SignCrenel", Color = rgb(255, 200, 70), Parent = sign }))
+	end
 
 	local gui = Instance.new("SurfaceGui")
 	gui.Name = "OwnerDisplay"
@@ -414,11 +457,11 @@ local function pad(base: Model, name: string, spot: any, color: Color3, labelKey
 	local part = Build.part(Vector3.new(spot.width, 0.4, spot.depth), origin * CFrame.new(spot.x, 1.2, spot.z), {
 		Name = name,
 		Color = color,
-		Material = Enum.Material.Neon,
-		Transparency = 0.15,
 		Parent = base,
 	})
 	part.CanCollide = false
+	-- Moldura baixa em volta do pad (enfeite, sem colisão)
+	Decor.chunkyBorder(base, origin * CFrame.new(spot.x, 1, spot.z), spot.width, spot.depth, 0.8, 0.6, color:Lerp(Color3.new(0, 0, 0), 0.35)).Name = name .. "Frame"
 	part:SetAttribute("InteractId", name)
 	Build.tag(part, "Interactable")
 
@@ -460,13 +503,53 @@ function BaseBuilder.build(baseId: number, parent: Instance, progression: Progre
 	-- Entrada: arco + placa do dono em cima
 	local e = BaseConfig.Entrance
 	local entrance = Build.model("Entrance", base)
+	local theme = themeOf(base)
+	local gold = rgb(255, 200, 70)
 	for _, side in { -1, 1 } do
-		Build.part(Vector3.new(2.4, e.height, 2.4), origin * CFrame.new(side * e.halfWidth, 1 + e.height / 2, -D / 2 + 0.5), {
+		local foot = origin * CFrame.new(side * e.halfWidth, 1, -D / 2 + 0.5)
+		Build.part(Vector3.new(3.2, e.height, 3.2), foot * CFrame.new(0, e.height / 2, 0), {
 			Name = "ArchPillar",
 			Color = rgb(250, 248, 255),
 			Parent = entrance,
 		})
+		-- Base, faixas na cor do tema e capitel dourado (enfeites)
+		Build.decor(Build.part(Vector3.new(4.4, 1.4, 4.4), foot * CFrame.new(0, 0.7, 0), { Name = "ArchBase", Color = theme, Parent = entrance }))
+		Build.decor(Build.part(Vector3.new(3.6, 0.6, 3.6), foot * CFrame.new(0, e.height * 0.55, 0), { Name = "ArchBand", Color = theme, Parent = entrance }))
+		Build.decor(Build.part(Vector3.new(4.4, 1, 4.4), foot * CFrame.new(0, e.height - 0.5, 0), { Name = "ArchCap", Color = gold, Parent = entrance }))
+		Decor.lamp(entrance, foot * CFrame.new(side * 3.4, -1, -2.6), lighten(theme, 0.3))
 	end
+	-- Degrau de fora (grama -> 0.5 -> piso) e tapete de boas-vindas com setas para dentro
+	local stoneLight = rgb(205, 200, 215)
+	Build.part(Vector3.new(e.halfWidth * 2 + 6, 0.6, 4), origin * CFrame.new(0, 0.3, -D / 2 - 2), {
+		Name = "EntranceStep",
+		Color = stoneLight,
+		Parent = entrance,
+	})
+	local matCf = origin * CFrame.new(0, 1.12, -D / 2 + 3.5)
+	Build.decor(Build.part(Vector3.new(e.halfWidth * 2 - 6, 0.12, 5), matCf, { Name = "EntranceMat", Color = theme:Lerp(Color3.new(0, 0, 0), 0.25), Parent = entrance }))
+	for i = 0, 1 do
+		for _, side in { -1, 1 } do
+			-- ">" apontando para dentro (+Z local)
+			Build.decor(Build.part(Vector3.new(0.6, 0.1, 2.6), matCf * CFrame.new(side * 6 + side * 0.8, 0.1, -1 + i * 2.2) * CFrame.Angles(0, side * math.rad(-40), 0), {
+				Name = "MatArrow",
+				Color = gold,
+				Parent = entrance,
+			}))
+		end
+	end
+
+	-- Fundação: rodapé de pedra mais largo que o piso (a base parece "plantada" no chão)
+	local foundation = Build.model("Foundation", base)
+	Build.part(Vector3.new(W + 3, 0.5, D + 3), origin * CFrame.new(0, 0.25, 0), {
+		Name = "Skirt",
+		Color = rgb(150, 145, 165),
+		Parent = foundation,
+	})
+	Build.decor(Build.part(Vector3.new(W + 0.6, 0.35, D + 0.6), origin * CFrame.new(0, 0.62, 0), {
+		Name = "SkirtTrim",
+		Color = theme:Lerp(Color3.new(0, 0, 0), 0.15),
+		Parent = foundation,
+	}))
 	buildOwnerSign(base, origin)
 
 	-- PlayerSpawn é um SpawnLocation: o Roblox já faz o dono nascer aqui (player.RespawnLocation).

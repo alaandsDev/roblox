@@ -191,4 +191,73 @@ describe("MapLayout: Hub, lojas, torres e esteira", function()
 	end)
 end)
 
+describe("MapLayout: decoração blocky (vegetação e borda)", function()
+	local spots = map:decorSpots()
+
+	it("quantidade razoável e determinística (mobile: poucas peças)", function()
+		expect(#spots >= 60).toBeTruthy()
+		expect(#spots <= 260).toBeTruthy()
+		local again = map:decorSpots()
+		expect(#again).toBe(#spots)
+		expect(again[1].x).toBe(spots[1].x)
+		local kinds = {}
+		for _, s in spots do
+			kinds[s.kind] = (kinds[s.kind] or 0) + 1
+		end
+		for _, kind in { "Palm", "Tree", "Bush", "Rocks", "Flowers" } do
+			expect((kinds[kind] or 0) > 0).toBeTruthy()
+		end
+	end)
+
+	it("nenhuma decoração em caminho, base, esteira, Hub, landmark ou spawn", function()
+		for _, s in spots do
+			expect(map:decorBlocked(s.x, s.z, s.radius)).toBeNil()
+			expect(map:onPath(s.x, s.z, s.radius)).toBeFalsy()
+			expect(map:insideAnyBase(s.x, s.z)).toBeNil()
+			for _, spawn in map:spawnPoints() do
+				expect(math.sqrt((s.x - spawn.x) ^ 2 + (s.z - spawn.z) ^ 2) >= MapConfig.Visual.DecorClearance.Spawn).toBeTruthy()
+			end
+		end
+	end)
+
+	it("spawns incluem Hub/Shop/TowerEntrance e o PlayerSpawn das 10 bases", function()
+		expect(#map:spawnPoints() >= 3 + 2 * MapConfig.Bases.PerSide).toBeTruthy()
+	end)
+
+	it("árvores ficam longe do centro (landmarks visíveis a partir do Hub)", function()
+		for _, s in spots do
+			if s.kind == "Tree" then
+				expect(math.sqrt(s.x * s.x + s.z * s.z) >= MapConfig.Visual.OpenCenterRadius).toBeTruthy()
+			end
+		end
+	end)
+
+	it("entre a esteira e as bases só canteiros de flores (não tapa a visão das bases)", function()
+		local minX = MapConfig.Conveyor.HalfX + MapConfig.Conveyor.BeltWidth / 2
+		local maxX = MapConfig.Bases.CenterX - BaseConfig.Depth / 2
+		for _, s in spots do
+			if math.abs(s.x) > minX and math.abs(s.x) < maxX and math.abs(s.z) < MapConfig.Conveyor.StraightHalfZ then
+				expect(s.kind).toBe("Flowers")
+			end
+		end
+	end)
+
+	it("recortes da borda não encostam em bases nem caminhos", function()
+		local bites = map:edgeBites()
+		expect(#bites > 10).toBeTruthy()
+		for _, b in bites do
+			expect(map:nearBase(b.x, b.z, 2 + b.length / 2)).toBeFalsy()
+			expect(map:onPath(b.x, b.z, b.length / 2 + 2)).toBeFalsy()
+		end
+	end)
+
+	it("landmarks não ficam em cima do caminho principal (exceto o portal da Dice Shop)", function()
+		for _, l in MapConfig.Landmarks do
+			if l.id ~= "DiceShop" and l.id ~= "Entrance" and l.id ~= "Towers" then
+				expect(map:onPath(l.x, l.z)).toBeFalsy()
+			end
+		end
+	end)
+end)
+
 return true

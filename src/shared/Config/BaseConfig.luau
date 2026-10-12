@@ -35,6 +35,7 @@ local BaseConfig = {
 
 	WallHeight = 5,
 	BackWallHeight = 8,
+	FrontWallHeight = 1.6, -- mureta baixa dos lados da entrada (a entrada fica aberta)
 	CorridorHalfWidth = 14,
 
 	-- Rampa entre andares: fica no "poço" lateral, alternando de lado a cada andar

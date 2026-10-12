@@ -47,6 +47,7 @@ local DISPLAY_INTERVAL = 3
 local BILLBOARD_DISTANCE = 90
 local PLATE_DISTANCE = 55
 local PAD_COLOR = Color3.fromRGB(60, 230, 90)
+local PAD_FRAME_COLOR = Color3.fromRGB(30, 120, 55)
 local PAD_MAX_COLOR = Color3.fromRGB(255, 200, 60)
 
 type Station = {
@@ -186,7 +187,8 @@ local function build(player: Player, base: Model, slotId: number, uid: string): 
 	-- Pad de upgrade no chão, à frente
 	local padCf = point.CFrame * CFrame.new(0, -BaseConfig.PedestalHeight + 0.18, -(BaseConfig.PedestalSize / 2 + 2.6))
 	local pad = decorPart("UpgradePad", Vector3.new(5, 0.3, 3), padCf, PAD_COLOR, model)
-	pad.Material = Enum.Material.Neon
+	-- Moldura blocky mais escura por baixo (sem Neon: o verde já chama atenção sem estourar no Bloom)
+	decorPart("PadFrame", Vector3.new(5.8, 0.24, 3.8), padCf * CFrame.new(0, -0.05, 0), PAD_FRAME_COLOR, model)
 	pad:SetAttribute("Uid", uid)
 	local padGui = Instance.new("BillboardGui")
 	padGui.Name = "Cost"

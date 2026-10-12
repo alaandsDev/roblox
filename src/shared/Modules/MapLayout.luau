@@ -182,4 +182,164 @@ function MapLayout.pointAt(path: Path, distance: number): (number, number, numbe
 	return a.x + dx * t, a.z + dz * t, if len > 0 then dx / len else 0, if len > 0 then dz / len else 1
 end
 
+------------------------------------------------------------------------------------
+-- Visual blocky: o que a decoração NÃO pode invadir e onde plantar (determinístico)
+
+-- Menor distância de (x, z) até a linha central da esteira
+function MapLayout:distanceToConveyor(x: number, z: number): number
+	local path = self:conveyorPath()
+	local best = math.huge
+	local count = #path.points
+	for i, a in path.points do
+		local b = path.points[i % count + 1]
+		local dx, dz = b.x - a.x, b.z - a.z
+		local len2 = dx * dx + dz * dz
+		local t = if len2 > 0 then math.clamp(((x - a.x) * dx + (z - a.z) * dz) / len2, 0, 1) else 0
+		local px, pz = a.x + dx * t, a.z + dz * t
+		best = math.min(best, math.sqrt((x - px) ^ 2 + (z - pz) ^ 2))
+	end
+	return best
+end
+
+-- Pontos de nascimento/teleporte do mapa (Hub/Lojas/Torres) + PlayerSpawn de cada base
+function MapLayout:spawnPoints(): { { x: number, z: number } }
+	local list = {}
+	for _, spot in self.map.Spawns do
+		table.insert(list, { x = spot.x, z = spot.z })
+	end
+	local s = self.baseConfig.Spawn
+	for id = 1, self.map.Bases.Count do
+		local x, z = self:baseToWorld(id, s.x, s.z)
+		table.insert(list, { x = x, z = z })
+	end
+	return list
+end
+
+-- Área funcional (Fusão, Lojas, Torres...) que contém (x, z) com folga `margin`
+function MapLayout:landmarkAt(x: number, z: number, margin: number?): string?
+	for _, l in self.map.Landmarks or {} do
+		if math.sqrt((x - l.x) ^ 2 + (z - l.z) ^ 2) <= l.radius + (margin or 0) then
+			return l.id
+		end
+	end
+	return nil
+end
+
+-- A base com folga `margin` cobre (x, z)?
+function MapLayout:nearBase(x: number, z: number, margin: number): boolean
+	for id = 1, self.map.Bases.Count do
+		local r = self:baseRect(id)
+		if x >= r.minX - margin and x <= r.maxX + margin and z >= r.minZ - margin and z <= r.maxZ + margin then
+			return true
+		end
+	end
+	return false
+end
+
+-- Motivo pelo qual não dá para decorar um círculo (x, z, radius); nil = livre
+function MapLayout:decorBlocked(x: number, z: number, radius: number): string?
+	local c = self.map.Visual.DecorClearance
+	if not self:insideIsland(x, z, c.IslandEdge + radius) then
+		return "ilha"
+	elseif self:onPath(x, z, c.Path + radius) then
+		return "caminho"
+	elseif self:nearBase(x, z, c.Base + radius) then
+		return "base"
+	elseif self:distanceToConveyor(x, z) < self.map.Conveyor.BeltWidth / 2 + c.Conveyor + radius then
+		return "esteira"
+	elseif self:distanceToHub(x, z) < self.map.Hub.Radius + c.Hub + radius then
+		return "hub"
+	elseif self:landmarkAt(x, z, c.Landmark + radius) then
+		return "landmark"
+	end
+	for _, spot in self:spawnPoints() do
+		if math.sqrt((x - spot.x) ^ 2 + (z - spot.z) ^ 2) < c.Spawn + radius then
+			return "spawn"
+		end
+	end
+	return nil
+end
+
+-- Hash determinístico 0..1 (mesmo mapa em todo servidor e nos testes)
+local function hash01(a: number, b: number, seed: number): number
+	local n = math.sin(a * 12.9898 + b * 78.233 + seed * 37.719) * 43758.5453
+	return n - math.floor(n)
+end
+MapLayout.hash01 = hash01
+
+export type DecorSpot = { kind: string, x: number, z: number, radius: number, scale: number, seed: number }
+
+--[[
+	Onde plantar a vegetação blocky. Grade regular com deslocamento determinístico; cada ponto
+	vira (ou não) um tipo conforme a zona:
+	  faixa da borda (EdgeBand)      -> palmeiras (e algumas pedras)
+	  entre a esteira e as bases     -> só canteiros de flores (não tapa a visão das bases)
+	  miolo                          -> árvores, arbustos, pedras e flores
+	Tudo passa por decorBlocked (caminhos, bases, esteira, Hub, áreas funcionais, spawns).
+]]
+local RADIUS = { Palm = 3, Tree = 4.5, Bush = 2.2, Rocks = 4, Flowers = 2.5 }
+function MapLayout:decorSpots(): { DecorSpot }
+	local v = self.map.Visual
+	local grid = v.DecorGrid
+	local hx, hz = self:islandHalf()
+	local spots: { DecorSpot } = {}
+	local corridorMin = self.map.Conveyor.HalfX + self.map.Conveyor.BeltWidth / 2
+	local corridorMax = self.map.Bases.CenterX - self.baseConfig.Depth / 2
+	for gx = -hx, hx, grid do
+		for gz = -hz, hz, grid do
+			local r1, r2, r3 = hash01(gx, gz, v.DecorSeed), hash01(gz, gx, v.DecorSeed + 1), hash01(gx + gz, gx - gz, v.DecorSeed + 2)
+			local x = gx + (r1 - 0.5) * grid * 0.7
+			local z = gz + (r2 - 0.5) * grid * 0.7
+			local edgeDistance = math.min(hx - math.abs(x), hz - math.abs(z))
+			local inCorridor = math.abs(x) > corridorMin and math.abs(x) < corridorMax and math.abs(z) < self.map.Conveyor.StraightHalfZ
+			local kind: string? = nil
+			if inCorridor then
+				kind = if v.BaseCorridorFlowersOnly and r3 < 0.35 then "Flowers" else nil
+			elseif edgeDistance < v.EdgeBand then
+				kind = if r3 < 0.5 then "Palm" elseif r3 < 0.64 then "Rocks" elseif r3 < 0.7 then "Bush" else nil
+			else
+				-- Perto do Hub só decoração baixa: as árvores não tampam os landmarks vistos do centro
+				local open = math.sqrt(x * x + z * z) < v.OpenCenterRadius
+				kind = if r3 < 0.3 then (if open then "Bush" else "Tree") elseif r3 < 0.38 then "Bush" elseif r3 < 0.47 then "Rocks" elseif r3 < 0.6 then "Flowers" else nil
+			end
+			if kind then
+				local radius = RADIUS[kind]
+				if not self:decorBlocked(x, z, radius) then
+					table.insert(spots, { kind = kind, x = x, z = z, radius = radius, scale = 0.85 + r1 * 0.3, seed = math.floor(r2 * 1e6) })
+				end
+			end
+		end
+	end
+	return spots
+end
+
+-- Recortes decorativos na borda da grama (areia entrando / grama saindo), longe de bases e caminhos
+export type EdgeBite = { x: number, z: number, alongX: boolean, length: number, depth: number, sand: boolean }
+function MapLayout:edgeBites(): { EdgeBite }
+	local v = self.map.Visual
+	local hx, hz = self:islandHalf()
+	local bites: { EdgeBite } = {}
+	local function try(x: number, z: number, alongX: boolean, i: number)
+		local r = hash01(x, z, v.DecorSeed + 5)
+		local length = 8 + r * 8
+		local depth = 2 + hash01(z, x, v.DecorSeed + 6) * 3
+		if self:nearBase(x, z, 2 + length / 2) or self:onPath(x, z, length / 2 + 2) or self:landmarkAt(x, z, 4) then
+			return
+		end
+		table.insert(bites, { x = x, z = z, alongX = alongX, length = length, depth = depth, sand = i % 2 == 0 })
+	end
+	local i = 0
+	for x = -hx + 10, hx - 10, v.EdgeBiteSpacing do
+		i += 1
+		try(x, hz, true, i)
+		try(x, -hz, true, i + 1)
+	end
+	for z = -hz + 10, hz - 10, v.EdgeBiteSpacing do
+		i += 1
+		try(hx, z, false, i)
+		try(-hx, z, false, i + 1)
+	end
+	return bites
+end
+
 return MapLayout

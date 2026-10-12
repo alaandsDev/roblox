@@ -224,6 +224,50 @@ DevService.Register("SetTutorial", "(player, passos) passos do tutorial feitos (
 	return "tutorial = " .. tostring((PlayerDataService.GetData(player) :: any).Tutorial)
 end)
 
+-- Tour visual do mapa: posiciona o jogador na altura normal da câmera, olhando para cada área
+local MapConfig = require(Shared.Config.MapConfig)
+local VISUAL_POINTS: { { name: string, from: { number }, to: { number } } } = {
+	{ name = "Hub", from = { 0, -50 }, to = { 0, 0 } },
+	{ name = "Base", from = { 0, 0 }, to = { 0, 0 } }, -- calculado: PlayerSpawn da base do jogador
+	{ name = "Conveyor", from = { MapConfig.Conveyor.HalfX - 20, -98 }, to = { MapConfig.Conveyor.HalfX + 10, -84 } },
+	{ name = "DiceShop", from = { 0, -40 }, to = { 0, -76 } },
+	{ name = "Market", from = { -24, -45 }, to = { -38, -68 } },
+	{ name = "Sell", from = { 24, -45 }, to = { 38, -68 } },
+	{ name = "Fusion", from = { -40, 0 }, to = { -68, 12 } },
+	{ name = "Towers", from = { 0, 70 }, to = { 0, 118 } },
+	{ name = "Missions", from = { -25, 75 }, to = { -50, 98 } },
+	{ name = "Trades", from = { 40, 0 }, to = { 68, 12 } },
+	{ name = "Rankings", from = { 25, 75 }, to = { 50, 98 } },
+}
+DevService.Register("VisualCheck", "(player, ponto?) teleporta para conferir o visual: Hub, Base, Conveyor, DiceShop, Market, Sell, Fusion, Towers, Missions, Trades, Rankings", function(player: Player, point: string?)
+	local names = {}
+	for _, p in VISUAL_POINTS do
+		table.insert(names, p.name)
+	end
+	local character = player.Character
+	if not point or not character then
+		return "pontos: " .. table.concat(names, ", ")
+	end
+	for _, p in VISUAL_POINTS do
+		if string.lower(p.name) == string.lower(point) then
+			local from = Vector3.new(p.from[1], 4, p.from[2])
+			local to = Vector3.new(p.to[1], 4, p.to[2])
+			if p.name == "Base" then
+				local base = BaseService.GetPlayerBase(player)
+				local spawn = base and base:FindFirstChild("PlayerSpawn") :: BasePart?
+				if not spawn then
+					return "jogador sem base"
+				end
+				from = spawn.Position + Vector3.new(0, 4, 0)
+				to = from + spawn.CFrame.LookVector * 20
+			end
+			character:PivotTo(CFrame.lookAt(from, Vector3.new(to.X, from.Y, to.Z)))
+			return "teleportado para " .. p.name
+		end
+	end
+	return "ponto desconhecido; " .. table.concat(names, ", ")
+end)
+
 DevService.Register("Analytics", "() contagem dos eventos de analytics", function()
 	return game:GetService("HttpService"):JSONEncode(AnalyticsService.Counts())
 end)

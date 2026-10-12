@@ -30,6 +30,7 @@ return {
 	-- Mapa
 	["map.game_title"] = "ROLL LEGENDS",
 	["map.hub_title"] = "ROLL LEGENDS",
+	["map.hub_sub"] = "CENTRO DOS ROLLS",
 	["map.market"] = "MERCADO",
 	["map.sell"] = "VENDER",
 	["map.dice_shop"] = "LOJA DE DADOS",

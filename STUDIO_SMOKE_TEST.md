@@ -124,6 +124,16 @@ jogar/clicar e para **Server** para colar comandos.
 |---|---|---|---|
 | 32 | `_G.dev("PopulateDemoBase", true)` e abra **View → Script Performance / MicroProfiler** (Ctrl+F6) | Base demo com 8 estações; FPS estável; nenhum script do jogo acima de ~3% de atividade parado | [ ] |
 
+## MAPA BLOCKY (extra, não conta nos 32)
+
+| # | Ação | Esperado | OK |
+|---|---|---|---|
+| M1 | `_G.dev("VisualCheck", "Hub")` | Altar do Hub imponente na câmera normal, dado grande girando, nada tapando metade da tela | [ ] |
+| M2 | `_G.dev("VisualCheck", "Base")` | Base com fundação, pilastras, arco com lanternas e placa emoldurada; pedestais quadrados; entrada aberta | [ ] |
+| M3 | `_G.dev("VisualCheck", "Conveyor")` | Esteira no chão, setas, faixa de pedestre nos cruzamentos, atravessa a pé | [ ] |
+| M4 | `VisualCheck` com DiceShop, Market, Sell, Fusion, Towers, Missions, Trades, Rankings | Cada landmark distinto e legível; prompts funcionando; caminho principal passa por baixo do portal da Dice Shop | [ ] |
+| M5 | Andar do Hub até a base e até a borda da ilha | Nenhuma árvore/pedra prende o personagem nos caminhos; borda com recortes de areia e palmeiras | [ ] |
+
 ---
 
 **Passou tudo?** Então vale rodar os 108 testes do `TEST_PLAN.md`. **Falhou algo?** Mande o

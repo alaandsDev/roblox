@@ -22,7 +22,7 @@
 | `tests/BaseAllocator.spec.luau` | **base assignment, uniqueness, release, reassignment**, 11º jogador sem base |
 | `tests/BaseLayout.spec.luau` | **slot layout**: 4 slots no lado A + 4 no lado B, ids por andar (Floor02 = 09–16), posições, orientação, rampa sem invadir pedestais |
 | `tests/BaseProgression.spec.luau` | **RB0 = 1-4 liberados, 5-8 bloqueados**, RB1-4 sem invenção, **RB5 = Floor02 + Slot09**, validação da config |
-| `tests/MapLayout.spec.luau` | dimensões, 5+5 bases, sem sobreposição, Hub, lojas a 40-80, **teleport destinations**, esteira fechada, **terrestre** (topo 0,3–0,8, bordas ≤ 1,5), sem atravessar bases, 11 cruzamentos com caminhos |
+| `tests/MapLayout.spec.luau` | dimensões, 5+5 bases, sem sobreposição, Hub, lojas a 40-80, **teleport destinations**, esteira fechada, **terrestre** (topo 0,3–0,8, bordas ≤ 1,5), sem atravessar bases, 11 cruzamentos com caminhos; **decoração blocky** (determinística, nada em caminho/base/esteira/Hub/landmark/spawn, árvores longe do centro, só flores entre esteira e bases, recortes da borda longe de bases/caminhos) |
 | `tests/MapValidator.spec.luau` | **map validation**: detecta base faltando, ids repetidos, lado com 2 slots, peças faltando |
 | `tests/SpawnCoordinator.spec.luau` | **spawn**: cada jogador nasce na própria base, respawn na mesma base, nunca na base de outro, 10 entradas simultâneas em ordens misturadas, base atrasada (nasce no Hub e vai para casa), 11º jogador |
 | `tests/roblox/ServiceHarness.luau` (Lune) | **integração** PlayerDataService + MapService + BaseService reais com jogadores falsos: AssignBase → GetPlayerBase → GetBaseOwner → OwnerUserId → ReleaseBase → reatribuição; regressão da "cópia da Barra de comandos"; integridade |
@@ -45,7 +45,7 @@
 | `tests/JackpotCore.spec.luau` | chances (200.000 giros), extremos, regra dos boosts, IDs sem repetição |
 | `tests/roblox/ClientHarness.luau` (Lune) | **ponta a ponta**: Services do servidor + Controllers REAIS do cliente, ligados por uma rede falsa que copia os dados. Clica nos botões de verdade: HUD completo, ROLAR, reveal normal e compacto, as 4 cinemáticas (palco, CONTINUAR, limpeza), morrer no meio, MOCHILA (selecionar/EQUIPAR), todas as janelas, DIÁRIO, OFFLINE, venda com confirmação, configurações, notificações agrupadas; falha com qualquer erro de execução |
 | `tests/roblox/SessionHarness.luau` (Lune) | **smoke do ciclo completo** (novo → roll → equipar → coletar → melhorar → dado → 5 renascimentos → andar novo → torre → fusão → troca → diário → missão → sair/voltar com DataStore em memória JSON) + **sessão longa**: 10 jogadores, 4 h lógicas, ~14.400 ações, invariantes (NaN, negativo, UID, slot, base, troca, capacidade) |
-| `tests/roblox/MapHarness.luau` (Lune) | executa o **MapService/MapBuilder/BaseBuilder reais**; **map references**; estados RB0/RB5/dono; gera a imagem `build/map_preview.png` |
+| `tests/roblox/MapHarness.luau` (Lune) | executa o **MapService/MapBuilder/BaseBuilder reais**; **map references**; estados RB0/RB5/dono; **visual overhaul**: bases/slots/spawns/praça nas posições do config, pedestal blocky com o CharacterPoint no topo, prompts das áreas, nenhuma peça sólida na altura do jogador sobre caminhos, decoração fora das bases/spawns; gera `build/map_preview.png` e `build/map_preview.json` (vistas: `python tools/render_views.py`) |
 
 Também rodar antes de cada commit:
 - `luau-lsp analyze` (checagem de tipos com definições do Roblox)
@@ -86,10 +86,11 @@ Preparação: `git pull`, `python tools\run_tests.py` (gera também `build\map_p
 | 4 | Sem 2º andar | Olhar para cima | Só a moldura do telhado; nenhum Floor02 |
 | 5 | HUD | Topo da tela | 3 botões [🎲 CENTRO] [🏠 CASA] [🛒 LOJA]; hover aumenta, clique "afunda", som de clique, barra escura de 1 s |
 | 6 | Teleportes | Clicar CENTRO / LOJA / CASA | Hub (olhando o dado) / entre o Hub e as cabanas (olhando as lojas) / entrada da sua base. Clicar rápido não teleporta 2x |
-| 7 | Hub | No centro | Praça circular clara, dado gigante branco com pontos girando e flutuando, brilhinhos, cristais e postes em volta |
+| 7 | Hub | No centro | ALTAR DOS ROLLS: praça com borda chunky, 3 degraus largos, pedestal com faixa dourada e placas "CENTRO DOS ROLLS", anel de runas, 4 pilares com dadinhos, dado gigante girando e flutuando, brilhinhos, cristais e postes em volta |
 | 8 | Esteira | Do Hub e da base (câmera normal) | Pista oval NO CHÃO (topo ~0,5 stud, bordas baixas, sem pilares), mesma rota entre o Hub e as bases, com ripas e dados/cristais andando; o personagem fica bem mais alto que as bordas; atravessa a pé nos cruzamentos com caminhos; não tapa a visão da base |
-| 9 | Lojas | Perto das cabanas | MERCADO (laranja), LOJA DE DADOS (roxa, maior, com dado no telhado), VENDER (verde). Prompt "Abrir" → aviso "…: em breve!" |
-| 10 | Torres / social | Norte do Hub | Portal TORRES "DESAFIE OS ANDARES" + torre em degraus; FUSÃO (oeste), TROCAS (leste), MISSÕES e RANKINGS (3 painéis) |
+| 9 | Lojas | Perto das cabanas | MERCADO (toldo listrado), LOJA DE DADOS (portal roxo por cima do caminho principal, dado em cima da ponte; balcão nas torres), VENDER (prédio de pedra com moeda gigante "$"). Prompts "Abrir" funcionando |
+| 10 | Torres / social | Norte do Hub | Portal TORRES + torre quadrada em degraus com faixas, espada e escudo gigantes; FUSÃO (oeste, plataforma em 2 degraus com cristal), TROCAS (leste, tenda listrada), MISSÕES (quadro com telhado) e RANKINGS (3 painéis + pódio) |
+| 10b | Tour visual | Servidor: `game.ServerStorage.RollLegendsDev:Invoke("VisualCheck", game.Players:GetPlayers()[1], "Hub")` (e Base, Conveyor, DiceShop, Market, Sell, Fusion, Towers, Missions, Trades, Rankings) | Em cada ponto, na câmera normal: o landmark aparece inteiro, nada tapa metade da tela, caminho livre |
 | 11 | Bordas | Correr até a areia | Parede invisível na borda da areia; água, ilhotas e pedras ao fundo |
 | 12 | Escala com bonecos | Barra de comandos, contexto **Servidor**: `game.ServerStorage.RollLegendsDev:Invoke("ShowDummies", 3, true)` | 8 bonecos ~5,5 studs nos 8 pedestais da Base03, todos olhando para o corredor (nariz vermelho), sem encostar uns nos outros |
 | 13 | Floor02 (prévia) | Servidor: `game.ServerStorage.RollLegendsDev:Invoke("PreviewFloors", 3, 2)` e depois `…:Invoke("ShowDummies", 3, true)` | Andar de cima construído com efeito de partículas, rampa lateral no lado B, grades, 8 pedestais (Slot09 colorido, 10–16 com cadeado). Subir a rampa a pé |

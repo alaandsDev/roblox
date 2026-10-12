@@ -91,12 +91,18 @@ local gameProxy = {
 
 local RandomStub = {}
 function RandomStub.new(seed)
-	local state = (seed or 1) % 2147483647
+	local state = math.floor(math.abs(seed or 1)) % 2147483647
+	if state <= 0 then
+		state = 12345
+	end
 	local obj = {}
 	function obj:NextNumber(a, b)
 		state = (state * 48271) % 2147483647
 		local t = state / 2147483647
 		return (a or 0) + ((b or 1) - (a or 0)) * t
+	end
+	function obj:NextInteger(a, b)
+		return math.floor(obj:NextNumber(a, b + 1 - 1e-9))
 	end
 	return obj
 end
@@ -244,6 +250,105 @@ for i = 1, 10 do
 	check(ok, string.format("Base%02d: PlayerSpawn na entrada, no piso, olhando para dentro", i))
 end
 
+do
+	-- VISUAL OVERHAUL: layout funcional preservado (posições, spawns, slots, prompts) e nada bloqueando caminhos
+	local MapCfg = requireModule(shared.Config.MapConfig)
+	local Layout = requireModule(shared.Modules.MapLayout).new(MapCfg, BaseConfig)
+	local SlotLayout = requireModule(shared.Modules.BaseLayout).new(BaseConfig)
+	local moved, slotsOff = 0, 0
+	for i = 1, 10 do
+		local base = bases:FindFirstChild(string.format("Base%02d", i))
+		local p = Layout:base(i)
+		local pivot = base.WorldPivot.Position
+		if math.abs(pivot.X - p.x) > 0.01 or math.abs(pivot.Z - p.z) > 0.01 or math.abs(pivot.Y) > 0.01 then
+			moved += 1
+		end
+		for slotId = 1, 8 do
+			local slot = base.Floors.Floor01:FindFirstChild(string.format("Slot%02d", slotId), true)
+			local expected = SlotLayout:slotPosition(slotId)
+			local got = base.WorldPivot:PointToObjectSpace(slot.CharacterPoint.CFrame.Position)
+			if (got - roblox.Vector3.new(expected.x, expected.y, expected.z)).Magnitude > 0.01 then
+				slotsOff += 1
+			end
+			local pedestal = slot.Pedestal
+			local top = pedestal.CFrame.Position.Y + pedestal.Size.Y / 2
+			if math.abs(top - slot.CharacterPoint.CFrame.Position.Y) > 0.01 then
+				slotsOff += 1
+			end
+		end
+	end
+	check(moved == 0, "bases: as 10 continuam exatamente na posição do layout")
+	check(slotsOff == 0, "slots: CharacterPoint no lugar e no topo do pedestal blocky (80 slots)")
+
+	local function near(part, spot, label)
+		local pos = part and part.CFrame.Position
+		check(pos ~= nil and math.abs(pos.X - spot.x) < 0.01 and math.abs(pos.Z - spot.z) < 0.01, label .. " na posição do MapConfig")
+	end
+	near(map.Hub:FindFirstChild("HubSpawn", true), MapCfg.Spawns.Hub, "HubSpawn")
+	near(map.Shops:FindFirstChild("ShopSpawn", true), MapCfg.Spawns.Shop, "ShopSpawn")
+	near(map.Towers:FindFirstChild("TowerEntrance", true), MapCfg.Spawns.TowerEntrance, "TowerEntrance")
+	near(map.Hub:FindFirstChild("Plaza", true), { x = MapCfg.Hub.Center.x, z = MapCfg.Hub.Center.z }, "Praça do Hub")
+
+	-- Prompts das áreas funcionais
+	local prompts = {}
+	for _, obj in map:GetDescendants() do
+		if obj:IsA("ProximityPrompt") then
+			prompts[obj:GetAttribute("InteractId")] = true
+		end
+	end
+	for _, id in { "Market", "DiceShop", "Sell", "Towers", "Fusion", "Missions", "Trade" } do
+		check(prompts[id] == true, "prompt de " .. id .. " presente")
+	end
+
+	-- Nada sólido na altura do personagem em cima dos caminhos (exceto o altar do Hub, que É o destino)
+	local allowed = { AltarTier1 = true, AltarTier2 = true, AltarTier3 = true, DicePedestal = true, TowerTier1 = true }
+	local blocking = {}
+	for _, root in { map, bases } do
+		for _, part in root:GetDescendants() do
+			if part:IsA("BasePart") and part.CanCollide and not allowed[part.Name] then
+				local pos = part.CFrame.Position
+				local height = if part:IsA("Part") and part.Shape == roblox.Enum.PartType.Cylinder then part.Size.X else part.Size.Y
+				local top, bottom = pos.Y + height / 2, pos.Y - height / 2
+				if top > 1.6 and bottom < 5 then
+					-- centro e cantos da projeção da peça no chão (pega paredes largas também)
+					local hx, hz = part.Size.X / 2 - 0.3, part.Size.Z / 2 - 0.3
+					for _, o in { { 0, 0 }, { hx, hz }, { -hx, hz }, { hx, -hz }, { -hx, -hz } } do
+						local p = (part.CFrame * roblox.CFrame.new(o[1], 0, o[2])).Position
+						if Layout:onPath(p.X, p.Z) then
+							table.insert(blocking, part:GetFullName())
+							break
+						end
+					end
+				end
+			end
+		end
+	end
+	for i = 1, math.min(#blocking, 8) do
+		print("    - bloqueia caminho: " .. blocking[i])
+	end
+	check(#blocking == 0, "caminhos livres: nenhuma peça sólida na altura do jogador sobre os caminhos")
+
+	-- Decoração do ambiente fora das bases e longe dos spawns
+	local decorBad = 0
+	for _, part in map.Environment.Decor:GetDescendants() do
+		if part:IsA("BasePart") then
+			local pos = part.CFrame.Position
+			if Layout:insideAnyBase(pos.X, pos.Z) then
+				decorBad += 1
+			end
+			for _, spot in Layout:spawnPoints() do
+				if math.sqrt((pos.X - spot.x) ^ 2 + (pos.Z - spot.z) ^ 2) < 6 then
+					decorBad += 1
+				end
+			end
+			if part.CanCollide and Layout:onPath(pos.X, pos.Z, 1) then
+				decorBad += 1
+			end
+		end
+	end
+	check(decorBad == 0, "decoração: nada dentro das bases, perto de spawns ou com colisão encostada nos caminhos")
+end
+
 -- RB5: Floor02 aparece, Slot09 liberado, Slot10 bloqueado
 local BaseBuilder = requireModule(server.Map.BaseBuilder)
 local progression = MapService.Progression
@@ -276,12 +381,16 @@ local function collect(root, label)
 			byFolder[label] = (byFolder[label] or 0) + 1
 			local cf = obj.CFrame
 			local look = cf.LookVector
+			local right, up = cf.RightVector, cf.UpVector
 			table.insert(preview, {
 				g = label,
 				n = obj.Name,
 				x = cf.Position.X, y = cf.Position.Y, z = cf.Position.Z,
 				sx = obj.Size.X, sy = obj.Size.Y, sz = obj.Size.Z,
 				lx = look.X, lz = look.Z,
+				-- orientação completa (render em perspectiva da câmera do jogador)
+				r = { right.X, right.Y, right.Z }, u = { up.X, up.Y, up.Z }, l = { look.X, look.Y, look.Z },
+				collide = obj.CanCollide, material = tostring(obj.Material),
 				c = { math.floor(obj.Color.R * 255), math.floor(obj.Color.G * 255), math.floor(obj.Color.B * 255) },
 				t = obj.Transparency,
 				shape = if obj:IsA("Part") then tostring(obj.Shape) else obj.ClassName,

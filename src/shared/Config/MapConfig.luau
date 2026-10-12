@@ -36,10 +36,18 @@ MapConfig.Bases = {
 MapConfig.Hub = {
 	Center = { x = 0, z = 0 },
 	Radius = 52, -- diâmetro 104
-	DiceSize = 14,
-	DiceHeight = 24, -- altura do centro do dado flutuante
+	DiceSize = 18,
+	DiceHeight = 27, -- altura do centro do dado flutuante (acima do pedestal do altar)
 	DiceSpinSpeed = 20, -- graus por segundo
 	DiceBobAmplitude = 1.5,
+	-- ALTAR DOS ROLLS (visual): degraus quadrados largos e baixos (dá para subir andando)
+	Altar = {
+		Tiers = { 56, 38, 22 }, -- lado de cada degrau (studs)
+		StepHeight = 1, -- altura de cada degrau
+		PedestalSize = 12, -- bloco do dado em cima do último degrau
+		PedestalHeight = 4,
+		CornerPillarHeight = 10, -- pilares nos cantos do 1º degrau, com dados em cima
+	},
 }
 
 -- Pontos de teleporte. yaw = para onde o jogador olha (graus; 0 = +Z/fundo, 180 = -Z/entrada)
@@ -90,8 +98,70 @@ MapConfig.Conveyor = {
 	ItemCount = 16, -- dados/cristais transportados
 }
 
+--[[
+	Visual BLOCKY (direção de arte: Blocky Simulator + Anime + Toy World).
+	Poucos objetos grandes > muitos pequenos. Cores por família de área; Neon só como detalhe.
+]]
+MapConfig.Visual = {
+	Palette = {
+		Grass = { 105, 200, 85 },
+		GrassDark = { 82, 176, 72 },
+		Sand = { 240, 220, 165 },
+		Path = { 236, 224, 196 },
+		PathAlt = { 224, 208, 176 },
+		Curb = { 196, 178, 140 },
+		Stone = { 150, 148, 160 },
+		StoneDark = { 112, 110, 126 },
+		Wood = { 170, 120, 75 },
+		WoodDark = { 120, 82, 52 },
+		Trunk = { 128, 88, 56 },
+		Leaves = { { 76, 186, 80 }, { 60, 162, 72 }, { 104, 206, 92 } },
+		Flowers = { { 255, 120, 160 }, { 255, 215, 80 }, { 150, 120, 255 }, { 255, 255, 255 } },
+		Gold = { 255, 205, 70 },
+		HubStone = { 236, 230, 248 },
+		HubPurple = { 120, 90, 200 },
+		HubPurpleDark = { 86, 62, 160 },
+		Accent = { 255, 210, 80 },
+	},
+	-- Margens livres para decoração (studs)
+	DecorClearance = {
+		Path = 3, -- fora dos caminhos
+		Base = 4, -- fora das bases
+		Conveyor = 5, -- fora da esteira
+		Hub = 6, -- fora do Hub
+		Landmark = 6, -- fora das áreas de Fusão/Lojas/Torres/Missões/Trocas/Rankings
+		Spawn = 10, -- nunca perto de pontos de nascimento/teleporte
+		IslandEdge = 4, -- dentro da grama
+	},
+	-- Grade usada para escolher onde plantar (determinística)
+	DecorGrid = 13,
+	DecorSeed = 7,
+	-- Faixa perto da borda da ilha: palmeiras; miolo: árvores; entre esteira e bases: só flores
+	EdgeBand = 26,
+	-- Raio em volta do Hub sem árvores (só arbusto/flor/pedra): os landmarks ficam visíveis do centro
+	OpenCenterRadius = 115,
+	BaseCorridorFlowersOnly = true,
+	TreeHeight = { 14, 20 },
+	PalmHeight = { 18, 26 },
+	-- Recortes de areia/grama na borda da ilha (irregularidade só visual)
+	EdgeBiteSpacing = 18,
+}
+
 MapConfig.Decor = {
-	PalmHeight = 18,
+	PalmHeight = 22,
+}
+
+-- Áreas funcionais (raio em studs) que a decoração não pode invadir
+MapConfig.Landmarks = {
+	{ id = "Market", x = -38, z = -68, radius = 14 },
+	{ id = "DiceShop", x = 0, z = -76, radius = 18 },
+	{ id = "Sell", x = 38, z = -68, radius = 14 },
+	{ id = "Towers", x = 0, z = 130, radius = 30 },
+	{ id = "Fusion", x = -68, z = 12, radius = 13 },
+	{ id = "Trade", x = 68, z = 12, radius = 13 },
+	{ id = "Missions", x = -50, z = 98, radius = 13 },
+	{ id = "Leaderboards", x = 50, z = 98, radius = 15 },
+	{ id = "Entrance", x = 0, z = -248, radius = 22 },
 }
 
 return MapConfig
