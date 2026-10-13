@@ -106,6 +106,15 @@ for _, item in summary do
 	table.insert(lines, `- Origem: \`{Config.SourcePackName}.{r.SourcePath}\``)
 	table.insert(lines, `- Escala aplicada na normalização: {string.format("%.3f", r.scaleFactor)} · Humanoid mantido (roupas): {if r.humanoidKept then "sim" else "não"} · Acessórios convertidos: {r.accessories}`)
 	table.insert(lines, `- Removidos: bindables {r.bindablesRemoved}, valores de estado {r.valuesRemoved}, GUIs {r.guisRemoved}, peças invisíveis {r.hiddenPartsRemoved}, outros: {others(r.otherRemoved)}`)
+	local visual = {}
+	for _, className in Pipeline.VisualClasses do
+		local before, after = r.visualSource[className] or 0, r.visualSanitized[className] or 0
+		if before > 0 or after > 0 then
+			table.insert(visual, `{className} {before}→{after}`)
+		end
+	end
+	table.insert(lines, `- Visual (origem → asset, só o que deve ficar): {table.concat(visual, ", ")} · perdas: {if #r.visualLost == 0 then "nenhuma" else table.concat(r.visualLost, ", ")}`)
+	table.insert(lines, `- Roupa: {if #r.clothing == 0 then "—" else table.concat(r.clothing, "; ")} · placas de título removidas: {r.nameTagsRemoved}`)
 	if #r.problems > 0 then
 		table.insert(lines, "- **Problemas:** " .. table.concat(r.problems, "; "))
 	end

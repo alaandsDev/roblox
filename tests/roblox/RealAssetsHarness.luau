@@ -65,6 +65,14 @@ for _, variant in VariantConfig.List do
 	model:Destroy()
 end
 
+-- Killuo real: a roupa EXISTE no asset (mesmos ids do pack); o factory normaliza a URL antiga
+for _, id in { "char_killuo_base", "char_killuo_godspeed" } do
+	local model = Factory.build(id, { vfx = "None" })
+	local shirt, pants = model:FindFirstChildOfClass("Shirt"), model:FindFirstChildOfClass("Pants")
+	check(shirt ~= nil and pants ~= nil and string.find(shirt.ShirtTemplate, "2065247269", 1, true) ~= nil and string.find(pants.PantsTemplate, "2065252088", 1, true) ~= nil, id .. ": Shirt/Pants presentes no asset real (" .. tostring(shirt and shirt.ShirtTemplate) .. ")")
+	model:Destroy()
+end
+
 local failures = T.finish()
 if failures > 0 then
 	process.exit(1)

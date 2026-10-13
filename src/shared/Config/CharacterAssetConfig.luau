@@ -65,6 +65,15 @@ CharacterAssetConfig.FeetTolerance = 0.05
 -- Meta preferencial de peças por personagem (acima disso: justificar no relatório)
 CharacterAssetConfig.PreferredMaxParts = 40
 
+--[[
+	Correção de ROUPA por id de template (genérica: vale para todo personagem que usar o mesmo id).
+	Alguns modelos do pack apontam o ShirtTemplate/PantsTemplate para o ITEM da loja (Shirt/Pants)
+	em vez da IMAGEM do template — o Roblox não desenha nada e o personagem aparece sem roupa.
+	O comando DEV ClothingCheck (Studio, Play, servidor) descobre a imagem certa e imprime as
+	linhas prontas para colar aqui. Chave = id do pack (string); valor = template final.
+]]
+CharacterAssetConfig.ClothingTemplateOverrides = {} :: { [string]: string }
+
 -- Classes PROIBIDAS em qualquer asset final (o validate falha se aparecer qualquer uma)
 CharacterAssetConfig.ForbiddenClasses = {
 	"Script",

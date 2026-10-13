@@ -155,6 +155,60 @@ end
 check(fire == 2 and lights == 1 and others == 0, "Yamamotu: fogo (2) + 1 luz; Trail/Beam fora da whitelist removidos")
 check(byId.char_killuo_godspeed.vfxRemoved > 0 and byId.char_ichiro_hollow.scriptsRemoved == 3 and byId.char_ichiro_hollow.remotesRemoved == 2 and byId.char_ichiro_hollow.soundsRemoved == 2 and byId.char_ichiro_hollow.animationsRemoved >= 4, "relatório conta scripts/remotes/sons/animações removidos")
 
+-- Roupa e estrutura visual (bug do Killuo: roupa "Clothing" com URL antiga + placa de título)
+for _, report in reports do
+	check(#report.visualLost == 0 and (report.visualSource.Shirt or 0) == (report.visualSanitized.Shirt or 0) and (report.visualSource.Pants or 0) == (report.visualSanitized.Pants or 0), `{report.CharacterId}: nenhuma classe visual perdida (Shirt/Pants/Decal/Texture/MeshPart/SpecialMesh...)`)
+	local nested = 0
+	for _, obj in folder:FindFirstChild(report.CharacterId):GetDescendants() do
+		if obj:IsA("Humanoid") and obj.Parent.Name ~= report.CharacterId then
+			nested += 1
+		end
+	end
+	check(nested == 0 and report.nameTagsRemoved == 1 and folder:FindFirstChild(report.CharacterId):FindFirstChild("[ SEMI-PRO ]") == nil, `{report.CharacterId}: placa de título com Humanoid aninhado removida`)
+end
+local killuoModel = folder:FindFirstChild("char_killuo_base")
+local shirt, pants = killuoModel:FindFirstChildOfClass("Shirt"), killuoModel:FindFirstChildOfClass("Pants")
+check(shirt ~= nil and pants ~= nil and shirt.ShirtTemplate == "rbxassetid://2065247269" and pants.PantsTemplate == "rbxassetid://2065252088", "Killuo: Shirt/Pants preservados e URL antiga normalizada (mesmo asset)")
+check(#byId.char_killuo_base.clothing == 2 and string.find(byId.char_killuo_base.clothing[1], "2065", 1, true) ~= nil, "relatório lista a roupa (origem -> final)")
+
+-- Correção centralizada por id (ClothingTemplateOverrides): vale para todo personagem com o mesmo id
+Config.ClothingTemplateOverrides["2065247269"] = "rbxassetid://777001"
+local fixedModel, fixedReport = Pipeline.sanitize(Pipeline.findSource(pack, "HXH.Killua Godspeed"), "char_killuo_godspeed")
+check(fixedModel ~= nil and fixedModel:FindFirstChildOfClass("Shirt").ShirtTemplate == "rbxassetid://777001" and fixedModel:FindFirstChildOfClass("Pants").PantsTemplate == "rbxassetid://2065252088", "override de template aplicado pelo pipeline (só no id configurado)")
+check(string.find(table.concat(fixedReport.clothing, " "), "777001", 1, true) ~= nil, "relatório mostra a troca do template")
+fixedModel:Destroy()
+Config.ClothingTemplateOverrides["2065247269"] = nil
+
+-- Detecção de perda visual: arma dentro de um Tool (classe não permitida) some -> FALHA com motivo
+local lossPack = roblox.Instance.new("Folder")
+local lossRig = SyntheticPack.rig(lossPack, "Teste", { scripts = 1 })
+local tool = roblox.Instance.new("Tool")
+tool.Parent = lossRig
+local blade = roblox.Instance.new("MeshPart")
+blade.Name = "ToolBlade"
+blade.Size = Vector3.new(0.3, 4, 0.3)
+blade.CFrame = lossRig["Right Arm"].CFrame * CFrame.new(0, -1, -2)
+blade.Parent = tool
+local lostModel, lostReport = Pipeline.sanitize(lossRig, "char_sacha_base")
+check(lostModel == nil and lostReport.status == "FAIL" and string.find(table.concat(lostReport.problems, " "), "perdeu visual sem justificativa: MeshPart", 1, true) ~= nil, "perda visual (MeshPart dentro de Tool) detectada: FALHA com motivo")
+-- Peça transparente com Texture (roupa desenhada numa camada) NÃO é descartada como hitbox
+local layerRig = SyntheticPack.rig(lossPack, "Camada", { scripts = 0 })
+local layer = roblox.Instance.new("Part")
+layer.Name = "ClothLayer"
+layer.Size = Vector3.new(2.05, 2.05, 1.05)
+layer.Transparency = 1
+layer.CFrame = layerRig.Torso.CFrame
+layer.Parent = layerRig
+local texture = roblox.Instance.new("Texture")
+texture.Parent = layer
+local weld = roblox.Instance.new("Weld")
+weld.Part0 = layerRig.Torso
+weld.Part1 = layer
+weld.Parent = layer
+local layerModel, layerReport = Pipeline.sanitize(layerRig, "char_sacha_base")
+check(layerModel ~= nil and layerModel:FindFirstChild("ClothLayer") ~= nil and layerModel.ClothLayer:FindFirstChildOfClass("Texture") ~= nil and #layerReport.visualLost == 0, "peça transparente com Texture (camada de roupa) preservada")
+lossPack:Destroy()
+
 ------------------------------------------------------------------------------------
 -- 2) Salva como assets/Characters.rbxm e DESTRÓI o pack (o jogo final não tem o pack)
 fs.writeDir("build")
@@ -226,6 +280,13 @@ for _, id in { "char_ichiro_base", "char_goko_base", "char_barbalva_base" } do
 	end
 	normal:Destroy()
 end
+
+-- Override de roupa vale também no runtime (assets antigos, sem precisar gerar de novo)
+Config.ClothingTemplateOverrides["2065252088"] = "rbxassetid://777002"
+local dressed = Factory.build("char_killuo_godspeed", { vfx = "None" })
+check(dressed:FindFirstChildOfClass("Pants").PantsTemplate == "rbxassetid://777002" and dressed:FindFirstChildOfClass("Shirt").ShirtTemplate == "rbxassetid://2065247269", "factory aplica ClothingTemplateOverrides no clone (runtime)")
+dressed:Destroy()
+Config.ClothingTemplateOverrides["2065252088"] = nil
 
 -- Modos de VFX
 local function effects(model)

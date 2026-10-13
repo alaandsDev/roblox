@@ -531,6 +531,8 @@ local function buildAsset(template: Model, character: CharacterConfig.Character,
 	local rarity = RarityConfig.ById[character.Rarity]
 	local scale = CharacterAssetConfig.RuntimeScale * rarity.ModelScale * CharacterAssetConfig.visualScale(character.Id) * (opts.scale or 1)
 	local model = template:Clone()
+	-- Correções de roupa centralizadas (ClothingTemplateOverrides) valem já no runtime
+	Pipeline.normalizeClothing(model)
 	local root = model.PrimaryPart :: BasePart
 	-- O template fica no pivô de origem; o clone é escalado em volta do PivotRoot
 	local pivot = root.CFrame

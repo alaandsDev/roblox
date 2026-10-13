@@ -430,6 +430,79 @@ DevService.Register("CharacterAssetReport", "() status dos assets dos pilotos (v
 	end
 	return table.concat(lines, "\n")
 end)
+-- Roupa dos assets: cada template é IMAGEM (ok), ITEM da loja (Shirt/Pants: imagem descoberta
+-- pelo HumanoidDescription) ou falha ao carregar. Imprime as linhas para ClothingTemplateOverrides.
+local ASSET_TYPES = { [1] = "Image", [2] = "TShirt", [11] = "Shirt", [12] = "Pants" }
+DevService.Register("ClothingCheck", "(characterId?) roupa dos assets: imagem ok, item da loja (com a imagem certa) ou falha", function(onlyId)
+	local Marketplace = game:GetService("MarketplaceService")
+	local PlayersService = game:GetService("Players")
+	local ContentProvider = game:GetService("ContentProvider")
+	local folder = game:GetService("ReplicatedStorage"):FindFirstChild(CharacterAssetConfig.StorageName)
+	if not folder then
+		return "ReplicatedStorage.CharacterAssets ausente"
+	end
+	local lines, overrides, seen = {}, {}, {}
+	for _, model in folder:GetChildren() do
+		if onlyId and model.Name ~= onlyId then
+			continue
+		end
+		for _, clothing in model:GetDescendants() do
+			local property = if clothing:IsA("Shirt") then "ShirtTemplate" elseif clothing:IsA("Pants") then "PantsTemplate" else nil
+			if not property then
+				continue
+			end
+			local template = (clothing :: any)[property]
+			local id = CharacterAssetPipeline.assetIdOf(template)
+			if not id then
+				table.insert(lines, `{model.Name}: {clothing.ClassName} sem id ({tostring(template)})`)
+				continue
+			end
+			local loaded = "?"
+			pcall(function()
+				ContentProvider:PreloadAsync({ clothing }, function(_, status)
+					loaded = tostring(status)
+				end)
+			end)
+			local okInfo, info = pcall(function()
+				return Marketplace:GetProductInfo(tonumber(id) :: number, Enum.InfoType.Asset)
+			end)
+			local kind = if okInfo and info then (ASSET_TYPES[info.AssetTypeId] or ("tipo " .. tostring(info.AssetTypeId))) else "desconhecido"
+			local line = `{model.Name}: {clothing.ClassName} {id} = {kind} (carregou: {loaded})`
+			if (kind == "Shirt" or kind == "Pants") and not seen[id] then
+				seen[id] = true
+				local okResolve, image = pcall(function()
+					local description = Instance.new("HumanoidDescription")
+					if kind == "Shirt" then
+						description.Shirt = tonumber(id) :: number
+					else
+						description.Pants = tonumber(id) :: number
+					end
+					local dummy = PlayersService:CreateHumanoidModelFromDescription(description, Enum.HumanoidRigType.R6)
+					local found = dummy:FindFirstChildOfClass(kind)
+					local result = found and (found :: any)[property]
+					dummy:Destroy()
+					return result
+				end)
+				if okResolve and image then
+					line ..= ` -> imagem {image}`
+					table.insert(overrides, `\t["{id}"] = "{image}",`)
+				else
+					line ..= " -> não deu para descobrir a imagem"
+				end
+			end
+			table.insert(lines, line)
+		end
+	end
+	if #overrides > 0 then
+		table.insert(lines, "")
+		table.insert(lines, "Cole em CharacterAssetConfig.ClothingTemplateOverrides (ou mande para o Claude):")
+		for _, o in overrides do
+			table.insert(lines, o)
+		end
+	end
+	return table.concat(lines, "\n")
+end)
+
 DevService.Register("SourcePackCheck", "() prova que o jogo não depende do Anime Pack em runtime", function()
 	local pack = workspace:FindFirstChild(CharacterAssetConfig.SourcePackName)
 	local previousParent = pack and pack.Parent

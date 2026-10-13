@@ -60,6 +60,24 @@ Tudo acontece num **clone**; o pack original nunca é alterado.
   próximo + AVISO no relatório.
 - **Física:** tudo `Anchored`, `CanCollide/CanTouch/CanQuery = false`, `Massless`. Arma não tem hitbox.
 
+## Roupa e integridade visual
+
+- **Comparação visual automática:** o pipeline conta, na origem e no asset, Shirt, Pants,
+  ShirtGraphic, BodyColors, Decal, Texture, SurfaceAppearance, MeshPart, SpecialMesh e peças.
+  Só contam como remoção justificada: LocalStand/BattleScript/Animate, HumanoidRootPart, hitbox
+  invisível e a "placa de título" (`[ SEMI-PRO ]`). Qualquer outra perda = **FALHA** com o motivo
+  ("perdeu visual sem justificativa: Shirt 1 -> 0"). O relatório mostra a tabela por personagem.
+- Peça transparente com Decal/Texture (roupa desenhada numa camada) não é tratada como hitbox.
+- **Placa de título** do jogo de origem (Model com Humanoid próprio e peças minúsculas) sai;
+  só o Humanoid do personagem (necessário para Shirt/Pants) fica.
+- **Template da roupa:** `Pipeline.normalizeClothing` (pipeline E factory) troca a URL antiga
+  `http://www.roblox.com/asset/?id=N` por `rbxassetid://N` e aplica
+  `CharacterAssetConfig.ClothingTemplateOverrides[N]` — correção por id, vale para todo
+  personagem que usar a mesma roupa. Para descobrir se um id é IMAGEM (ok) ou ITEM da loja
+  (Shirt/Pants: o Roblox não desenha), rode no Studio (Play, servidor):
+  `game.ServerStorage.RollLegendsDev:Invoke("ClothingCheck")` — ele imprime as linhas prontas
+  do override com a imagem certa (via HumanoidDescription).
+
 ## VFX (controlado pelo Roll Legends)
 
 - Os efeitos genéricos do jogo de origem (`MoveT`, `Break`, `Bubbles`, `Slider`, `Smoke`,
@@ -150,6 +168,7 @@ iguais (leitura estruturada) e o arquivo original com o mesmo SHA-256.
 | `game.ServerStorage.RollLegendsDev:Invoke("ClearGallery")` | Remove a galeria |
 | `game.ServerStorage.RollLegendsDev:Invoke("GivePilots")` / `game.ServerStorage.RollLegendsDev:Invoke("GivePilots", "Gold")` | 1 de cada piloto no inventário e no Índice |
 | `game.ServerStorage.RollLegendsDev:Invoke("CharacterAssetReport")` | Validação do runtime de cada asset |
+| `game.ServerStorage.RollLegendsDev:Invoke("ClothingCheck")` | Tipo de cada id de roupa (imagem / item da loja / falha) + linhas de override |
 | `game.ServerStorage.RollLegendsDev:Invoke("SourcePackCheck")` | Monta os pilotos com o pack escondido e procura dependências |
 | `game.ServerStorage.RollLegendsDev:Invoke("PlayReveal", game.Players:GetPlayers()[1], "Divine", "char_goju_base")` | Reveal/Hero Landing com um piloto |
 

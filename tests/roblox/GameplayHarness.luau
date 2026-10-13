@@ -1113,6 +1113,31 @@ Dev.Run("ShowCharacterVariants", "char_ichiro_base")
 check(#galleryModels() == 7 and galleryModels()[1].Name == "char_ichiro_base", "ShowCharacterVariants aceitou o CharacterId direto (7 variantes)")
 Dev.Run("CharacterGallery")
 check(#galleryModels() == 10 and env.real.Workspace:FindFirstChild("DevGallery") ~= nil, "CharacterGallery cria a galeria no Workspace (não abre o Índice)")
+-- ClothingCheck: id de ITEM da loja (Shirt/Pants) vira a IMAGEM certa (HumanoidDescription)
+env.stubs.MarketplaceService.GetProductInfo = function(_, id)
+	return { AssetTypeId = if id == 2065247269 then 11 elseif id == 2065252088 then 12 else 1 }
+end
+env.stubs.ContentProvider = {
+	PreloadAsync = function(_, list, callback)
+		for _, item in list do
+			callback(tostring(item), roblox.Enum.AssetFetchStatus.Success)
+		end
+	end,
+}
+env.Players.CreateHumanoidModelFromDescription = function(_, description)
+	local dummy = Instance.new("Model")
+	local shirt = Instance.new("Shirt")
+	shirt.ShirtTemplate = "rbxassetid://" .. tostring(description.Shirt - 1)
+	shirt.Parent = dummy
+	local pants = Instance.new("Pants")
+	pants.PantsTemplate = "rbxassetid://" .. tostring(description.Pants - 1)
+	pants.Parent = dummy
+	return dummy
+end
+local clothingReport = bindable:Invoke("ClothingCheck", "char_killuo_base")
+check(string.find(clothingReport, "Shirt 2065247269 = Shirt", 1, true) ~= nil and string.find(clothingReport, '["2065247269"] = "rbxassetid://2065247268"', 1, true) ~= nil and string.find(clothingReport, '["2065252088"] = "rbxassetid://2065252087"', 1, true) ~= nil, "ClothingCheck: detecta item da loja e imprime a linha de override com a imagem")
+local okReport = bindable:Invoke("ClothingCheck", "char_sacha_base")
+check(string.find(okReport, "= Image", 1, true) ~= nil and string.find(okReport, "Cole em", 1, true) == nil, "ClothingCheck: template que já é imagem fica OK (sem override)")
 check(bindable:Invoke("ShowCharacterVariants", p1, "char_goko_base") ~= nil and #galleryModels() == 7, "formato antigo (jogador primeiro) continua funcionando")
 Dev.Run("ClearGallery")
 end

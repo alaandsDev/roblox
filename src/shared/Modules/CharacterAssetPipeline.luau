@@ -52,6 +52,11 @@ export type Report = {
 	otherRemoved: { [string]: number },
 	unattachedParts: { string },
 	humanoidKept: boolean,
+	nameTagsRemoved: number,
+	clothing: { string },
+	visualSource: { [string]: number },
+	visualSanitized: { [string]: number },
+	visualLost: { string },
 	scaleFactor: number,
 	boundsSize: { number },
 	visualOffset: { number },
@@ -359,6 +364,11 @@ local function newReport(characterId: string): Report
 		otherRemoved = {},
 		unattachedParts = {},
 		humanoidKept = false,
+		nameTagsRemoved = 0,
+		clothing = {},
+		visualSource = {},
+		visualSanitized = {},
+		visualLost = {},
 		scaleFactor = 1,
 		boundsSize = { 0, 0, 0 },
 		visualOffset = { 0, 0, 0 },
@@ -415,6 +425,7 @@ local function isHiddenPart(part: BasePart): boolean
 		return false
 	end
 	for _, child in part:GetDescendants() do
+		-- Decal/Texture aparecem mesmo numa peça transparente (roupa/estampa desenhada na peça)
 		if child:IsA("Decal") or child:IsA("ParticleEmitter") or child:IsA("Beam") or child:IsA("Trail") or child:IsA("Fire") then
 			return false
 		end
@@ -430,6 +441,77 @@ local function setSafe(obj: Instance, property: string, value: any)
 	pcall(function()
 		(obj :: any)[property] = value
 	end)
+end
+
+------------------------------------------------------------------------------------
+-- Roupa: referência do template
+
+-- Número do asset em "rbxassetid://N" ou "http(s)://www.roblox.com/asset/?id=N" (nil se não achar)
+function Pipeline.assetIdOf(content: string?): string?
+	if type(content) ~= "string" then
+		return nil
+	end
+	return string.match(content, "^rbxassetid://(%d+)") or string.match(content, "[?&][iI][dD]=(%d+)")
+end
+
+local CLOTHING_PROPERTY = { Shirt = "ShirtTemplate", Pants = "PantsTemplate", ShirtGraphic = "Graphic" }
+
+--[[
+	Normaliza as roupas de um modelo (mesma função no pipeline e no factory):
+	  - CharacterAssetConfig.ClothingTemplateOverrides[id] substitui o template (ex.: o pack
+	    aponta para o ITEM da loja em vez da IMAGEM; o comando DEV ClothingCheck descobre a imagem);
+	  - senão, a URL antiga "http://www.roblox.com/asset/?id=N" vira "rbxassetid://N" (mesmo asset).
+	Devolve linhas "Classe origem -> final" para o relatório.
+]]
+function Pipeline.normalizeClothing(model: Instance): { string }
+	local lines = {}
+	for _, obj in model:GetDescendants() do
+		local property = CLOTHING_PROPERTY[obj.ClassName]
+		if property then
+			local ok, current = pcall(function(): any
+				return (obj :: any)[property]
+			end)
+			local id = ok and Pipeline.assetIdOf(current) or nil
+			if id then
+				local final = Config.ClothingTemplateOverrides[id] or ("rbxassetid://" .. id)
+				if final ~= current then
+					setSafe(obj, property, final)
+				end
+				table.insert(lines, `{obj.ClassName} {current} -> {final}`)
+			end
+		end
+	end
+	return lines
+end
+
+------------------------------------------------------------------------------------
+-- Comparação visual (source x sanitizado)
+
+-- Classes que formam o visual; perder alguma sem justificativa = problema
+Pipeline.VisualClasses = { "Shirt", "Pants", "ShirtGraphic", "BodyColors", "Decal", "Texture", "SurfaceAppearance", "MeshPart", "SpecialMesh", "Part", "UnionOperation", "WedgePart" }
+local VISUAL_SET = toSet(Pipeline.VisualClasses)
+
+-- Contagem por classe visual, ignorando o que "skip" disser (remoções justificadas)
+function Pipeline.visualSignature(root: Instance, skip: ((Instance) -> boolean)?): { [string]: number }
+	local counts: { [string]: number } = {}
+	for _, obj in root:GetDescendants() do
+		if VISUAL_SET[obj.ClassName] and not (skip and skip(obj)) then
+			counts[obj.ClassName] = (counts[obj.ClassName] or 0) + 1
+		end
+	end
+	return counts
+end
+
+-- Classes que diminuíram (ex.: { "Shirt 1 -> 0" })
+function Pipeline.visualLoss(before: { [string]: number }, after: { [string]: number }): { string }
+	local lost = {}
+	for _, className in Pipeline.VisualClasses do
+		local a, b = before[className] or 0, after[className] or 0
+		if b < a then
+			table.insert(lost, `{className} {a} -> {b}`)
+		end
+	end
+	return lost
 end
 
 function Pipeline.sanitize(source: Model, characterId: string): (Model?, Report)
@@ -499,6 +581,41 @@ function Pipeline.sanitize(source: Model, characterId: string): (Model?, Report)
 
 	-- 2) Remoção de tudo que não é visual
 	local keepHumanoid = hasClothing(model)
+	-- "Placa de título" do jogo de origem: Model com Humanoid próprio e peças minúsculas
+	-- (ex.: "[ SEMI-PRO ]"). O nome do Model aparecia em cima do personagem. Não é visual do corpo.
+	local nameTags: { Instance } = {}
+	for _, obj in model:GetDescendants() do
+		if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") then
+			local tiny = true
+			for _, part in basePartsOf(obj) do
+				local size = part.Size
+				tiny = tiny and math.max(size.X, size.Y, size.Z) < 0.5
+			end
+			if tiny then
+				obj:SetAttribute("PipelineNameTag", true)
+				table.insert(nameTags, obj)
+			end
+		end
+	end
+	-- Remoções JUSTIFICADAS (não contam como perda visual)
+	local function justified(obj: Instance): boolean
+		local node: Instance? = obj
+		while node and node ~= model do
+			if FORBIDDEN_NAMES[node.Name] or node:GetAttribute("PipelineNameTag") then
+				return true
+			end
+			if node:IsA("BasePart") and ((rootPart and keyOf(node) == keyOf(rootPart)) or isHiddenPart(node)) then
+				return true
+			end
+			node = node.Parent
+		end
+		return false
+	end
+	report.visualSource = Pipeline.visualSignature(model, justified)
+	for _, tag in nameTags do
+		report.nameTagsRemoved += 1
+		tag:Destroy()
+	end
 	local rootKey = if rootPart then keyOf(rootPart) else nil
 	local vfx: { Instance } = {}
 	local all = model:GetDescendants()
@@ -526,7 +643,8 @@ function Pipeline.sanitize(source: Model, characterId: string): (Model?, Report)
 			end
 			continue
 		elseif className == "Humanoid" then
-			remove = not keepHumanoid
+			-- só o Humanoid do próprio personagem (roupas); Humanoids aninhados saem
+			remove = not keepHumanoid or obj.Parent ~= model
 		elseif obj:IsA("BasePart") and rootKey ~= nil and keyOf(obj) == rootKey then
 			remove = true
 		elseif not ALLOWED[className] or isForbidden(obj) then
@@ -574,6 +692,12 @@ function Pipeline.sanitize(source: Model, characterId: string): (Model?, Report)
 			table.insert(report.unattachedParts, part.Name)
 		end
 	end
+
+	-- Roupas: template normalizado / corrigido (ClothingTemplateOverrides)
+	report.clothing = Pipeline.normalizeClothing(model)
+	-- Nada visual pode sumir sem justificativa (roupa, rosto, textura, malha, peça visível)
+	report.visualSanitized = Pipeline.visualSignature(model)
+	report.visualLost = Pipeline.visualLoss(report.visualSource, report.visualSanitized)
 
 	-- 3) VFX: limites (quantidade, luzes, taxa) e camada Light/Full. Os nomes da lista Light
 	-- vêm primeiro (nunca são cortados pelo limite), depois ordem estável pelo caminho.
@@ -677,6 +801,9 @@ function Pipeline.sanitize(source: Model, characterId: string): (Model?, Report)
 	model:SetAttribute("BoundsSize", size)
 
 	local problems, warnings = Pipeline.validate(model)
+	for _, lost in report.visualLost do
+		table.insert(problems, "perdeu visual sem justificativa: " .. lost)
+	end
 	report.problems = problems
 	report.warnings = warnings
 	if #report.unattachedParts > 0 then
@@ -749,6 +876,9 @@ function Pipeline.validate(model: Instance): ({ string }, { string })
 		end
 		if obj:IsA("Humanoid") and #obj:GetChildren() > 0 then
 			table.insert(problems, "Humanoid com filhos (Animator/estado)")
+		end
+		if obj:IsA("Humanoid") and obj.Parent ~= model then
+			table.insert(warnings, "Humanoid aninhado (placa de título do pack): gere os assets de novo")
 		end
 	end
 	if vfxCount > Config.VFXLimits.MaxFull then

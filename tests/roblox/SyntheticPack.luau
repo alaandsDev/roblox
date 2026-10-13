@@ -71,8 +71,20 @@ function SyntheticPack.rig(parent, name, opts)
 
 	local humanoid = new("Humanoid", "Humanoid", model)
 	new("Animator", "Animator", humanoid)
-	new("Shirt", "Shirt", model, { ShirtTemplate = "rbxassetid://1001" })
-	new("Pants", "Pants", model, { PantsTemplate = "rbxassetid://1002" })
+	if opts.legacyClothing then
+		-- Como o Killua real: instâncias "Clothing" com a URL antiga (criadas por script no jogo de origem)
+		new("Shirt", "Clothing", model, { ShirtTemplate = "http://www.roblox.com/asset/?id=2065247269" })
+		new("Pants", "Clothing", model, { PantsTemplate = "http://www.roblox.com/asset/?id=2065252088" })
+	else
+		new("Shirt", "Shirt", model, { ShirtTemplate = "rbxassetid://1001" })
+		new("Pants", "Pants", model, { PantsTemplate = "rbxassetid://1002" })
+	end
+	if opts.nameTag ~= false then
+		-- Placa de título do jogo de origem (todos os pilotos reais têm): Model + Humanoid + Head minúscula
+		local tag = new("Model", "[ SEMI-PRO ]", model)
+		part("Part", "Head", Vector3.new(0.05, 0.28, 0.05), CFrame.new(0, 6, 0), tag)
+		new("Humanoid", "XX", tag)
+	end
 	new("BodyColors", "Body Colors", model)
 
 	-- Lixo de jogo (todos os pilotos, exceto o "simples")
@@ -174,8 +186,8 @@ SyntheticPack.Rigs = {
 	{ path = { "Bleach Pack", "Hollow Ichigo" }, name = "Hollow Ichigo", opts = { at = Vector3.new(-50, 2, 18), yaw = 180, scripts = 2, weapon = "Hand", mask = true } },
 	{ path = { "DBZ" }, name = "Goku", opts = { at = Vector3.new(30, 0, -12), yaw = -45, scripts = 1, hair = "Welded" } },
 	{ path = { "One Piece Pack" }, name = "Whitebeard", opts = { at = Vector3.new(60, 5, 60), yaw = 30, scale = 1.4, scripts = 1, coat = true, vfx = { { "FX", "ParticleEmitter", "Torso", 1 } } } },
-	{ path = { "HXH" }, name = "Killua", opts = { at = Vector3.new(0, 0, 80), yaw = 0, scale = 0.9, scripts = 1, hair = "Attachment" } },
-	{ path = { "HXH" }, name = "Killua Godspeed", opts = { at = Vector3.new(8, 0, 80), yaw = 0, scale = 0.9, scripts = 2, vfx = { { "Lightning", "ParticleEmitter", "Torso", 4 }, { "Reiatsu", "ParticleEmitter", "Torso", 4 }, { "Lightning", "ParticleEmitter", "Right Arm", 4 }, { "Reiatsu", "ParticleEmitter", "Left Arm", 4 } } } },
+	{ path = { "HXH" }, name = "Killua", opts = { at = Vector3.new(0, 0, 80), yaw = 0, scale = 0.9, scripts = 1, hair = "Attachment", legacyClothing = true } },
+	{ path = { "HXH" }, name = "Killua Godspeed", opts = { at = Vector3.new(8, 0, 80), yaw = 0, scale = 0.9, scripts = 2, legacyClothing = true, vfx = { { "Lightning", "ParticleEmitter", "Torso", 4 }, { "Reiatsu", "ParticleEmitter", "Torso", 4 }, { "Lightning", "ParticleEmitter", "Right Arm", 4 }, { "Reiatsu", "ParticleEmitter", "Left Arm", 4 } } } },
 	{ path = { "NARUTO" }, name = "Zabuza", opts = { at = Vector3.new(-80, 0, -80), yaw = 270, scripts = 1, weapon = "Back", stand = true } },
 	{ path = { "Bleach Pack" }, name = "Yamamoto", opts = { at = Vector3.new(-30, 0, 18), yaw = 0, scale = 1.1, scripts = 1, weapon = "Hand", vfx = { { "Fire", "ParticleEmitter", "Right Arm", 2 }, { "Trail", "Trail", "Right Arm", 1 }, { "Beam", "Beam", "Torso", 1 }, { "PointLight", "PointLight", "Torso", 1 } } } },
 	{ path = { "JJK" }, name = "Gojo Satoru", opts = { at = Vector3.new(100, 0, -30), yaw = 137, scale = 1.1, scripts = 1, loose = true } },
