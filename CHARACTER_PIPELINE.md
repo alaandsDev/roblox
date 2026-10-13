@@ -80,6 +80,19 @@ Tudo acontece num **clone**; o pack original nunca é alterado.
   têm timeout: cada chamada roda numa thread própria e o diagnóstico só para de esperar depois de
   15 s ("SEM RESPOSTA"), registrando respostas tardias. Overrides são só sugeridos.
 
+## Auditoria de roupa (CLOTHING_AUDIT.md)
+
+- Cada ShirtTemplate/PantsTemplate é catalogado **por AssetId único**: se 12 personagens usam
+  a mesma roupa, ela aparece uma vez no `CLOTHING_AUDIT.md` com os 12 personagens.
+- Status (de `CharacterAssetConfig.ClothingStatus`, sem rede no build nem no runtime):
+  **OK**, **UNCHECKED** (padrão), **REVIEW_REQUIRED** e **OVERRIDDEN** (há override aprovado).
+- REVIEW_REQUIRED **não bloqueia** o lote: o personagem é gerado com AVISO e entra na revisão.
+  Perda visual causada pelo sanitizer continua sendo FALHA (são coisas diferentes).
+- Evidência: `Invoke("ClothingCheck")` + `Invoke("ClothingCheckStatus")` no Studio; o resultado é
+  registrado à mão em `ClothingStatus`. Substituto aprovado: só em `ClothingTemplateOverrides`.
+- Killuo/Killuo Relâmpago: `2065247269` (Shirt) e `2065252088` (Pants) são Image mas não carregam
+  → REVIEW_REQUIRED até existir uma roupa original publicada para o override.
+
 ## VFX (controlado pelo Roll Legends)
 
 - Os efeitos genéricos do jogo de origem (`MoveT`, `Break`, `Bubbles`, `Slider`, `Smoke`,

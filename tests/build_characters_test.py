@@ -27,10 +27,11 @@ def main() -> int:
     if not pack.exists():
         return 1
     saida, md, js = RAIZ / "build/tool_Characters.rbxm", RAIZ / "build/tool_audit.md", RAIZ / "build/tool_report.json"
-    for arquivo in (saida, md, js):
+    roupas = RAIZ / "build/tool_clothing.md"
+    for arquivo in (saida, md, js, roupas):
         arquivo.unlink(missing_ok=True)
     r = subprocess.run(
-        [sys.executable, "tools/build_characters.py", str(pack), "--out", str(saida), "--report", str(md), "--json", str(js), "--strip", "Part.Anchored"],
+        [sys.executable, "tools/build_characters.py", str(pack), "--out", str(saida), "--report", str(md), "--json", str(js), "--clothing", str(roupas), "--strip", "Part.Anchored"],
         cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     print("    " + "\n    ".join(r.stdout.strip().splitlines()[-14:-11]))
@@ -45,6 +46,12 @@ def main() -> int:
     check(all(all(c in x for c in campos) for x in relatorio), "relatório com todos os campos (peças, malhas, soldas, VFX, scripts, sons, caixa, status)")
     texto = md.read_text(encoding="utf-8") if md.exists() else ""
     check("| CharacterId | DisplayName | SourceModelName |" in texto and "char_killuo_godspeed" in texto, "CHARACTER_PILOT_AUDIT em Markdown")
+    audit = roupas.read_text(encoding="utf-8") if roupas.exists() else ""
+    linhas = [l for l in audit.splitlines() if l.startswith("| 2065247269 ")]
+    check(len(linhas) == 1 and "char_killuo_base" in linhas[0] and "char_killuo_godspeed" in linhas[0] and "REVIEW_REQUIRED" in linhas[0], "CLOTHING_AUDIT: roupa compartilhada em UMA linha com os 2 personagens (REVIEW_REQUIRED)")
+    check("| AssetId | Tipo | Status | Personagens | Override |" in audit and "UNCHECKED" in audit and "Total:" in audit, "CLOTHING_AUDIT com tipo, status, personagens, override e ação")
+    killuo = next((x for x in relatorio if x["CharacterId"] == "char_killuo_base"), {})
+    check(killuo.get("status") == "WARN" and r.returncode == 0, "roupa REVIEW_REQUIRED não derruba o build (AVISO, código 0)")
     print(f"[Ferramenta build_characters.py] {'OK' if falhas == 0 else f'{falhas} falha(s)'}")
     return 1 if falhas else 0
 

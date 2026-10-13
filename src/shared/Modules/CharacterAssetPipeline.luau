@@ -27,6 +27,9 @@ local Config = require(script.Parent.Parent.Config.CharacterAssetConfig)
 
 local Pipeline = {}
 
+-- Uma roupa usada pelo personagem (o relatório agrupa por AssetId)
+export type ClothingUse = { kind: string, assetId: string, original: string, final: string, status: string }
+
 export type Report = {
 	CharacterId: string,
 	SourceModelName: string,
@@ -53,7 +56,7 @@ export type Report = {
 	unattachedParts: { string },
 	humanoidKept: boolean,
 	nameTagsRemoved: number,
-	clothing: { string },
+	clothing: { ClothingUse },
 	visualSource: { [string]: number },
 	visualSanitized: { [string]: number },
 	visualLost: { string },
@@ -461,10 +464,11 @@ local CLOTHING_PROPERTY = { Shirt = "ShirtTemplate", Pants = "PantsTemplate", Sh
 	  - CharacterAssetConfig.ClothingTemplateOverrides[id] substitui o template (ex.: o pack
 	    aponta para o ITEM da loja em vez da IMAGEM; o comando DEV ClothingCheck descobre a imagem);
 	  - senão, a URL antiga "http://www.roblox.com/asset/?id=N" vira "rbxassetid://N" (mesmo asset).
-	Devolve linhas "Classe origem -> final" para o relatório.
+	Devolve as roupas encontradas (classe, AssetId, template original/final e status da auditoria).
+	Nenhuma chamada de rede: o status vem de CharacterAssetConfig.ClothingStatus.
 ]]
-function Pipeline.normalizeClothing(model: Instance): { string }
-	local lines = {}
+function Pipeline.normalizeClothing(model: Instance): { ClothingUse }
+	local uses: { ClothingUse } = {}
 	for _, obj in model:GetDescendants() do
 		local property = CLOTHING_PROPERTY[obj.ClassName]
 		if property then
@@ -477,11 +481,11 @@ function Pipeline.normalizeClothing(model: Instance): { string }
 				if final ~= current then
 					setSafe(obj, property, final)
 				end
-				table.insert(lines, `{obj.ClassName} {current} -> {final}`)
+				table.insert(uses, { kind = obj.ClassName, assetId = id, original = tostring(current), final = final, status = Config.clothingStatus(id) })
 			end
 		end
 	end
-	return lines
+	return uses
 end
 
 ------------------------------------------------------------------------------------
@@ -806,6 +810,12 @@ function Pipeline.sanitize(source: Model, characterId: string): (Model?, Report)
 	end
 	report.problems = problems
 	report.warnings = warnings
+	-- Roupa com asset externo problemático: gera o personagem, mas marca para revisão
+	for _, use in report.clothing do
+		if use.status == "REVIEW_REQUIRED" then
+			table.insert(report.warnings, `roupa REVIEW_REQUIRED: {use.kind} {use.assetId} (veja CLOTHING_AUDIT.md)`)
+		end
+	end
 	if #report.unattachedParts > 0 then
 		table.insert(report.warnings, `{#report.unattachedParts} peça(s) sem junta (presas pelo osso mais próximo): {table.concat(report.unattachedParts, ", ")}`)
 	end

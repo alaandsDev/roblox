@@ -624,7 +624,7 @@ DevService.Register("ClothingCheckStatus", "() resultado/andamento do ClothingCh
 	local lines = { if job.running then "EM ANDAMENTO" else string.format("TERMINADO em %.1fs", (job.finishedAt or os.clock()) - job.startedAt) }
 	local suggestions = {}
 	for _, entry in job.entries do
-		table.insert(lines, `{entry.property} {entry.id} ({table.concat(entry.users, ", ")}): {entry.class or "aguardando"}`)
+		table.insert(lines, `{entry.property} {entry.id} ({table.concat(entry.users, ", ")}): {entry.class or "aguardando"} · registrado no config: {CharacterAssetConfig.clothingStatus(entry.id)}`)
 		for _, step in entry.steps do
 			table.insert(lines, "    · " .. step)
 		end

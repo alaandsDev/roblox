@@ -24,6 +24,7 @@ local reportMd = args[3] or "CHARACTER_PILOT_AUDIT.md"
 local reportJson = args[4] or "third_party/character_pilot_report.json"
 -- Nome do arquivo de origem para o relatório (a ferramenta passa o original, não a cópia temporária)
 local sourceLabel = args[5] or input
+local clothingMd = args[6] or "CLOTHING_AUDIT.md"
 
 if not fs.isFile(input) then
 	print("Arquivo não encontrado: " .. input)
@@ -114,7 +115,11 @@ for _, item in summary do
 		end
 	end
 	table.insert(lines, `- Visual (origem → asset, só o que deve ficar): {table.concat(visual, ", ")} · perdas: {if #r.visualLost == 0 then "nenhuma" else table.concat(r.visualLost, ", ")}`)
-	table.insert(lines, `- Roupa: {if #r.clothing == 0 then "—" else table.concat(r.clothing, "; ")} · placas de título removidas: {r.nameTagsRemoved}`)
+	local clothing = {}
+	for _, use in r.clothing do
+		table.insert(clothing, `{use.kind} {use.assetId} ({use.status})`)
+	end
+	table.insert(lines, `- Roupa: {if #clothing == 0 then "—" else table.concat(clothing, "; ")} · placas de título removidas: {r.nameTagsRemoved}`)
 	if #r.problems > 0 then
 		table.insert(lines, "- **Problemas:** " .. table.concat(r.problems, "; "))
 	end
@@ -125,10 +130,59 @@ end
 fs.writeFile(reportMd, table.concat(lines, "\n") .. "\n")
 fs.writeFile(reportJson, serde.encode("json", reports, true))
 
+-- CLOTHING_AUDIT: uma linha por AssetId ÚNICO (roupa compartilhada = verificada/registrada uma vez)
+local byAsset, assetOrder = {}, {}
+for _, r in reports do
+	for _, use in r.clothing or {} do
+		local entry = byAsset[use.assetId]
+		if not entry then
+			entry = { use = use, characters = {} }
+			byAsset[use.assetId] = entry
+			table.insert(assetOrder, use.assetId)
+		end
+		if not table.find(entry.characters, r.CharacterId) then
+			table.insert(entry.characters, r.CharacterId)
+		end
+	end
+end
+table.sort(assetOrder, function(a, b)
+	local sa, sb = byAsset[a].use.status, byAsset[b].use.status
+	if sa ~= sb then
+		return sa == "REVIEW_REQUIRED" -- revisão primeiro
+	end
+	return a < b
+end)
+local ACTIONS = {
+	OK = "nenhuma",
+	UNCHECKED = "verificar no Studio: Invoke(\"ClothingCheck\") e registrar em ClothingStatus",
+	REVIEW_REQUIRED = "aprovar uma roupa substituta e registrar em ClothingTemplateOverrides",
+	OVERRIDDEN = "nenhuma (override aprovado)",
+}
+local counts = { OK = 0, UNCHECKED = 0, REVIEW_REQUIRED = 0, OVERRIDDEN = 0 }
+local clothingLines = {
+	"# CLOTHING AUDIT — Roll Legends",
+	"",
+	`Gerado por \`python tools/build_characters.py\` a partir de \`{sourceLabel}\`. Uma linha por AssetId (roupas compartilhadas aparecem uma vez com todos os personagens). Sem chamadas de rede: o status vem de \`CharacterAssetConfig.ClothingStatus\` (evidência do comando DEV ClothingCheck) e os substitutos aprovados de \`ClothingTemplateOverrides\`. REVIEW_REQUIRED não impede o build: o personagem é gerado com AVISO.`,
+	"",
+	"| AssetId | Tipo | Status | Personagens | Override | Observação | Ação necessária |",
+	"|---|---|---|---|---|---|---|",
+}
+for _, id in assetOrder do
+	local entry = byAsset[id]
+	local audit = Config.ClothingStatus[id]
+	local override = Config.ClothingTemplateOverrides[id]
+	counts[entry.use.status] = (counts[entry.use.status] or 0) + 1
+	table.insert(clothingLines, `| {id} | {entry.use.kind} | **{entry.use.status}** | {table.concat(entry.characters, "<br>")} | {override or "—"} | {if audit and audit.Note then audit.Note else "—"} | {ACTIONS[entry.use.status] or "?"} |`)
+end
+table.insert(clothingLines, "")
+table.insert(clothingLines, `Total: {#assetOrder} AssetId(s) — OK {counts.OK} · UNCHECKED {counts.UNCHECKED} · REVIEW_REQUIRED {counts.REVIEW_REQUIRED} · OVERRIDDEN {counts.OVERRIDDEN}`)
+fs.writeFile(clothingMd, table.concat(clothingLines, "\n") .. "\n")
+
 print(`{#reports - failed}/{#reports} personagens gerados em {output}`)
 for _, item in summary do
 	local r = item.report
 	print(string.format("  %-22s %-5s %3d -> %3d peças  %s", r.CharacterId, r.status, r.originalParts, r.sanitizedParts, table.concat(r.problems, "; ")))
 end
 print(`Relatório: {reportMd}`)
+print(`Roupas: {clothingMd} ({#assetOrder} AssetId(s), {counts.REVIEW_REQUIRED} para revisão)`)
 process.exit(if failed > 0 then 2 else 0)

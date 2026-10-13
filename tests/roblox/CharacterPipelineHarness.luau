@@ -169,13 +169,31 @@ end
 local killuoModel = folder:FindFirstChild("char_killuo_base")
 local shirt, pants = killuoModel:FindFirstChildOfClass("Shirt"), killuoModel:FindFirstChildOfClass("Pants")
 check(shirt ~= nil and pants ~= nil and shirt.ShirtTemplate == "rbxassetid://2065247269" and pants.PantsTemplate == "rbxassetid://2065252088", "Killuo: Shirt/Pants preservados e URL antiga normalizada (mesmo asset)")
-check(#byId.char_killuo_base.clothing == 2 and string.find(byId.char_killuo_base.clothing[1], "2065", 1, true) ~= nil, "relatório lista a roupa (origem -> final)")
+local killuoUses = byId.char_killuo_base.clothing
+check(#killuoUses == 2 and killuoUses[1].assetId ~= nil and string.find(killuoUses[1].original, "roblox.com/asset", 1, true) ~= nil, "relatório lista a roupa (AssetId, template original -> final)")
+-- Roupa com asset externo problemático: personagem GERADO (AVISO), não FALHA
+for _, id in { "char_killuo_base", "char_killuo_godspeed" } do
+	local r = byId[id]
+	local review = 0
+	for _, use in r.clothing do
+		if use.status == "REVIEW_REQUIRED" then
+			review += 1
+		end
+	end
+	check(folder:FindFirstChild(id) ~= nil and r.status == "WARN" and review == 2 and string.find(table.concat(r.warnings, " "), "roupa REVIEW_REQUIRED", 1, true) ~= nil, `{id}: roupa REVIEW_REQUIRED -> gerado com AVISO (não bloqueia o lote)`)
+end
+check(byId.char_sacha_base.clothing[1].status == "UNCHECKED" and byId.char_sacha_base.status == "OK", "roupa não verificada = UNCHECKED, sem aviso")
+check(Config.clothingStatus("2065247269") == "REVIEW_REQUIRED" and Config.clothingStatus("999") == "UNCHECKED", "status vem do config (sem rede)")
 
 -- Correção centralizada por id (ClothingTemplateOverrides): vale para todo personagem com o mesmo id
 Config.ClothingTemplateOverrides["2065247269"] = "rbxassetid://777001"
 local fixedModel, fixedReport = Pipeline.sanitize(Pipeline.findSource(pack, "HXH.Killua Godspeed"), "char_killuo_godspeed")
 check(fixedModel ~= nil and fixedModel:FindFirstChildOfClass("Shirt").ShirtTemplate == "rbxassetid://777001" and fixedModel:FindFirstChildOfClass("Pants").PantsTemplate == "rbxassetid://2065252088", "override de template aplicado pelo pipeline (só no id configurado)")
-check(string.find(table.concat(fixedReport.clothing, " "), "777001", 1, true) ~= nil, "relatório mostra a troca do template")
+local overridden = false
+for _, use in fixedReport.clothing do
+	overridden = overridden or (use.assetId == "2065247269" and use.status == "OVERRIDDEN" and use.final == "rbxassetid://777001")
+end
+check(overridden, "override aprovado: status OVERRIDDEN e template final no relatório")
 fixedModel:Destroy()
 Config.ClothingTemplateOverrides["2065247269"] = nil
 

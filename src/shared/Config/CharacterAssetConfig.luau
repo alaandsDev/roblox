@@ -74,6 +74,34 @@ CharacterAssetConfig.PreferredMaxParts = 40
 ]]
 CharacterAssetConfig.ClothingTemplateOverrides = {} :: { [string]: string }
 
+--[[
+	AUDITORIA DE ROUPA (por AssetId único; sem rede no runtime nem no build).
+	O status vem daqui — evidência coletada no Studio com o comando DEV ClothingCheck — e o
+	pipeline só LÊ. Status no relatório (CLOTHING_AUDIT.md):
+	  OK               verificado e carregando;
+	  UNCHECKED        ainda não verificado (padrão para todo id que não está aqui);
+	  REVIEW_REQUIRED  asset externo com problema: o personagem é GERADO mesmo assim (AVISO),
+	                   mas aparece na revisão até ganhar override aprovado;
+	  OVERRIDDEN       existe ClothingTemplateOverrides[id] aprovado (vale sobre qualquer status).
+	Asset externo indisponível NÃO é erro de sanitização: perda visual no sanitizer continua FALHA.
+]]
+export type ClothingAudit = { Status: string, Kind: string?, Note: string? }
+CharacterAssetConfig.ClothingStatus = {
+	-- ClothingCheck no Studio (2026-10): AssetType Image, GetProductInfo ok, PreloadAsync sem resposta.
+	-- Substituição aprovada, mas ainda sem roupa original publicada: fica para revisão.
+	["2065247269"] = { Status = "REVIEW_REQUIRED", Kind = "Shirt", Note = "Image \"Killua Zoldylock (T)\"; não carrega (PreloadAsync sem resposta)" },
+	["2065252088"] = { Status = "REVIEW_REQUIRED", Kind = "Pants", Note = "Image \"Killua Zoldylock (B)\"; não carrega (PreloadAsync sem resposta)" },
+} :: { [string]: ClothingAudit }
+
+-- Status efetivo de um id de roupa (override aprovado > status registrado > UNCHECKED)
+function CharacterAssetConfig.clothingStatus(assetId: string): string
+	if CharacterAssetConfig.ClothingTemplateOverrides[assetId] then
+		return "OVERRIDDEN"
+	end
+	local entry = CharacterAssetConfig.ClothingStatus[assetId]
+	return if entry then entry.Status else "UNCHECKED"
+end
+
 -- Classes PROIBIDAS em qualquer asset final (o validate falha se aparecer qualquer uma)
 CharacterAssetConfig.ForbiddenClasses = {
 	"Script",

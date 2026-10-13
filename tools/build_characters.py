@@ -17,7 +17,8 @@
 4. Confere por estrutura que a cópia só perdeu metadados, que nomes/malhas/texturas/roupas/rostos
    lidos pelo leitor tolerante são idênticos e que o arquivo ORIGINAL não mudou (SHA-256).
 5. Gera assets/Characters.rbxm (vira ReplicatedStorage.CharacterAssets no build_place.py),
-   CHARACTER_PILOT_AUDIT.md e third_party/character_pilot_report.json.
+   CHARACTER_PILOT_AUDIT.md, CLOTHING_AUDIT.md (uma linha por AssetId de roupa) e
+   third_party/character_pilot_report.json.
 O pack original nunca é alterado e nunca entra no build.
 """
 import argparse
@@ -85,6 +86,7 @@ def main() -> int:
     parser.add_argument("--out", default="assets/Characters.rbxm")
     parser.add_argument("--report", default="CHARACTER_PILOT_AUDIT.md")
     parser.add_argument("--json", default="third_party/character_pilot_report.json")
+    parser.add_argument("--clothing", default="CLOTHING_AUDIT.md")
     parser.add_argument("--strip", action="append", default=[], help="Classe.Propriedade a remover antes de ler (repetível)")
     args = parser.parse_args()
 
@@ -122,7 +124,7 @@ def main() -> int:
             arquivo = temporario
         print(f"Building {len(PILOTOS)} pilot characters...")
         r = subprocess.run(
-            [str(lune), "run", SCRIPT, str(arquivo), args.out, args.report, args.json, origem.name],
+            [str(lune), "run", SCRIPT, str(arquivo), args.out, args.report, args.json, origem.name, args.clothing],
             cwd=RAIZ,
             capture_output=True,
             text=True,
@@ -197,7 +199,7 @@ def main() -> int:
 
     if r.returncode in (0, 2):
         print("\nConfira no Studio (_G.dev(\"CharacterGallery\")) e envie:")
-        print(f"  git add {args.out} {args.report} {args.json}")
+        print(f"  git add {args.out} {args.report} {args.json} {args.clothing}")
         print('  git commit -m "chore: sanitized pilot character assets"')
         print("  git push")
     return r.returncode
