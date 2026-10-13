@@ -52,57 +52,120 @@ end
 
 ------------------------------------------------------------------------------------
 -- 1) SOURCE PACK PRESENT: gera os assets
-local pack = SyntheticPack.build()
+local pack = SyntheticPack.buildLaunch(Config.Assets)
 pack.Parent = env.real.Workspace
 -- Cópia em arquivo para o teste da ferramenta (tests/build_characters_test.py)
 fs.writeDir("build")
 fs.writeFile("build/test_AnimePack.rbxm", roblox.serializeModel({ pack }))
+do -- variante com 2 modelos AUSENTES (teste de MISSING_SOURCE da ferramenta)
+	local skip = { [Config.Assets.char_mikaza_formal.SourcePath] = true, [Config.Assets.char_iskander_base.SourcePath] = true }
+	local partial = SyntheticPack.buildLaunch(Config.Assets, skip)
+	fs.writeFile("build/test_AnimePack_missing.rbxm", roblox.serializeModel({ partial }))
+	partial:Destroy()
+end
 local scriptsBefore = countIn(pack, "LuaSourceContainer")
 local folder, reports = Pipeline.buildAll(pack)
+do -- irmãos com o mesmo nome: "HXH.Hisoka (2ª ocorrência)" = o 2º "Hisoka" (não o 1º nem um nome literal)
+	local twin = Pipeline.findSource(pack, Config.Assets.char_hizoka_base.SourcePath)
+	check(twin ~= nil and twin.Name == "Hisoka" and twin:GetAttribute("SyntheticOccurrence") == 2, "fonte com nome repetido no pack: resolve a 2ª ocorrência")
+	check(Pipeline.findSource(pack, "HXH.Hisoka (3ª ocorrência)") == nil, "ocorrência inexistente -> MISSING_SOURCE (nada de palpite)")
+end
 local byId = {}
 for _, report in reports do
 	byId[report.CharacterId] = report
 end
 
-local pilotCount = 0
+local assetCount = 0
 for _ in Config.Assets do
-	pilotCount += 1
+	assetCount += 1
 end
-check(pilotCount >= 8 and pilotCount <= 10, `piloto com 8–10 personagens ({pilotCount})`)
-check(#reports == pilotCount, "um relatório por piloto (Speed Guy e o resto do pack ignorados)")
+check(assetCount == 121 and #CharacterConfig.Launch == 121, `catálogo de lançamento com 121 personagens ({assetCount} specs, {#CharacterConfig.Launch} metadados)`)
+check(#reports == assetCount, "um relatório por personagem de lançamento (Speed Guy e o resto do pack ignorados)")
 check(folder.Name == Config.StorageName, "pasta de saída = " .. Config.StorageName)
 check(countIn(pack, "LuaSourceContainer") == scriptsBefore, "pack de origem intacto (sanitização só mexe em clones)")
 
+-- Lote inteiro: checagens agregadas (lista quem falhou)
+local failures = { gerado = {}, proibido = {}, validate = {}, pivo = {}, corpo = {}, frente = {}, fisica = {}, pecas = {}, ids = {}, humanoid = {}, roupa = {}, hrp = {} }
 for _, report in reports do
 	local id = report.CharacterId
 	local model = folder:FindFirstChild(id)
-	check(model ~= nil and report.status ~= "FAIL", `{id}: asset gerado ({report.status}) {table.concat(report.problems, "; ")}`)
-	if not model then
+	if not model or report.status == "FAIL" then
+		table.insert(failures.gerado, id .. " " .. table.concat(report.problems, "; "))
 		continue
 	end
-	local bad = forbiddenIn(model)
-	check(#bad == 0, `{id}: nenhum Script/Remote/Bindable/Sound/Animation/Value/GUI/junta/LocalStand ({#bad})`)
-	check(#Pipeline.validate(model) == 0, `{id}: validate sem problemas`)
-	check(model.PrimaryPart ~= nil and model.PrimaryPart.Name == "PivotRoot" and model.PrimaryPart.CFrame.Position.Magnitude < 1e-4, `{id}: PivotRoot na origem (pivô)`)
-	local legs = { model:FindFirstChild("Left Leg"), model:FindFirstChild("Right Leg") }
-	local legMin = Pipeline.boundsOf(legs, CFrame.new())
+	if #forbiddenIn(model) > 0 then
+		table.insert(failures.proibido, id)
+	end
+	if #Pipeline.validate(model) > 0 then
+		table.insert(failures.validate, id)
+	end
+	if not (model.PrimaryPart ~= nil and model.PrimaryPart.Name == "PivotRoot" and model.PrimaryPart.CFrame.Position.Magnitude < 1e-4) then
+		table.insert(failures.pivo, id)
+	end
+	local legMin = Pipeline.boundsOf({ model:FindFirstChild("Left Leg"), model:FindFirstChild("Right Leg") }, CFrame.new())
 	local _, headMax = Pipeline.boundsOf({ model:FindFirstChild("Head") }, CFrame.new())
-	check(math.abs(legMin.Y) < 0.01 and math.abs(headMax.Y - Config.BodyHeight) < 0.02, string.format("%s: pés em y=0 e corpo = %d (%.3f, %.3f)", id, Config.BodyHeight, legMin.Y, headMax.Y))
+	if not (math.abs(legMin.Y) < 0.01 and math.abs(headMax.Y - Config.BodyHeight) < 0.02) then
+		table.insert(failures.corpo, id)
+	end
 	local torso = model:FindFirstChild("Torso")
-	check(torso.CFrame.LookVector:Dot(Vector3.new(0, 0, -1)) > 0.999 and math.abs(torso.CFrame.Position.X) < 0.01, `{id}: centralizado e olhando para -Z`)
-	local physics = 0
+	if not (torso.CFrame.LookVector:Dot(Vector3.new(0, 0, -1)) > 0.999 and math.abs(torso.CFrame.Position.X) < 0.01) then
+		table.insert(failures.frente, id)
+	end
 	for _, part in Pipeline.basePartsOf(model) do
 		if not part.Anchored or part.CanCollide or part.CanTouch or part.CanQuery then
-			physics += 1
+			table.insert(failures.fisica, id)
+			break
 		end
 	end
-	check(physics == 0, `{id}: todas as peças ancoradas, sem colisão/toque/consulta`)
-	check(report.originalParts > 0 and report.sanitizedParts > 0 and model:GetAttribute("PartCount") == report.sanitizedParts, `{id}: peças registradas ({report.originalParts} -> {report.sanitizedParts})`)
-	check(model:GetAttribute("SourceModelName") == Config.Assets[id].SourceModelName and model:GetAttribute("CharacterId") == id, `{id}: CharacterId e SourceModelName gravados no asset`)
-	check(model:FindFirstChildOfClass("Humanoid") ~= nil and #model:FindFirstChildOfClass("Humanoid"):GetChildren() == 0, `{id}: Humanoid inerte mantido só por causa das roupas`)
-	check(model:FindFirstChildOfClass("Shirt") ~= nil and model:FindFirstChildOfClass("Pants") ~= nil and model.Head:FindFirstChild("face") ~= nil, `{id}: roupas e rosto preservados`)
-	check(model:FindFirstChild("HumanoidRootPart") == nil and model:FindFirstChild("Hitbox", true) == nil, `{id}: HumanoidRootPart e hitbox invisível removidas`)
+	if not (report.originalParts > 0 and model:GetAttribute("PartCount") == report.sanitizedParts and report.finalCounts.Instances ~= nil) then
+		table.insert(failures.pecas, id)
+	end
+	if not (model:GetAttribute("SourceModelName") == Config.Assets[id].SourceModelName and model:GetAttribute("CharacterId") == id) then
+		table.insert(failures.ids, id)
+	end
+	local humanoid = model:FindFirstChildOfClass("Humanoid")
+	if not humanoid or #humanoid:GetChildren() > 0 then
+		table.insert(failures.humanoid, id)
+	end
+	if not (model:FindFirstChildOfClass("Shirt") and model:FindFirstChildOfClass("Pants") and model.Head:FindFirstChild("face")) then
+		table.insert(failures.roupa, id)
+	end
+	if model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("Hitbox", true) then
+		table.insert(failures.hrp, id)
+	end
 end
+local function none(list, message)
+	check(#list == 0, `{message} ({assetCount - #list}/{assetCount}){if #list > 0 then ": " .. table.concat(list, ", ") else ""}`)
+end
+none(failures.gerado, "lote: asset gerado sem FALHA")
+none(failures.proibido, "lote: nenhum Script/Remote/Bindable/Sound/Animation/Value/GUI/junta/LocalStand")
+none(failures.validate, "lote: validate sem problemas")
+none(failures.pivo, "lote: PivotRoot na origem")
+none(failures.corpo, "lote: pés em y=0 e corpo = 5")
+none(failures.frente, "lote: centralizado e olhando para -Z")
+none(failures.fisica, "lote: tudo ancorado, sem colisão/toque/consulta")
+none(failures.pecas, "lote: peças e orçamento registrados")
+none(failures.ids, "lote: CharacterId e SourceModelName gravados no asset")
+none(failures.humanoid, "lote: Humanoid inerte (só por causa das roupas)")
+none(failures.roupa, "lote: roupas e rosto preservados")
+none(failures.hrp, "lote: HumanoidRootPart e hitbox removidas")
+local statusAttr = 0
+for _, model in folder:GetChildren() do
+	if model:GetAttribute("ClothingStatus") and model:GetAttribute("OptimizationStatus") and model:GetAttribute("VFXStatus") then
+		statusAttr += 1
+	end
+end
+check(statusAttr == assetCount, "lote: status de roupa/otimização/VFX gravados no asset (filtros da galeria)")
+local vfxReview, excluded = 0, 0
+for _, r in reports do
+	if r.vfxStatus == "REVIEW" then
+		vfxReview += 1
+	end
+	if #r.vfxExcluded > 0 then
+		excluded += 1
+	end
+end
+check(vfxReview >= excluded and excluded > 0, `VFX de golpe/rastro fora da whitelist marcados VFX REVIEW ({vfxReview})`)
 
 -- Casos específicos
 local function bone(id, partName)
@@ -156,16 +219,24 @@ check(fire == 2 and lights == 1 and others == 0, "Yamamotu: fogo (2) + 1 luz; Tr
 check(byId.char_killuo_godspeed.vfxRemoved > 0 and byId.char_ichiro_hollow.scriptsRemoved == 3 and byId.char_ichiro_hollow.remotesRemoved == 2 and byId.char_ichiro_hollow.soundsRemoved == 2 and byId.char_ichiro_hollow.animationsRemoved >= 4, "relatório conta scripts/remotes/sons/animações removidos")
 
 -- Roupa e estrutura visual (bug do Killuo: roupa "Clothing" com URL antiga + placa de título)
+local lostAny, nestedAny = {}, {}
 for _, report in reports do
-	check(#report.visualLost == 0 and (report.visualSource.Shirt or 0) == (report.visualSanitized.Shirt or 0) and (report.visualSource.Pants or 0) == (report.visualSanitized.Pants or 0), `{report.CharacterId}: nenhuma classe visual perdida (Shirt/Pants/Decal/Texture/MeshPart/SpecialMesh...)`)
+	if #report.visualLost > 0 or (report.visualSource.Shirt or 0) ~= (report.visualSanitized.Shirt or 0) or (report.visualSource.Pants or 0) ~= (report.visualSanitized.Pants or 0) then
+		table.insert(lostAny, report.CharacterId)
+	end
+	local model = folder:FindFirstChild(report.CharacterId)
 	local nested = 0
-	for _, obj in folder:FindFirstChild(report.CharacterId):GetDescendants() do
+	for _, obj in (if model then model:GetDescendants() else {}) do
 		if obj:IsA("Humanoid") and obj.Parent.Name ~= report.CharacterId then
 			nested += 1
 		end
 	end
-	check(nested == 0 and report.nameTagsRemoved == 1 and folder:FindFirstChild(report.CharacterId):FindFirstChild("[ SEMI-PRO ]") == nil, `{report.CharacterId}: placa de título com Humanoid aninhado removida`)
+	if nested > 0 or report.nameTagsRemoved ~= 1 or (model and model:FindFirstChild("[ SEMI-PRO ]")) then
+		table.insert(nestedAny, report.CharacterId)
+	end
 end
+none(lostAny, "lote: nenhuma classe visual perdida (Shirt/Pants/Decal/Texture/MeshPart/SpecialMesh...)")
+none(nestedAny, "lote: placa de título com Humanoid aninhado removida")
 local killuoModel = folder:FindFirstChild("char_killuo_base")
 local shirt, pants = killuoModel:FindFirstChildOfClass("Shirt"), killuoModel:FindFirstChildOfClass("Pants")
 check(shirt ~= nil and pants ~= nil and shirt.ShirtTemplate == "rbxassetid://2065247269" and pants.PantsTemplate == "rbxassetid://2065252088", "Killuo: Shirt/Pants preservados e URL antiga normalizada (mesmo asset)")
@@ -238,7 +309,7 @@ check(env.real.Workspace:FindFirstChild(Config.SourcePackName) == nil, "SOURCE P
 
 local loaded = roblox.deserializeModel(fs.readFile(file))[1]
 loaded.Parent = env.real.ReplicatedStorage
-check(loaded.Name == Config.StorageName and #loaded:GetChildren() == pilotCount, "assets lidos do .rbxm em ReplicatedStorage." .. Config.StorageName)
+check(loaded.Name == Config.StorageName and #loaded:GetChildren() == assetCount, "assets (121) lidos do .rbxm em ReplicatedStorage." .. Config.StorageName)
 
 local failures = T.finish()
 
@@ -274,6 +345,40 @@ for _, character in CharacterConfig.Pilots do
 	model:Destroy()
 	spawned:Destroy()
 end
+
+-- Lote inteiro no factory: Base (Light + variante), Mochila/Índice (None), Reveal/Hero (Full + poses)
+local factoryBad = {}
+local t0 = os.clock()
+for _, character in CharacterConfig.Launch do
+	local ok, err = pcall(function()
+		local base = Factory.spawn(character.Id, CFrame.new(0, 2, 0), { vfx = "Light", variant = "Gold" })
+		assert(base:GetAttribute("AssetRig") == true, "placeholder")
+		local legMin = Pipeline.boundsOf({ base:FindFirstChild("Left Leg"), base:FindFirstChild("Right Leg") }, CFrame.new(0, 2, 0))
+		assert(math.abs(legMin.Y) < 0.05, "pés fora do alvo")
+		base:Destroy()
+		local viewport = Factory.build(character.Id, { vfx = "None" })
+		assert(viewport:GetAttribute("VFXMode") == "None")
+		viewport:Destroy()
+		local hero = Factory.build(character.Id, { vfx = "Full", pose = "Reveal" })
+		Factory.pose(hero, "Crouch")
+		Factory.lerpPose(hero, "Crouch", "Confident", 0.5)
+		hero:Destroy()
+	end)
+	if not ok then
+		table.insert(factoryBad, character.Id .. ": " .. tostring(err))
+	end
+end
+check(#factoryBad == 0, string.format("factory monta os 121 (Base/Mochila-Índice/Reveal-Hero) em %.1fs%s", os.clock() - t0, if #factoryBad > 0 then ": " .. table.concat(factoryBad, "; ") else ""))
+-- Variantes reaproveitam o MESMO modelo-base (sem cópias físicas no pack de assets)
+local copies = 0
+for _, child in loaded:GetChildren() do
+	if string.find(child.Name, "Silver", 1, true) or string.find(child.Name, "Gold", 1, true) or child:GetAttribute("Variant") then
+		copies += 1
+	end
+end
+check(copies == 0 and #loaded:GetChildren() == #CharacterConfig.Launch, "variantes: 1 asset por CharacterId (nenhuma cópia por variante)")
+-- Formas continuam ids separados (não viram variante)
+check(loaded:FindFirstChild("char_ichiro_base") ~= nil and loaded:FindFirstChild("char_ichiro_hollow") ~= nil and CharacterConfig.ById.char_ichiro_hollow.FormTier == 2 and CharacterConfig.ById.char_ichiro_hollow.CharacterFamily == CharacterConfig.ById.char_ichiro_base.CharacterFamily, "formas: ids/assets separados com a mesma família e FormTier diferente")
 
 -- Variantes: as 7 em pilotos com e sem acentos (sem pintar corpo/rosto/roupa)
 for _, id in { "char_ichiro_base", "char_goko_base", "char_barbalva_base" } do

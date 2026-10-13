@@ -60,6 +60,14 @@ export type Report = {
 	visualSource: { [string]: number },
 	visualSanitized: { [string]: number },
 	visualLost: { string },
+	-- Orçamento (medido no asset final) e status do lote
+	finalCounts: { [string]: number },
+	vfxTruncated: number,
+	vfxExcluded: { string },
+	catalogStatus: string,
+	clothingStatus: string,
+	optimizationStatus: string, -- OK | NEEDS_OPTIMIZATION
+	vfxStatus: string, -- OK | REVIEW
 	scaleFactor: number,
 	boundsSize: { number },
 	visualOffset: { number },
@@ -372,6 +380,13 @@ local function newReport(characterId: string): Report
 		visualSource = {},
 		visualSanitized = {},
 		visualLost = {},
+		finalCounts = {},
+		vfxTruncated = 0,
+		vfxExcluded = if spec and spec.VFXExcluded then table.clone(spec.VFXExcluded) else {},
+		catalogStatus = if spec and spec.CatalogStatus then spec.CatalogStatus else "APPROVED",
+		clothingStatus = "NONE",
+		optimizationStatus = "OK",
+		vfxStatus = "OK",
 		scaleFactor = 1,
 		boundsSize = { 0, 0, 0 },
 		visualOffset = { 0, 0, 0 },
@@ -721,6 +736,7 @@ function Pipeline.sanitize(source: Model, characterId: string): (Model?, Report)
 		local isLight = LIGHT_CLASSES[effect.ClassName] == true
 		if kept >= limits.MaxFull or (isLight and lights >= limits.MaxLights) then
 			report.vfxRemoved += 1
+			report.vfxTruncated += 1
 			effect:Destroy()
 			continue
 		end
@@ -810,6 +826,43 @@ function Pipeline.sanitize(source: Model, characterId: string): (Model?, Report)
 	end
 	report.problems = problems
 	report.warnings = warnings
+	-- Orçamento do asset final (mobile: até 40 por base)
+	local counts: { [string]: number } = { Parts = #parts, MeshParts = 0, Attachments = 0, Emitters = 0, Trails = 0, Beams = 0, Lights = 0, Instances = #model:GetDescendants() }
+	for _, obj in model:GetDescendants() do
+		if obj:IsA("MeshPart") then
+			counts.MeshParts += 1
+		elseif obj:IsA("Attachment") then
+			counts.Attachments += 1
+		elseif obj:IsA("ParticleEmitter") then
+			counts.Emitters += 1
+		elseif obj:IsA("Trail") then
+			counts.Trails += 1
+		elseif obj:IsA("Beam") then
+			counts.Beams += 1
+		elseif obj:IsA("Light") then
+			counts.Lights += 1
+		end
+	end
+	report.finalCounts = counts
+	local budget = Config.Budget
+	if counts.Parts > budget.MaxParts or counts.Instances > budget.MaxInstances then
+		report.optimizationStatus = "NEEDS_OPTIMIZATION"
+	end
+	if report.vfxTruncated > 0 or #report.vfxExcluded > 0 then
+		report.vfxStatus = "REVIEW"
+	end
+	-- Status de roupa do personagem = o pior entre as roupas dele
+	local rank = { NONE = 0, OK = 1, OVERRIDDEN = 2, UNCHECKED = 3, REVIEW_REQUIRED = 4 }
+	for _, use in report.clothing do
+		if (rank[use.status] or 0) > (rank[report.clothingStatus] or 0) then
+			report.clothingStatus = use.status
+		end
+	end
+	-- Atributos para filtros da galeria DEV (sem rede, sem relatório em runtime)
+	model:SetAttribute("ClothingStatus", report.clothingStatus)
+	model:SetAttribute("OptimizationStatus", report.optimizationStatus)
+	model:SetAttribute("VFXStatus", report.vfxStatus)
+
 	-- Roupa com asset externo problemático: gera o personagem, mas marca para revisão
 	for _, use in report.clothing do
 		if use.status == "REVIEW_REQUIRED" then
@@ -932,11 +985,33 @@ end
 ------------------------------------------------------------------------------------
 -- Lote (ferramentas)
 
--- Acha o modelo de origem pelo caminho "Categoria.Sub.Nome" dentro do pack
+-- Acha o modelo de origem pelo caminho "Categoria.Sub.Nome" dentro do pack. Irmãos com o
+-- MESMO nome (ex.: dois "Hisoka" em HXH) vêm da auditoria como "Nome (2ª ocorrência)": o
+-- N-ésimo filho com esse nome, na ordem do arquivo.
+local OCCURRENCE = "^(.-) %((%d+)ª ocorrência%)$"
 function Pipeline.findSource(pack: Instance, path: string): Model?
 	local current: Instance? = pack
 	for name in string.gmatch(path, "[^%.]+") do
-		current = current and current:FindFirstChild(name)
+		local parent = current
+		if not parent then
+			break
+		end
+		local base, nth = string.match(name, OCCURRENCE)
+		if base and nth then
+			current = nil
+			local seen = 0
+			for _, child in parent:GetChildren() do
+				if child.Name == base then
+					seen += 1
+					if seen == tonumber(nth) then
+						current = child
+						break
+					end
+				end
+			end
+		else
+			current = parent:FindFirstChild(name)
+		end
 	end
 	if current and current:IsA("Model") then
 		return current

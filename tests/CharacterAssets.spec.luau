@@ -174,4 +174,136 @@ describe("Pipeline de personagens: regras de segurança e VFX", function()
 	end)
 end)
 
+describe("Catálogo de LANÇAMENTO (121 = 112 F2P + 9 Premium)", function()
+	local F2P_DICE = { "starter", "lucky", "rampart", "flame", "shinobi", "blade", "fighter", "storm", "spirit", "arcane", "shadow", "void", "awakened", "colossus", "celestial", "forbidden" }
+	local PREMIUM = { "Iskandar", "Hellflame", "Lancer Mode", "Afro Samurai", "Kizaru", "Shunko Yoruichi", "SSJR", "SALTER", "Bankai Toshiro" }
+
+	it("exatamente 121 personagens: 112 F2P e 9 Premium, CharacterIds únicos", function()
+		local launch = CharacterConfig.Launch
+		expect(#launch).toBe(121)
+		local seen, f2p, premium = {}, 0, 0
+		for _, c in launch do
+			expect(string.match(c.Id, "^char_[a-z0-9_]+$") ~= nil).toBeTruthy()
+			expect(seen[c.Id]).toBeNil()
+			seen[c.Id] = true
+			expect(CharacterConfig.ById[c.Id]).toBe(c)
+			expect(c.Launch).toBe(true)
+			if c.LaunchPool == "F2P" then
+				f2p += 1
+			elseif c.LaunchPool == "Premium" then
+				premium += 1
+			end
+		end
+		expect(f2p).toBe(112)
+		expect(premium).toBe(9)
+	end)
+
+	it("F2P distribuídos nos 16 Dice; Premium = os 9 do PREMIUM_DICE_PROPOSAL", function()
+		local perDice, premiumSources = {}, {}
+		for _, c in CharacterConfig.Launch do
+			if c.LaunchPool == "F2P" then
+				expect(table.find(F2P_DICE, c.DefaultDice) ~= nil).toBeTruthy()
+				perDice[c.DefaultDice] = (perDice[c.DefaultDice] or 0) + 1
+			else
+				expect(c.DefaultDice).toBe("premium")
+				premiumSources[c.SourceModelName] = true
+			end
+		end
+		local total = 0
+		for _, dice in F2P_DICE do
+			expect((perDice[dice] or 0) >= 6).toBeTruthy()
+			total += perDice[dice] or 0
+		end
+		expect(total).toBe(112)
+		for _, source in PREMIUM do
+			expect(premiumSources[source]).toBe(true)
+		end
+	end)
+
+	it("metadados completos e mapeamento para o pack (SourcePath único por id)", function()
+		local paths, names = {}, {}
+		for _, c in CharacterConfig.Launch do
+			expect(RarityConfig.ById[c.Rarity] ~= nil).toBeTruthy()
+			expect(type(c.DisplayName) == "string" and #c.DisplayName > 0).toBeTruthy()
+			expect(type(c.CharacterFamily) == "string" and #c.CharacterFamily > 0).toBeTruthy()
+			expect(type(c.FormTier) == "number" and c.FormTier >= 1).toBeTruthy()
+			local spec = CharacterAssetConfig.Assets[c.Id]
+			expect(spec ~= nil).toBeTruthy()
+			expect(spec.SourceModelName).toBe(c.SourceModelName)
+			-- "Nome (2ª ocorrência)" = irmão repetido no pack (resolvido pelo Pipeline.findSource)
+			local leaf = string.gsub(spec.SourcePath, " %(%d+ª ocorrência%)$", "")
+			expect(string.sub(leaf, -#c.SourceModelName)).toBe(c.SourceModelName)
+			expect(paths[spec.SourcePath]).toBeNil()
+			paths[spec.SourcePath] = true
+			expect(names[c.DisplayName]).toBeNil()
+			names[c.DisplayName] = true
+			local scale = CharacterAssetConfig.visualScale(c.Id)
+			expect(scale >= CharacterAssetConfig.VisualScaleLimits.Min and scale <= CharacterAssetConfig.VisualScaleLimits.Max).toBeTruthy()
+			expect(#CharacterAssetConfig.visualOffset(c.Id)).toBe(3)
+		end
+		-- nenhum asset fora do catálogo de lançamento
+		local assets = 0
+		for id in CharacterAssetConfig.Assets do
+			expect(CharacterConfig.ById[id] ~= nil and CharacterConfig.ById[id].Launch == true).toBeTruthy()
+			assets += 1
+		end
+		expect(assets).toBe(121)
+	end)
+
+	it("pilotos preservados (mesmos ids) dentro do lançamento; roster do roll continua 24", function()
+		local launchIds = {}
+		for _, c in CharacterConfig.Launch do
+			launchIds[c.Id] = true
+		end
+		for _, pilot in CharacterConfig.Pilots do
+			expect(launchIds[pilot.Id]).toBe(true)
+		end
+		expect(#CharacterConfig.List).toBe(24)
+		expect(CharacterConfig.Count).toBe(24)
+		for _, c in CharacterConfig.List do
+			expect(c.Launch).toBeNil()
+		end
+	end)
+
+	it("formas são CharacterIds separados da mesma família (sem cópia por variante)", function()
+		local families = {}
+		for _, c in CharacterConfig.Launch do
+			families[c.CharacterFamily] = families[c.CharacterFamily] or {}
+			table.insert(families[c.CharacterFamily], c)
+		end
+		local multiForm = 0
+		for _, members in families do
+			if #members > 1 then
+				multiForm += 1
+				local ids = {}
+				for _, c in members do
+					expect(ids[c.Id]).toBeNil()
+					ids[c.Id] = true
+				end
+			end
+		end
+		expect(multiForm > 0).toBeTruthy()
+		-- variantes nunca viram ids/assets próprios
+		for id in CharacterAssetConfig.Assets do
+			for _, variant in VariantConfig.List do
+				expect(string.find(id, "_" .. string.lower(variant.Id) .. "$") == nil or variant.Id == "Normal").toBeTruthy()
+			end
+		end
+	end)
+
+	it("VFX de combate (golpes/disparos) nunca entram na whitelist gerada", function()
+		local combat = { "trail", "shoot", "beam", "slash", "blast", "projectile", "kame", "punch", "kick" }
+		for _, c in CharacterConfig.Launch do
+			local spec = CharacterAssetConfig.Assets[c.Id]
+			if spec.VFX and spec.VFXExcluded then
+				for _, name in spec.VFX.Full or {} do
+					for _, word in combat do
+						expect(string.find(string.lower(name), word, 1, true)).toBeNil()
+					end
+				end
+			end
+		end
+	end)
+end)
+
 return true

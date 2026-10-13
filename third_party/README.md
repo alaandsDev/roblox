@@ -35,9 +35,9 @@ scripts com risco (require por id, loadstring, HttpService, Teleport, Marketplac
 ofuscação...) e uma sugestão visual de raridade. O `AnimePack_scripts.txt` tem o código dos
 scripts como texto, para revisão manual.
 
-## Pipeline de personagens (pilotos)
+## Pipeline de personagens (lote de lançamento: 121)
 
 Com `third_party/AnimePack.rbxm` salvo: `python tools/build_characters.py` gera
-`assets/Characters.rbxm` (só os pilotos de `CharacterAssetConfig.Assets`, sanitizados) e
-`CHARACTER_PILOT_AUDIT.md`. A propriedade `Tags` (que o Lune recusa em todas as classes) sai
+`assets/Characters.rbxm` (os 121 de `CharacterAssetConfig.Assets`, sanitizados),
+`CHARACTER_LAUNCH_AUDIT.md`, `CLOTHING_AUDIT.md` e `third_party/character_launch_report.json`. A propriedade `Tags` (que o Lune recusa em todas as classes) sai
 de uma vez de uma cópia temporária (`build/AnimePack_lune.rbxm`); o original não é tocado. Detalhes: `CHARACTER_PIPELINE.md`.

@@ -73,7 +73,7 @@ def main() -> int:
     pasta = achar(raiz, ["ReplicatedStorage", "CharacterAssets"]) if raiz is not None else None
     nomes = sorted(nome(c) for c in filhos(pasta)) if pasta is not None else []
     check(pasta is not None, "ReplicatedStorage.CharacterAssets existe no place")
-    check(nomes == PILOTOS and len(nomes) == 10, f"CharacterAssets contém exatamente os 10 pilotos ({', '.join(nomes)})")
+    check(nomes == PILOTOS and len(nomes) == 121, f"CharacterAssets contém exatamente os 121 personagens de lançamento ({len(nomes)})")
     scripts = [c for c in pasta.iter("Item") if c.get("class") in ("Script", "LocalScript", "ModuleScript", "RemoteEvent", "RemoteFunction", "Sound")] if pasta is not None else ["?"]
     check(not scripts, "nenhum Script/Remote/Sound dentro de CharacterAssets")
     dev = achar(raiz, ["ServerScriptService", "Server", "Services", "DevService"]) if raiz is not None else None
@@ -88,7 +88,9 @@ def main() -> int:
         r, raiz = build(RAIZ / "assets", tmp / "real.rbxlx")
         pasta = achar(raiz, ["ReplicatedStorage", "CharacterAssets"]) if raiz is not None else None
         nomes = sorted(nome(c) for c in filhos(pasta)) if pasta is not None else []
-        check(r.returncode == 0 and nomes == PILOTOS, "build REAL (assets/Characters.rbxm do repositório): CharacterAssets com os 10 pilotos")
+        # O asset real só tem o que a ferramenta já gerou a partir do pack do usuário (hoje: os 10
+        # pilotos; com os 121 depois de rodar python tools/build_characters.py)
+        check(r.returncode == 0 and len(nomes) >= 10 and set(nomes) <= set(PILOTOS), f"build REAL (assets/Characters.rbxm do repositório): CharacterAssets com {len(nomes)}/{len(PILOTOS)} personagens de lançamento")
     print(f"[Build com assets/Characters.rbxm] {'OK' if falhas == 0 else f'{falhas} falha(s)'}")
     return 1 if falhas else 0
 

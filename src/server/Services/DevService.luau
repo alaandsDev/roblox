@@ -378,6 +378,71 @@ DevService.Register("CharacterGallery", "([player], vfx?) pilotos lado a lado no
 	end
 	return showRow(player, entries)
 end)
+-- Galeria PAGINADA do catálogo de lançamento (no máximo GALLERY_PAGE por vez)
+local GALLERY_PAGE = 12
+local FILTER_KEYS = { dice = "DefaultDice", rarity = "Rarity", pool = "LaunchPool", launchpool = "LaunchPool", family = "CharacterFamily" }
+local function matchesFilter(character: any, filter: string?): boolean
+	if not filter or filter == "" then
+		return true
+	end
+	for clause in string.gmatch(filter, "[^,;]+") do
+		local key, value = string.match(clause, "^%s*([%w_]+)%s*=%s*(.-)%s*$")
+		if not key or not value then
+			return false
+		end
+		key, value = string.lower(key), string.lower(value)
+		if key == "status" then
+			-- status de roupa/otimização/VFX gravado no asset pelo pipeline (ou "placeholder")
+			local folder = game:GetService("ReplicatedStorage"):FindFirstChild(CharacterAssetConfig.StorageName)
+			local template = folder and folder:FindFirstChild(character.Id)
+			local found = false
+			if not template then
+				found = value == "placeholder" or value == "missing"
+			else
+				for _, attribute in { "ClothingStatus", "OptimizationStatus", "VFXStatus" } do
+					found = found or string.lower(tostring(template:GetAttribute(attribute))) == value
+				end
+			end
+			if not found then
+				return false
+			end
+		else
+			local field = FILTER_KEYS[key]
+			if not field or string.lower(tostring(character[field])) ~= value then
+				return false
+			end
+		end
+	end
+	return true
+end
+
+DevService.Register("CharacterGalleryPage", "([player], página, filtro?) catálogo de lançamento paginado (12 por página); filtro: Dice=blade, Rarity=Mythic, Pool=Premium, Family=ichiro, Status=REVIEW_REQUIRED (combine com vírgula)", function(...)
+	local player, page, filter, vfx = splitPlayer(...)
+	local list = {}
+	for _, character in CharacterConfig.Launch do
+		if matchesFilter(character, filter) then
+			table.insert(list, character)
+		end
+	end
+	local pages = math.max(1, math.ceil(#list / GALLERY_PAGE))
+	local current = math.clamp(math.floor(tonumber(page) or 1), 1, pages)
+	if #list == 0 then
+		return `nenhum personagem com o filtro "{tostring(filter)}"`
+	end
+	local entries = {}
+	for i = (current - 1) * GALLERY_PAGE + 1, math.min(current * GALLERY_PAGE, #list) do
+		local character = list[i]
+		table.insert(entries, {
+			id = character.Id,
+			title = character.Name,
+			subtitle = `{character.Rarity} · {character.DefaultDice or "?"} · {character.LaunchPool or "?"} · {assetStatus(character.Id)}`,
+			opts = { vfx = vfx or CharacterAssetConfig.VFXModes.Gallery },
+		})
+	end
+	local shown = showRow(player, entries)
+	return `Página {current}/{pages} · {#list} personagem(ns){if filter then ` com "{filter}"` else ""} · {shown}`
+end)
+
 DevService.Register("ShowCharacterVariants", "([player], characterId, vfx?) as 7 variantes lado a lado", function(...)
 	local player, id, vfx = splitPlayer(...)
 	assert(CharacterConfig.ById[id], "personagem inválido: " .. tostring(id))
@@ -414,19 +479,51 @@ DevService.Register("GivePilots", "([player], variante?) 1 de cada piloto no inv
 	InventoryService.SendDelta(player, uids, nil)
 	return `{#uids} pilotos adicionados`
 end)
-DevService.Register("CharacterAssetReport", "() status dos assets dos pilotos (validação do runtime)", function()
+DevService.Register("CharacterAssetReport", "() status dos assets de lançamento (validação do runtime): resumo + só o que não está OK", function()
 	CharacterModelFactory.clearCache()
 	local folder = game:GetService("ReplicatedStorage"):FindFirstChild(CharacterAssetConfig.StorageName)
 	local lines = { `ReplicatedStorage.{CharacterAssetConfig.StorageName}: {if folder then #folder:GetChildren() .. " assets" else "AUSENTE (rode python tools/build_characters.py)"}` }
-	for _, character in CharacterConfig.Pilots do
+	local counts = { ok = 0, missing = 0, invalid = 0, warn = 0 }
+	local details = {}
+	for _, character in CharacterConfig.Launch do
 		local template = folder and folder:FindFirstChild(character.Id)
 		local problems, warnings = {}, {}
 		if template then
 			problems, warnings = CharacterAssetPipeline.validate(template)
 		end
-		local status = if not template then "sem asset (placeholder)" elseif #problems > 0 then "INVÁLIDO: " .. problems[1] elseif #warnings > 0 then "AVISO: " .. warnings[1] else "OK"
-		local parts = template and template:GetAttribute("PartCount") or "-"
-		table.insert(lines, `{character.Id} ({character.Name}, {character.Rarity}): {status} · peças {parts}`)
+		local status
+		if not template then
+			counts.missing += 1
+			status = "sem asset (placeholder)"
+		elseif #problems > 0 then
+			counts.invalid += 1
+			status = "INVÁLIDO: " .. problems[1]
+		else
+			local flags = {}
+			for _, attribute in { "ClothingStatus", "OptimizationStatus", "VFXStatus" } do
+				local value = template:GetAttribute(attribute)
+				if value and value ~= "OK" and value ~= "NONE" and value ~= "UNCHECKED" then
+					table.insert(flags, `{attribute}={value}`)
+				end
+			end
+			if #warnings > 0 or #flags > 0 then
+				counts.warn += 1
+				status = "AVISO: " .. table.concat(flags, " ") .. (if #warnings > 0 then " " .. warnings[1] else "")
+			else
+				counts.ok += 1
+			end
+		end
+		if status then
+			table.insert(details, `{character.Id} ({character.Name}, {character.Rarity}): {status} · peças {template and template:GetAttribute("PartCount") or "-"}`)
+		end
+	end
+	table.insert(lines, `Lançamento {#CharacterConfig.Launch}: OK {counts.ok} · com aviso {counts.warn} · inválidos {counts.invalid} · sem asset {counts.missing}`)
+	for i, line in details do
+		if i > 40 then
+			table.insert(lines, `... e mais {#details - 40} (veja CHARACTER_LAUNCH_AUDIT.md)`)
+			break
+		end
+		table.insert(lines, line)
 	end
 	return table.concat(lines, "\n")
 end)
@@ -650,7 +747,7 @@ DevService.Register("SourcePackCheck", "() prova que o jogo não depende do Anim
 	end
 	CharacterModelFactory.clearCache()
 	local ok, fromAsset, problems = 0, 0, {}
-	for _, character in CharacterConfig.Pilots do
+	for _, character in CharacterConfig.Launch do
 		local built, model = pcall(CharacterModelFactory.build, character.Id, { vfx = "Full" })
 		if built then
 			ok += 1
@@ -670,7 +767,7 @@ DevService.Register("SourcePackCheck", "() prova que o jogo não depende do Anim
 	if pack then
 		pack.Parent = previousParent
 	end
-	return `Anime Pack no Workspace: {if pack then "sim (escondido durante o teste)" else "não"} · {ok}/{#CharacterConfig.Pilots} montados sem o pack · {fromAsset} do asset sanitizado · problemas: {if #problems == 0 then "nenhum" else table.concat(problems, "; ")}`
+	return `Anime Pack no Workspace: {if pack then "sim (escondido durante o teste)" else "não"} · {ok}/{#CharacterConfig.Launch} montados sem o pack · {fromAsset} do asset sanitizado · problemas: {if #problems == 0 then "nenhum" else table.concat(problems, "; ")}`
 end)
 
 DevService.Register("Analytics", "() contagem dos eventos de analytics", function()

@@ -1,8 +1,10 @@
-# CHARACTER PIPELINE — Roll Legends (fase PILOTO)
+# CHARACTER PIPELINE — Roll Legends (lote de LANÇAMENTO)
 
 Como um modelo visual do **Anime Pack** vira um personagem seguro e independente do Roll Legends.
-Nesta fase só **10 pilotos** passam pelo pipeline. A integração em lote (121) só depois da
-validação visual no Studio.
+O pipeline processa o **catálogo de lançamento: 121 personagens = 112 F2P (16 Dice) + 9 Premium**
+(os 10 pilotos validados no Studio fazem parte dele, com os mesmos CharacterIds). Reservas,
+evento, limited, banner e stands ficam fora. O roster do roll/Índice oficial continua com os 24
+antigos: os 121 só existem em `ById`/`Launch` (assets, galeria DEV) até a fase dos Dice.
 
 ```
 SOURCE MODEL   Workspace.Anime Pack / third_party/AnimePack.rbxm   (só desenvolvimento)
@@ -24,12 +26,13 @@ Base (estações) · Roll Reveal · Mochila · Índice · Hero Landing · Galeri
 
 | Arquivo | Papel |
 |---|---|
-| `src/shared/Config/CharacterConfig.luau` | Metadados de jogo. `List` = roster do roll/Índice (24, intocado). `Pilots` + `ById` = pilotos com `DisplayName`, `SourceModelName`, `CharacterFamily`, `FormTier`, `SourceCategory`, `DefaultDice`, `TechnicalStatus`, stats. |
+| `src/shared/Config/CharacterConfig.luau` | Metadados de jogo. `List` = roster do roll/Índice (24, intocado). `Launch` (121) + `Pilots` (10) + `ById` com `DisplayName`, `SourceModelName`, `CharacterFamily`, `FormTier`, `SourceCategory`, `DefaultDice` (DiceAssignment), `LaunchPool` (F2P/Premium, só metadado), `TechnicalStatus`, stats provisórios por raridade. O bloco dos 121 é GERADO por `tools/characters/gen_launch_catalog.py` a partir de `third_party/catalog_proposal.json` (para se não der 121 = 112 + 9 com ids únicos). |
 | `src/shared/Config/CharacterAssetConfig.luau` | Regras do pipeline (classes proibidas/permitidas, VFX genéricos, limites, normalização, modos de VFX) e `Assets[CharacterId]` = `SourcePath`, whitelist de VFX, `VisualScale`/`VisualOffset` (ajustes centralizados). |
 | `src/shared/Modules/CharacterAssetPipeline.luau` | `sanitize`, `validate`, `scale`, `buildAll`, `buildInStudio`. |
 | `src/shared/Modules/CharacterModelFactory.luau` | `build`, `spawn`, `pose`, `lerpPose`, `template`, `hasAsset`, `height`. Asset → senão placeholder. |
 | `src/shared/Modules/VariantVisualModifier.luau` | Variantes sobre o mesmo modelo base. |
-| `tools/build_characters.py` + `tools/characters/build_characters.luau` | Gera `assets/Characters.rbxm` + `CHARACTER_PILOT_AUDIT.md` + `third_party/character_pilot_report.json`. |
+| `tools/build_characters.py` + `tools/characters/build_characters.luau` | Gera `assets/Characters.rbxm` + `CHARACTER_LAUNCH_AUDIT.md` (resumo + tabela dos 121) + `CLOTHING_AUDIT.md` (por AssetId) + `third_party/character_launch_report.json`; monta os 121 na factory (Base, Inventário/Índice, Reveal/Hero). Código 2 se houver FAIL ou MISSING_SOURCE. |
+| `tools/characters/gen_launch_catalog.py` | Gera os blocos do catálogo de lançamento (`--check` só confere; roda na suíte). |
 | `tools/packaudit/rbxm_reader.py` | `strip_properties`/`iter_chunks`/`dropped_properties`: cópia binária TEMPORÁRIA sem metadados que o Lune recusa (ver abaixo). |
 
 ## Chaves (sem rename destrutivo)
@@ -154,9 +157,9 @@ placeholder em blocos (o atual) + `warn` uma vez no Output. O jogo nunca quebra.
 
 1. No Studio: `Workspace > Anime Pack` → botão direito → **Save to File...** →
    `third_party/AnimePack.rbxm` (já feito na auditoria).
-2. `python tools/build_characters.py` → `assets/Characters.rbxm` + `CHARACTER_PILOT_AUDIT.md`.
+2. `python tools/build_characters.py` → `assets/Characters.rbxm` (121) + `CHARACTER_LAUNCH_AUDIT.md` + `CLOTHING_AUDIT.md`.
 3. `python tools/build_place.py` → abrir `build/RollLegends.rbxlx` (sem o pack) → Play.
-4. `game.ServerStorage.RollLegendsDev:Invoke("CharacterAssetReport")`, `game.ServerStorage.RollLegendsDev:Invoke("SourcePackCheck")`, `game.ServerStorage.RollLegendsDev:Invoke("CharacterGallery")`.
+4. Barra de comandos, aba **SERVER**: `game.ServerStorage.RollLegendsDev:Invoke("CharacterAssetReport")`, `game.ServerStorage.RollLegendsDev:Invoke("SourcePackCheck")`, `game.ServerStorage.RollLegendsDev:Invoke("CharacterGalleryPage", 1)`.
 
 Alternativa sem Lune (Studio em modo **EDIÇÃO**, nunca no Play — no Play os scripts do pack rodam):
 `print(require(game.ReplicatedStorage.Shared.Modules.CharacterAssetPipeline).buildInStudio())`
@@ -177,16 +180,33 @@ iguais (leitura estruturada) e o arquivo original com o mesmo SHA-256.
 
 | Comando | O que faz |
 |---|---|
+| `game.ServerStorage.RollLegendsDev:Invoke("CharacterGalleryPage", 1)` | Catálogo de lançamento PAGINADO: 12 por página (121 → 11 páginas); página fora do intervalo é limitada |
+| `game.ServerStorage.RollLegendsDev:Invoke("CharacterGalleryPage", 1, "Pool=Premium")` | Filtros `Dice=`, `Rarity=`, `Pool=` (F2P/Premium), `Family=`, `Status=` (`REVIEW_REQUIRED`, `NEEDS_OPTIMIZATION`, `REVIEW` de VFX, `placeholder`); combine com vírgula: `"Dice=blade, Rarity=Mythic"` |
 | `game.ServerStorage.RollLegendsDev:Invoke("CharacterGallery")` | Os 10 pilotos lado a lado (asset ou PLACEHOLDER na etiqueta) |
 | `game.ServerStorage.RollLegendsDev:Invoke("ShowCharacterVariants", "char_ichiro_base")` | As 7 variantes lado a lado |
 | `game.ServerStorage.RollLegendsDev:Invoke("ShowCharacterPoses", "char_zabuzo_base")` | Idle/Reveal/Combat/Crouch/Confident |
 | `game.ServerStorage.RollLegendsDev:Invoke("ClearGallery")` | Remove a galeria |
 | `game.ServerStorage.RollLegendsDev:Invoke("GivePilots")` / `game.ServerStorage.RollLegendsDev:Invoke("GivePilots", "Gold")` | 1 de cada piloto no inventário e no Índice |
-| `game.ServerStorage.RollLegendsDev:Invoke("CharacterAssetReport")` | Validação do runtime de cada asset |
+| `game.ServerStorage.RollLegendsDev:Invoke("CharacterAssetReport")` | Validação do runtime dos 121: resumo (OK/aviso/inválido/sem asset) + só os que não estão OK |
 | `game.ServerStorage.RollLegendsDev:Invoke("ClothingCheck")` (ou com ids: `"2065247269", "2065252088"`) | Diagnóstico das roupas em SEGUNDO PLANO (volta na hora; progresso `[ClothingCheck]` no Output) |
 | `game.ServerStorage.RollLegendsDev:Invoke("ClothingCheckStatus")` | Resultado: A imagem · B item da loja → imagem · C removido/moderado · D sem resposta · E outro; overrides só SUGERIDOS |
-| `game.ServerStorage.RollLegendsDev:Invoke("SourcePackCheck")` | Monta os pilotos com o pack escondido e procura dependências |
+| `game.ServerStorage.RollLegendsDev:Invoke("SourcePackCheck")` | Monta os 121 com o pack escondido e procura dependências |
 | `game.ServerStorage.RollLegendsDev:Invoke("PlayReveal", game.Players:GetPlayers()[1], "Divine", "char_goju_base")` | Reveal/Hero Landing com um piloto |
+
+## Lote de lançamento: status e auditorias
+
+- **Fonte**: `SourcePath` do catálogo. Irmãos com o mesmo nome no pack vêm como
+  `"Nome (2ª ocorrência)"` e o `Pipeline.findSource` pega o N-ésimo (ordem do arquivo). Sem fonte →
+  `MISSING_SOURCE` (relatado, não inventado).
+- **Sanitizer**: perda de qualquer classe visual (peça, malha, roupa, rosto, decal) = **FAIL**.
+- **Roupa** (`ClothingStatus` no asset): OK · UNCHECKED · REVIEW_REQUIRED · OVERRIDDEN, por AssetId
+  único no `CLOTHING_AUDIT.md`. REVIEW_REQUIRED é aviso: NÃO derruba o lote.
+- **Otimização** (`OptimizationStatus`): NEEDS_OPTIMIZATION acima de `Budget` (40 peças / 300
+  instâncias) — só marca, nada visual é removido.
+- **VFX** (`VFXStatus`): whitelist gerada sem golpes/disparos/rastros (`VFXExcluded`); REVIEW quando
+  algo ficou de fora ou passou do limite. Modos None/Light/Full.
+- **Variantes** = o mesmo asset base (modificador visual); **formas** = CharacterIds separados.
+- **POSSIBLE_DUPLICATE**: dois assets com a mesma impressão visual (aviso para revisão).
 
 ## Performance (meta: 40 por base × 10 bases = 400)
 

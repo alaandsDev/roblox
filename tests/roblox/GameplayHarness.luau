@@ -923,7 +923,11 @@ local Pipeline = req(env.shared.Modules.CharacterAssetPipeline)
 local Factory = req(env.shared.Modules.CharacterModelFactory)
 local CharacterConfig = req(env.shared.Config.CharacterConfig)
 local pack = SyntheticPack.build()
-local assets = Pipeline.buildAll(pack)
+local pilotIds = {}
+for _, pilot in CharacterConfig.Pilots do
+	table.insert(pilotIds, pilot.Id)
+end
+local assets = Pipeline.buildAll(pack, pilotIds) -- pack sintético só com os 10 pilotos; o resto do lançamento vira placeholder
 pack:Destroy()
 assets.Parent = env.real.ReplicatedStorage
 Factory.clearCache()
@@ -1051,13 +1055,46 @@ check(#galleryModels() == 7 and seven == 7, "DEV ShowCharacterVariants: as 7 var
 Dev.Run("ShowCharacterPoses", p1, "char_zabuzo_base")
 check(#galleryModels() == 5, "DEV ShowCharacterPoses: 5 poses")
 local report = Dev.Run("CharacterAssetReport")
-local okCount = 0
-for _ in string.gmatch(report, ": OK") do
-	okCount += 1
-end
-check(string.find(report, "10 assets", 1, true) ~= nil and okCount >= 8, "DEV CharacterAssetReport: assets validados no runtime")
+local okR, warnR, invalidR, missingR = string.match(report, "Lançamento 121: OK (%d+) · com aviso (%d+) · inválidos (%d+) · sem asset (%d+)")
+check(string.find(report, "10 assets", 1, true) ~= nil and okR ~= nil and tonumber(okR) + tonumber(warnR) == 10 and tonumber(invalidR) == 0 and tonumber(missingR) == 111, "DEV CharacterAssetReport: resumo do lançamento (10 com asset, 111 placeholder): " .. tostring(string.match(report, "Lançamento[^\n]*")))
+check(string.find(report, "char_goju_base", 1, true) == nil, "DEV CharacterAssetReport: só lista o que não está OK")
 local packCheck = Dev.Run("SourcePackCheck")
-check(string.find(packCheck, "10/10 montados sem o pack", 1, true) ~= nil and string.find(packCheck, "10 do asset sanitizado", 1, true) ~= nil and string.find(packCheck, "problemas: nenhum", 1, true) ~= nil, "DEV SourcePackCheck: " .. packCheck)
+check(string.find(packCheck, "121/121 montados sem o pack", 1, true) ~= nil and string.find(packCheck, "10 do asset sanitizado", 1, true) ~= nil and string.find(packCheck, "problemas: nenhum", 1, true) ~= nil, "DEV SourcePackCheck: " .. packCheck)
+;(function() -- função própria: o bloco já está perto do limite de 200 locais
+	-- Galeria PAGINADA do catálogo de lançamento (12 por página, filtros)
+	local page1 = Dev.Run("CharacterGalleryPage", p1, 1)
+	check(string.find(page1, "Página 1/11 · 121 personagem(ns)", 1, true) ~= nil and #galleryModels() == 12, "DEV CharacterGalleryPage 1: 12 de 121 (11 páginas): " .. page1)
+	local page11 = Dev.Run("CharacterGalleryPage", 11)
+	check(string.find(page11, "Página 11/11", 1, true) ~= nil and #galleryModels() == 1, "DEV CharacterGalleryPage 11: último (1) e substitui a página anterior")
+	local clamped = Dev.Run("CharacterGalleryPage", 99)
+	check(string.find(clamped, "Página 11/11", 1, true) ~= nil, "DEV CharacterGalleryPage: página fora do intervalo é limitada")
+	local premiumPage = Dev.Run("CharacterGalleryPage", 1, "Pool=Premium")
+	local allPremium = #galleryModels() == 9
+	for _, model in galleryModels() do
+		local character = CharacterConfig.ById[model:GetAttribute("CharacterId")]
+		allPremium = allPremium and character ~= nil and character.LaunchPool == "Premium"
+	end
+	check(string.find(premiumPage, "Página 1/1 · 9 personagem(ns)", 1, true) ~= nil and allPremium, "DEV CharacterGalleryPage Pool=Premium: os 9 Premium: " .. premiumPage)
+	local sample = CharacterConfig.Launch[20]
+	local diceMatches = 0
+	for _, character in CharacterConfig.Launch do
+		if character.DefaultDice == sample.DefaultDice and character.Rarity == sample.Rarity then
+			diceMatches += 1
+		end
+	end
+	local combo = Dev.Run("CharacterGalleryPage", 1, `Dice={sample.DefaultDice}, Rarity={sample.Rarity}`)
+	check(diceMatches > 0 and string.find(combo, `{diceMatches} personagem(ns)`, 1, true) ~= nil and #galleryModels() == diceMatches, "DEV CharacterGalleryPage: filtros combinados (Dice + Rarity): " .. combo)
+	local placeholders = Dev.Run("CharacterGalleryPage", 1, "Status=placeholder")
+	check(string.find(placeholders, "111 personagem(ns)", 1, true) ~= nil, "DEV CharacterGalleryPage Status=placeholder: os 111 sem asset: " .. placeholders)
+	local review = Dev.Run("CharacterGalleryPage", 1, "Status=REVIEW_REQUIRED")
+	local killuoOnly = #galleryModels() == 2
+	for _, model in galleryModels() do
+		killuoOnly = killuoOnly and CharacterConfig.ById[model:GetAttribute("CharacterId")].CharacterFamily == "killuo"
+	end
+	check(string.find(review, "2 personagem(ns)", 1, true) ~= nil and killuoOnly, "DEV CharacterGalleryPage Status=REVIEW_REQUIRED (roupa dos 2 Killuo): " .. review)
+	local none = Dev.Run("CharacterGalleryPage", 1, "Rarity=Inexistente")
+	check(string.find(none, "nenhum personagem", 1, true) ~= nil, "DEV CharacterGalleryPage: filtro sem resultado avisa")
+end)()
 local gave = Dev.Run("GivePilots", p1)
 check(gave == "10 pilotos adicionados" and d1.Index.char_goju_base ~= nil, "DEV GivePilots: 1 de cada no inventário e no índice")
 Dev.Run("ClearGallery")

@@ -26,7 +26,11 @@ do
 	local pipelineRequire = env.newContext()
 	local Pipeline = pipelineRequire(env.shared.Modules.CharacterAssetPipeline)
 	local pack = SyntheticPack.build()
-	local assets = Pipeline.buildAll(pack)
+	local pilotIds = {}
+	for _, pilot in pipelineRequire(env.shared.Config.CharacterConfig).Pilots do
+		table.insert(pilotIds, pilot.Id)
+	end
+	local assets = Pipeline.buildAll(pack, pilotIds)
 	pack:Destroy()
 	assets.Parent = env.real.ReplicatedStorage
 end

@@ -21,13 +21,19 @@ local AnalyticsService = require(script.Parent.AnalyticsService)
 
 local IndexService = {}
 
+-- Progresso do Índice = só o roster oficial (CharacterConfig.List); pilotos e o catálogo de
+-- lançamento ficam registrados mas não contam nesta fase
+local official: { [string]: boolean } = {}
+for _, character in CharacterConfig.List do
+	official[character.Id] = true
+end
+
 function IndexService.Discovered(player: Player): number
 	local data = PlayerDataService.GetData(player)
 	local n = 0
 	if data then
 		for id in data.Index do
-			local character = CharacterConfig.ById[id]
-			if character and not character.Pilot then
+			if official[id] then
 				n += 1
 			end
 		end

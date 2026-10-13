@@ -1,6 +1,6 @@
 --[[
 	Confere o assets/Characters.rbxm REAL (gerado na máquina do dev a partir do Anime Pack),
-	quando ele existe: 10 pilotos, validate do runtime, factory (asset e não placeholder),
+	quando ele existe: só ids do catálogo de lançamento (no mínimo os 10 pilotos), validate do runtime, factory (asset e não placeholder),
 	pés no chão, 7 variantes e a interface DEV ServerStorage.RollLegendsDev:Invoke(...).
 	Sem o arquivo, o teste é pulado (o jogo usa o placeholder).
 ]]
@@ -34,14 +34,22 @@ for _, child in folder:GetChildren() do
 	table.insert(names, child.Name)
 end
 table.sort(names)
-local expected = {}
-for id in Config.Assets do
-	table.insert(expected, id)
+local unknown, pilotsIn = {}, 0
+for _, name in names do
+	if not Config.Assets[name] then
+		table.insert(unknown, name)
+	end
 end
-table.sort(expected)
-check(table.concat(names, ",") == table.concat(expected, ","), "exatamente os 10 pilotos: " .. table.concat(names, ", "))
+for _, pilot in CharacterConfig.Pilots do
+	pilotsIn += if folder:FindFirstChild(pilot.Id) then 1 else 0
+end
+check(#unknown == 0 and pilotsIn == #CharacterConfig.Pilots, `{#names}/{#CharacterConfig.Launch} do lançamento, todos com id do catálogo e os {#CharacterConfig.Pilots} pilotos presentes {table.concat(unknown, ", ")}`)
+if #names < #CharacterConfig.Launch then
+	print(`  (assets/Characters.rbxm ainda tem {#names} de {#CharacterConfig.Launch}: rode python tools/build_characters.py para gerar o lote completo)`)
+end
 
-for _, character in CharacterConfig.Pilots do
+for _, name in names do
+	local character = CharacterConfig.ById[name]
 	local template = folder:FindFirstChild(character.Id)
 	local problems, warnings = Pipeline.validate(template)
 	check(#problems == 0, `{character.Id}: validate OK ({#warnings} aviso(s)) {table.concat(problems, "; ")}`)

@@ -5,7 +5,7 @@ Monta, a partir do pack SINTÉTICO (build/test_AnimePack.rbxm, gerado pelo
 CharacterPipelineHarness), arquivos com o MESMO defeito do pack real: a propriedade "Tags"
 gravada como SharedString em TODAS as classes (o Lune 0.10.4 recusa), e confere:
   1. tudo resolvido em UMA execução da ferramenta, sem loop (Tags preventivo + 1 fallback de
-     metadado "Capabilities"), 10 pilotos gerados, nenhuma propriedade visual removida,
+     metadado "Capabilities"), 121 personagens gerados, nenhuma propriedade visual removida,
      conteúdo visual idêntico e arquivo de origem intacto (SHA-256);
   2. propriedade VISUAL recusada (Part.Transparency) -> aborta sem remover nada;
   3. propriedade desconhecida recusada (Part.Locked) -> aborta com diagnóstico.
@@ -68,7 +68,7 @@ def rodar(pack: Path, nome: str):
     saida = TMP / f"{nome}.rbxm"
     saida.unlink(missing_ok=True)
     r = subprocess.run(
-        [sys.executable, "tools/build_characters.py", str(pack), "--out", str(saida), "--report", str(TMP / f"{nome}.md"), "--json", str(TMP / f"{nome}.json")],
+        [sys.executable, "tools/build_characters.py", str(pack), "--out", str(saida), "--report", str(TMP / f"{nome}.md"), "--json", str(TMP / f"{nome}.json"), "--clothing", str(TMP / f"{nome}_clothing.md")],
         cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=600,
     )
     return r, saida
@@ -98,7 +98,7 @@ def main() -> int:
     classes = sorted({cls for name, _raw, cls, _p in R.iter_chunks(limpo) if name == "INST"})
     r, saida = rodar(pack, "ok")
     log = r.stdout
-    execucoes = log.count("Building 10 pilot characters...")
+    execucoes = log.count("Building 121 launch characters...")
     check(r.returncode == 0, f"UMA execução do usuário chega ao fim (código {r.returncode})")
     check(execucoes == 2, f"sem loop: Tags preventivo + 1 fallback (Capabilities) = {execucoes} leituras do Lune")
     removidas = [linha[2:] for linha in log.splitlines() if linha.startswith("- ") and linha.endswith(".Tags")]
@@ -108,7 +108,7 @@ def main() -> int:
     check("Visual content identical (names, MeshId, TextureId, Decals, Shirt/Pants): YES" in log, "MeshId/TextureId/Decals/Shirt/Pants/nomes idênticos (leitura estruturada)")
     check("Kept chunks byte-identical" in log and "YES" in log.split("Kept chunks byte-identical")[1].splitlines()[0], "CFrame/tamanho/cores/BodyColors/soldas: chunks idênticos byte a byte")
     check("Original Anime Pack modified: NO" in log and hashlib.sha256(pack.read_bytes()).hexdigest() == hash_antes, "arquivo de origem intacto (SHA-256)")
-    check(saida.exists() and "10 pilotos" in log, "Characters.rbxm gerado com os 10 pilotos")
+    check(saida.exists() and "121/121 personagens de lançamento" in log, "Characters.rbxm gerado com os 121 personagens de lançamento")
     removidos_estrutura = R.dropped_properties(pack.read_bytes(), (RAIZ / "build" / "AnimePack_lune.rbxm").read_bytes())
     check(all(x.split(".")[1] in ("Tags", "Capabilities") for x in removidos_estrutura), "cópia temporária perdeu SÓ chunks Tags/Capabilities (conferido chunk a chunk)")
 

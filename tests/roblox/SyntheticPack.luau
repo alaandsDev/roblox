@@ -208,4 +208,54 @@ function SyntheticPack.build()
 	return pack
 end
 
+-- Pack com TODOS os personagens de lançamento: os 10 rigs detalhados + um rig genérico (com o
+-- mesmo "lixo" do pack) em cada SourcePath que falta. specs = CharacterAssetConfig.Assets.
+-- skip = SourcePaths que NÃO devem existir (para testar MISSING_SOURCE).
+function SyntheticPack.buildLaunch(specs, skip)
+	local pack = SyntheticPack.build()
+	local paths = {}
+	for _, spec in specs do
+		table.insert(paths, spec.SourcePath)
+	end
+	table.sort(paths)
+	for i, path in paths do
+		if skip and skip[path] then
+			continue
+		end
+		local names = string.split(path, ".")
+		local parent = pack
+		for j = 1, #names - 1 do
+			parent = parent:FindFirstChild(names[j]) or new(if parent == pack then "Folder" else "Model", names[j], parent)
+		end
+		-- "Nome (Nª ocorrência)": como no pack real, N irmãos com o MESMO nome (o alvo é o N-ésimo)
+		local leaf = names[#names]
+		local base, nth = string.match(leaf, "^(.-) %((%d+)ª ocorrência%)$")
+		if base then
+			for k = 1, tonumber(nth) - 1 do
+				local decoy = SyntheticPack.rig(parent, base, { at = Vector3.new(-20 - k * 9, 0, i * 9), yaw = 0, scale = 0.7, scripts = 1 })
+				decoy:SetAttribute("SyntheticOccurrence", k)
+			end
+			local target = SyntheticPack.rig(parent, base, {
+				at = Vector3.new((i % 12) * 9, 0, math.floor(i / 12) * 9),
+				yaw = 0,
+				scale = 1,
+				scripts = 1,
+				vfx = { { "Aura", "ParticleEmitter", "Torso", 1 } },
+			})
+			target:SetAttribute("SyntheticOccurrence", tonumber(nth))
+		elseif not parent:FindFirstChild(leaf) then
+			SyntheticPack.rig(parent, leaf, {
+				at = Vector3.new((i % 12) * 9, 0, math.floor(i / 12) * 9),
+				yaw = (i * 37) % 360,
+				scale = 0.9 + (i % 5) * 0.08,
+				scripts = 1 + (i % 2),
+				weapon = if i % 4 == 0 then "Hand" elseif i % 7 == 0 then "Back" else nil,
+				hair = if i % 3 == 0 then "Welded" else nil,
+				vfx = { { "Aura", "ParticleEmitter", "Torso", 1 } },
+			})
+		end
+	end
+	return pack
+end
+
 return SyntheticPack

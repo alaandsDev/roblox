@@ -139,16 +139,18 @@ game.ServerStorage.RollLegendsDev:Invoke("Help")
 | M4 | `VisualCheck` com DiceShop, Market, Sell, Fusion, Towers, Missions, Trades, Rankings | Cada landmark distinto e legível; prompts funcionando; caminho principal passa por baixo do portal da Dice Shop | [ ] |
 | M5 | Andar do Hub até a base e até a borda da ilha | Nenhuma árvore/pedra prende o personagem nos caminhos; borda com recortes de areia e palmeiras | [ ] |
 
-## PILOTOS DO PIPELINE DE PERSONAGENS (extra, não conta nos 32)
+## PERSONAGENS DE LANÇAMENTO (extra, não conta nos 32)
 
 Antes: `python tools/build_characters.py` (gera `assets/Characters.rbxm`) e `python tools/build_place.py`.
-Abra o place gerado (SEM o Anime Pack no Workspace).
+Abra o place gerado (SEM o Anime Pack no Workspace). Comandos na Barra de comandos, aba **SERVER**, com o jogo em Play.
 
 | # | Ação | Esperado | OK |
 |---|---|---|---|
-| P1 | `game.ServerStorage.RollLegendsDev:Invoke("CharacterAssetReport")` | `ReplicatedStorage.CharacterAssets: 10 assets` e os 10 pilotos OK/AVISO | [ ] |
-| P2 | `game.ServerStorage.RollLegendsDev:Invoke("SourcePackCheck")` | `10/10 montados sem o pack · 10 do asset sanitizado · problemas: nenhum` | [ ] |
-| P3 | `game.ServerStorage.RollLegendsDev:Invoke("CharacterGallery")` | 10 pilotos lado a lado, mesma escala de corpo (maiores por raridade), etiqueta "asset" | [ ] |
+| P1 | `game.ServerStorage.RollLegendsDev:Invoke("CharacterAssetReport")` | `ReplicatedStorage.CharacterAssets: 121 assets` e `Lançamento 121: OK … · inválidos 0 · sem asset 0` | [ ] |
+| P2 | `game.ServerStorage.RollLegendsDev:Invoke("SourcePackCheck")` | `121/121 montados sem o pack · 121 do asset sanitizado · problemas: nenhum` | [ ] |
+| P3 | `game.ServerStorage.RollLegendsDev:Invoke("CharacterGalleryPage", 1)` … `11` | `Página N/11 · 121 personagem(ns)`: 12 por página (1 na última), mesma escala de corpo (maiores por raridade), etiqueta "asset" | [ ] |
+| P3b | `game.ServerStorage.RollLegendsDev:Invoke("CharacterGalleryPage", 1, "Pool=Premium")` | `9 personagem(ns)`, todos Premium | [ ] |
+| P3c | `game.ServerStorage.RollLegendsDev:Invoke("CharacterGalleryPage", 1, "Status=REVIEW_REQUIRED")` | Os personagens com roupa em revisão (ex.: os 2 Killuo) | [ ] |
 | P4 | `game.ServerStorage.RollLegendsDev:Invoke("ShowCharacterVariants", "char_ichiro_base")` | 7 variantes; rosto/roupa iguais; anel e acentos mudam | [ ] |
 | P5 | `game.ServerStorage.RollLegendsDev:Invoke("GivePilots")` e equipar pela MOCHILA | Piloto em pé no pedestal, nome/raridade/renda/nível certos | [ ] |
 | P6 | `game.ServerStorage.RollLegendsDev:Invoke("PlayReveal", game.Players:GetPlayers()[1], "Divine", "char_goju_base")` | Hero Landing com o Goju, limpa no fim | [ ] |

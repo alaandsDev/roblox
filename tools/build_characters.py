@@ -17,8 +17,8 @@
 4. Confere por estrutura que a cópia só perdeu metadados, que nomes/malhas/texturas/roupas/rostos
    lidos pelo leitor tolerante são idênticos e que o arquivo ORIGINAL não mudou (SHA-256).
 5. Gera assets/Characters.rbxm (vira ReplicatedStorage.CharacterAssets no build_place.py),
-   CHARACTER_PILOT_AUDIT.md, CLOTHING_AUDIT.md (uma linha por AssetId de roupa) e
-   third_party/character_pilot_report.json.
+   CHARACTER_LAUNCH_AUDIT.md, CLOTHING_AUDIT.md (uma linha por AssetId de roupa) e
+   third_party/character_launch_report.json.
 O pack original nunca é alterado e nunca entra no build.
 """
 import argparse
@@ -35,7 +35,7 @@ import rbxm_reader  # noqa: E402
 
 SCRIPT = "tools/characters/build_characters.luau"
 CONFIG = RAIZ / "src" / "shared" / "Config" / "CharacterAssetConfig.luau"
-# Pilotos = entradas "char_..." de CharacterAssetConfig.Assets (só para o log)
+# Personagens = entradas "char_..." de CharacterAssetConfig.Assets (pilotos curados + bloco gerado)
 PILOTOS = sorted(set(re.findall(r"^\t(char_[a-z0-9_]+) = \{", CONFIG.read_text(encoding="utf-8"), re.M)))
 
 
@@ -84,8 +84,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("pack", nargs="?", default="third_party/AnimePack.rbxm")
     parser.add_argument("--out", default="assets/Characters.rbxm")
-    parser.add_argument("--report", default="CHARACTER_PILOT_AUDIT.md")
-    parser.add_argument("--json", default="third_party/character_pilot_report.json")
+    parser.add_argument("--report", default="CHARACTER_LAUNCH_AUDIT.md")
+    parser.add_argument("--json", default="third_party/character_launch_report.json")
     parser.add_argument("--clothing", default="CLOTHING_AUDIT.md")
     parser.add_argument("--strip", action="append", default=[], help="Classe.Propriedade a remover antes de ler (repetível)")
     args = parser.parse_args()
@@ -122,7 +122,7 @@ def main() -> int:
             temporario.parent.mkdir(exist_ok=True)
             temporario.write_bytes(dados)
             arquivo = temporario
-        print(f"Building {len(PILOTOS)} pilot characters...")
+        print(f"Building {len(PILOTOS)} launch characters...")
         r = subprocess.run(
             [str(lune), "run", SCRIPT, str(arquivo), args.out, args.report, args.json, origem.name, args.clothing],
             cwd=RAIZ,
@@ -193,14 +193,17 @@ def main() -> int:
             raizes = rbxm_reader.read_model(str(saida))
         gerados = sorted(n.name for raiz in raizes for n in raiz.children if n.cls == "Model")
         faltando = [p for p in PILOTOS if p not in gerados]
-        print(f"\n{saida.name}: {len(gerados)} pilotos ({', '.join(gerados)})")
+        print(f"\n{saida.name}: {len(gerados)}/{len(PILOTOS)} personagens de lançamento")
         if faltando:
             print(f"Faltando: {', '.join(faltando)}")
 
+    if r.returncode == 2:
+        print("\nATENÇÃO: há personagens FAIL ou MISSING_SOURCE (veja o relatório) — o asset contém só os que passaram.")
     if r.returncode in (0, 2):
-        print("\nConfira no Studio (_G.dev(\"CharacterGallery\")) e envie:")
+        print('\nConfira no Studio (Barra de comandos, aba SERVER): game.ServerStorage.RollLegendsDev:Invoke("CharacterGalleryPage", 1)')
+        print("e envie:")
         print(f"  git add {args.out} {args.report} {args.json} {args.clothing}")
-        print('  git commit -m "chore: sanitized pilot character assets"')
+        print('  git commit -m "chore: sanitized launch character assets"')
         print("  git push")
     return r.returncode
 
