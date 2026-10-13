@@ -1134,10 +1134,47 @@ env.Players.CreateHumanoidModelFromDescription = function(_, description)
 	pants.Parent = dummy
 	return dummy
 end
-local clothingReport = bindable:Invoke("ClothingCheck", "char_killuo_base")
-check(string.find(clothingReport, "Shirt 2065247269 = Shirt", 1, true) ~= nil and string.find(clothingReport, '["2065247269"] = "rbxassetid://2065247268"', 1, true) ~= nil and string.find(clothingReport, '["2065252088"] = "rbxassetid://2065252087"', 1, true) ~= nil, "ClothingCheck: detecta item da loja e imprime a linha de override com a imagem")
-local okReport = bindable:Invoke("ClothingCheck", "char_sacha_base")
-check(string.find(okReport, "= Image", 1, true) ~= nil and string.find(okReport, "Cole em", 1, true) == nil, "ClothingCheck: template que já é imagem fica OK (sem override)")
+local function waitStatus(timeout)
+	local text = ""
+	Env.waitFor(function()
+		text = bindable:Invoke("ClothingCheckStatus")
+		return string.find(text, "TERMINADO", 1, true) ~= nil
+	end, timeout)
+	return text
+end
+-- Caso normal: volta NA HORA e o diagnóstico roda em segundo plano
+local t0 = os.clock()
+local started = bindable:Invoke("ClothingCheck", "char_killuo_base")
+check(os.clock() - t0 < 0.2 and string.find(started, "ClothingCheck iniciado", 1, true) ~= nil, "ClothingCheck retorna imediatamente: " .. started)
+local status = waitStatus(5)
+check(string.find(status, "Shirt", 1, true) ~= nil and string.find(status, "2065247269", 1, true) ~= nil and string.find(status, "B (item da loja -> imagem rbxassetid://2065247268)", 1, true) ~= nil, "ClothingCheckStatus: item da loja classificado como B com a imagem")
+check(string.find(status, '["2065247269"] = "rbxassetid://2065247268"', 1, true) ~= nil and string.find(status, "não aplicados", 1, true) ~= nil and next(req(env.shared.Config.CharacterAssetConfig).ClothingTemplateOverrides) == nil, "override só SUGERIDO (nada aplicado sozinho)")
+bindable:Invoke("ClothingCheck", "char_sacha_base")
+check(string.find(waitStatus(5), "A (imagem utilizável)", 1, true) ~= nil, "template que já é imagem: A")
+
+-- API externa que NUNCA responde (e uma lenta): o Invoke não trava e o diagnóstico segue
+Dev.ClothingWait = 0.3
+env.stubs.MarketplaceService.GetProductInfo = function(_, id)
+	if id == 2065247269 then
+		coroutine.yield() -- nunca volta
+	end
+	task.wait(0.6) -- lenta: responde depois do prazo
+	return { AssetTypeId = 12, Name = "lenta" }
+end
+env.stubs.ContentProvider.PreloadAsync = function()
+	coroutine.yield() -- nunca chama o callback
+end
+t0 = os.clock()
+started = bindable:Invoke("ClothingCheck", "2065247269", "2065252088")
+check(os.clock() - t0 < 0.2 and string.find(started, "2 id(s)", 1, true) ~= nil, "com API travada: Invoke continua voltando na hora")
+check(string.find(bindable:Invoke("ClothingCheck"), "já está rodando", 1, true) ~= nil, "não inicia dois diagnósticos ao mesmo tempo")
+status = waitStatus(6)
+check(string.find(status, "2065247269", 1, true) ~= nil and string.find(status, "D (consulta sem resposta no Studio)", 1, true) ~= nil and string.find(status, "GetProductInfo sem resposta", 1, true) ~= nil, "API que nunca responde: marcada SEM RESPOSTA (D), sem travar")
+check(string.find(status, "PreloadAsync sem resposta", 1, true) ~= nil, "PreloadAsync que nunca termina: registrado e ignorado")
+task.wait(0.8)
+local logText = table.concat(Dev._clothingLog and Dev._clothingLog() or {}, "\n")
+check(string.find(logText, "respondeu DEPOIS do prazo", 1, true) ~= nil, "resposta tardia (lenta) também é registrada no log")
+Dev.ClothingWait = 15
 check(bindable:Invoke("ShowCharacterVariants", p1, "char_goko_base") ~= nil and #galleryModels() == 7, "formato antigo (jogador primeiro) continua funcionando")
 Dev.Run("ClearGallery")
 end

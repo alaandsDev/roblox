@@ -75,8 +75,10 @@ Tudo acontece num **clone**; o pack original nunca é alterado.
   `CharacterAssetConfig.ClothingTemplateOverrides[N]` — correção por id, vale para todo
   personagem que usar a mesma roupa. Para descobrir se um id é IMAGEM (ok) ou ITEM da loja
   (Shirt/Pants: o Roblox não desenha), rode no Studio (Play, servidor):
-  `game.ServerStorage.RollLegendsDev:Invoke("ClothingCheck")` — ele imprime as linhas prontas
-  do override com a imagem certa (via HumanoidDescription).
+  `game.ServerStorage.RollLegendsDev:Invoke("ClothingCheck")` e depois `...Invoke("ClothingCheckStatus")`.
+  As APIs (GetProductInfo, PreloadAsync, CreateHumanoidModelFromDescription) esperam a rede e não
+  têm timeout: cada chamada roda numa thread própria e o diagnóstico só para de esperar depois de
+  15 s ("SEM RESPOSTA"), registrando respostas tardias. Overrides são só sugeridos.
 
 ## VFX (controlado pelo Roll Legends)
 
@@ -168,7 +170,8 @@ iguais (leitura estruturada) e o arquivo original com o mesmo SHA-256.
 | `game.ServerStorage.RollLegendsDev:Invoke("ClearGallery")` | Remove a galeria |
 | `game.ServerStorage.RollLegendsDev:Invoke("GivePilots")` / `game.ServerStorage.RollLegendsDev:Invoke("GivePilots", "Gold")` | 1 de cada piloto no inventário e no Índice |
 | `game.ServerStorage.RollLegendsDev:Invoke("CharacterAssetReport")` | Validação do runtime de cada asset |
-| `game.ServerStorage.RollLegendsDev:Invoke("ClothingCheck")` | Tipo de cada id de roupa (imagem / item da loja / falha) + linhas de override |
+| `game.ServerStorage.RollLegendsDev:Invoke("ClothingCheck")` (ou com ids: `"2065247269", "2065252088"`) | Diagnóstico das roupas em SEGUNDO PLANO (volta na hora; progresso `[ClothingCheck]` no Output) |
+| `game.ServerStorage.RollLegendsDev:Invoke("ClothingCheckStatus")` | Resultado: A imagem · B item da loja → imagem · C removido/moderado · D sem resposta · E outro; overrides só SUGERIDOS |
 | `game.ServerStorage.RollLegendsDev:Invoke("SourcePackCheck")` | Monta os pilotos com o pack escondido e procura dependências |
 | `game.ServerStorage.RollLegendsDev:Invoke("PlayReveal", game.Players:GetPlayers()[1], "Divine", "char_goju_base")` | Reveal/Hero Landing com um piloto |
 

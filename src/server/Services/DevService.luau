@@ -432,72 +432,211 @@ DevService.Register("CharacterAssetReport", "() status dos assets dos pilotos (v
 end)
 -- Roupa dos assets: cada template é IMAGEM (ok), ITEM da loja (Shirt/Pants: imagem descoberta
 -- pelo HumanoidDescription) ou falha ao carregar. Imprime as linhas para ClothingTemplateOverrides.
-local ASSET_TYPES = { [1] = "Image", [2] = "TShirt", [11] = "Shirt", [12] = "Pants" }
-DevService.Register("ClothingCheck", "(characterId?) roupa dos assets: imagem ok, item da loja (com a imagem certa) ou falha", function(onlyId)
+--[[
+	ClothingCheck: diagnóstico das roupas, em SEGUNDO PLANO (nunca prende o Invoke da Barra de
+	comandos). As APIs usadas esperam a rede e NÃO têm timeout/cancelamento no Roblox:
+	  MarketplaceService:GetProductInfo, ContentProvider:PreloadAsync,
+	  Players:CreateHumanoidModelFromDescription, InsertService:LoadAsset.
+	Por isso cada chamada roda numa thread própria; o diagnóstico só PARA DE ESPERAR depois de
+	CLOTHING_WAIT segundos (marca "SEM RESPOSTA") e segue para a próxima. Se a chamada responder
+	depois, o resultado tardio também é registrado. Progresso no Output: "[ClothingCheck] ...".
+	    game.ServerStorage.RollLegendsDev:Invoke("ClothingCheck")                      -- todas as roupas
+	    game.ServerStorage.RollLegendsDev:Invoke("ClothingCheck", "2065247269", "2065252088")
+	    game.ServerStorage.RollLegendsDev:Invoke("ClothingCheckStatus")                -- resultado
+	Classificação: A = imagem utilizável · B = item da loja (Shirt/Pants) que aponta para uma imagem
+	· C = removido/moderado/privado · D = consulta indisponível/sem resposta · E = outro formato.
+	Nada é aplicado automaticamente: os overrides sugeridos só entram no config com aprovação.
+]]
+local ASSET_TYPES = { [1] = "Image", [2] = "TShirt", [11] = "Shirt", [12] = "Pants", [13] = "Decal" }
+DevService.ClothingWait = 15 -- segundos esperando cada chamada externa antes de seguir
+type ClothingEntry = { id: string, property: string, users: { string }, steps: { string }, class: string?, image: string? }
+local clothingJob: { running: boolean, startedAt: number, finishedAt: number?, entries: { ClothingEntry }, log: { string } }? = nil
+
+local function clothingLog(job: any, text: string)
+	local line = string.format("[ClothingCheck %5.1fs] %s", os.clock() - job.startedAt, text)
+	table.insert(job.log, line)
+	print(line)
+end
+
+-- Roda fn numa thread própria e espera no máximo "wait" segundos. Devolve (status, ok, valor)
+-- status = "done" | "pending". Não cancela a chamada (a API não permite): só para de esperar.
+local function callWithWait(job: any, label: string, wait: number, fn: () -> any): (string, boolean?, any)
+	local box: { done: boolean, gaveUp: boolean, ok: boolean?, value: any } = { done = false, gaveUp = false }
+	clothingLog(job, label .. ": início")
+	task.spawn(function()
+		local ok, value = pcall(fn)
+		box.ok, box.value = ok, value
+		if not box.gaveUp then
+			box.done = true
+		else
+			-- já tinha desistido de esperar: registra a resposta tardia
+			clothingLog(job, `{label}: respondeu DEPOIS do prazo -> {if ok then tostring(value) else "erro " .. tostring(value)}`)
+		end
+	end)
+	local deadline = os.clock() + wait
+	while not box.done and os.clock() < deadline do
+		task.wait(0.1)
+	end
+	if not box.done then
+		box.gaveUp = true
+		clothingLog(job, `{label}: SEM RESPOSTA em {wait}s (a chamada continua pendente; a API não tem cancelamento)`)
+		return "pending", nil, nil
+	end
+	clothingLog(job, `{label}: fim ({if box.ok then "ok" else "erro: " .. tostring(box.value)})`)
+	return "done", box.ok, box.value
+end
+
+local function runClothingCheck(job: any)
 	local Marketplace = game:GetService("MarketplaceService")
 	local PlayersService = game:GetService("Players")
 	local ContentProvider = game:GetService("ContentProvider")
-	local folder = game:GetService("ReplicatedStorage"):FindFirstChild(CharacterAssetConfig.StorageName)
-	if not folder then
-		return "ReplicatedStorage.CharacterAssets ausente"
+	local wait = DevService.ClothingWait
+	for _, entry in job.entries do
+		clothingLog(job, `checando {entry.property} {entry.id} (usado por {table.concat(entry.users, ", ")})`)
+		local numeric = tonumber(entry.id) :: number
+		-- 1) Que tipo de asset é esse id?
+		local status, ok, info = callWithWait(job, `{entry.id} GetProductInfo`, wait, function()
+			return Marketplace:GetProductInfo(numeric, Enum.InfoType.Asset)
+		end)
+		local kind: string? = nil
+		if status == "pending" then
+			table.insert(entry.steps, "GetProductInfo sem resposta")
+		elseif not ok then
+			table.insert(entry.steps, "GetProductInfo erro: " .. tostring(info))
+		else
+			kind = ASSET_TYPES[info.AssetTypeId] or ("tipo " .. tostring(info.AssetTypeId))
+			table.insert(entry.steps, `tipo {kind} ({tostring(info.Name)})`)
+		end
+		-- 2) A imagem carrega? (PreloadAsync só termina quando o asset carrega ou falha)
+		local fetch = "?"
+		local pStatus = callWithWait(job, `{entry.id} PreloadAsync`, wait, function()
+			ContentProvider:PreloadAsync({ "rbxassetid://" .. entry.id }, function(_, result)
+				fetch = tostring(result)
+			end)
+			return fetch
+		end)
+		table.insert(entry.steps, if pStatus == "pending" then "PreloadAsync sem resposta" else "carregamento: " .. fetch)
+		-- 3) Item da loja: descobre a imagem pelo HumanoidDescription
+		if kind == "Shirt" or kind == "Pants" then
+			local hStatus, hOk, image = callWithWait(job, `{entry.id} CreateHumanoidModelFromDescription`, wait, function()
+				local description = Instance.new("HumanoidDescription")
+				if kind == "Shirt" then
+					description.Shirt = numeric
+				else
+					description.Pants = numeric
+				end
+				local dummy = PlayersService:CreateHumanoidModelFromDescription(description, Enum.HumanoidRigType.R6)
+				local found = dummy:FindFirstChildOfClass(kind :: string)
+				local result = found and (found :: any)[if kind == "Shirt" then "ShirtTemplate" else "PantsTemplate"]
+				dummy:Destroy()
+				return result
+			end)
+			if hStatus == "done" and hOk and image then
+				entry.image = image
+				table.insert(entry.steps, "imagem do item: " .. tostring(image))
+			else
+				table.insert(entry.steps, if hStatus == "pending" then "HumanoidDescription sem resposta" else "HumanoidDescription sem imagem")
+			end
+		end
+		-- Classificação
+		if kind == "Image" and fetch == tostring(Enum.AssetFetchStatus.Success) then
+			entry.class = "A (imagem utilizável)"
+		elseif kind == "Shirt" or kind == "Pants" or kind == "TShirt" then
+			entry.class = if entry.image then "B (item da loja -> imagem " .. entry.image .. ")" else "B (item da loja; imagem não descoberta)"
+		elseif kind == "Image" then
+			entry.class = "C? (é imagem, mas não carregou: " .. fetch .. " — removida/moderada?)"
+		elseif kind == nil and status == "pending" then
+			entry.class = "D (consulta sem resposta no Studio)"
+		elseif kind == nil then
+			entry.class = "C/D (consulta falhou: " .. table.concat(entry.steps, "; ") .. ")"
+		else
+			entry.class = "E (" .. kind .. ")"
+		end
+		clothingLog(job, `RESULTADO {entry.property} {entry.id}: {entry.class}`)
 	end
-	local lines, overrides, seen = {}, {}, {}
-	for _, model in folder:GetChildren() do
-		if onlyId and model.Name ~= onlyId then
+	job.running = false
+	job.finishedAt = os.clock()
+	clothingLog(job, "terminado. Resumo: game.ServerStorage.RollLegendsDev:Invoke(\"ClothingCheckStatus\")")
+end
+
+DevService.Register("ClothingCheck", "(characterId? | ids...) diagnóstico das roupas em segundo plano (veja ClothingCheckStatus)", function(...)
+	if clothingJob and clothingJob.running then
+		return "ClothingCheck já está rodando; acompanhe o Output ou ClothingCheckStatus"
+	end
+	local args = { ... }
+	local onlyIds: { [string]: boolean } = {}
+	local filterIds = false
+	local onlyModel: string? = nil
+	for _, arg in args do
+		if type(arg) == "string" and string.match(arg, "^%d+$") then
+			filterIds = true
+			onlyIds[arg] = true
+		elseif type(arg) == "string" then
+			onlyModel = arg
+		end
+	end
+	local folder = game:GetService("ReplicatedStorage"):FindFirstChild(CharacterAssetConfig.StorageName)
+	local entries: { ClothingEntry } = {}
+	local byId: { [string]: ClothingEntry } = {}
+	for _, model in (if folder then folder:GetChildren() else {}) do
+		if onlyModel and model.Name ~= onlyModel then
 			continue
 		end
 		for _, clothing in model:GetDescendants() do
 			local property = if clothing:IsA("Shirt") then "ShirtTemplate" elseif clothing:IsA("Pants") then "PantsTemplate" else nil
-			if not property then
-				continue
-			end
-			local template = (clothing :: any)[property]
-			local id = CharacterAssetPipeline.assetIdOf(template)
-			if not id then
-				table.insert(lines, `{model.Name}: {clothing.ClassName} sem id ({tostring(template)})`)
-				continue
-			end
-			local loaded = "?"
-			pcall(function()
-				ContentProvider:PreloadAsync({ clothing }, function(_, status)
-					loaded = tostring(status)
-				end)
-			end)
-			local okInfo, info = pcall(function()
-				return Marketplace:GetProductInfo(tonumber(id) :: number, Enum.InfoType.Asset)
-			end)
-			local kind = if okInfo and info then (ASSET_TYPES[info.AssetTypeId] or ("tipo " .. tostring(info.AssetTypeId))) else "desconhecido"
-			local line = `{model.Name}: {clothing.ClassName} {id} = {kind} (carregou: {loaded})`
-			if (kind == "Shirt" or kind == "Pants") and not seen[id] then
-				seen[id] = true
-				local okResolve, image = pcall(function()
-					local description = Instance.new("HumanoidDescription")
-					if kind == "Shirt" then
-						description.Shirt = tonumber(id) :: number
-					else
-						description.Pants = tonumber(id) :: number
-					end
-					local dummy = PlayersService:CreateHumanoidModelFromDescription(description, Enum.HumanoidRigType.R6)
-					local found = dummy:FindFirstChildOfClass(kind)
-					local result = found and (found :: any)[property]
-					dummy:Destroy()
-					return result
-				end)
-				if okResolve and image then
-					line ..= ` -> imagem {image}`
-					table.insert(overrides, `\t["{id}"] = "{image}",`)
-				else
-					line ..= " -> não deu para descobrir a imagem"
+			local id = property and CharacterAssetPipeline.assetIdOf((clothing :: any)[property])
+			if property and id and (not filterIds or onlyIds[id]) then
+				local entry: ClothingEntry? = byId[id]
+				if not entry then
+					local created: ClothingEntry = { id = id, property = property, users = {}, steps = {} }
+					byId[id] = created
+					table.insert(entries, created)
+					entry = created
 				end
+				table.insert((entry :: ClothingEntry).users, model.Name)
 			end
-			table.insert(lines, line)
 		end
 	end
-	if #overrides > 0 then
+	-- ids pedidos que nenhum asset usa também são checados
+	for id in onlyIds do
+		if not byId[id] then
+			table.insert(entries, { id = id, property = "?", users = { "(pedido direto)" }, steps = {} })
+		end
+	end
+	if #entries == 0 then
+		return "nenhuma roupa para checar"
+	end
+	local job = { running = true, startedAt = os.clock(), entries = entries, log = {} }
+	clothingJob = job
+	clothingLog(job, `start: {#entries} id(s) de roupa, até {DevService.ClothingWait}s por chamada`)
+	task.spawn(runClothingCheck, job)
+	return `ClothingCheck iniciado ({#entries} id(s)); acompanhe o Output "[ClothingCheck]" ou rode Invoke("ClothingCheckStatus")`
+end)
+-- Linhas do log do último diagnóstico (testes)
+function DevService._clothingLog(): { string }
+	return if clothingJob then clothingJob.log else {}
+end
+DevService.Register("ClothingCheckStatus", "() resultado/andamento do ClothingCheck", function()
+	local job = clothingJob
+	if not job then
+		return "ClothingCheck ainda não foi iniciado"
+	end
+	local lines = { if job.running then "EM ANDAMENTO" else string.format("TERMINADO em %.1fs", (job.finishedAt or os.clock()) - job.startedAt) }
+	local suggestions = {}
+	for _, entry in job.entries do
+		table.insert(lines, `{entry.property} {entry.id} ({table.concat(entry.users, ", ")}): {entry.class or "aguardando"}`)
+		for _, step in entry.steps do
+			table.insert(lines, "    · " .. step)
+		end
+		if entry.image then
+			table.insert(suggestions, `\t["{entry.id}"] = "{entry.image}",`)
+		end
+	end
+	if #suggestions > 0 then
 		table.insert(lines, "")
-		table.insert(lines, "Cole em CharacterAssetConfig.ClothingTemplateOverrides (ou mande para o Claude):")
-		for _, o in overrides do
-			table.insert(lines, o)
+		table.insert(lines, "Overrides SUGERIDOS (não aplicados; só entram em CharacterAssetConfig com aprovação):")
+		for _, line in suggestions do
+			table.insert(lines, line)
 		end
 	end
 	return table.concat(lines, "\n")
