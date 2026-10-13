@@ -296,7 +296,107 @@ weld.Part1 = layer
 weld.Parent = layer
 local layerModel, layerReport = Pipeline.sanitize(layerRig, "char_sacha_base")
 check(layerModel ~= nil and layerModel:FindFirstChild("ClothLayer") ~= nil and layerModel.ClothLayer:FindFirstChildOfClass("Texture") ~= nil and #layerReport.visualLost == 0, "peça transparente com Texture (camada de roupa) preservada")
+-- Justificativa objeto a objeto: o que sumiu, qual regra removeu, por quê
+local function removalOf(report, name, className)
+	for _, record in report.visualRemoved do
+		if record.name == name and (className == nil or record.className == className) then
+			return record
+		end
+	end
+	return nil
+end
+local function caseRig(name, opts, build)
+	local rig = SyntheticPack.rig(lossPack, name, opts)
+	if build then
+		build(rig)
+	end
+	return rig
+end
+local function inTool(rig, className, partName, props)
+	local holder = roblox.Instance.new("Tool")
+	holder.Parent = rig
+	local piece = roblox.Instance.new(className)
+	piece.Name = partName
+	piece.Size = Vector3.new(0.5, 3, 0.5)
+	piece.CFrame = rig["Right Arm"].CFrame * CFrame.new(0, -1, -1.5)
+	for key, value in props or {} do
+		(piece :: any)[key] = value
+	end
+	piece.Parent = holder
+	return piece
+end
+-- Part / MeshPart / UnionOperation / SpecialMesh VISÍVEIS removidos -> UNJUSTIFIED -> FAIL
+for _, case in { { "Part", "VisiblePart" }, { "MeshPart", "VisibleMesh" }, { "UnionOperation", "VisibleUnion" } } do
+	local rig = caseRig("Caso" .. case[1], { scripts = 0 }, function(r)
+		inTool(r, case[1], case[2])
+	end)
+	local m, report = Pipeline.sanitize(rig, "char_sacha_base")
+	local record = removalOf(report, case[2], case[1])
+	check(m == nil and report.status == "FAIL" and record ~= nil and record.verdict == "UNJUSTIFIED" and record.rule == "ForbiddenClass" and record.visibleAtRest and string.find(table.concat(report.problems, " "), `perdeu visual sem justificativa: {case[1]} "{case[2]}"`, 1, true) ~= nil, `{case[1]} visível removido -> FAIL (regra {record and record.rule}, {record and record.verdict})`)
+end
+do
+	local rig = caseRig("CasoSpecialMesh", { scripts = 0 }, function(r)
+		local piece = inTool(r, "Part", "MeshHolder")
+		local mesh = roblox.Instance.new("SpecialMesh")
+		mesh.Name = "RealMesh"
+		mesh.MeshType = roblox.Enum.MeshType.FileMesh
+		mesh.MeshId = "rbxassetid://9001"
+		mesh.Parent = piece
+	end)
+	local m, report = Pipeline.sanitize(rig, "char_sacha_base")
+	local record = removalOf(report, "RealMesh", "SpecialMesh")
+	check(m == nil and record ~= nil and record.verdict == "UNJUSTIFIED" and record.meshId == "rbxassetid://9001" and string.find(record.reason, "removido junto com Tool", 1, true) ~= nil, "SpecialMesh visível removido -> FAIL, com MeshId e o container que o levou: " .. tostring(record and record.reason))
+end
+-- Hitbox, placa [ SEMI-PRO ] e helper de combate -> JUSTIFIED (não falham), com ficha completa
+do
+	local rig = caseRig("CasoJustificado", { scripts = 1, combatHelper = true })
+	local m, report = Pipeline.sanitize(rig, "char_sacha_base")
+	local hitbox = removalOf(report, "Hitbox", "Part")
+	local tagHead = nil
+	for _, record in report.visualRemoved do
+		if string.find(record.path, "[ SEMI-PRO ]", 1, true) then
+			tagHead = record
+		end
+	end
+	local drawn = removalOf(report, "SwordDrawn1", "MeshPart")
+	local fxPart, fxMesh = removalOf(report, "FXPart", "Part"), removalOf(report, "Mesh", "SpecialMesh")
+	check(m ~= nil and report.status ~= "FAIL" and #report.visualLost == 0, "remoções justificadas não derrubam o asset")
+	check(hitbox ~= nil and hitbox.verdict == "JUSTIFIED" and hitbox.rule == "InvisibleHitbox" and not hitbox.visibleAtRest, "hitbox invisível -> JUSTIFIED (InvisibleHitbox)")
+	check(tagHead ~= nil and tagHead.verdict == "JUSTIFIED" and tagHead.rule == "NameTag", "placa [ SEMI-PRO ] -> JUSTIFIED (NameTag)")
+	check(drawn ~= nil and drawn.verdict == "JUSTIFIED" and drawn.rule == "InvisibleCombatHelper" and table.find(drawn.vfxInside, "Trail Trail") ~= nil, "espada sacada (Transparency 1 + Trail) -> JUSTIFIED (InvisibleCombatHelper)")
+	check(fxPart ~= nil and fxPart.rule == "InvisibleCombatHelper" and fxMesh ~= nil and fxMesh.verdict == "JUSTIFIED" and string.find(fxMesh.reason, "removido junto com Part", 1, true) ~= nil, "peça de efeito (Part + SpecialMesh + emissor) -> Part e SpecialMesh JUSTIFIED")
+	check(drawn ~= nil and drawn.path == "SwordDrawn1" and drawn.meshId == "rbxassetid://5101" and drawn.textureId == "rbxassetid://5102" and drawn.transparency == 1 and drawn.size ~= nil and drawn.bone == "RightArm" and #drawn.joints == 1 and string.find(drawn.joints[1], "Right Arm", 1, true) ~= nil, "ficha: caminho, MeshId, TextureId, Transparency, Size, solda e parte do corpo")
+end
+-- Remoção SEM regra registrada -> UNJUSTIFIED -> FAIL
+do
+	local rig = caseRig("CasoSemRegra", { scripts = 0, loose = true })
+	local m, report = Pipeline.sanitize(rig, "char_sacha_base", function(model)
+		model.Belt:Destroy()
+	end)
+	local record = removalOf(report, "Belt", "Part")
+	check(m == nil and report.status == "FAIL" and record ~= nil and record.rule == "NO_RULE" and record.verdict == "UNJUSTIFIED", "objeto visual destruído sem regra registrada -> FAIL (NO_RULE)")
+end
+check(#layerReport.visualRemoved == 0 or removalOf(layerReport, "ClothLayer") == nil, "camada com Texture legítima: PRESERVADA (fora da lista de remoções)")
 lossPack:Destroy()
+
+-- MISSING_SOURCE: candidatos parecidos (nunca escolhidos sozinhos)
+do
+	local lancerPack = roblox.Instance.new("Folder")
+	local fate = roblox.Instance.new("Folder")
+	fate.Name = "FATE"
+	fate.Parent = lancerPack
+	for _, name in { "Lancer ", "Lancer Mode", "Saber" } do
+		local m = roblox.Instance.new("Model")
+		m.Name = name
+		m.Parent = fate
+	end
+	local candidates = Pipeline.sourceCandidates(lancerPack, "FATE.Lancer")
+	check(Pipeline.findSource(lancerPack, "FATE.Lancer") == nil and Pipeline.findSource(lancerPack, "FATE.Lancer ") ~= nil, "nome com espaço no fim: só o caminho EXATO acha o modelo (sem fuzzy)")
+	check(#candidates == 2 and candidates[1] == '"FATE.Lancer "' and candidates[2] == '"FATE.Lancer Mode"', "candidatos do MISSING_SOURCE listados entre aspas: " .. table.concat(candidates, ", "))
+	local _, missingReports = Pipeline.buildAll(lancerPack, { "char_iskander_base" })
+	check(string.find(missingReports[1].problems[1], "candidatos: nenhum", 1, true) ~= nil, "MISSING_SOURCE sem candidato diz \"nenhum\"")
+	lancerPack:Destroy()
+end
 
 ------------------------------------------------------------------------------------
 -- 2) Salva como assets/Characters.rbxm e DESTRÓI o pack (o jogo final não tem o pack)

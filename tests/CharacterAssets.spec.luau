@@ -231,7 +231,8 @@ describe("Catálogo de LANÇAMENTO (121 = 112 F2P + 9 Premium)", function()
 			expect(spec ~= nil).toBeTruthy()
 			expect(spec.SourceModelName).toBe(c.SourceModelName)
 			-- "Nome (2ª ocorrência)" = irmão repetido no pack (resolvido pelo Pipeline.findSource)
-			local leaf = string.gsub(spec.SourcePath, " %(%d+ª ocorrência%)$", "")
+			-- espaço no fim é o nome EXATO no pack ("FATE.Lancer "); o nome exibido nas ferramentas não tem
+			local leaf = string.gsub(string.gsub(spec.SourcePath, " %(%d+ª ocorrência%)$", ""), "%s+$", "")
 			expect(string.sub(leaf, -#c.SourceModelName)).toBe(c.SourceModelName)
 			expect(paths[spec.SourcePath]).toBeNil()
 			paths[spec.SourcePath] = true

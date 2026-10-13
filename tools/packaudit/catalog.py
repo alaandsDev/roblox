@@ -270,6 +270,8 @@ def load_measured() -> dict:
         own = [v for v in c.get("vfx", []) if not any(k in v for k in COMBAT_KIT)]
         weapons = sorted({w.replace(" (pelo nome)", "").replace(" (Tool)", "") for w in c.get("weapons", [])})
         out[key] = {
+            # nome EXATO no pack (o SourcePath tem que achar o modelo: "Lancer " tem espaço no fim)
+            "exactPath": c["path"].replace("Anime Pack.", "", 1),
             "parts": c["parts"], "meshParts": c["meshParts"], "specialMeshes": c["specialMeshes"],
             "meshIds": c["meshIds"], "textureIds": c["textureIds"], "score": c["score"],
             "ownVfx": len(own), "ownVfxNames": sorted(set(v.split(" ", 1)[-1] for v in own)),
@@ -297,7 +299,7 @@ def build() -> list[dict]:
         if m["scripts"]:
             notes.append(f"{m['scripts']} script(s) do jogo original: remover")
         rows.append({
-            "source": path.split("#")[0].split(".")[-1], "sourcePath": path.split("#")[0] + (f" ({path.split('#')[1]}ª ocorrência)" if "#" in path else ""),
+            "source": path.split("#")[0].split(".")[-1], "sourcePath": m["exactPath"] + (f" ({path.split('#')[1]}ª ocorrência)" if "#" in path else ""),
             "display": display, "id": cid, "family": family, "tier": tier, "rarity": rarity, "dest": dest,
             "status": status, "category": m["category"], "parts": m["parts"], "vfx": m["ownVfx"],
             "vfxNames": m["ownVfxNames"], "weapons": m["weapons"], "score": m["score"], "notes": notes,

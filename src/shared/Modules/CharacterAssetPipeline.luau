@@ -30,6 +30,26 @@ local Pipeline = {}
 -- Uma roupa usada pelo personagem (o relatório agrupa por AssetId)
 export type ClothingUse = { kind: string, assetId: string, original: string, final: string, status: string }
 
+-- Um objeto VISUAL (peça, malha, roupa, rosto, textura) que existia na origem e não está no
+-- asset: o que era, onde estava, qual regra do sanitizer removeu e por quê.
+export type VisualRemoval = {
+	className: string,
+	name: string,
+	path: string, -- caminho dentro do modelo de origem
+	transparency: number?, -- da própria peça/decal (malha: a da peça que a contém)
+	size: { number }?,
+	meshId: string?,
+	textureId: string?,
+	decals: { string }, -- Decal/Texture dentro do objeto
+	joints: { string }, -- Weld/Motor6D/WeldConstraint ligados à peça (antes de assar)
+	bone: string?, -- parte do corpo à qual a peça estava ligada
+	vfxInside: { string }, -- efeitos dentro do objeto na origem
+	visibleAtRest: boolean, -- aparecia com o personagem parado (Transparency < 0.99)?
+	rule: string, -- regra do sanitizer (NO_RULE = destruído sem regra registrada)
+	reason: string,
+	verdict: string, -- JUSTIFIED | UNJUSTIFIED
+}
+
 export type Report = {
 	CharacterId: string,
 	SourceModelName: string,
@@ -60,6 +80,9 @@ export type Report = {
 	visualSource: { [string]: number },
 	visualSanitized: { [string]: number },
 	visualLost: { string },
+	visualPreserved: number, -- objetos visuais da origem que estão no asset
+	visualRemoved: { VisualRemoval }, -- removidos (JUSTIFIED e UNJUSTIFIED)
+	sourceCandidates: { string }, -- MISSING_SOURCE: nomes parecidos no pack (nunca escolhidos sozinhos)
 	-- Orçamento (medido no asset final) e status do lote
 	finalCounts: { [string]: number },
 	vfxTruncated: number,
@@ -76,12 +99,48 @@ export type Report = {
 	warnings: { string },
 }
 
+local function readProp(obj: Instance, property: string): any
+	local ok, value = pcall(function(): any
+		return (obj :: any)[property]
+	end)
+	return if ok then value else nil
+end
+
+-- Referência de asset de uma propriedade. Em .rbxm recente a MeshPart grava MeshContent /
+-- TextureContent (Content) em vez de MeshId / TextureID: lê os dois formatos. "" se não houver.
+function Pipeline.contentOf(obj: Instance, legacy: string, modern: string?): string
+	local value = readProp(obj, legacy)
+	if type(value) == "string" and value ~= "" then
+		return value
+	end
+	if modern then
+		local content = readProp(obj, modern)
+		local uri = if content ~= nil then string.match(tostring(content), "Uri=([^%)]+)") else nil
+		if uri then
+			return uri
+		end
+	end
+	return ""
+end
+
 -- Textura de MeshPart (TextureID) ou SpecialMesh (TextureId); "" se não houver
 function Pipeline.textureOf(obj: Instance): string
-	local ok, value = pcall(function(): any
-		return if obj:IsA("MeshPart") then obj.TextureID elseif obj:IsA("SpecialMesh") then obj.TextureId else ""
-	end)
-	return if ok and type(value) == "string" then value else ""
+	if obj:IsA("MeshPart") then
+		return Pipeline.contentOf(obj, "TextureID", "TextureContent")
+	elseif obj:IsA("SpecialMesh") then
+		return Pipeline.contentOf(obj, "TextureId")
+	end
+	return ""
+end
+
+-- Malha de MeshPart (MeshId) ou SpecialMesh (MeshId); "" se não houver
+function Pipeline.meshOf(obj: Instance): string
+	if obj:IsA("MeshPart") then
+		return Pipeline.contentOf(obj, "MeshId", "MeshContent")
+	elseif obj:IsA("SpecialMesh") then
+		return Pipeline.contentOf(obj, "MeshId")
+	end
+	return ""
 end
 
 local function isFileMesh(mesh: Instance): boolean
@@ -380,6 +439,9 @@ local function newReport(characterId: string): Report
 		visualSource = {},
 		visualSanitized = {},
 		visualLost = {},
+		visualPreserved = 0,
+		visualRemoved = {},
+		sourceCandidates = {},
 		finalCounts = {},
 		vfxTruncated = 0,
 		vfxExcluded = if spec and spec.VFXExcluded then table.clone(spec.VFXExcluded) else {},
@@ -533,7 +595,94 @@ function Pipeline.visualLoss(before: { [string]: number }, after: { [string]: nu
 	return lost
 end
 
-function Pipeline.sanitize(source: Model, characterId: string): (Model?, Report)
+--[[
+	Regras de remoção de objetos VISUAIS (cada remoção registra regra + motivo):
+	  NameTag               placa de título do jogo de origem ("[ SEMI-PRO ]": Model + Humanoid
+	                        próprio + peças < 0.5)                                -> JUSTIFIED
+	  ForbiddenContainer    dentro de LocalStand/BattleScript/Animate (stand e combate) -> JUSTIFIED
+	  RootPart              HumanoidRootPart (peça raiz)    -> JUSTIFIED só se invisível parado
+	  InvisibleHitbox       Transparency >= 0.99, sem Decal/Texture/VFX     -> JUSTIFIED
+	  InvisibleCombatHelper Transparency >= 0.99 e o único conteúdo visível eram VFX removidos pela
+	                        política de VFX (ex.: espada "sacada" só no golpe, com Trail) -> JUSTIFIED
+	  ForbiddenClass        classe proibida/não permitida (ou dentro de uma) -> JUSTIFIED só se invisível
+	  NO_RULE               destruído sem regra registrada                    -> UNJUSTIFIED
+	Qualquer UNJUSTIFIED = perda visual = FAIL.
+]]
+local VISUAL_KEY = "PipelineVisualKey"
+local NO_RULE = "NO_RULE"
+local ALWAYS_JUSTIFIED = toSet({ "NameTag", "ForbiddenContainer", "InvisibleHitbox", "InvisibleCombatHelper" })
+local JUSTIFIED_IF_INVISIBLE = toSet({ "RootPart", "ForbiddenClass" })
+
+-- Transparency que vale para o objeto (malha/aparência: a da peça que a contém)
+local function effectiveTransparency(obj: Instance): number?
+	if obj:IsA("BasePart") or obj:IsA("Decal") then
+		local value = readProp(obj, "Transparency")
+		return if type(value) == "number" then value else 0
+	end
+	if obj:IsA("DataModelMesh") or obj.ClassName == "SurfaceAppearance" then
+		local parent = obj.Parent
+		return if parent and parent:IsA("BasePart") then effectiveTransparency(parent) else nil
+	end
+	return nil
+end
+
+local function relativePath(obj: Instance, root: Instance): string
+	local names = {}
+	local node: Instance? = obj
+	while node and node ~= root do
+		table.insert(names, 1, node.Name)
+		node = node.Parent
+	end
+	return table.concat(names, ".")
+end
+
+-- Ficha de um objeto visual da origem (antes de qualquer remoção)
+local function describeVisual(obj: Instance, model: Instance, joints: { [number]: { string } }, bones: { [number]: string }): VisualRemoval
+	local transparency = effectiveTransparency(obj)
+	local record: VisualRemoval = {
+		className = obj.ClassName,
+		name = obj.Name,
+		path = relativePath(obj, model),
+		transparency = transparency,
+		decals = {},
+		joints = {},
+		vfxInside = {},
+		visibleAtRest = transparency == nil or transparency < 0.99,
+		rule = NO_RULE,
+		reason = "",
+		verdict = "UNJUSTIFIED",
+	}
+	if obj:IsA("BasePart") then
+		local size = obj.Size
+		record.size = { size.X, size.Y, size.Z }
+		local key = obj:GetAttribute(ID_ATTRIBUTE)
+		if type(key) == "number" then
+			record.joints = joints[key] or {}
+			record.bone = bones[key]
+		end
+	end
+	local meshId = Pipeline.meshOf(obj)
+	if meshId ~= "" then
+		record.meshId = meshId
+	end
+	local texture = Pipeline.textureOf(obj)
+	if texture == "" and obj:IsA("Decal") then
+		texture = Pipeline.contentOf(obj, "Texture", "TextureContent")
+	end
+	if texture ~= "" then
+		record.textureId = texture
+	end
+	for _, child in obj:GetDescendants() do
+		if child:IsA("Decal") then
+			table.insert(record.decals, `{child.ClassName} {child.Name} {Pipeline.contentOf(child, "Texture", "TextureContent")}`)
+		elseif VFX_CLASSES[child.ClassName] then
+			table.insert(record.vfxInside, `{child.ClassName} {child.Name}`)
+		end
+	end
+	return record
+end
+
+function Pipeline.sanitize(source: Model, characterId: string, debugAfterRemoval: ((Model) -> ())?): (Model?, Report)
 	local report = newReport(characterId)
 	local spec = Config.Assets[characterId]
 	if not spec then
@@ -559,6 +708,42 @@ function Pipeline.sanitize(source: Model, characterId: string): (Model?, Report)
 	local hrp = model:FindFirstChild("HumanoidRootPart")
 	local rootPart: BasePart? = if hrp and hrp:IsA("BasePart") then hrp else nil
 	local bones, unattached = assignBones(model, body, rootPart)
+
+	-- Ficha de TODO objeto visual da origem: no fim, o que sumiu precisa ter regra + motivo
+	local joints: { [number]: { string } } = {}
+	for _, obj in model:GetDescendants() do
+		if obj:IsA("JointInstance") or obj:IsA("WeldConstraint") then
+			local a, b = readProp(obj, "Part0"), readProp(obj, "Part1")
+			for _, pair in { { a, b }, { b, a } } do
+				local part, other = pair[1], pair[2]
+				local key = part and part:GetAttribute(ID_ATTRIBUTE)
+				if key then
+					joints[key] = joints[key] or {}
+					table.insert(joints[key], `{obj.Name} ({obj.ClassName}) -> {if other then other.Name else "nil"}`)
+				end
+			end
+		end
+	end
+	local records: { VisualRemoval } = {}
+	for _, obj in model:GetDescendants() do
+		if VISUAL_SET[obj.ClassName] then
+			table.insert(records, describeVisual(obj, model, joints, bones))
+			obj:SetAttribute(VISUAL_KEY, #records)
+		end
+	end
+	-- Registra a regra de remoção do objeto e de tudo que vai junto com ele
+	local function mark(obj: Instance, rule: string, reason: string)
+		local list = obj:GetDescendants()
+		table.insert(list, obj)
+		for _, item in list do
+			local key = item:GetAttribute(VISUAL_KEY)
+			local record = if type(key) == "number" then records[key] else nil
+			if record and record.rule == NO_RULE then
+				record.rule = rule
+				record.reason = if item == obj then reason else `{reason} (removido junto com {obj.ClassName} "{obj.Name}")`
+			end
+		end
+	end
 
 	-- Referencial: pés no centro, olhando para a frente do rig (LookVector sem inclinação)
 	local reference = rootPart or body.Torso
@@ -616,23 +801,10 @@ function Pipeline.sanitize(source: Model, characterId: string): (Model?, Report)
 			end
 		end
 	end
-	-- Remoções JUSTIFICADAS (não contam como perda visual)
-	local function justified(obj: Instance): boolean
-		local node: Instance? = obj
-		while node and node ~= model do
-			if FORBIDDEN_NAMES[node.Name] or node:GetAttribute("PipelineNameTag") then
-				return true
-			end
-			if node:IsA("BasePart") and ((rootPart and keyOf(node) == keyOf(rootPart)) or isHiddenPart(node)) then
-				return true
-			end
-			node = node.Parent
-		end
-		return false
-	end
-	report.visualSource = Pipeline.visualSignature(model, justified)
+	report.visualSource = Pipeline.visualSignature(model)
 	for _, tag in nameTags do
 		report.nameTagsRemoved += 1
+		mark(tag, "NameTag", `placa de título do jogo de origem: Model "{tag.Name}" com Humanoid próprio e peças < 0.5`)
 		tag:Destroy()
 	end
 	local rootKey = if rootPart then keyOf(rootPart) else nil
@@ -648,8 +820,10 @@ function Pipeline.sanitize(source: Model, characterId: string): (Model?, Report)
 		end
 		local className = obj.ClassName
 		local remove = false
+		local rule, reason = NO_RULE, ""
 		if FORBIDDEN_NAMES[obj.Name] then
 			remove = true
+			rule, reason = "ForbiddenContainer", `"{obj.Name}" (stand/script de combate do pack)`
 		elseif obj:IsA("JointInstance") or obj:IsA("WeldConstraint") then
 			remove = true -- soldas assadas: tudo ancorado na pose original
 		elseif VFX_CLASSES[className] then
@@ -666,10 +840,13 @@ function Pipeline.sanitize(source: Model, characterId: string): (Model?, Report)
 			remove = not keepHumanoid or obj.Parent ~= model
 		elseif obj:IsA("BasePart") and rootKey ~= nil and keyOf(obj) == rootKey then
 			remove = true
+			rule, reason = "RootPart", "HumanoidRootPart: peça raiz do rig"
 		elseif not ALLOWED[className] or isForbidden(obj) then
 			remove = true
+			rule, reason = "ForbiddenClass", `classe {className} não permitida no asset`
 		end
 		if remove then
+			mark(obj, rule, reason)
 			-- conta tudo que vai junto (scripts dentro de uma pasta removida, etc.)
 			local removed = obj:GetDescendants()
 			table.insert(removed, obj)
@@ -692,6 +869,15 @@ function Pipeline.sanitize(source: Model, characterId: string): (Model?, Report)
 	for _, part in basePartsOf(model) do
 		if not Config.R6Parts[part.Name] and isHiddenPart(part) then
 			report.hiddenPartsRemoved += 1
+			local key = part:GetAttribute(VISUAL_KEY)
+			local record = if type(key) == "number" then records[key] else nil
+			local transparency = string.format("%.2f", part.Transparency)
+			if record and #record.vfxInside > 0 then
+				-- invisível parado; só aparecia pelos efeitos, que a política de VFX removeu
+				mark(part, "InvisibleCombatHelper", `Transparency={transparency}; o único conteúdo visível eram VFX removidos pela política de VFX ({table.concat(record.vfxInside, ", ")})`)
+			else
+				mark(part, "InvisibleHitbox", `Transparency={transparency}, sem Decal/Texture/VFX dentro (hitbox/colisor/marcador)`)
+			end
 			part:Destroy()
 		end
 	end
@@ -714,9 +900,37 @@ function Pipeline.sanitize(source: Model, characterId: string): (Model?, Report)
 
 	-- Roupas: template normalizado / corrigido (ClothingTemplateOverrides)
 	report.clothing = Pipeline.normalizeClothing(model)
-	-- Nada visual pode sumir sem justificativa (roupa, rosto, textura, malha, peça visível)
+	if debugAfterRemoval then
+		debugAfterRemoval(model) -- só testes: simula uma remoção sem regra registrada
+	end
+	-- Nada visual pode sumir sem justificativa (roupa, rosto, textura, malha, peça visível):
+	-- cada objeto da origem que não está no asset precisa de uma regra que o justifique
 	report.visualSanitized = Pipeline.visualSignature(model)
-	report.visualLost = Pipeline.visualLoss(report.visualSource, report.visualSanitized)
+	local present: { [number]: boolean } = {}
+	for _, obj in model:GetDescendants() do
+		local key = obj:GetAttribute(VISUAL_KEY)
+		if type(key) == "number" then
+			present[key] = true
+			obj:SetAttribute(VISUAL_KEY, nil)
+		end
+	end
+	for key, record in records do
+		if present[key] then
+			report.visualPreserved += 1
+			continue
+		end
+		if record.rule == NO_RULE then
+			record.reason = "destruído sem regra registrada no sanitizer"
+		elseif ALWAYS_JUSTIFIED[record.rule] or (JUSTIFIED_IF_INVISIBLE[record.rule] and not record.visibleAtRest) then
+			record.verdict = "JUSTIFIED"
+		else
+			record.reason ..= `; mas era VISÍVEL parado (Transparency {string.format("%.2f", record.transparency or 0)})`
+		end
+		table.insert(report.visualRemoved, record)
+		if record.verdict ~= "JUSTIFIED" then
+			table.insert(report.visualLost, `{record.className} "{record.name}" ({record.path}) · regra {record.rule}: {record.reason}`)
+		end
+	end
 
 	-- 3) VFX: limites (quantidade, luzes, taxa) e camada Light/Full. Os nomes da lista Light
 	-- vêm primeiro (nunca são cortados pelo limite), depois ordem estável pelo caminho.
@@ -1019,6 +1233,37 @@ function Pipeline.findSource(pack: Instance, path: string): Model?
 	return nil
 end
 
+-- MISSING_SOURCE: nomes PARECIDOS no pack (mesma pasta; ignora maiúsculas e espaços), para o
+-- relatório. Nunca escolhe sozinho: o SourcePath do catálogo é que tem de ser corrigido.
+local function looseName(name: string): string
+	return string.lower((string.gsub(name, "%s+", "")))
+end
+function Pipeline.sourceCandidates(pack: Instance, path: string): { string }
+	local segments = string.split(path, ".")
+	local parent: Instance = pack
+	local prefix = {}
+	for i, segment in segments do
+		local child = Pipeline.findSource(parent, segment) or parent:FindFirstChild(segment)
+		if not child or i == #segments then
+			local target = looseName((string.gsub(segment, " %(%d+ª ocorrência%)$", "")))
+			local found = {}
+			for _, sibling in parent:GetChildren() do
+				local name = looseName(sibling.Name)
+				if #name >= 3 and #target >= 3 and (name == target or string.find(name, target, 1, true) or string.find(target, name, 1, true)) then
+					local full = table.clone(prefix)
+					table.insert(full, sibling.Name)
+					table.insert(found, `"{table.concat(full, ".")}"`)
+				end
+			end
+			table.sort(found)
+			return found
+		end
+		table.insert(prefix, segment)
+		parent = child
+	end
+	return {}
+end
+
 -- Sanitiza todos de CharacterAssetConfig.Assets (ou só "ids"). Devolve (Folder, relatórios)
 function Pipeline.buildAll(pack: Instance, ids: { string }?): (Folder, { Report })
 	local folder = Instance.new("Folder")
@@ -1038,7 +1283,8 @@ function Pipeline.buildAll(pack: Instance, ids: { string }?): (Folder, { Report 
 		local source = spec and Pipeline.findSource(pack, spec.SourcePath)
 		if not source then
 			local report = newReport(id)
-			table.insert(report.problems, "modelo de origem não encontrado: " .. (if spec then spec.SourcePath else id))
+			report.sourceCandidates = if spec then Pipeline.sourceCandidates(pack, spec.SourcePath) else {}
+			table.insert(report.problems, `modelo de origem não encontrado: "{if spec then spec.SourcePath else id}" · candidatos: {if #report.sourceCandidates == 0 then "nenhum" else table.concat(report.sourceCandidates, ", ")}`)
 			table.insert(reports, report)
 			continue
 		end

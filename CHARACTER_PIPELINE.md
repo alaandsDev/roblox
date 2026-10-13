@@ -198,7 +198,26 @@ iguais (leitura estruturada) e o arquivo original com o mesmo SHA-256.
 - **Fonte**: `SourcePath` do catálogo. Irmãos com o mesmo nome no pack vêm como
   `"Nome (2ª ocorrência)"` e o `Pipeline.findSource` pega o N-ésimo (ordem do arquivo). Sem fonte →
   `MISSING_SOURCE` (relatado, não inventado).
-- **Sanitizer**: perda de qualquer classe visual (peça, malha, roupa, rosto, decal) = **FAIL**.
+- **Sanitizer — remoções visuais objeto a objeto**: todo objeto visual da origem (Part, MeshPart,
+  UnionOperation, SpecialMesh, Decal, Texture, roupa...) ganha uma ficha antes de qualquer remoção
+  (caminho, Transparency, Size, MeshId/TextureId — lidos também de `MeshContent`/`TextureContent`,
+  Decals, soldas, parte do corpo, VFX dentro). O que não chega ao asset precisa de **regra + motivo**:
+
+  | Regra | Quando | Veredito |
+  |---|---|---|
+  | `NameTag` | placa de título (`[ SEMI-PRO ]`: Model + Humanoid próprio + peças < 0.5) | JUSTIFIED |
+  | `ForbiddenContainer` | dentro de LocalStand/BattleScript/Animate | JUSTIFIED |
+  | `RootPart` | HumanoidRootPart | JUSTIFIED só se invisível |
+  | `InvisibleHitbox` | Transparency ≥ 0.99 sem Decal/Texture/VFX | JUSTIFIED |
+  | `InvisibleCombatHelper` | Transparency ≥ 0.99 e só aparecia pelos VFX de combate removidos (ex.: espada "sacada" com Trail) | JUSTIFIED |
+  | `ForbiddenClass` | classe proibida/não permitida, ou dentro de uma (ex.: Tool) | JUSTIFIED só se invisível |
+  | `NO_RULE` | destruído sem regra registrada | **UNJUSTIFIED** |
+
+  Qualquer UNJUSTIFIED = **FAIL**, com a ficha completa no console e em `CHARACTER_LAUNCH_AUDIT.md`
+  (`VISUAL_REMOVED_UNJUSTIFIED`); as justificadas ficam na tabela `VISUAL_REMOVED_JUSTIFIED`.
+- **MISSING_SOURCE** mostra os nomes parecidos na mesma pasta (entre aspas, para ver espaços), mas
+  nunca escolhe um sozinho: quem corrige é o catálogo (`tools/packaudit/catalog.py` guarda o nome
+  EXATO do pack, ex.: `"FATE.Lancer "` com espaço no fim).
 - **Roupa** (`ClothingStatus` no asset): OK · UNCHECKED · REVIEW_REQUIRED · OVERRIDDEN, por AssetId
   único no `CLOTHING_AUDIT.md`. REVIEW_REQUIRED é aviso: NÃO derruba o lote.
 - **Otimização** (`OptimizationStatus`): NEEDS_OPTIMIZATION acima de `Budget` (40 peças / 300

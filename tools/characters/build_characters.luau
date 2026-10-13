@@ -79,6 +79,56 @@ for _, r in reports do
 	reportById[r.CharacterId] = r
 end
 
+-- Ficha de um objeto visual removido (console e auditoria)
+local function sizeText(size)
+	return if size then string.format("%.2f × %.2f × %.2f", size[1], size[2], size[3]) else "—"
+end
+local function transparencyText(value)
+	return if value then string.format("%.2f", value) else "—"
+end
+local function removalBlock(r, record)
+	return table.concat({
+		`REMOVED VISUAL ({record.verdict})`,
+		`  CharacterId: {r.CharacterId}`,
+		`  SourceModelName: {r.SourceModelName}`,
+		`  Class: {record.className}`,
+		`  Name: "{record.name}"`,
+		`  Path: {r.SourcePath}.{record.path}`,
+		`  Transparency: {transparencyText(record.transparency)} (visível parado: {if record.visibleAtRest then "sim" else "não"})`,
+		`  Size: {sizeText(record.size)}`,
+		`  MeshId: {record.meshId or "—"}`,
+		`  TextureId: {record.textureId or "—"}`,
+		`  Decal/Texture: {if #record.decals == 0 then "—" else table.concat(record.decals, "; ")}`,
+		`  Weld/Motor6D: {if #record.joints == 0 then "nenhuma" else table.concat(record.joints, "; ")}`,
+		`  Parte do corpo: {record.bone or "—"}`,
+		`  VFX dentro: {if #record.vfxInside == 0 then "—" else table.concat(record.vfxInside, ", ")}`,
+		`  SanitizerRule: {record.rule}`,
+		`  Reason: {record.reason}`,
+	}, "\n")
+end
+local function cell(text)
+	return (string.gsub(tostring(text), "|", "/"))
+end
+local removalCounts = { justified = 0, unjustified = 0, byRule = {} }
+for _, r in reports do
+	for _, record in r.visualRemoved or {} do
+		if record.verdict == "JUSTIFIED" then
+			removalCounts.justified += 1
+			removalCounts.byRule[record.rule] = (removalCounts.byRule[record.rule] or 0) + 1
+		else
+			removalCounts.unjustified += 1
+		end
+	end
+end
+local function ruleSummary()
+	local list = {}
+	for rule, count in removalCounts.byRule do
+		table.insert(list, `{rule} {count}`)
+	end
+	table.sort(list)
+	return if #list == 0 then "—" else table.concat(list, ", ")
+end
+
 -- Factory: cada asset gerado precisa montar em todos os contextos (Base, Mochila/Índice, Reveal/Hero)
 folder.Parent = env.real.ReplicatedStorage
 local Factory = requireModule(env.shared.Modules.CharacterModelFactory)
@@ -115,15 +165,15 @@ for _, model in folder:GetChildren() do
 	local keys = {}
 	for _, obj in model:GetDescendants() do
 		if obj:IsA("MeshPart") then
-			table.insert(keys, "M" .. prop(obj, "MeshId") .. prop(obj, "TextureID"))
+			table.insert(keys, "M" .. Pipeline.meshOf(obj) .. Pipeline.textureOf(obj))
 		elseif obj:IsA("SpecialMesh") then
-			table.insert(keys, "S" .. prop(obj, "MeshId") .. prop(obj, "TextureId"))
+			table.insert(keys, "S" .. Pipeline.meshOf(obj) .. Pipeline.textureOf(obj))
 		elseif obj:IsA("Shirt") then
 			table.insert(keys, "C" .. prop(obj, "ShirtTemplate"))
 		elseif obj:IsA("Pants") then
 			table.insert(keys, "P" .. prop(obj, "PantsTemplate"))
 		elseif obj:IsA("Decal") then
-			table.insert(keys, "D" .. prop(obj, "Texture"))
+			table.insert(keys, "D" .. Pipeline.contentOf(obj, "Texture", "TextureContent"))
 		end
 	end
 	table.sort(keys)
@@ -294,6 +344,10 @@ local out = {
 	`  REVIEW: {counted.vfxReview}`,
 	"",
 	`Possíveis duplicatas: {#duplicates}`,
+	"",
+	`Remoções visuais (objeto a objeto):`,
+	`  VISUAL_REMOVED_JUSTIFIED: {removalCounts.justified} ({ruleSummary()})`,
+	`  VISUAL_REMOVED_UNJUSTIFIED: {removalCounts.unjustified}`,
 	"```",
 	"",
 	"## Personagens",
@@ -351,6 +405,37 @@ end, function(r)
 	end
 	return table.concat(parts, "; ")
 end)
+-- Remoções visuais: SEM justificativa (ficha completa) e justificadas (tabela)
+table.insert(out, "")
+table.insert(out, `## VISUAL_REMOVED_UNJUSTIFIED ({removalCounts.unjustified})`)
+table.insert(out, "")
+if removalCounts.unjustified == 0 then
+	table.insert(out, "Nenhuma: todo objeto visual removido tem regra e motivo registrados.")
+else
+	for _, r in reports do
+		for _, record in r.visualRemoved or {} do
+			if record.verdict ~= "JUSTIFIED" then
+				table.insert(out, "```")
+				table.insert(out, removalBlock(r, record))
+				table.insert(out, "```")
+			end
+		end
+	end
+end
+table.insert(out, "")
+table.insert(out, `## VISUAL_REMOVED_JUSTIFIED ({removalCounts.justified})`)
+table.insert(out, "")
+table.insert(out, "Regras: NameTag (placa de título), ForbiddenContainer (LocalStand/BattleScript/Animate), RootPart (raiz invisível), InvisibleHitbox (Transparency ≥ 0.99 sem nada visível), InvisibleCombatHelper (Transparency ≥ 0.99; só aparecia pelos VFX de combate removidos), ForbiddenClass (só quando invisível).")
+table.insert(out, "")
+table.insert(out, "| CharacterId | Regra | Classe | Nome | Caminho | Transparency | Size | MeshId | TextureId | Decals | Weld/Motor6D | Parte do corpo | VFX dentro | Motivo |")
+table.insert(out, "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|")
+for _, r in reports do
+	for _, record in r.visualRemoved or {} do
+		if record.verdict == "JUSTIFIED" then
+			table.insert(out, `| \`{r.CharacterId}\` | {record.rule} | {record.className} | {cell(record.name)} | {cell(record.path)} | {transparencyText(record.transparency)} | {sizeText(record.size)} | {record.meshId or "—"} | {record.textureId or "—"} | {cell(if #record.decals == 0 then "—" else table.concat(record.decals, "; "))} | {cell(if #record.joints == 0 then "—" else table.concat(record.joints, "; "))} | {record.bone or "—"} | {cell(if #record.vfxInside == 0 then "—" else table.concat(record.vfxInside, ", "))} | {cell(record.reason)} |`)
+		end
+	end
+end
 table.insert(out, "")
 table.insert(out, `## POSSIBLE_DUPLICATE ({#duplicates})`)
 table.insert(out, "")
@@ -386,7 +471,10 @@ for _, character in launch do
 			table.insert(visual, `{className} {before}→{after}`)
 		end
 	end
-	table.insert(out, `- Visual (origem → asset): {table.concat(visual, ", ")} · perdas: {if #r.visualLost == 0 then "nenhuma" else table.concat(r.visualLost, ", ")}`)
+	table.insert(out, `- Visual (origem → asset): {table.concat(visual, ", ")} · objetos visuais: preservados {r.visualPreserved or 0}, removidos com justificativa {#(r.visualRemoved or {}) - #r.visualLost}, SEM justificativa {#r.visualLost}`)
+	for _, record in r.visualRemoved or {} do
+		table.insert(out, `  - {record.verdict} · {record.rule} · {record.className} "{cell(record.name)}" ({cell(record.path)}): {cell(record.reason)}`)
+	end
 	table.insert(out, `- VFX mantidos: {if #r.vfxPreserved == 0 then "—" else table.concat(r.vfxPreserved, ", ")}`)
 	if #r.problems > 0 then
 		table.insert(out, "- **Problemas:** " .. table.concat(r.problems, "; "))
@@ -403,9 +491,19 @@ print(`{counted.generated}/{#launch} personagens de lançamento gerados em {outp
 print(`Sanitizer: {if sanitizerPass then "PASS" else "FAIL"} · source encontrados {#launch - counted.missing}/{#launch} · factory {counted.factory}/{#launch}`)
 print(`Roupas (AssetIds únicos): OK {clothingByStatus.OK} · UNCHECKED {clothingByStatus.UNCHECKED} · REVIEW_REQUIRED {clothingByStatus.REVIEW_REQUIRED} · OVERRIDDEN {clothingByStatus.OVERRIDDEN}`)
 print(`Otimização: OK {counted.optOk} · NEEDS_OPTIMIZATION {counted.optNeed} · VFX: OK {counted.vfxOk} · REVIEW {counted.vfxReview} · possíveis duplicatas {#duplicates}`)
+print(`Remoções visuais: justificadas {removalCounts.justified} ({ruleSummary()}) · SEM justificativa {removalCounts.unjustified}`)
 for _, r in reports do
 	if r.status == "FAIL" then
 		print(string.format("  FAIL %-26s %s", r.CharacterId, table.concat(r.problems, "; ")))
+	end
+end
+-- Ficha de cada objeto visual removido SEM justificativa (o que é, onde estava, regra e motivo)
+for _, r in reports do
+	for _, record in r.visualRemoved or {} do
+		if record.verdict ~= "JUSTIFIED" then
+			print("")
+			print(removalBlock(r, record))
+		end
 	end
 end
 print(`Relatório: {reportMd}`)

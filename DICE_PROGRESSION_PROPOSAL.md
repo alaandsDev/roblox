@@ -145,7 +145,7 @@ Raio, velocidade e energia elétrica.
 
 | Raridade | DisplayName | CharacterId | SourceModelName | Família | Forma | Nota técnica | VFX próprios | Peças | Status |
 |---|---|---|---|---|---:|---:|---|---:|---|
-| Rare | Lanseiro | `lanseiro` | FATE.Lancer | lanseiro | 1 | 50 | ChargeParticle, ChargeParticle2, ShootParticle | 18 | APPROVED |
+| Rare | Lanseiro | `lanseiro` | FATE.Lancer  | lanseiro | 1 | 50 | ChargeParticle, ChargeParticle2, ShootParticle | 18 | APPROVED |
 | Rare | Killuo | `killuo` | HXH.Killua | killuo | 1 | 27 | — | 12 | APPROVED |
 | Rare | Minatu | `minatu` | NARUTO.Minato.Minato | minatu | 1 | 39 | — | 14 | APPROVED |
 | Epic | Goko (Saga Majin) | `goko_majin_saga` | DBZ.Buu Saga Goku | goko | 2 | 37 | Lightning, SaiyanAura | 14 | APPROVED |

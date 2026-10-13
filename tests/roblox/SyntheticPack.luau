@@ -167,6 +167,18 @@ function SyntheticPack.rig(parent, name, opts)
 			end
 		end
 	end
+	if opts.combatHelper then
+		-- Como nos packs reais: cópia da arma "sacada" (Transparency 1, só aparece no golpe, com
+		-- Trail) e peça de efeito invisível (SpecialMesh + emissor). Parado, nada disso aparece.
+		local drawn = part("MeshPart", "SwordDrawn1", Vector3.new(0.3, 4, 0.3), CFrame.new(1.5, 1.5, -1.5), nil, { MeshId = "rbxassetid://5101", TextureID = "rbxassetid://5102", Transparency = 1 })
+		weld("Weld", drawn, ra, drawn)
+		new("Attachment", "TrailA", drawn)
+		new("Trail", "Trail", drawn)
+		local fx = part("Part", "FXPart", Vector3.new(1, 1, 1), CFrame.new(-1.5, 2, 0), nil, { Transparency = 1 })
+		new("SpecialMesh", "Mesh", fx, { MeshType = Enum.MeshType.FileMesh, MeshId = "rbxassetid://5103" })
+		new("ParticleEmitter", "Hit1", fx)
+		weld("Weld", fx, la, fx)
+	end
 	if opts.stand then
 		local stand = new("Model", "LocalStand", model)
 		part("Part", "StandTorso", Vector3.new(2, 2, 1), CFrame.new(2, 4, 2), stand)
@@ -185,7 +197,7 @@ SyntheticPack.Rigs = {
 	{ path = { "Bleach Pack" }, name = "Ichigo", opts = { at = Vector3.new(-40, 2, 18), yaw = 90, scripts = 1, weapon = "Hand" } },
 	{ path = { "Bleach Pack", "Hollow Ichigo" }, name = "Hollow Ichigo", opts = { at = Vector3.new(-50, 2, 18), yaw = 180, scripts = 2, weapon = "Hand", mask = true } },
 	{ path = { "DBZ" }, name = "Goku", opts = { at = Vector3.new(30, 0, -12), yaw = -45, scripts = 1, hair = "Welded" } },
-	{ path = { "One Piece Pack" }, name = "Whitebeard", opts = { at = Vector3.new(60, 5, 60), yaw = 30, scale = 1.4, scripts = 1, coat = true, vfx = { { "FX", "ParticleEmitter", "Torso", 1 } } } },
+	{ path = { "One Piece Pack" }, name = "Whitebeard", opts = { at = Vector3.new(60, 5, 60), yaw = 30, scale = 1.4, scripts = 1, coat = true, combatHelper = true, vfx = { { "FX", "ParticleEmitter", "Torso", 1 } } } },
 	{ path = { "HXH" }, name = "Killua", opts = { at = Vector3.new(0, 0, 80), yaw = 0, scale = 0.9, scripts = 1, hair = "Attachment", legacyClothing = true } },
 	{ path = { "HXH" }, name = "Killua Godspeed", opts = { at = Vector3.new(8, 0, 80), yaw = 0, scale = 0.9, scripts = 2, legacyClothing = true, vfx = { { "Lightning", "ParticleEmitter", "Torso", 4 }, { "Reiatsu", "ParticleEmitter", "Torso", 4 }, { "Lightning", "ParticleEmitter", "Right Arm", 4 }, { "Reiatsu", "ParticleEmitter", "Left Arm", 4 } } } },
 	{ path = { "NARUTO" }, name = "Zabuza", opts = { at = Vector3.new(-80, 0, -80), yaw = 270, scripts = 1, weapon = "Back", stand = true } },
@@ -251,6 +263,7 @@ function SyntheticPack.buildLaunch(specs, skip)
 				scripts = 1 + (i % 2),
 				weapon = if i % 4 == 0 then "Hand" elseif i % 7 == 0 then "Back" else nil,
 				hair = if i % 3 == 0 then "Welded" else nil,
+				combatHelper = i % 5 == 0,
 				vfx = { { "Aura", "ParticleEmitter", "Torso", 1 } },
 			})
 		end

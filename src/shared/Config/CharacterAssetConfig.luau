@@ -324,7 +324,7 @@ local launchAssets: { [string]: AssetSpec } = {
 	char_lufy_base = { SourceModelName = "tsLuffy", SourcePath = "One Piece Pack.TS Luffy.tsLuffy" },
 	char_pikkolo_base = { SourceModelName = "Piccolo", SourcePath = "DBZ.Piccolo" },
 	char_olmaito_base = { SourceModelName = "All Might", SourcePath = "My Hero Academia Pack.All Might" },
-	char_lanseiro_base = { SourceModelName = "Lancer", SourcePath = "FATE.Lancer", VFXExcluded = { "ChargeParticle", "ChargeParticle2", "ShootParticle", "Trail", "Trail1", "Trail2" } },
+	char_lanseiro_base = { SourceModelName = "Lancer", SourcePath = "FATE.Lancer ", VFXExcluded = { "ChargeParticle", "ChargeParticle2", "ShootParticle", "Trail", "Trail1", "Trail2" } },
 	char_minatu_base = { SourceModelName = "Minato", SourcePath = "NARUTO.Minato.Minato" },
 	char_goko_majin_saga = { SourceModelName = "Buu Saga Goku", SourcePath = "DBZ.Buu Saga Goku", VFX = { Light = { "SaiyanAura" }, Full = { "Lightning", "SaiyanAura" } } },
 	char_kaulifa_base = { SourceModelName = "Caulifa", SourcePath = "DBZ.Caulifa", VFX = { Light = { "SaiyanAura" }, Full = { "Lightning", "SaiyanAura", "SaiyanAura2" } } },

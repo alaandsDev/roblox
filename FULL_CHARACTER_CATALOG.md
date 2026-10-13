@@ -75,7 +75,7 @@
 | 51 | FATE.Fate Pack.Gilgamesh | `gilgamex` | Gilgamex | FATE | APPROVED | Legendary | Arcane Dice | gilgamex | 1 | 16 | — | — | 1 script(s) do jogo original: remover |
 | 52 | FATE.Iskandar | `iskander` | Iskander | FATE | APPROVED | Epic | Premium Dice | iskander | 1 | 20 | — | MySword | 2 script(s) do jogo original: remover |
 | 53 | FATE.Kiritsugu | `kiritsugo` | Kiritsugo | FATE | APPROVED | Rare | Arcane Dice | kiritsugo | 1 | 13 | — | — | 2 script(s) do jogo original: remover |
-| 54 | FATE.Lancer | `lanseiro` | Lanseiro | FATE | APPROVED | Rare | Storm Dice | lanseiro | 1 | 18 | ChargeParticle, ChargeParticle2, ShootParticle, Trail | Spear, SwordDrawn1 | Lança.; 2 script(s) do jogo original: remover |
+| 54 | FATE.Lancer  | `lanseiro` | Lanseiro | FATE | APPROVED | Rare | Storm Dice | lanseiro | 1 | 18 | ChargeParticle, ChargeParticle2, ShootParticle, Trail | Spear, SwordDrawn1 | Lança.; 2 script(s) do jogo original: remover |
 | 55 | FATE.Lancer Mode | `lanseiro_mode` | Lanseiro Ardente | FATE | APPROVED | Legendary | Premium Dice | lanseiro | 2 | 18 | ChargeParticle, ChargeParticle2, Reiatsu, ShootParticle | Spear, SwordDrawn1 | 2 script(s) do jogo original: remover |
 | 56 | FATE.Rin | `rinn` | Rinn | FATE | APPROVED | Uncommon | Lucky Dice | rinn | 1 | 13 | — | Bow | Arco.; 2 script(s) do jogo original: remover |
 | 57 | FATE.Fate Pack.Saber | `seiba` | Seiba | FATE | APPROVED | Rare | Arcane Dice | seiba | 1 | 16 | Charge | SpecialBlade | 1 script(s) do jogo original: remover |

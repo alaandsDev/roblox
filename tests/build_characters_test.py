@@ -50,6 +50,10 @@ def main() -> int:
     linhas_tabela = [l for l in texto.splitlines() if l.startswith("| `char_")]
     check("| CharacterId | DisplayName | SourceModelName |" in texto and len({l.split("|")[1].strip(" `") for l in linhas_tabela}) == 121, "CHARACTER_LAUNCH_AUDIT: tabela com os 121 personagens")
     check(all(k in texto for k in ("Launch characters: 121/121", "F2P: 112/112", "Premium: 9/9", "Sanitizer: PASS", "CharacterIds únicos: 121/121", "NEEDS_OPTIMIZATION:", "REVIEW_REQUIRED:")), "CHARACTER_LAUNCH_AUDIT: bloco de resumo (Launch, F2P, Premium, Sanitizer, roupas, otimização)")
+    remocoes = [rec for x in relatorio for rec in x.get("visualRemoved", [])]
+    check("VISUAL_REMOVED_UNJUSTIFIED: 0" in texto and "## VISUAL_REMOVED_JUSTIFIED" in texto and remocoes and all(rec["verdict"] == "JUSTIFIED" and rec["rule"] != "NO_RULE" and rec["reason"] for rec in remocoes), f"remoções visuais objeto a objeto: {len(remocoes)} com regra e motivo, nenhuma sem justificativa")
+    helper = next((rec for rec in remocoes if rec["rule"] == "InvisibleCombatHelper" and rec["className"] == "MeshPart"), {})
+    check(helper.get("meshId") == "rbxassetid://5101" and helper.get("joints") and helper.get("bone") == "RightArm" and "Trail Trail" in helper.get("vfxInside", []), "ficha no JSON: MeshId (lido do MeshContent do .rbxm), solda, parte do corpo e VFX")
     audit = roupas.read_text(encoding="utf-8") if roupas.exists() else ""
     linhas = [l for l in audit.splitlines() if l.startswith("| 2065247269 ")]
     check(len(linhas) == 1 and "char_killuo_base" in linhas[0] and "char_killuo_godspeed" in linhas[0] and "REVIEW_REQUIRED" in linhas[0], "CLOTHING_AUDIT: roupa compartilhada em UMA linha com os 2 personagens (REVIEW_REQUIRED)")
