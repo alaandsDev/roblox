@@ -20,11 +20,11 @@ O `SimuladorEscudo_v1` do protótipo **não é lido nem migrado**.
 
 | Campo | Tipo | Descrição |
 |---|---|---|
-| `Version` | number | Versão do schema (= `DataConfig.SchemaVersion` = 2) |
+| `Version` | number | Versão do schema (= `DataConfig.SchemaVersion` = 3) |
 | `Money`, `Gems`, `RebirthTokens` | number | Moedas |
 | `Rolls`, `Rebirths` | number | Contadores |
-| `EquippedDice` | string | Dado equipado (`"Normal"`) |
-| `OwnedDice` | map | `{ [diceId] = true }` (Normal sempre) |
+| `EquippedDice` | string | Dice SELECIONADO para rolar (SelectedDiceId; padrão `"Starter"`). O servidor valida a cada roll (existe, sorteável, desbloqueado); inválido → Starter |
+| `OwnedDice` | map | `{ [diceId] = true }` — Dice desbloqueados (Starter sempre). Migração v3: `Normal` → `Starter` |
 | `Inventory` | map | `{ [uid] = CharacterInstance }` (abaixo) |
 | `NextUid` | number | Próximo uid (`"c" .. NextUid`); nunca diminui, nunca repete |
 | `EquippedCharacters` | map | `{ [tostring(slotId)] = uid }` (chave string: compatível com JSON) |
@@ -67,6 +67,14 @@ O `SimuladorEscudo_v1` do protótipo **não é lido nem migrado**.
 Unidades antigas ganham `Level = 1`, `Variant = "Normal"`, flags booleanas; itens inválidos são
 removidos; `NextUid` fica acima do maior uid existente; slots apontando para uids inexistentes
 são limpos. Os campos novos vêm do Template (reconcile). Teste: `tests/Migrations.spec.luau`.
+
+### Migração v2 → v3 (16 Dice por pool)
+
+`OwnedDice`/`EquippedDice`: o id `Normal` vira `Starter` (o primeiro Dice, grátis); os outros
+ids antigos continuam (Lucky, Flame, Storm, Void, Celestial = âncoras; Prism = exclusivo do
+Diário). `Starter` sempre desbloqueado; `EquippedDice` inválido → `Starter`. Contadores de
+`Pity` mantêm o formato (`Legendary`, `Mythic`). Personagens antigos (24 legados) no inventário
+continuam válidos (ficam em `CharacterConfig.ById`), só não são mais sorteados nem contam no Índice.
 
 Tabelas vazias no Template são **mapas dinâmicos**: o carregamento só garante o tipo, não o conteúdo.
 

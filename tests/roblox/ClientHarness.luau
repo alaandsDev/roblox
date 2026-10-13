@@ -739,14 +739,17 @@ do
 	Env.waitFor(function()
 		return (DataController.Get("Settings") or {}).HideRollAnimation == false and (DataController.Get("Runtime") or {}).FastRoll == false
 	end, 2)
-	-- Cinemática (Lendário) pausa o AUTO e ele volta sozinho depois
+	-- Cinemática (Lendário) pausa o AUTO e ele volta sozinho depois. O Starter não tem Lendário:
+	-- o roll vem do Flame (Dice com Lendário)
+	S.DiceService.Grant(player, "Flame")
+	S.PlayerDataService.Set(player, "EquippedDice", "Flame")
 	task.wait(1.1)
 	local capped = S.RollService._rand
 	local forced = false
 	S.RollService._rand = function()
 		if not forced then
 			forced = true
-			return 0.9985 -- Lendário (1º sorteio = raridade)
+			return 0.9985 -- Lendário no Flame (1º sorteio = raridade; última faixa do Dice)
 		end
 		return capped()
 	end
@@ -883,14 +886,16 @@ do
 	check(portraitModel ~= nil and portraitModel:GetAttribute("AssetRig") == true and portraitModel:GetAttribute("VFXMode") == "None", "Mochila: asset com VFX None")
 	UIKit.Windows.closeAll()
 
-	-- Índice: seção de pilotos (Studio), cards criados uma vez só
+	-- Índice: abre na aba do Dice em uso; cards criados uma vez só (cache ao reabrir)
+	S.PlayerDataService.Set(player, "EquippedDice", "Starter")
+	task.wait(0.2)
 	local index = openWindow("Index")
 	task.wait(0.2)
 	UIKit.Windows.closeAll()
 	openWindow("Index")
 	task.wait(0.2)
-	check(count(index.gui, "char_goju_base") == 1, "Índice: card do piloto (Studio) criado uma vez, sem clones ao reabrir")
-	local indexModel = find(index.gui, "char_goju_base")
+	check(count(index.gui, "char_sacha_base") == 1, "Índice: card do piloto criado uma vez, sem clones ao reabrir")
+	local indexModel = find(index.gui, "char_sacha_base")
 	check(indexModel ~= nil and indexModel:GetAttribute("AssetRig") == true and indexModel:GetAttribute("VFXMode") == "None", "Índice: asset com VFX None")
 	UIKit.Windows.closeAll()
 end

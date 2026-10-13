@@ -24,7 +24,9 @@ describe("Economia (simulação com as configs reais)", function()
 		for _, u in UpgradeConfig.List do
 			expect((s.upgrades[u.Id] or 0) < 10).toBeTruthy()
 		end
-		expect(s.dice == "Normal" or s.dice == "Lucky" or s.dice == "Flame").toBeTruthy()
+		-- no máximo o 3º Dice da escada (16 Dice: Starter, Lucky, Rampart)
+		local DiceConfig = require("../src/shared/Config/DiceConfig")
+		expect(DiceConfig.ById[s.dice] ~= nil and DiceConfig.ById[s.dice].Order <= 3).toBeTruthy()
 		expect(s.avgStationLevel < 10).toBeTruthy()
 	end)
 

@@ -6,15 +6,36 @@ local UpgradeConfig = require("../src/shared/Config/UpgradeConfig")
 local describe, it, expect = T.describe, T.it, T.expect
 
 describe("Roster e configs de progressão", function()
-	it("24 personagens na distribuição pedida", function()
+	it("24 lutadores LEGADOS na distribuição original (fora do roll e do Índice)", function()
 		local expected = { Common = 5, Uncommon = 4, Rare = 4, Epic = 3, Legendary = 3, Mythic = 2, Divine = 2, Secret = 1 }
+		local counts = {}
+		for _, c in CharacterConfig.Legacy do
+			counts[c.Rarity] = (counts[c.Rarity] or 0) + 1
+			expect(c.Legacy).toBe(true)
+			expect(CharacterConfig.ById[c.Id]).toBe(c)
+		end
+		expect(#CharacterConfig.Legacy).toBe(24)
+		for id, n in expected do
+			expect(counts[id]).toBe(n)
+		end
+	end)
+
+	it("roster = 112 F2P na distribuição aprovada (soma dos 16 Dice)", function()
+		local expected = {}
+		for _, d in DiceConfig.List do
+			for i, n in d.ExpectedCounts or {} do
+				local rarity = RarityConfig.Order[i]
+				expected[rarity] = (expected[rarity] or 0) + n
+			end
+		end
 		local counts = {}
 		for _, c in CharacterConfig.List do
 			counts[c.Rarity] = (counts[c.Rarity] or 0) + 1
+			expect(c.LaunchPool).toBe("F2P")
 		end
-		expect(CharacterConfig.Count).toBe(24)
-		for id, n in expected do
-			expect(counts[id]).toBe(n)
+		expect(CharacterConfig.Count).toBe(112)
+		for _, rarity in RarityConfig.Order do
+			expect(counts[rarity] or 0).toBe(expected[rarity] or 0)
 		end
 	end)
 
@@ -44,14 +65,18 @@ describe("Roster e configs de progressão", function()
 	end)
 
 	it("dados: Luck pedida, preço crescente e requisito do dado anterior", function()
-		local luck = { Normal = 1, Lucky = 1.25, Flame = 1.6, Storm = 2, Void = 2.75, Celestial = 4 }
+		-- Âncoras do sistema antigo mantêm a Luck; os Dice novos ficam entre os vizinhos
+		local luck = { Starter = 1, Lucky = 1.25, Flame = 1.6, Storm = 2, Void = 2.75, Celestial = 4 }
 		local previous = nil
 		for _, d in DiceConfig.List do
 			if d.Exclusive then
 				continue
 			end
-			expect(d.LuckMultiplier).toBe(luck[d.Id])
+			if luck[d.Id] then
+				expect(d.LuckMultiplier).toBe(luck[d.Id])
+			end
 			if previous then
+				expect(d.LuckMultiplier >= previous.LuckMultiplier).toBeTruthy()
 				expect(d.Price > previous.Price).toBeTruthy()
 				expect(d.UnlockRequirement.Dice).toBe(previous.Id)
 			end

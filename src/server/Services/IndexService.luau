@@ -2,11 +2,15 @@
 --[[
 	IndexService: coleção de personagens descobertos.
 	    IndexService.Register(player, characterId) -> true se é a PRIMEIRA vez (NOVO!)
-	    IndexService.Discovered(player) -> quantos personagens diferentes
+	    IndexService.Discovered(player)        -> F2P descobertos (coleção principal, x / 112)
+	    IndexService.DiscoveredPremium(player) -> Premium descobertos (x / 9, separado)
+	    IndexService.GetCharactersForDice(diceId) / GetDiscoveredForDice(player, diceId) -> por Dice
 	data.Index = { [characterId] = { Count, FirstAt, Variants? } }. Personagens vendidos (inclusive no
 	auto-sell) continuam descobertos. Marcos (IndexConfig) dão recompensa uma única vez.
 	Variants = { [variantId] = true } (campo novo e opcional: saves antigos continuam válidos,
-	sem migração). Pilotos do pipeline de assets são registrados, mas NÃO contam no progresso.
+	sem migração). Coleção principal = 112 F2P (CharacterConfig.List): os marcos usam SÓ ela, então
+	completar o jogo nunca depende de Premium (Robux). Premium (9) tem progresso próprio. Legados,
+	reserva, evento, limited e stands não contam em nada.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -17,28 +21,58 @@ local IndexConfig = require(Shared.Config.IndexConfig)
 local Net = require(Shared.Modules.Net)
 
 local PlayerDataService = require(script.Parent.PlayerDataService)
+local DiceService = require(script.Parent.DiceService)
 local AnalyticsService = require(script.Parent.AnalyticsService)
 
 local IndexService = {}
 
--- Progresso do Índice = só o roster oficial (CharacterConfig.List); pilotos e o catálogo de
--- lançamento ficam registrados mas não contam nesta fase
+-- Coleção principal = 112 F2P; Premium = 9 (separado)
 local official: { [string]: boolean } = {}
 for _, character in CharacterConfig.List do
 	official[character.Id] = true
 end
+local premium: { [string]: boolean } = {}
+for _, character in CharacterConfig.Premium do
+	premium[character.Id] = true
+end
 
-function IndexService.Discovered(player: Player): number
+local function countIn(player: Player, set: { [string]: boolean }): number
 	local data = PlayerDataService.GetData(player)
 	local n = 0
 	if data then
 		for id in data.Index do
-			if official[id] then
+			if set[id] then
 				n += 1
 			end
 		end
 	end
 	return n
+end
+
+function IndexService.Discovered(player: Player): number
+	return countIn(player, official)
+end
+
+function IndexService.DiscoveredPremium(player: Player): number
+	return countIn(player, premium)
+end
+
+-- Personagens do Dice (ordem do pool: raridade, id)
+function IndexService.GetCharactersForDice(diceId: string): { string }
+	return DiceService.Core:charactersFor(diceId)
+end
+
+-- (descobertos, total) do Dice para o jogador
+function IndexService.GetDiscoveredForDice(player: Player, diceId: string): (number, number)
+	local ids = IndexService.GetCharactersForDice(diceId)
+	local data = PlayerDataService.GetData(player)
+	local n = 0
+	for _, id in ids do
+		if data and data.Index[id] then
+			n += 1
+		end
+	end
+	return n, #ids
 end
 
 local function checkMilestones(player: Player, data: any)

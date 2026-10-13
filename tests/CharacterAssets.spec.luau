@@ -86,25 +86,34 @@ describe("Pipeline de personagens: pilotos (metadados)", function()
 end)
 
 describe("Pipeline de personagens: RNG e roster intocados", function()
-	it("pilotos fora do roll e do progresso do Índice (List = 24)", function()
-		expect(CharacterConfig.Count).toBe(24)
-		expect(#CharacterConfig.List).toBe(24)
+	it("roster do roll e do Índice = 112 F2P (pilotos dentro; legados e Premium fora)", function()
+		expect(CharacterConfig.Count).toBe(112)
+		expect(#CharacterConfig.List).toBe(112)
+		local inList = {}
 		for _, c in CharacterConfig.List do
-			expect(c.Pilot).toBeNil()
+			expect(c.Legacy).toBeNil()
+			expect(c.LaunchPool).toBe("F2P")
+			inList[c.Id] = true
+		end
+		for _, pilot in CharacterConfig.Pilots do
+			expect(inList[pilot.Id]).toBe(true)
 		end
 	end)
 
-	it("RollCore nunca sorteia piloto (milhares de sorteios por raridade)", function()
-		local core = RollCore.new(RarityConfig, CharacterConfig, RollConfig)
+	it("sorteio nunca entrega legado nem Premium (milhares de rolls por Dice)", function()
+		local DiceConfig = require("../src/shared/Config/DiceConfig")
+		local DiceCore = require("../src/shared/Modules/DiceCore")
+		local core = DiceCore.new(DiceConfig, CharacterConfig, RarityConfig, RollConfig)
 		local seed = 7
 		local function rand()
 			seed = (seed * 48271) % 2147483647
 			return seed / 2147483647
 		end
-		for _, rarity in RarityConfig.List do
+		for _, dice in core:diceList() do
 			for _ = 1, 300 do
-				local id = core:pickCharacter(rarity.Id, rand)
-				expect(CharacterConfig.ById[id].Pilot).toBeNil()
+				local id = core:roll(dice.Id, 1, {}, rand).characterId
+				expect(CharacterConfig.ById[id].Legacy).toBeNil()
+				expect(CharacterConfig.ById[id].LaunchPool).toBe("F2P")
 			end
 		end
 	end)
@@ -251,7 +260,7 @@ describe("Catálogo de LANÇAMENTO (121 = 112 F2P + 9 Premium)", function()
 		expect(assets).toBe(121)
 	end)
 
-	it("pilotos preservados (mesmos ids) dentro do lançamento; roster do roll continua 24", function()
+	it("pilotos preservados (mesmos ids) dentro do lançamento; roster do roll = 112 F2P", function()
 		local launchIds = {}
 		for _, c in CharacterConfig.Launch do
 			launchIds[c.Id] = true
@@ -259,10 +268,12 @@ describe("Catálogo de LANÇAMENTO (121 = 112 F2P + 9 Premium)", function()
 		for _, pilot in CharacterConfig.Pilots do
 			expect(launchIds[pilot.Id]).toBe(true)
 		end
-		expect(#CharacterConfig.List).toBe(24)
-		expect(CharacterConfig.Count).toBe(24)
+		expect(#CharacterConfig.List).toBe(112)
+		expect(CharacterConfig.Count).toBe(112)
+		expect(#CharacterConfig.Premium).toBe(9)
 		for _, c in CharacterConfig.List do
-			expect(c.Launch).toBeNil()
+			expect(c.Launch).toBe(true)
+			expect(c.LaunchPool).toBe("F2P")
 		end
 	end)
 

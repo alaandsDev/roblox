@@ -4,6 +4,48 @@ Todo sorteio acontece **no servidor** (`Server/Services/RollService.luau`) com `
 do servidor e o módulo puro `Shared/Modules/RollCore.luau` (testado fora do Roblox).
 O cliente só envia `RequestRoll()` **sem argumentos** — nunca raridade, luck, personagem ou valores.
 
+## RNG POR DICE (sistema atual — 16 Dice F2P)
+
+O roll **não usa mais raridade global**. O Dice selecionado (`data.EquippedDice`, validado pelo
+servidor a cada roll) é a fonte da distribuição. Módulo puro: `Shared/Modules/DiceCore.luau`;
+dados: `Shared/Config/DiceConfig.luau`; personagens de cada Dice: catálogo de lançamento
+(`CharacterConfig.Launch`, campo `DefaultDice`) — 112 F2P, cada um em exatamente um Dice.
+
+```
+PASSO 1  raridade com os pesos DO Dice:  P(r | Dice) = RarityWeights_Dice(r)        (só raridades do Dice)
+PASSO 2  personagem daquela raridade no Dice: P(c | r, Dice) = peso(c) / Σ peso   (hoje 1 / quantidade)
+P(personagem) = P(raridade | Dice, Luck, pity) × P(personagem | raridade, Dice)
+```
+
+- **Pesos base** (`DiceConfig.BaseRarityPercent`): 55 / 25 / 12 / 5 / 2 / 0,75 / 0,20 / 0,05 (= 100).
+  Cada Dice usa só as raridades que POSSUI, renormalizadas para 100% (`DiceCore.normalize`).
+  Raridade ausente = 0% (sem reroll, sem conversão, sem fallback). É a base matemática
+  inicial, **BALANCE_PENDING** (ex.: Forbidden fica 75/20/5 só por normalização).
+- **Luck** (mesma filosofia): `peso(r) = RarityWeights_Dice(r) × LuckEfetiva ^ LuckExponent(r)`,
+  renormalizado entre as raridades do Dice. Sobe as altas, dilui as baixas, soma 100%, nunca
+  cria raridade ausente. A Luck continua `LuckDoDado × upgrades × boost × renascimento × passes`;
+  as âncoras mantêm o multiplicador antigo e os Dice novos foram interpolados (BALANCE_PENDING).
+- **Pity** (contadores salvos em `Pity`, mesmo formato): uma regra é **compatível** com o Dice se
+  o Dice possui a raridade do piso.
+  - incrementa: roll num Dice compatível que saiu abaixo do piso;
+  - dispara: num Dice compatível quando contador + 1 ≥ limite — sorteio natural; abaixo do piso
+    vira EXATAMENTE o piso; a regra de maior raridade vence;
+  - zera: qualquer roll no piso ou acima (em qualquer Dice);
+  - **não é consumido nem incrementa** num Dice incompatível (fica congelado até o jogador usar
+    um Dice que tenha a raridade). Nunca converte para "a melhor raridade disponível".
+- **Prêmios** (Jackpot "personagem de X ou melhor"): Dice selecionado se ele tem X; senão o
+  primeiro Dice F2P (por ordem) que tem X. Não mexe no pity.
+- **Odds exibidas** (`1 EM X`): chance base do personagem no Dice dele (`DiceCore:odds`).
+- **Premium (9)**: fora dos Dice F2P; nunca sorteados nesta fase.
+- **Prism** (exclusivo do Diário): continua sendo dado do jogador, mas não é sorteável
+  (sem pool próprio — decisão pendente para a fase de balanceamento).
+- Auditoria: `RollLegendsDev:Invoke("DiceProbabilityReport")` (todos os Dice) e `DiceReport`.
+  Testes: `tests/Dice.spec.luau` (inclui 100.000 rolls por Dice, ±5σ por personagem).
+
+As seções abaixo descrevem a tabela GLOBAL de raridades (`RarityConfig`), que continua sendo
+a referência de `LuckExponent` e da simulação histórica (`RNG_SIMULATION.md`, `tools/sim`), mas
+não decide mais o roll.
+
 ## Raridades (`Shared/Config/RarityConfig.luau`)
 
 | Raridade (PT) | Id | Tier | Peso base | % com Luck 1 | 1 em | LuckExponent |

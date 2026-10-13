@@ -380,15 +380,24 @@ end
 function StationService.PopulateDemo(player: Player, all: boolean?): number
 	local data = PlayerDataService.GetData(player)
 	assert(data, "dados não carregados")
+	-- Primeiro personagem F2P de cada raridade (catálogo de lançamento)
+	local function firstOf(rarity: string): string
+		for _, character in CharacterConfig.List do
+			if character.Rarity == rarity then
+				return character.Id
+			end
+		end
+		return CharacterConfig.List[1].Id
+	end
 	local demo: { { any } } = {
-		{ "flame_rookie", 1, "Normal" },
-		{ "frost_assassin", 7, "Silver" },
-		{ "cyber_ronin", 12, "Normal" },
-		{ "dragon_knight", 23, "Gold" },
-		{ "void_emperor", 26, "Diamond" },
-		{ "astral_seraph", 35, "Emerald" },
-		{ "shadow_scout", 4, "Normal" },
-		{ "eclipse_sovereign", 50, "Celestial" },
+		{ firstOf("Common"), 1, "Normal" },
+		{ firstOf("Rare"), 7, "Silver" },
+		{ firstOf("Epic"), 12, "Normal" },
+		{ firstOf("Legendary"), 23, "Gold" },
+		{ firstOf("Mythic"), 26, "Diamond" },
+		{ firstOf("Divine"), 35, "Emerald" },
+		{ firstOf("Uncommon"), 4, "Normal" },
+		{ firstOf("Secret"), 50, "Celestial" },
 	}
 	local unlocked = InventoryService.UnlockedSlots(player)
 	local slots = {}

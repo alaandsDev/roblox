@@ -109,7 +109,8 @@ check(Env.waitFor(function()
 end), "jogadores carregados e com base")
 local d1 = S.PlayerDataService.GetData(p1)
 local d2 = S.PlayerDataService.GetData(p2)
-check(d1.Version == 2 and d1.NextUid == 1 and d1.Pity.Legendary == 0, "perfil novo no schema v2")
+check(d1.Version == 3 and d1.NextUid == 1 and d1.Pity.Legendary == 0, "perfil novo no schema v3")
+check(d1.EquippedDice == "Starter" and d1.OwnedDice.Starter == true, "SelectedDiceId padrão seguro: Starter (desbloqueado)")
 
 -- Controle de tempo e sorte
 local clock = 1000
@@ -220,15 +221,27 @@ do
 	clock += 5
 end
 
--- Pity
+-- Pity por Dice: o Starter NÃO tem Lendário -> o pity Lendário nem dispara nem é consumido
 clock += 2
 d1.Pity = { Legendary = 49, Mythic = 10 }
-fixed = 0 -- sem pity daria Comum
+fixed = 0 -- sem pity daria a raridade mais baixa do Dice
+do
+	local okPS, rps = call("RequestRoll", p1)
+	check(okPS and rps.DiceId == "Starter" and rps.PityTriggered == nil and rps.Rarity == "Common", "pity: Dice sem Lendário (Starter) não dispara o pity Lendário")
+end
+check(d1.Pity.Legendary == 49 and d1.Pity.Mythic == 10, "pity: contadores CONGELADOS em Dice incompatível (não consumidos)")
+-- ... e no Dice que tem Lendário (Flame) o mesmo contador dispara
+S.DiceService.Grant(p1, "Flame")
+d1.EquippedDice = "Flame"
+clock += 2
 local okP, rp = call("RequestRoll", p1)
 fixed = nil
 local tier = { Common = 1, Uncommon = 2, Rare = 3, Epic = 4, Legendary = 5, Mythic = 6, Divine = 7, Secret = 8 }
-check(okP and tier[rp.Rarity] >= 5 and rp.PityTriggered == "Legendary", "pity: 50º roll sem Lendário = Lendário garantido")
+check(okP and rp.DiceId == "Flame" and tier[rp.Rarity] >= 5 and rp.PityTriggered == "Legendary", "pity: 50º roll sem Lendário = Lendário garantido (Dice compatível)")
 check(d1.Pity.Legendary == 0, "pity Lendário zerado depois")
+check(d1.Pity.Mythic == 10, "pity Mítico congelado no Flame (sem Mítico)")
+d1.OwnedDice = { Starter = true }
+d1.EquippedDice = "Starter"
 
 -- Auto-sell
 clock += 2
@@ -405,7 +418,7 @@ local okD3, codeD3 = call("EquipDice", p1, "Void")
 check(not okD3 and codeD3 == "not_owned", "equipar dado que não possui: recusado")
 local okD4, codeD4 = call("BuyDice", p1, "Prism")
 check(not okD4 and codeD4 == "exclusive", "dado exclusivo não está à venda")
-check((call("EquipDice", p1, "Normal")) and d1.EquippedDice == "Normal", "trocar para dado possuído")
+check((call("EquipDice", p1, "Starter")) and d1.EquippedDice == "Starter", "trocar para dado possuído")
 
 ------------------------------------------------------------------------------------
 -- UPGRADES GLOBAIS
@@ -460,10 +473,19 @@ check(d1.Inventory[v1] ~= nil and d1.Inventory[v2] ~= nil and d1.Inventory[b] ~=
 ------------------------------------------------------------------------------------
 -- INDEX
 local gemsBefore = d1.Gems
-for _, id in { "flame_rookie", "wind_disciple", "stone_brawler", "spark_cadet", "tide_apprentice", "shadow_scout", "ember_archer" } do
-	S.IndexService.Register(p1, id)
+do
+	-- 25% de 112 F2P = 28 (os 24 legados não contam)
+	local LaunchRoster = req(env.shared.Config.CharacterConfig)
+	local discoveredBefore = S.IndexService.Discovered(p1)
+	for _, id in { "flame_rookie", "wind_disciple", "stone_brawler" } do
+		S.IndexService.Register(p1, id)
+	end
+	check(S.IndexService.Discovered(p1) == discoveredBefore, "Index: legados não contam na coleção principal")
+	for i = 1, 28 do
+		S.IndexService.Register(p1, LaunchRoster.List[i].Id)
+	end
+	check(S.IndexService.Discovered(p1) >= 28 and d1.IndexRewards["25"] == true and d1.Gems > gemsBefore, "Index: marco de 25% entregue (28 de 112 F2P)")
 end
-check(S.IndexService.Discovered(p1) >= 6 and d1.IndexRewards["25"] == true and d1.Gems > gemsBefore, "Index: marco de 25% entregue")
 local gemsAfter = d1.Gems
 S.IndexService.Register(p1, "leaf_ranger")
 check(d1.Gems == gemsAfter, "marco não é entregue duas vezes")
@@ -931,13 +953,13 @@ local assets = Pipeline.buildAll(pack, pilotIds) -- pack sintético só com os 1
 pack:Destroy()
 assets.Parent = env.real.ReplicatedStorage
 Factory.clearCache()
-check(#CharacterConfig.List == 24 and CharacterConfig.Count == 24 and #CharacterConfig.Pilots >= 8, "roster do roll intacto (24); pilotos só em ById/Pilots")
+check(#CharacterConfig.List == 112 and CharacterConfig.Count == 112 and #CharacterConfig.Pilots >= 8, "roster do roll = 112 F2P (pilotos dentro)")
 for _, pilot in CharacterConfig.Pilots do
 	local inList = false
 	for _, c in CharacterConfig.List do
 		inList = inList or c.Id == pilot.Id
 	end
-	assert(not inList)
+	assert(inList)
 end
 
 -- Inventário guarda só o CharacterId (nada de Instance no save)
@@ -998,10 +1020,11 @@ for _, child in base.RuntimeCharacters:GetChildren() do
 end
 check(stations == 1, "um único modelo por slot (sem clone acumulado)")
 
--- Índice: piloto registrado com variante, sem mexer no progresso do roster
-local discovered = S.IndexService.Discovered(p1)
+-- Índice: piloto (agora F2P do Starter) registrado com variante; conta na coleção principal
+local sachaProbe = { discovered = S.IndexService.Discovered(p1), known = d1.Index.char_sacha_base ~= nil, count = 0 }
 S.IndexService.Register(p1, "char_sacha_base", "Normal")
-check(S.IndexService.Discovered(p1) == discovered and d1.Index.char_sacha_base ~= nil and d1.Index.char_sacha_base.Variants.Normal == true, "índice: piloto descoberto (com variante) sem contar no progresso")
+check(S.IndexService.Discovered(p1) == sachaProbe.discovered + (if sachaProbe.known then 0 else 1) and d1.Index.char_sacha_base ~= nil and d1.Index.char_sacha_base.Variants.Normal == true, "índice: piloto descoberto (com variante) conta como F2P")
+sachaProbe.count = d1.Index.char_sacha_base.Count
 
 -- Fusão pelo CharacterId: 3 Normal -> Silver, 3 Silver -> Gold (mesma regra/economia)
 d1.Money = 1e12
@@ -1011,7 +1034,7 @@ check(okFS and fusedS.characterId == "char_sacha_base" and fusedS.variant == "Si
 local s1, s2 = S.InventoryService.Add(p1, "char_sacha_base", "Silver"), S.InventoryService.Add(p1, "char_sacha_base", "Silver")
 local okFG, fusedG = call("Fuse", p1, { fusedS.uid, s1, s2 })
 check(okFG and fusedG.variant == "Gold" and d1.Inventory[fusedG.uid].Id == "char_sacha_base", "fusão do piloto: 3 Silver -> Gold")
-check(d1.Index.char_sacha_base.Variants.Silver == true and d1.Index.char_sacha_base.Variants.Gold == true and d1.Index.char_sacha_base.Count == 1, "índice: variantes Silver/Gold descobertas pela fusão (Count intacto)")
+check(d1.Index.char_sacha_base.Variants.Silver == true and d1.Index.char_sacha_base.Variants.Gold == true and d1.Index.char_sacha_base.Count == sachaProbe.count, "índice: variantes Silver/Gold descobertas pela fusão (Count intacto)")
 
 -- Torres: piloto no time, combate do Roll Legends (stats do config, nenhum script do pack)
 S.TowerService._clock = function()
@@ -1214,6 +1237,94 @@ check(string.find(logText, "respondeu DEPOIS do prazo", 1, true) ~= nil, "respos
 Dev.ClothingWait = 15
 check(bindable:Invoke("ShowCharacterVariants", p1, "char_goko_base") ~= nil and #galleryModels() == 7, "formato antigo (jogador primeiro) continua funcionando")
 Dev.Run("ClearGallery")
+end
+
+------------------------------------------------------------------------------------
+do
+-- 16 DICE: seleção validada pelo servidor, roll só dentro do pool do Dice, Índice /112 e /9
+local CharacterConfig = req(env.shared.Config.CharacterConfig)
+local Dev = req(env.server.Services.DevService)
+local core = S.DiceService.Core
+local inventoryCap = d1.Runtime.Capacity
+d1.Runtime.Capacity = 100000
+d1.Pity = { Legendary = 0, Mythic = 0 }
+d1.OwnedDice = { Starter = true }
+d1.EquippedDice = "Starter"
+
+-- Servidor rejeita Dice inválido, bloqueado e não sorteável
+local okBad, codeBad = call("EquipDice", p1, "Hacker")
+check(not okBad and codeBad == "invalid_dice", "selecionar Dice inexistente: recusado (invalid_dice)")
+local okLock, codeLock = call("EquipDice", p1, "Forbidden")
+check(not okLock and codeLock == "not_owned" and d1.EquippedDice == "Starter", "selecionar Dice bloqueado: recusado, seleção mantida")
+S.DiceService.Grant(p1, "Prism")
+local okPrism, codePrism = call("EquipDice", p1, "Prism")
+check(not okPrism and codePrism == "dice_not_rollable", "Prism (exclusivo, sem pool): não pode ser usado para rolar")
+-- Estado adulterado no save: o roll recusa (o cliente nunca escolhe o Dice no pedido)
+d1.EquippedDice = "Forbidden"
+clock += 5
+local okTam, codeTam = call("RequestRoll", p1)
+check(not okTam and codeTam == "dice_locked", "roll com Dice bloqueado no estado: recusado (dice_locked)")
+d1.EquippedDice = "Hacker"
+clock += 5
+local okTam2, codeTam2 = call("RequestRoll", p1)
+check(not okTam2 and codeTam2 == "invalid_dice", "roll com Dice inexistente no estado: recusado (invalid_dice)")
+d1.EquippedDice = "Starter"
+
+-- Cada Dice: 40 rolls, todos dentro do pool e com DiceId correto (Luck/AUTO/OCULTAR iguais)
+local allInPool, allIds = true, true
+for _, dice in core:diceList() do
+	S.DiceService.Grant(p1, dice.Id)
+	check((call("EquipDice", p1, dice.Id)), "selecionar " .. dice.Id)
+	local pool = {}
+	for _, id in core:charactersFor(dice.Id) do
+		pool[id] = true
+	end
+	for i = 1, 40 do
+		d1.Settings.AutoRoll = i % 2 == 0
+		d1.Settings.HideRollAnimation = i % 3 == 0
+		clock += 2
+		local ok, r = call("RequestRoll", p1)
+		allInPool = allInPool and ok and pool[r.CharacterId] == true
+		allIds = allIds and ok and r.DiceId == dice.Id and r.Odds > 0
+	end
+end
+d1.Settings.AutoRoll = false
+d1.Settings.HideRollAnimation = false
+check(allInPool, "16 Dice x 40 rolls: personagem SEMPRE do pool do Dice selecionado (manual/AUTO/OCULTAR)")
+check(allIds, "resposta do roll traz o DiceId e as odds do Dice")
+
+-- Índice: coleção principal /112 (só F2P) e Premium /9 separado
+check(CharacterConfig.Count == 112 and CharacterConfig.PremiumCount == 9, "Índice: denominadores 112 (F2P) e 9 (Premium)")
+local before = S.IndexService.Discovered(p1)
+local premium = CharacterConfig.Premium[1].Id
+S.IndexService.Register(p1, premium)
+check(S.IndexService.Discovered(p1) == before and S.IndexService.DiscoveredPremium(p1) >= 1, "Premium descoberto conta só no progresso Premium (x/9), nunca no /112")
+local starterFound, starterTotal = S.IndexService.GetDiscoveredForDice(p1, "Starter")
+check(starterTotal == 8 and starterFound >= 1 and #S.IndexService.GetCharactersForDice("Forbidden") == 7, "Índice por Dice: GetDiscoveredForDice / GetCharactersForDice")
+
+-- Prêmio garantido (Jackpot) com o Starter selecionado: vem do 1º Dice que tem a raridade
+d1.EquippedDice = "Starter"
+local granted = S.RollService.GrantRoll(p1, "Legendary")
+local tierOf = { Common = 1, Uncommon = 2, Rare = 3, Epic = 4, Legendary = 5, Mythic = 6, Divine = 7, Secret = 8 }
+check(tierOf[granted.Rarity] >= 5 and granted.DiceId == "Flame" and core:characterProbability("Flame", granted.CharacterId) > 0, "prêmio Lendário+ com Starter: sorteado no Flame (regra explícita), nunca fora de um Dice")
+
+-- DEV
+local report = Dev.Run("DiceProbabilityReport")
+check(string.find(report, "VALIDAÇÃO: OK", 1, true) ~= nil and string.find(report, "STARTER", 1, true) ~= nil and string.find(report, "FORBIDDEN", 1, true) ~= nil and string.find(report, "Total: 100.000000%", 1, true) ~= nil, "DEV DiceProbabilityReport: 16 Dice, totais 100% e validação OK")
+local diceReport = Dev.Run("DiceReport", p1)
+check(string.find(diceReport, "TOTAL F2P nos Dice: 112", 1, true) ~= nil and string.find(diceReport, "Premium (fora dos Dice): 9", 1, true) ~= nil, "DEV DiceReport: 112 nos Dice, 9 Premium fora")
+d1.OwnedDice = { Starter = true }
+local selected = Dev.Run("SelectDice", p1, "Void")
+check(d1.EquippedDice == "Void" and d1.OwnedDice.Void == true and string.find(selected, "Void", 1, true) ~= nil, "DEV SelectDice: desbloqueia e seleciona")
+local gave = Dev.Run("GiveCharacter", premium, 2)
+check(string.find(gave, "2x " .. premium, 1, true) ~= nil and d1.Index[premium] ~= nil, "DEV GiveCharacter (jogador opcional): inventário + Índice pelo servidor")
+local devBad = Dev.Run("SelectDice", p1, "Prism")
+check(string.find(tostring(devBad), "erro:", 1, true) ~= nil and d1.EquippedDice == "Void", "DEV SelectDice recusa Dice não sorteável")
+
+-- volta ao estado padrão
+d1.OwnedDice = { Starter = true }
+d1.EquippedDice = "Starter"
+d1.Runtime.Capacity = inventoryCap
 end
 
 ------------------------------------------------------------------------------------

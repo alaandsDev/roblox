@@ -92,10 +92,21 @@ describe("Reveal: qual apresentação tocar", function()
 	end)
 
 	it("odds exibidas batem com a config (chance base por personagem)", function()
-		-- Lendário: 1,3% dividido por 3 personagens = 1 em ~231
-		expect(planner:odds("dragon_knight")).toBe(231)
-		-- Secreto: 0,0005% e 1 personagem = 1 em 200.000
-		expect(planner:odds("eclipse_sovereign")).toBe(200000)
+		-- Odds exibidas agora vêm do Dice do personagem (DiceCore:odds; RollService e reveal):
+		-- Starter, Épico: 5% / 97% = 5,1546% e 1 personagem = 1 em 19
+		local DiceCore = require("../src/shared/Modules/DiceCore")
+		local DiceConfig = require("../src/shared/Config/DiceConfig")
+		local RollConfig = require("../src/shared/Config/RollConfig")
+		local dice = DiceCore.new(DiceConfig, CharacterConfig, RarityConfig, RollConfig)
+		local starterEpic = dice.pools.Starter.byRarity.Epic[1]
+		expect(dice:odds(starterEpic)).toBe(19)
+		-- Forbidden, Secreto: 0,05% / 1% = 5% dividido por 3 personagens = 1 em 60
+		local forbiddenSecret = dice.pools.Forbidden.byRarity.Secret[1]
+		expect(dice:odds(forbiddenSecret)).toBe(60)
+		-- Premium e legados: fora dos Dice, sem "1 em X"
+		expect(dice:odds(CharacterConfig.Premium[1].Id)).toBe(0)
+		expect(dice:odds("dragon_knight")).toBe(0)
+		-- Odds GLOBAIS da raridade (tabela de referência do RarityConfig) continuam iguais
 		expect(planner:rarityOdds("Mythic")).toBe(1667)
 		expect(planner:odds("nao_existe")).toBe(0)
 	end)

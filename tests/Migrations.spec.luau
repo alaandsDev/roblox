@@ -24,12 +24,14 @@ describe("Migração v1 -> v2", function()
 
 	it("perfil v1 vazio + Template v2 = todos os campos novos", function()
 		local data = Migrations[2]({ Version = 1, Money = 10, Inventory = {}, Settings = { AutoRoll = true } })
-		data.Version = 2
+		data = Migrations[3](data)
+		data.Version = DataConfig.SchemaVersion
 		TableUtil.reconcile(data, DataConfig.Template)
 		expect(data.Money).toBe(10)
 		expect(data.NextUid).toBe(1)
 		expect(data.Pity.Legendary).toBe(0)
-		expect(data.OwnedDice.Normal).toBe(true)
+		expect(data.OwnedDice.Starter).toBe(true) -- v3: o dado inicial é o Starter
+		expect(data.EquippedDice).toBe("Starter")
 		expect(data.Upgrades.Luck).toBe(0)
 		expect(data.Settings.AutoRoll).toBe(true)
 		expect(data.Settings.AutoSell.Common).toBe(false)

@@ -51,4 +51,23 @@ Migrations[2] = function(data)
 	return data
 end
 
+-- v3 (16 Dice por pool): o dado "Normal" virou "Starter" (mesmo papel: o primeiro, grátis). Os
+-- outros ids antigos continuam (Lucky, Flame, Storm, Void, Celestial, Prism). Mapa congelado aqui
+-- de propósito: a migração não pode mudar se o DiceConfig mudar depois.
+local RENAMED_DICE_V3 = { Normal = "Starter" }
+Migrations[3] = function(data)
+	local owned = if type(data.OwnedDice) == "table" then data.OwnedDice else {}
+	local renamed = {}
+	for id, value in owned do
+		if value == true and type(id) == "string" then
+			renamed[RENAMED_DICE_V3[id] or id] = true
+		end
+	end
+	renamed.Starter = true
+	data.OwnedDice = renamed
+	local equipped = data.EquippedDice
+	data.EquippedDice = if type(equipped) == "string" then (RENAMED_DICE_V3[equipped] or equipped) else "Starter"
+	return data
+end
+
 return Migrations

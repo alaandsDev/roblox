@@ -7,7 +7,7 @@ local DataConfig = {
 	StoreName = "RollLegends_PlayerData_v1",
 	KeyPrefix = "Player_",
 
-	SchemaVersion = 2,
+	SchemaVersion = 3,
 
 	-- Salvamento automático (segundos entre cada rodada)
 	AutosaveInterval = 120,
@@ -32,7 +32,7 @@ local DataConfig = {
 -- Formato inicial do perfil. Tabelas vazias são "mapas dinâmicos": o conteúdo não é
 -- comparado com o modelo, só o tipo.
 DataConfig.Template = {
-	Version = 2,
+	Version = 3,
 
 	Money = 0,
 	Gems = 0,
@@ -41,9 +41,11 @@ DataConfig.Template = {
 	Rolls = 0,
 	Rebirths = 0,
 
-	EquippedDice = "Normal",
-	-- Dados comprados ({ [diceId] = true })
-	OwnedDice = { Normal = true },
+	-- Dice SELECIONADO para rolar (SelectedDiceId): o servidor valida existe/sorteável/desbloqueado
+	-- a cada roll; inválido ou bloqueado -> volta para o Starter (DiceConfig.Default)
+	EquippedDice = "Starter",
+	-- Dice desbloqueados ({ [diceId] = true })
+	OwnedDice = { Starter = true },
 
 	-- Inventário: { [uid] = { Id, Level, Variant, Locked, Favorite, ObtainedAt } } (ver DATA_SCHEMA.md)
 	Inventory = {},

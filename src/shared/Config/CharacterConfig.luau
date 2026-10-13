@@ -1,6 +1,15 @@
 --!strict
 --[[
-	Roster inicial: 24 lutadores ORIGINAIS (arquétipos anime/fantasy, sem personagens licenciados).
+	ROSTER = catálogo de LANÇAMENTO (121, gerado por tools/characters/gen_launch_catalog.py):
+	    List    = 112 F2P (coleção principal do Índice; cada um em EXATAMENTE um dos 16 Dice,
+	              campo DefaultDice; o roll é por Dice: DiceCore)
+	    Premium = 9 (LaunchPool = "Premium"): fora dos Dice F2P, progresso próprio no Índice (x/9)
+	    Launch  = os 121
+	    Legacy  = os 24 lutadores originais da fase de protótipo (abaixo): NÃO são sorteados nem
+	              contam no Índice; continuam em ById para perfis temporários antigos e fixtures.
+	CharacterId é a chave persistente (DisplayName nunca vai para o save).
+
+	Lutadores LEGADOS (24):
 
 	BaseIncome = dinheiro por segundo quando colocado na base.
 	BasePower  = força (usada nas Torres, fase futura).
@@ -14,9 +23,9 @@
 	    Icon:     emoji usado nos cards da interface
 	TODO_ASSET: substituir placeholders por modelos finais.
 
-	Personagens do PIPELINE de assets (pilotos abaixo; asset em CharacterAssetConfig.Assets) entram em ById/Pilots com
-	os metadados novos (DisplayName, SourceModelName, CharacterFamily, FormTier...), mas NÃO
-	em List: List continua sendo o roster do roll e do progresso do Índice (RNG intocado).
+	Os 10 PILOTOS do pipeline de assets (abaixo) fazem parte do catálogo de lançamento (F2P,
+	mesmos CharacterIds) e têm os metadados novos (DisplayName, SourceModelName, CharacterFamily,
+	FormTier...), como os outros 111 gerados.
 ]]
 
 export type Character = {
@@ -48,6 +57,8 @@ export type Character = {
 	DefaultDice: string?,
 	TechnicalStatus: string?,
 	Pilot: boolean?,
+	-- Lutador do protótipo (fora do roll e do Índice)
+	Legacy: boolean?,
 	-- Catálogo de lançamento (121): pool (F2P | Premium) e marca de lançamento
 	LaunchPool: string?,
 	Launch: boolean?,
@@ -150,6 +161,7 @@ local list: { Character } = {
 local byId: { [string]: Character } = {}
 for _, character in list do
 	assert(byId[character.Id] == nil, "personagem repetido: " .. character.Id)
+	character.Legacy = true
 	byId[character.Id] = character
 end
 
@@ -231,8 +243,8 @@ for _, character in pilots do
 end
 
 -- BEGIN LAUNCH CATALOG (gerado por tools/characters/gen_launch_catalog.py — não editar à mão)
--- Personagens de LANÇAMENTO (121 = 112 F2P + 9 Premium). Fora do roll e do Índice oficial
--- nesta fase: só ById/Launch (assets, galeria DEV). Stats provisórios por raridade.
+-- Personagens de LANÇAMENTO (121 = 112 F2P + 9 Premium). F2P = roster do roll (por Dice,
+-- campo DefaultDice) e da coleção do Índice; Premium fora dos Dice. Stats provisórios por raridade.
 local launchGenerated: { Character } = {
 	launch(1000, "char_anny_school", "Anny (Colegial)", "Annie (Junior High)", "Common", "anny", 1, "AOT", "starter", "F2P", "APPROVED", 12, 1),
 	launch(1001, "char_mikaza_formal", "Mikaza (Formal)", "Mikasa (Formal)", "Common", "mikaza", 1, "AOT", "starter", "F2P", "APPROVED", 12, 1),
@@ -484,10 +496,24 @@ for _, id in LAUNCH_ORDER do
 	table.insert(launchList, character)
 end
 
+local f2pList: { Character } = {}
+local premiumList: { Character } = {}
+for _, character in launchList do
+	if character.LaunchPool == "Premium" then
+		table.insert(premiumList, character)
+	else
+		assert(character.LaunchPool == "F2P", "LaunchPool inválido: " .. character.Id)
+		table.insert(f2pList, character)
+	end
+end
+
 return {
-	List = list, -- roster do roll e do Índice (24, intocado nesta fase)
-	ById = byId, -- todos (roster + catálogo de lançamento)
-	Count = #list,
-	Pilots = pilots, -- 10 pilotos do pipeline
-	Launch = launchList, -- 121 de lançamento (F2P + Premium), fora do roll
+	List = f2pList, -- coleção principal (112 F2P): roll por Dice e progresso do Índice
+	ById = byId, -- todos (lançamento + legados)
+	Count = #f2pList,
+	Premium = premiumList, -- 9 Premium (progresso separado; fora dos Dice F2P)
+	PremiumCount = #premiumList,
+	Pilots = pilots, -- 10 pilotos do pipeline (fazem parte do lançamento)
+	Launch = launchList, -- 121 de lançamento (F2P + Premium)
+	Legacy = list, -- 24 lutadores do protótipo (fora do roll e do Índice)
 }

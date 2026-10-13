@@ -18,9 +18,8 @@
 
 	CATÁLOGO DE LANÇAMENTO: 121 personagens (10 pilotos curados + 111 gerados por
 	tools/characters/gen_launch_catalog.py; metadados em CharacterConfig.Launch).
-	Eles NÃO entram no roll (RollCore usa
-	CharacterConfig.List), nem no progresso do Índice; aparecem via DEV (GiveCharacter,
-	PlayReveal, CharacterGallery) para validar o pipeline no Studio antes do lote de 121.
+	Os 112 F2P são o roster do roll (por Dice: DiceCore) e da coleção do Índice; os 9 Premium
+	ficam fora dos Dice (progresso próprio no Índice).
 ]]
 
 export type VFXSpec = {

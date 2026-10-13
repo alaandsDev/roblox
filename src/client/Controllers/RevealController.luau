@@ -21,6 +21,7 @@ local RarityConfig = require(Shared.Config.RarityConfig)
 local CharacterConfig = require(Shared.Config.CharacterConfig)
 local DiceConfig = require(Shared.Config.DiceConfig)
 local RevealPlanner = require(Shared.Modules.RevealPlanner)
+local DiceCore = require(Shared.Modules.DiceCore)
 local CharacterModelFactory = require(Shared.Modules.CharacterModelFactory)
 local CharacterAssetConfig = require(Shared.Config.CharacterAssetConfig)
 local Localization = require(Shared.Localization.Localization)
@@ -36,6 +37,8 @@ local DataController = require(script.Parent.DataController)
 local RevealController = {}
 
 local planner = RevealPlanner.new(RevealConfig, RarityConfig, CharacterConfig)
+-- "1 EM X" = chance BASE do personagem no Dice dele (DiceCore); Premium/legados: 0 (sem odds)
+local diceCore = DiceCore.new(DiceConfig, CharacterConfig, RarityConfig, require(Shared.Config.RollConfig))
 local busy = false
 local current: any = nil
 
@@ -147,7 +150,7 @@ end
 -- Normal / Enhanced (1.2–1.8 s)
 
 local function diceModel(): Model
-	local dice = DiceConfig.ById[DataController.Get("EquippedDice") or "Normal"] or DiceConfig.ById.Normal
+	local dice = DiceConfig.ById[DataController.Get("EquippedDice") or DiceConfig.Default] or DiceConfig.ById[DiceConfig.Default]
 	local model = Instance.new("Model")
 	local cube = Instance.new("Part")
 	cube.Size = Vector3.new(4, 4, 4)
@@ -290,7 +293,7 @@ function RevealController.Play(result: any, context: { autoRoll: boolean? }?): R
 				quality = plan.quality,
 				shake = plan.shake,
 				isNew = result.IsNew == true,
-				odds = result.Odds or planner:odds(result.CharacterId),
+				odds = result.Odds or diceCore:odds(result.CharacterId),
 				luck = result.Luck,
 				canSkip = plan.canSkip,
 				autoClose = plan.autoClose,
@@ -339,7 +342,7 @@ local function devPlay(payload: any)
 			Variant = "Normal",
 			IsNew = isNew,
 			TimesSeen = 0,
-			Odds = planner:odds(id),
+			Odds = diceCore:odds(id),
 			Luck = 1,
 		})
 	end

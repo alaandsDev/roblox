@@ -1,9 +1,12 @@
 --!strict
 --[[
-	RollService: o roll (autoritativo). O cliente só pede RequestRoll() — sem argumentos.
+	RollService: o roll (autoritativo). O cliente só pede RequestRoll() — sem argumentos: nunca
+	escolhe Dice no pedido, raridade ou personagem.
 	Fluxo: valida jogador/dados -> intervalo (RollConfig.RollSpeed: 1 roll/s, Roll Rápido 2/s; sem folga) ->
-	inventário cheio? (bloqueia ANTES de sortear) -> Luck (dado + upgrades + boost) ->
-	RollCore (Random do servidor + pity) -> Index -> auto-sell ou inventário (uid) -> resposta.
+	Dice SELECIONADO válido (existe, sorteável, desbloqueado: DiceService.SelectedDice) ->
+	inventário cheio? (bloqueia ANTES de sortear) -> Luck (upgrades + boost + ...) ->
+	DiceCore no pool do Dice (raridade pelos pesos DO Dice, depois personagem; Random do servidor
+	+ pity por Dice) -> Index -> auto-sell ou inventário (uid) -> resposta.
 	Não grava no DataStore a cada roll (autosave); drops Míticos+ pedem um save em breve.
 	Histórico de sessão (últimos RollConfig.HistorySize) só em memória.
 ]]
@@ -16,8 +19,6 @@ local RarityConfig = require(Shared.Config.RarityConfig)
 local CharacterConfig = require(Shared.Config.CharacterConfig)
 local RollConfig = require(Shared.Config.RollConfig)
 local RevealConfig = require(Shared.Config.RevealConfig)
-local RollCore = require(Shared.Modules.RollCore)
-local RevealPlanner = require(Shared.Modules.RevealPlanner)
 local Formulas = require(Shared.Modules.GameFormulas)
 local Logger = require(Shared.Modules.Logger)
 local Signal = require(Shared.Modules.Signal)
@@ -30,6 +31,7 @@ local IndexService = require(script.Parent.IndexService)
 local SellService = require(script.Parent.SellService)
 local EconomyService = require(script.Parent.EconomyService)
 local AnalyticsService = require(script.Parent.AnalyticsService)
+local DiceService = require(script.Parent.DiceService)
 
 local log = Logger.new("Roll")
 
@@ -45,8 +47,7 @@ RollService._rand = function(): number
 	return random:NextNumber()
 end
 
-local core = RollCore.new(RarityConfig, CharacterConfig, RollConfig)
-local planner = RevealPlanner.new(RevealConfig, RarityConfig, CharacterConfig)
+local core = DiceService.Core
 
 -- Momento (RollService._clock) a partir do qual o próximo roll do jogador é aceito.
 -- Sempre "agora + intervalo" do último roll ACEITO: sem folga, sem crédito acumulado (atraso
@@ -68,6 +69,7 @@ export type RollResult = {
 	Luck: number,
 	TimesSeen: number,
 	Odds: number,
+	DiceId: string,
 }
 
 local function announce(player: Player, result: RollResult)
@@ -101,6 +103,8 @@ local function doRoll(player: Player, options: RollOptions?): RollResult
 	assert(data)
 
 	local now = RollService._clock()
+	-- Dice do roll: o selecionado, validado pelo servidor a cada roll (inválido/bloqueado -> recusa)
+	local selected = DiceService.SelectedDice(data)
 	if not opts.granted then
 		if now < (nextRollAt[player] or -math.huge) then
 			Net.fail("cooldown")
@@ -118,13 +122,16 @@ local function doRoll(player: Player, options: RollOptions?): RollResult
 
 	local luck = Formulas:luck(data, os.time())
 	local rolled
+	local diceId = selected
 	if opts.minRarity then
-		-- Prêmio (Jackpot): mesmo piso do pity — sorteio natural, abaixo do piso vira EXATAMENTE
+		-- Prêmio (Jackpot): Dice selecionado se ele tem MinRarity; senão o primeiro Dice F2P que
+		-- tem (DiceCore:grantDice). Sorteio natural nesse Dice; abaixo do piso vira EXATAMENTE
 		-- MinRarity (nunca aumenta Divino/Secreto); não mexe no pity
-		local rarity = core:pickWithFloor(luck, RollService._rand, opts.minRarity)
-		rolled = { rarity = rarity, characterId = core:pickCharacter(rarity, RollService._rand), pity = data.Pity, pityTriggered = nil }
+		diceId = core:grantDice(selected, opts.minRarity) or selected
+		local rarity = core:pickWithFloor(diceId, luck, RollService._rand, opts.minRarity)
+		rolled = { rarity = rarity, characterId = core:pickCharacter(diceId, rarity, RollService._rand), pity = data.Pity, pityTriggered = nil }
 	else
-		rolled = core:roll(luck, data.Pity, RollService._rand)
+		rolled = core:roll(diceId, luck, data.Pity, RollService._rand)
 	end
 	local rarity, characterId = rolled.rarity, rolled.characterId
 	PlayerDataService.Set(player, "Pity", rolled.pity)
@@ -148,7 +155,8 @@ local function doRoll(player: Player, options: RollOptions?): RollResult
 		PityTriggered = rolled.pityTriggered,
 		Luck = luck,
 		TimesSeen = timesSeen,
-		Odds = planner:odds(characterId),
+		Odds = core:odds(characterId),
+		DiceId = diceId,
 	}
 	-- Auto-sell: nunca vende uma descoberta nova (primeiro do Index) nem raridade protegida
 	if not opts.granted and not isNew and SellService.ShouldAutoSell(player, rarity) then

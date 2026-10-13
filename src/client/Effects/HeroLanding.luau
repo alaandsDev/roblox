@@ -515,7 +515,8 @@ function HeroLanding.play(opts: Options): Handle
 			pop(newLabel, Localization.t("reveal.new"))
 		end
 		pop(nameLabel, character.Name)
-		local oddsText = Localization.t("reveal.odds", { odds = NumberFormatter.thousands(opts.odds) })
+		-- odds 0 = personagem fora dos Dice F2P (Premium): sem "1 EM X"
+		local oddsText = if opts.odds > 0 then Localization.t("reveal.odds", { odds = NumberFormatter.thousands(opts.odds) }) else ""
 		if opts.luck and RarityConfig.ById[opts.rarity].Tier >= RarityConfig.ById.Divine.Tier then
 			oddsText ..= "   🍀 " .. string.format("%.2fx", opts.luck)
 		end

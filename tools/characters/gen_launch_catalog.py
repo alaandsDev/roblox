@@ -12,7 +12,7 @@ CharacterId (estável, nunca derivado do DisplayName): "char_" + id do catálogo
 quando o personagem é a forma-base da família (id == família) — a mesma regra dos 10 pilotos.
 
 Escreve, entre marcadores "BEGIN/END LAUNCH CATALOG (gerado)":
-  - src/shared/Config/CharacterConfig.luau       metadados de jogo (fora do roll: List continua 24)
+  - src/shared/Config/CharacterConfig.luau       metadados de jogo (List = 112 F2P; Premium = 9)
   - src/shared/Config/CharacterAssetConfig.luau  SourcePath + whitelist de VFX por personagem
 Os 10 pilotos continuam com as entradas curadas à mão (não são sobrescritos).
 """
@@ -91,8 +91,8 @@ def pilotos_existentes() -> set[str]:
 
 
 def bloco_char_config(launch: list[dict], pilotos: set[str]) -> str:
-    linhas = [INICIO, "-- Personagens de LANÇAMENTO (121 = 112 F2P + 9 Premium). Fora do roll e do Índice oficial",
-              "-- nesta fase: só ById/Launch (assets, galeria DEV). Stats provisórios por raridade.",
+    linhas = [INICIO, "-- Personagens de LANÇAMENTO (121 = 112 F2P + 9 Premium). F2P = roster do roll (por Dice,",
+              "-- campo DefaultDice) e da coleção do Índice; Premium fora dos Dice. Stats provisórios por raridade.",
               "local launchGenerated: { Character } = {"]
     for i, c in enumerate(launch):
         cid = character_id(c)

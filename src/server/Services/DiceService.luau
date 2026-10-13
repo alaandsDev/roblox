@@ -1,14 +1,20 @@
 --!strict
 --[[
-	DiceService: comprar e equipar dados (LOJA DE DADOS).
-	Comprar: não exclusivo, ainda não tem, requisito (rolls + dado anterior) e dinheiro.
-	Equipar: só dado que o jogador possui (OwnedDice).
+	DiceService: desbloquear (comprar) e SELECIONAR o Dice usado no roll (LOJA DE DADOS).
+	Comprar: não exclusivo, ainda não tem, requisito (rolls + Dice anterior) e dinheiro.
+	Selecionar (EquipDice / SelectDice): Dice existe, é sorteável (F2P) e está desbloqueado.
+	O Dice selecionado fica em data.EquippedDice (= SelectedDiceId). O cliente nunca escolhe
+	raridade nem personagem: o RollService sorteia no pool do Dice selecionado (DiceCore).
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
 local DiceConfig = require(Shared.Config.DiceConfig)
+local CharacterConfig = require(Shared.Config.CharacterConfig)
+local RarityConfig = require(Shared.Config.RarityConfig)
+local RollConfig = require(Shared.Config.RollConfig)
+local DiceCore = require(Shared.Modules.DiceCore)
 local TableUtil = require(Shared.Modules.TableUtil)
 local Net = require(Shared.Modules.Net)
 
@@ -18,6 +24,34 @@ local MapService = require(script.Parent.MapService)
 local AnalyticsService = require(script.Parent.AnalyticsService)
 
 local DiceService = {}
+
+-- Núcleo do roll por Dice (único; RollService/IndexService/DevService usam este)
+DiceService.Core = DiceCore.new(DiceConfig, CharacterConfig, RarityConfig, RollConfig)
+
+-- Motivo pelo qual o Dice não pode ser usado para rolar (nil = pode)
+function DiceService.SelectError(data: any, diceId: any): string?
+	local dice = type(diceId) == "string" and DiceConfig.ById[diceId] or nil
+	if not dice then
+		return "invalid_dice"
+	end
+	if not dice.Rollable or dice.Pool ~= "F2P" or not DiceService.Core:isRollable(diceId) then
+		return "dice_not_rollable"
+	end
+	if not (data.OwnedDice and data.OwnedDice[diceId]) then
+		return "dice_locked"
+	end
+	return nil
+end
+
+-- Dice selecionado JÁ VALIDADO (falha com o motivo se inválido/bloqueado)
+function DiceService.SelectedDice(data: any): string
+	local diceId = data.EquippedDice
+	local reason = DiceService.SelectError(data, diceId)
+	if reason then
+		Net.fail(reason)
+	end
+	return diceId
+end
 
 local function dataOf(player: Player): any
 	local data = PlayerDataService.GetData(player)
@@ -81,11 +115,9 @@ end
 
 function DiceService.Equip(player: Player, diceId: string)
 	local data = dataOf(player)
-	if not DiceConfig.ById[diceId] then
-		Net.fail("invalid_dice")
-	end
-	if not data.OwnedDice[diceId] then
-		Net.fail("not_owned")
+	local reason = DiceService.SelectError(data, diceId)
+	if reason then
+		Net.fail(if reason == "dice_locked" then "not_owned" else reason)
 	end
 	PlayerDataService.Set(player, "EquippedDice", diceId)
 	return diceId

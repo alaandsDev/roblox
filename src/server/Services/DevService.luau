@@ -24,10 +24,16 @@ local PlayerDataService = require(script.Parent.PlayerDataService)
 
 local Shared = game:GetService("ReplicatedStorage").Shared
 local CharacterConfig = require(Shared.Config.CharacterConfig)
+local DiceConfig = require(Shared.Config.DiceConfig)
+local RarityConfig = require(Shared.Config.RarityConfig)
+local DiceCore = require(Shared.Modules.DiceCore)
+local HttpService = game:GetService("HttpService")
 local Formulas = require(Shared.Modules.GameFormulas)
 local Net = require(Shared.Modules.Net)
 local InventoryService = require(script.Parent.InventoryService)
 local RollService = require(script.Parent.RollService)
+local DiceService = require(script.Parent.DiceService)
+local IndexService = require(script.Parent.IndexService)
 local EconomyService = require(script.Parent.EconomyService)
 local StationService = require(script.Parent.StationService)
 local AnalyticsService = require(script.Parent.AnalyticsService)
@@ -104,6 +110,15 @@ local function data(player: Player): any
 	return d
 end
 
+local function splitPlayer(...: any): (Player?, ...any)
+	local first = ...
+	local isPlayer = (typeof(first) == "Instance" and first:IsA("Player")) or (type(first) == "table" and first.UserId ~= nil)
+	if isPlayer then
+		return ...
+	end
+	return game:GetService("Players"):GetPlayers()[1], ...
+end
+
 DevService.Register("GiveMoney", "(player, valor) adiciona dinheiro", function(player, amount)
 	return EconomyService.AddMoney(player, amount, "Dev")
 end)
@@ -111,7 +126,9 @@ DevService.Register("SetRolls", "(player, n) define o total de rolls (requisito 
 	PlayerDataService.Set(player, "Rolls", n)
 	return n
 end)
-DevService.Register("GiveCharacter", "(player, id, quantidade?, nivel?) dá personagens", function(player, id, count, level)
+DevService.Register("GiveCharacter", "([player], characterId, quantidade?, nivel?) dá personagens (inventário + Índice, pelo servidor)", function(...)
+	local player, id, count, level = splitPlayer(...)
+	assert(player, "nenhum jogador no servidor (entre em Play)")
 	assert(CharacterConfig.ById[id], "personagem inválido: " .. tostring(id))
 	local uids = {}
 	for _ = 1, count or 1 do
@@ -119,8 +136,70 @@ DevService.Register("GiveCharacter", "(player, id, quantidade?, nivel?) dá pers
 		data(player).Inventory[uid].Level = level or 1
 		table.insert(uids, uid)
 	end
+	IndexService.Register(player, id, "Normal")
 	InventoryService.SendDelta(player, uids, nil)
-	return table.concat(uids, ",")
+	return `{#uids}x {id} ({CharacterConfig.ById[id].Name}, {CharacterConfig.ById[id].Rarity}): {table.concat(uids, ",")}`
+end)
+-- Dice: seleção e auditoria matemática (DiceCore)
+DevService.Register("SelectDice", "([player], diceId) DESBLOQUEIA (DEV) e seleciona o Dice usado no roll", function(...)
+	local player, diceId = splitPlayer(...)
+	assert(player, "nenhum jogador no servidor (entre em Play)")
+	local dice = DiceConfig.ById[diceId]
+	assert(dice and dice.Rollable, "Dice inválido ou não sorteável: " .. tostring(diceId))
+	DiceService.Grant(player, diceId)
+	DiceService.Equip(player, diceId)
+	return `Dice selecionado: {diceId} ({#DiceService.Core:charactersFor(diceId)} personagens)`
+end)
+DevService.Register("DiceReport", "([player]) os 16 Dice: personagens, raridades, unlock e progresso do jogador", function(...)
+	local player = splitPlayer(...)
+	local d = player and PlayerDataService.GetData(player)
+	local core = DiceService.Core
+	local lines = {}
+	local total = 0
+	for _, dice in core:diceList() do
+		local ids = core:charactersFor(dice.Id)
+		total += #ids
+		local weights = core:rarityWeights(dice.Id)
+		local parts = {}
+		for _, rarity in RarityConfig.Order do
+			if weights[rarity] then
+				table.insert(parts, string.format("%s %.2f%%", rarity, weights[rarity]))
+			end
+		end
+		local found = 0
+		for _, id in ids do
+			if d and d.Index[id] then
+				found += 1
+			end
+		end
+		local req = dice.UnlockRequirement
+		local state = if not d then "" elseif d.EquippedDice == dice.Id then " · EM USO" elseif d.OwnedDice[dice.Id] then " · desbloqueado" else " · bloqueado"
+		table.insert(lines, string.format("%2d. %-10s %d personagens · %s · preço %d · req %s rolls + %s · %s%s%s", dice.Order, dice.Id, #ids, table.concat(parts, ", "), dice.Price, tostring(req.Rolls or 0), tostring(req.Dice or "—"), dice.Balance, if d then ` · Índice {found}/{#ids}` else "", state))
+	end
+	table.insert(lines, `TOTAL F2P nos Dice: {total} · Premium (fora dos Dice): {CharacterConfig.PremiumCount}`)
+	if d then
+		table.insert(lines, `Índice: {IndexService.Discovered(player :: Player)}/{CharacterConfig.Count} F2P · Premium {IndexService.DiscoveredPremium(player :: Player)}/{CharacterConfig.PremiumCount} · pity {HttpService:JSONEncode(d.Pity)}`)
+	end
+	return table.concat(lines, "\n")
+end)
+DevService.Register("DiceProbabilityReport", "(diceId?) prova matemática: % por raridade e por personagem de cada Dice + validação", function(diceId)
+	local core = DiceService.Core
+	local lines = {}
+	local problems = DiceCore.validate(DiceConfig, CharacterConfig, RarityConfig)
+	for _, dice in core:diceList() do
+		if diceId == nil or dice.Id == diceId then
+			local report, issues = core:probabilityReport(dice.Id)
+			for _, line in report do
+				table.insert(lines, line)
+			end
+			table.insert(lines, "")
+			for _, issue in issues do
+				table.insert(problems, issue)
+			end
+		end
+	end
+	table.insert(lines, if #problems == 0 then "VALIDAÇÃO: OK (16 Dice, 112 F2P uma vez cada, 9 Premium fora, totais = 100%)" else "VALIDAÇÃO: " .. #problems .. " PROBLEMA(S)\n  " .. table.concat(problems, "\n  "))
+	return table.concat(lines, "\n")
 end)
 DevService.Register("Roll", "(player, n) faz n rolls agora (ignora cooldown) e resume", function(player, n)
 	local counts = {}
@@ -149,7 +228,7 @@ end)
 DevService.Register("FillInventory", "(player) enche o inventário de comuns", function(player)
 	local free = InventoryService.Capacity(player) - InventoryService.Count(player)
 	for _ = 1, free do
-		InventoryService.Add(player, "flame_rookie")
+		InventoryService.Add(player, CharacterConfig.List[1].Id) -- um Comum do Starter
 	end
 	return InventoryService.Count(player)
 end)
@@ -278,19 +357,10 @@ local CharacterAssetConfig = require(Shared.Config.CharacterAssetConfig)
 local CharacterModelFactory = require(Shared.Modules.CharacterModelFactory)
 local CharacterAssetPipeline = require(Shared.Modules.CharacterAssetPipeline)
 local VariantConfigDev = require(Shared.Config.VariantConfig)
-local IndexService = require(script.Parent.IndexService)
 
 -- O jogador é OPCIONAL nos comandos dos pilotos: na Barra de comandos basta
 --   game.ServerStorage.RollLegendsDev:Invoke("ShowCharacterVariants", "char_ichiro_base")
 -- Se o 1º argumento for um jogador, ele é usado; senão, o primeiro jogador do servidor.
-local function splitPlayer(...: any): (Player?, ...any)
-	local first = ...
-	local isPlayer = (typeof(first) == "Instance" and first:IsA("Player")) or (type(first) == "table" and first.UserId ~= nil)
-	if isPlayer then
-		return ...
-	end
-	return game:GetService("Players"):GetPlayers()[1], ...
-end
 
 -- Área livre no caminho sul (entre a Loja de Dados e a entrada), longe das bases
 local GALLERY_Z = -205

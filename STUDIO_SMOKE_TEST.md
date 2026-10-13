@@ -155,6 +155,20 @@ Abra o place gerado (SEM o Anime Pack no Workspace). Comandos na Barra de comand
 | P5 | `game.ServerStorage.RollLegendsDev:Invoke("GivePilots")` e equipar pela MOCHILA | Piloto em pé no pedestal, nome/raridade/renda/nível certos | [ ] |
 | P6 | `game.ServerStorage.RollLegendsDev:Invoke("PlayReveal", game.Players:GetPlayers()[1], "Divine", "char_goju_base")` | Hero Landing com o Goju, limpa no fim | [ ] |
 
+## 16 DICE + ÍNDICE (extra, não conta nos 32)
+
+Barra de comandos, aba **SERVER**, com o jogo em Play.
+
+| # | Ação | Esperado | OK |
+|---|---|---|---|
+| D1 | `game.ServerStorage.RollLegendsDev:Invoke("DiceProbabilityReport")` | 16 blocos (STARTER … FORBIDDEN), cada `Total: 100.000000%` e `VALIDAÇÃO: OK` no fim | [ ] |
+| D2 | `game.ServerStorage.RollLegendsDev:Invoke("DiceReport")` | 16 linhas, `TOTAL F2P nos Dice: 112 · Premium (fora dos Dice): 9`, Índice x/112 e Premium x/9 | [ ] |
+| D3 | Rolar algumas vezes no Starter | Só personagens do Starter (Comum/Incomum/Raro/Épico); "1 EM X" do Dice | [ ] |
+| D4 | `game.ServerStorage.RollLegendsDev:Invoke("SelectDice", "Forbidden")` e rolar | Só Míticos/Divinos/Secretos do Forbidden | [ ] |
+| D5 | LOJA DE DADOS | 16 Dice com rolagem; nº de personagens e chances por raridade; USAR / EM USO / BLOQUEADO | [ ] |
+| D6 | ÍNDICE | `x / 112 DESCOBERTOS` + `💎 Premium x / 9`; abas por Dice com `x/n`; aba Premium | [ ] |
+| D7 | `game.ServerStorage.RollLegendsDev:Invoke("GiveCharacter", "char_iskander_base")` | Entra no inventário; Índice: Premium sobe, /112 não muda | [ ] |
+
 ---
 
 **Passou tudo?** Então vale rodar os 108 testes do `TEST_PLAN.md`. **Falhou algo?** Mande o

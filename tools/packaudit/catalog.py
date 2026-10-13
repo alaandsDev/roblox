@@ -401,7 +401,9 @@ def catalog_md(rows):
 
 
 def dice_md(rows):
-    out = ["# DICE_PROGRESSION_PROPOSAL — PROPOSTA (não implementada)", "",
+    out = ["# DICE_PROGRESSION_PROPOSAL — IMPLEMENTADA (16 Dice; pesos/preços BALANCE_PENDING)", "",
+           "> **Implementado:** `DiceConfig` + `DiceCore` (RNG por Dice, ver RNG.md). A contagem por",
+           "> raridade abaixo é auditada pelo `DiceProbabilityReport` (`ExpectedCounts`).", "",
            "> Muitos Dice com pools pequenos (5–10, ideal 7–8). Âncoras = Dice que já existem hoje",
            "> (Normal→Starter, Lucky, Flame, Storm, Void, Celestial). O Prism continua exclusivo do Diário.",
            "> **Chances globais de raridade, Luck, pity e economia NÃO mudam nesta etapa.**", ""]
