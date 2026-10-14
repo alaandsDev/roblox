@@ -107,8 +107,10 @@ return function(A: any)
 	line("# ROLL LEGENDS — Auditoria e balanceamento da economia")
 	line()
 	line("> Gerado por `python3 tools/sim/run_economy_analysis.py` (simulador `tools/sim/EconomyModel.luau`).")
-	line("> **Somente análise e proposta. Nada desta proposta foi aplicado ao jogo.** Os números do jogo")
-	line("> (preços, custos, renda, venda, Rebirth, Prisma) são os de produção do commit 07744e5.")
+	line("> **Tabelas e números = jogo ATUAL** (lidos dos configs/módulos reais na hora de gerar): economia")
+	line("> aplicada (refund 75%, MaxLevel 30, Forbidden 400M, Rebirth 15M, offline 25%...) e **renda por Dice ×")
+	line("> Raridade** (`CharacterConfig.IncomeCurve`, ver seção 0 e `DICE_INCOME_AUDIT.md`). As seções 13 e 14 guardam")
+	line("> o diagnóstico HISTÓRICO (commit 07744e5) que motivou essas mudanças, com o status de cada item.")
 	line()
 	line(`Amostra: {A.counts.short} jogadores/perfil até 1 h · {A.counts.long} jogadores/perfil até 20 h · {A.counts.refund} por variante de refund · {A.counts.prism} por variante de Prisma · {A.counts.rebirth} por política de Rebirth.`)
 	line()
@@ -132,6 +134,56 @@ return function(A: any)
 	end
 
 	say("summary")
+
+	------------------------------------------------------------------------------------
+	-- 0. Fonte de verdade da renda (gerado de CharacterConfig.IncomeCurve; nada digitado à mão)
+	section("0. Fonte de verdade da renda: BaseIncome → Dice + Raridade")
+	do
+		local curve = A.CharacterConfig.IncomeCurve
+		local rarities = { "Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Divine", "Secret" }
+		line("A renda de uma estação é calculada nesta ordem (`Formulas:unitIncome` / `stationIncome`):")
+		line()
+		line("1. **BaseIncome → Dice + Raridade** (personagens F2P): `CharacterConfig.IncomeCurve` é a fonte ÚNICA.")
+		line(`   BaseIncome = Anchor[raridade] × {curve.Growth} ^ (ordem do Dice − pivô), pivô = 1ª ordem da raridade + {curve.Pivot} × (última − 1ª).`)
+		line("   Não existe mais renda global por raridade: o mesmo Mítico rende mais num Dice mais avançado.")
+		line("2. **VariantMultiplier → aplicado depois:** × `VariantConfig.IncomeMultiplier` (Normal 1 … Celestial 10).")
+		line(`3. **LevelMultiplier → aplicado depois:** × (1 + {A.LevelConfig.IncomePerLevel} × (Nível − 1)), nível máximo {A.LevelConfig.MaxLevel}.`)
+		line("4. Na estação, × multiplicadores globais (upgrade Renda, Rebirth, perk, VIP, amigos).")
+		line()
+		line("Derivados do BaseIncome (mesma proporção, sem arbitragem nova): custo de nível (BaseIncome × " .. A.LevelConfig.BaseCostSeconds .. " s × " .. A.LevelConfig.CostGrowth .. "^(Nível−1)), venda (BaseIncome × SellSeconds × variante + " .. math.floor(A.EconomyConfig.UpgradeRefundPercent * 100 + 0.5) .. "% do investimento), custo de fusão.")
+		line()
+		line("**Premium e Legacy continuam com renda própria:** os 9 personagens Premium (fora dos Dice F2P) e os 24 legados do protótipo")
+		line("(fora do roll e do Índice) mantêm o `BaseIncome` definido no próprio cadastro; a curva só se aplica aos 112 F2P.")
+		line()
+		line("Anchor (renda aprovada da raridade): " .. table.concat((function()
+			local parts = {}
+			for _, r in rarities do
+				table.insert(parts, `{r} {curve.Anchor[r]}`)
+			end
+			return parts
+		end)(), " · ") .. ".")
+		line()
+		line("BaseIncome Nível 1, variante Normal (\"-\" = raridade inexistente no Dice):")
+		line()
+		header({ "#", "Dice", "Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Divine", "Secret" })
+		local present = {}
+		for _, c in A.CharacterConfig.List do
+			present[c.DefaultDice .. "|" .. c.Rarity] = c.BaseIncome
+		end
+		for order, key in curve.DiceOrder do
+			local cells = { tostring(order), (key:gsub("^%l", string.upper)) }
+			for _, r in rarities do
+				local v = present[key .. "|" .. r]
+				table.insert(cells, if v then tostring(v) else "-")
+			end
+			row(cells)
+		end
+		line()
+		line("Antes desta curva o catálogo usava valores provisórios iguais em todo Dice (Lendário 60, Mítico 160, Divino 425...).")
+		line("Comparação antes/depois, tempo por Dice e testes: `DICE_INCOME_AUDIT.md`; linha de base histórica \"antes\":")
+		line("`tools/sim/dice_income_baseline.json` (não é sobrescrita). Testes: `tests/DiceIncome.spec.luau`.")
+		line()
+	end
 
 	------------------------------------------------------------------------------------
 	section("1. Tabela principal por perfil (P50; entre colchetes P10–P90)")
@@ -292,7 +344,7 @@ return function(A: any)
 		end
 		return total
 	end
-	for _, level in { 1, 2, 5, 10, 15, 20, 25, 30, 40, Lv.MaxLevel } do
+	for _, level in { 1, 2, 5, 10, 15, 20, 25, Lv.MaxLevel } do
 		row({
 			tostring(level),
 			if level < Lv.MaxLevel then money(costUnit(level)) else "máx",
@@ -303,28 +355,43 @@ return function(A: any)
 		})
 	end
 	line()
-	line("Investimento acumulado por raridade (BaseIncome provisório de lançamento):")
+	line("Investimento acumulado em níveis por Dice × Raridade (o custo acompanha o BaseIncome da curva; 1º e último Dice de cada raridade):")
 	line()
-	header({ "Raridade (BaseIncome)", "Nível 2", "Nível 10", "Nível 20", "Nível 30", "Nível 50", "Venda base" })
-	local seen = {}
-	for _, c in A.CharacterConfig.List do
-		if not seen[c.Rarity] and not c.BaseUpgradeCost then
-			seen[c.Rarity] = true
-			row({
-				`{c.Rarity} ({c.BaseIncome})`,
-				money(M.investedForLevel(c.Id, 2)),
-				money(M.investedForLevel(c.Id, 10)),
-				money(M.investedForLevel(c.Id, 20)),
-				money(M.investedForLevel(c.Id, 30)),
-				money(M.investedForLevel(c.Id, Lv.MaxLevel)),
-				money(A.M.formulas:sellValue(c.Id, "Normal")),
-			})
+	header({ "Raridade · Dice (BaseIncome)", "Nível 2", "Nível 10", "Nível 20", `Nível {Lv.MaxLevel} (máx)`, "Venda base Nv1" })
+	do
+		local curve = A.CharacterConfig.IncomeCurve
+		local pick = {}
+		for _, c in A.CharacterConfig.List do
+			local order = curve.OrderOf[c.DefaultDice]
+			local slot = pick[c.Rarity] or {}
+			if not slot.first or order < slot.firstOrder then
+				slot.first, slot.firstOrder = c, order
+			end
+			if not slot.last or order > slot.lastOrder then
+				slot.last, slot.lastOrder = c, order
+			end
+			pick[c.Rarity] = slot
+		end
+		for _, r in { "Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Divine", "Secret" } do
+			local slot = pick[r]
+			if slot then
+				for _, c in (if slot.first == slot.last then { slot.first } else { slot.first, slot.last }) do
+					row({
+						`{c.Rarity} · {c.DefaultDice} ({c.BaseIncome})`,
+						money(M.investedForLevel(c.Id, 2)),
+						money(M.investedForLevel(c.Id, 10)),
+						money(M.investedForLevel(c.Id, 20)),
+						money(M.investedForLevel(c.Id, Lv.MaxLevel)),
+						money(A.M.formulas:sellValue(c.Id, "Normal")),
+					})
+				end
+			end
 		end
 	end
 	line()
 	line("Minutos de renda (P50 do Ativo F2P no momento em que compra o Dice) para levar UMA unidade da raridade mais comum do Dice entre níveis:")
 	line()
-	header({ "Dice", "Renda/s na compra (P50)", "Raridade típica", "1→10", "10→20", "20→30", "30→50" })
+	header({ "Dice", "Renda/s na compra (P50)", "Raridade típica (BaseIncome deste Dice)", "1→10", "10→20", `20→{Lv.MaxLevel}` })
 	for i, st in STATS.Ativo do
 		local dice = st.dice
 		local pool = M.core:pool(dice.Id)
@@ -347,7 +414,7 @@ return function(A: any)
 			end
 			return dur(cost / ips)
 		end
-		row({ dice.Id, money(ips), `{bestR} ({A.CharacterConfig.ById[id].BaseIncome})`, mins(1, 10), mins(10, 20), mins(20, 30), mins(30, Lv.MaxLevel) })
+		row({ dice.Id, money(ips), `{bestR} ({A.CharacterConfig.ById[id].BaseIncome})`, mins(1, 10), mins(10, 20), mins(20, Lv.MaxLevel) })
 	end
 	line()
 

@@ -21,6 +21,7 @@ local RebirthConfig = require("../../src/shared/Config/RebirthConfig")
 local UpgradeConfig = require("../../src/shared/Config/UpgradeConfig")
 local PrismConfig = require("../../src/shared/Config/PrismConfig")
 local RollConfig = require("../../src/shared/Config/RollConfig")
+local OfflineIncomeConfig = require("../../src/shared/Config/OfflineIncomeConfig")
 
 local DICE = M.DiceOrder
 local PROFILES = { "Casual", "Ativo", "Otimizador", "Pago" }
@@ -327,6 +328,7 @@ local A = {
 	UpgradeConfig = UpgradeConfig,
 	PrismConfig = PrismConfig,
 	RollConfig = RollConfig,
+	OfflineIncomeConfig = OfflineIncomeConfig,
 	scale = scale,
 	counts = {
 		short = #select("short", "Ativo"),

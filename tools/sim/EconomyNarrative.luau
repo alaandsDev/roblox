@@ -54,6 +54,36 @@ local function refundRow(A: any, profile: string, r: number): any
 	}
 end
 
+-- "C 20 · U 20 · R 25 ..." a partir de EconomyConfig.SellSeconds (valores atuais)
+local function sellSecondsText(A: any): string
+	local parts = {}
+	for _, r in { "Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Divine", "Secret" } do
+		table.insert(parts, `{string.sub(r, 1, 1)} {A.EconomyConfig.SellSeconds[r]}`)
+	end
+	return table.concat(parts, " · ") .. " s"
+end
+
+local function sellRange(A: any): (number, number)
+	local lo, hi = math.huge, 0
+	for _, v in A.EconomyConfig.SellSeconds do
+		lo, hi = math.min(lo, v), math.max(hi, v)
+	end
+	return lo, hi
+end
+
+local function priceOf(A: any, id: string): number
+	for _, d in A.DICE do
+		if d.Id == id then
+			return d.Price
+		end
+	end
+	return 0
+end
+
+local function refundPct(A: any): string
+	return `{math.floor(A.EconomyConfig.UpgradeRefundPercent * 100 + 0.5)}%`
+end
+
 local N: { [string]: (any) -> string } = {}
 
 N.summary = function(A)
@@ -83,14 +113,15 @@ N.summary = function(A)
 	return table.concat({
 		"## Resumo executivo",
 		"",
-		`- **Ritmo de Dice regular, com um muro no fim.** O Ativo F2P compra o Forbidden em ~{d(ativoForbidden)} de jogo ativo (P50) e o Casual em ~{d(casualForbidden)}. Para o Casual o gargalo é o requisito de **rolls** (o offline paga os preços); para Ativo/Otimizador o requisito de rolls chega primeiro e o **dinheiro** atrasa cada Dice em ~10–15 min. O único muro grande é Celestial → Forbidden (75M → 750M, 10×; ~{d(forbiddenWait)} de espera por dinheiro no Ativo).`,
+		`- **Renda por Dice × Raridade (seção 0).** O BaseIncome dos 112 F2P vem de \`CharacterConfig.IncomeCurve\`: o mesmo Mítico rende {A.CharacterConfig.IncomeCurve.baseIncome("Mythic", "spirit")}/s no Spirit e {A.CharacterConfig.IncomeCurve.baseIncome("Mythic", "forbidden")}/s no Forbidden; variante e nível multiplicam depois. Não há mais renda global por raridade.`,
+		`- **Ritmo de Dice.** O Ativo F2P compra o Forbidden em ~{d(ativoForbidden)} de jogo ativo (P50) e o Casual em ~{d(casualForbidden)}. Para o Casual o gargalo é o requisito de **rolls** (o offline paga os preços); para Ativo/Otimizador o requisito de rolls chega primeiro e o **dinheiro** atrasa os últimos Dice. Maior degrau de preço: Celestial → Forbidden ({m(priceOf(A, "Celestial"))} → {m(priceOf(A, "Forbidden"))}, {string.format("%.1f", priceOf(A, "Forbidden") / math.max(1, priceOf(A, "Celestial")))}×; ~{d(forbiddenWait)} de espera por dinheiro no Ativo).`,
 		`- **Os pools são pequenos (6–8 personagens por Dice) e completam em segundos/minutos**: depois disso o jogador rola o mesmo Dice sem nada novo até liberar o próximo (ex.: ~{string.format("%.0f", deadCel)} rolls sem novidade no Celestial, P50 Ativo). A coleção não segura a sessão no meio do jogo — quem segura é a espera pelo próximo Dice.`,
 		`- **Rebirth é obrigatório:** com 20 h, quem renasce tem renda/s ~{string.format("%.0f", rebirthRatio)}× maior que quem nunca renasce (Ativo, política medium × never); ao renascer, ~90% do dinheiro acumulado some no reset.`,
-		`- **Offline é a maior fonte do Casual** ({A.pct(casualOffline)} do dinheiro em 20 h ativas): 8 h offline a 12% ≈ 1 h de renda ativa, e o Casual joga só 20 min/dia.`,
-		"- **Venda ignora o nível:** um Lendário nível 20 custou 557K em níveis e vende por 1,2K (0,2%). A troca de estação destrói o investimento — é o maior atrito de \"liberdade de troca\" da economia.",
-		"- **Duplicatas quase não pagam nada** fora dos primeiros minutos (venda = 12–40 s de renda da própria unidade).",
+		`- **Offline é a maior fonte do Casual** ({A.pct(casualOffline)} do dinheiro em 20 h ativas): 8 h offline a 12% ≈ 1 h de renda ativa (teto {A.pct(A.OfflineIncomeConfig.MaxRebirthFraction)} do próximo Rebirth), e o Casual joga só 20 min/dia.`,
+		`- **Venda reconhece o nível:** base + **{refundPct(A)}** do investimento em níveis gravado na unidade (antes: 0%, a troca de estação destruía o investimento). Nunca dá lucro (seção 9).`,
+		`- **Duplicatas:** venda = {(sellRange(A))}–{select(2, sellRange(A))} s de renda da própria unidade (base), que acompanha o Dice de origem.`,
 		"- **Prisma:** com 3 usos por recompensa e teto 21, o Casual (que mais depende dele) não perde cargas; o Ativo recebe 1 recompensa a cada 7 dias reais, o que limita o impacto.",
-		"- **Recomendação central (não aplicada):** reembolso de **75%** do investimento em níveis na venda, com investimento gravado por instância no servidor (opção B), mais ajustes de pacing do meio do jogo e um degrau entre Celestial e Forbidden (seção 14).",
+		"- **Status:** as recomendações da auditoria histórica foram aplicadas (refund 75% por instância, Forbidden 400M, rolls, MaxLevel 30, Rebirth 15M, offline 25%...) e a renda passou a ser Dice × Raridade (seção 0). Status item a item na seção 14.",
 	}, "\n")
 end
 
@@ -154,9 +185,9 @@ N.sources = function(A)
 	return table.concat({
 		"| Fonte | Valor | Frequência | Condição | Multiplicadores | F2P / Pago | Autoritativo no servidor? |",
 		"| --- | --- | --- | --- | --- | --- | --- |",
-		"| Coletor (renda das estações) | Σ BaseIncome × (1 + 0,25·(nível−1)) × variante (1/1,5/2/3/4/6/10) | por segundo, acumula no coletor (teto 1 h de renda) | personagem equipado na base | Renda global +10%/nível (25), Rebirth +25%/rebirth, perk Renda +15%/nível, VIP ×1,5, amigos +5% (até 25%) | F2P (VIP pago) | sim (IncomeService/EconomyService) |",
-		"| Dinheiro offline | 12% × renda/s × min(offline, 8 h) | ao voltar (≥ 60 s fora) | relógio do servidor | teto = 50% do custo do próximo Rebirth | F2P | sim (OfflineCore, os.time) |",
-		"| Venda de personagem | BaseIncome × SellSeconds (C/U 12 · R 15 · E 18 · L 20 · M 25 · D 30 · S 40 s) × variante | por venda / auto-sell | não travado/favorito/equipado/em troca | **nível ignorado** | F2P | sim (SellService, agora via SaleCore) |",
+		"| Coletor (renda das estações) | Σ BaseIncome(**Dice × Raridade**, seção 0) × variante (1/1,5/2/3/4/6/10) × (1 + 0,25·(nível−1)) | por segundo, acumula no coletor (teto 1 h de renda) | personagem equipado na base | Renda global +10%/nível (25), Rebirth +25%/rebirth, perk Renda +15%/nível, VIP ×1,5, amigos +5% (até 25%) | F2P (VIP pago) | sim (IncomeService/EconomyService) |",
+		`| Dinheiro offline | 12% × renda/s × min(offline, 8 h) | ao voltar (≥ 60 s fora) | relógio do servidor | teto = {A.pct(A.OfflineIncomeConfig.MaxRebirthFraction)} do custo do próximo Rebirth | F2P | sim (OfflineCore, os.time) |`,
+		`| Venda de personagem | BaseIncome(Dice × Raridade) × SellSeconds ({sellSecondsText(A)}) × variante + {refundPct(A)} do investimento em níveis | por venda / em massa / auto-sell | não travado/favorito/equipado/em troca (em massa: nem no time da Torre) | nível reembolsado em {refundPct(A)} | F2P | sim (SellService via SaleCore/BulkSaleCore) |`,
 		"| Torres | max(poder inimigo × 1, renda/s × 8) | 1ª vitória de cada andar (120 andares) | time de 5 vence a batalha simulada | poder: Rebirth +10%/rb, perk Poder | F2P | sim (TowerService/BattleCore) |",
 		"| Missões diárias | dinheiro = max(1,5K–3K, renda × 240–400 s) | 3/dia (das 10 do pool, 5 dão dinheiro) | completar a meta | renda/s | F2P | sim (MissionService) |",
 		"| Recompensa diária | D1 max(1K, 120 s) · D4 max(10K, 600 s); D2/D5 gemas; D3/D6 sorte; D7 Prisma | 1/dia UTC, ciclo 7 | não pular dia | renda/s | F2P | sim (DailyService) |",
@@ -184,14 +215,14 @@ N.sinks = function(A)
 	return table.concat({
 		"| Sink | Custo inicial | Curva | Acumulado | Limite | Dependências / reset |",
 		"| --- | --- | --- | --- | --- | --- |",
-		`| Dice (16) | 2,5K | fixo por posição (até 750M) | {m(diceTotal)} todos | 16 | rolls exigidos + Dice anterior; **não reseta** no Rebirth |`,
-		`| Níveis de estação | BaseIncome × 60 | × 1,2 por nível | BaseIncome × 2,27M até o 50 (ver seção 6) | nível 50 | personagem equipado; **perdido na venda/fusão** |`,
+		`| Dice (16) | 2,5K | fixo por posição (até {m(priceOf(A, "Forbidden"))}) | {m(diceTotal)} todos | 16 | rolls exigidos + Dice anterior; **não reseta** no Rebirth |`,
+		`| Níveis de estação | BaseIncome(Dice × Raridade) × 60 | × 1,2 por nível | ver seção 6 | nível {A.LevelConfig.MaxLevel} | personagem equipado; {refundPct(A)} volta na venda; soma na fusão |`,
 		`| Upgrade Luck | 2K | × 1,9 | {m(upgradeTotal(A, "Luck"))} (20 níveis) | 20 | **reseta** no Rebirth |`,
 		`| Upgrade Renda | 1,5K | × 1,85 | {m(upgradeTotal(A, "Income"))} (25 níveis) | 25 | **reseta** no Rebirth |`,
 		`| Upgrade Inventário | 1K | × 1,7 | {m(upgradeTotal(A, "Inventory"))} (20 níveis) | 20 | mantido |`,
 		"| Velocidade de Roll | — | desligado (cadência fixa por config) | — | — | — |",
-		"| Fusão | BaseIncome × 600 × ordem da variante + 2–3 cópias | por degrau | Normal→Celestial = 3·3·3·3·2·2·2 = 648 cópias | Celestial | resultado mantém o MAIOR nível; o investimento das outras cópias é perdido |",
-		`| Rebirth | 10M | × 2,2 | {m(rebirthTo10)} até o 10º | 36 | zera dinheiro, coletor, Luck/Renda; mantém Dice, personagens, Índice, torres, gemas |`,
+		"| Fusão | BaseIncome(Dice × Raridade) × 600 × ordem da variante + 2–3 cópias | por degrau | Normal→Celestial = 3·3·3·3·2·2·2 = 648 cópias | Celestial | resultado mantém o MAIOR nível e SOMA o investimento das cópias |",
+		`| Rebirth | {m(A.M.formulas:rebirthCost(0))} | × 2,2 | {m(rebirthTo10)} até o 10º | 36 | zera dinheiro, coletor, Luck/Renda; mantém Dice, personagens, Índice, torres, gemas |`,
 		"| Gemas | Jackpot 150 · sorte 60 · dinheiro 40 | — | — | — | — |",
 		"",
 		"Destino do dinheiro (agregado; \"Rebirth\" = saldo zerado ao renascer):",
@@ -200,15 +231,15 @@ end
 
 N.curve = function(A)
 	return table.concat({
-		"Fórmula (CharacterLevelConfig): custo L→L+1 = floor(BaseIncome × 60 × 1,2^(L−1)); renda = BaseIncome × (1 + 0,25·(L−1)). O **payback de um nível não depende da raridade**: 240 s × 1,2^(L−1) ÷ (variante × multiplicadores do jogador). Sem multiplicadores, o nível 10 se paga em ~21 min, o 20 em ~2 h, o 30 em ~13 h e o 40 em ~82 h — o nível 50 é inalcançável na prática (acumulado = 2,27 milhões × BaseIncome). Com os multiplicadores de Rebirth/Renda (×10–15 no fim), o \"muro\" efetivo fica entre os níveis 25 e 30, que é onde os perfis param (Upgrade médio na tabela principal).",
+		`Fórmula (CharacterLevelConfig): custo L→L+1 = floor(BaseIncome × 60 × 1,2^(L−1)); renda = BaseIncome × (1 + 0,25·(L−1)), com BaseIncome = Dice × Raridade (seção 0). O **payback de um nível não depende da raridade nem do Dice** (o custo é proporcional ao BaseIncome): 240 s × 1,2^(L−1) ÷ (variante × multiplicadores do jogador). Sem multiplicadores, o nível 10 se paga em ~21 min, o 20 em ~2 h e o {A.LevelConfig.MaxLevel} (máximo) em ~13 h. Com os multiplicadores de Rebirth/Renda (×10–15 no fim), os perfis param perto do máximo (Upgrade médio na tabela principal).`,
 		"",
-		"Venda base = 12–40 × BaseIncome. **No nível 10 o jogador já pôs 104× o valor de venda em níveis (Comum) e no nível 20, 773×** — é isso que a troca de estação joga fora hoje.",
+		`Venda base = {(sellRange(A))}–{select(2, sellRange(A))} × BaseIncome; o investimento em níveis volta em {refundPct(A)} na venda (antes da economia aplicada voltava 0%).`,
 	}, "\n")
 end
 
 N.duplicates = function(A)
 	return table.concat({
-		"Regra atual: cada roll vira uma unidade no inventário (capacidade 100 + Mochila/upgrade); duplicata = mais uma cópia (serve para Fusão, troca ou venda). Venda = BaseIncome × SellSeconds × variante, ou seja **12–40 segundos da renda que a própria unidade daria equipada**. Auto-sell existe por raridade (desligado por padrão; Secreto protegido).",
+		`Regra atual: cada roll vira uma unidade no inventário (capacidade 100 + Mochila/upgrade); duplicata = mais uma cópia (serve para Fusão, troca ou venda). Venda = BaseIncome(Dice × Raridade) × SellSeconds × variante, ou seja **{(sellRange(A))}–{select(2, sellRange(A))} segundos da renda que a própria unidade daria equipada**. Venda em massa na Mochila (SELECIONAR DUPLICATAS) e auto-sell por raridade (desligado por padrão; Secreto protegido).`,
 		"",
 		"Valor vendido em duplicatas de cada Dice em 20 h (P50) e quanto isso paga do próximo Dice:",
 	}, "\n")
@@ -218,7 +249,7 @@ N.refund = function(A)
 	return table.concat({
 		"### Desenho",
 		"",
-		"`SaleValue = BaseSaleValue + RefundPercent × EligibleUpgradeInvestment` — implementado como cotação pura em `src/shared/Modules/SaleCore.luau` e usado pela venda real com **`EconomyConfig.UpgradeRefundPercent = 0`** (venda idêntica à de hoje; teste prova `Total == sellValue` para todos os personagens/variantes/níveis).",
+		`\`SaleValue = BaseSaleValue + RefundPercent × EligibleUpgradeInvestment\` — cotação pura em \`src/shared/Modules/SaleCore.luau\`, usada pela venda real (individual e em massa) com **\`EconomyConfig.UpgradeRefundPercent = {A.EconomyConfig.UpgradeRefundPercent}\`** (aplicado). As tabelas desta seção comparam percentuais no simulador.`,
 		"",
 		"**Investimento elegível — recálculo (A) × gravado por instância (B):**",
 		"",
@@ -250,7 +281,7 @@ N.refundEnd = function(A)
 		"",
 		"| Refund | Liberdade de troca | Sink de dinheiro | Progressão | Exploit | Patrimônio |",
 		"| --- | --- | --- | --- | --- | --- |",
-		"| 0% (hoje) | baixa: trocar a estação joga fora 100% dos níveis | máximo (todo nível é sink definitivo) | base | impossível | só saldo + venda base |",
+		"| 0% (antes) | baixa: trocar a estação joga fora 100% dos níveis | máximo (todo nível é sink definitivo) | base | impossível | só saldo + venda base |",
 		"| 50% | média | metade do gasto em níveis volta ao trocar | ≈ base | impossível | + metade do investido |",
 		"| 60% | média | 40% fica no sistema | ≈ base | impossível | — |",
 		"| 70% | boa | 30% fica | ≈ base | impossível | — |",
@@ -260,7 +291,7 @@ N.refundEnd = function(A)
 		"",
 		`Números (P50, 10 h ativas): Ativo perde {A.money(a0.lost)} em níveis ao trocar estações com 0% e {A.money(a75.lost)} com 75% (recebe {A.money(a75.refunded)} de volta); Otimizador {A.money(o0.lost)} → {A.money(o75.lost)}. Isso é pequeno perto do ganho total ({A.money(a0.earned)} Ativo): **o refund não acelera a progressão de forma relevante** — o ganho é de liberdade (trocar para o personagem novo sem punição) e de percepção de valor. Diferenças de \"Ganho total\" entre as linhas são ruído de amostra (mesmas sementes, mas o caminho diverge cedo).`,
 		"",
-		"**Recomendação: 75%** com investimento gravado por instância (B). Abaixo de 60% a troca ainda dói; 100% elimina o sink e transforma nível em poupança. 75% mantém 1/4 de cada troca como sink e deixa a decisão \"subir nível agora × esperar o personagem melhor\" com peso, sem nunca permitir lucro.",
+		"**Recomendação: 75%** (APLICADA) com investimento gravado por instância (B). Abaixo de 60% a troca ainda dói; 100% elimina o sink e transforma nível em poupança. 75% mantém 1/4 de cada troca como sink e deixa a decisão \"subir nível agora × esperar o personagem melhor\" com peso, sem nunca permitir lucro.",
 	}, "\n")
 end
 
@@ -284,7 +315,7 @@ end
 
 N.rebirthEnd = function(A)
 	return table.concat({
-		"Leitura: (1) o primeiro Rebirth (10M) chega **antes** do Colossus (12,5M) — como o Rebirth não tira Dice, renascer cedo é quase grátis e o jogador médio renasce enquanto ainda compra Dice; (2) em 20 h todas as políticas convergem para ~10–12 rebirths, porque o custo × 2,2 cresce mais devagar que a renda multiplicada (+25%/rebirth, +1 slot); (3) **never** ganha ~50× menos dinheiro em 20 h — o Rebirth é obrigatório, não opcional; (4) para Ativo/Otimizador, medium ganha um pouco mais que early (renascer cedo zera Luck/Renda compradas várias vezes); para o Casual, early ganha mais (o teto do offline sobe com o custo do próximo Rebirth).",
+		"Leitura (diagnóstico histórico, com Rebirth 1 = 10M; hoje é 15M): (1) o primeiro Rebirth (10M) chegava **antes** do Colossus (12,5M) — como o Rebirth não tira Dice, renascer cedo é quase grátis e o jogador médio renasce enquanto ainda compra Dice; (2) em 20 h todas as políticas convergem para ~10–12 rebirths, porque o custo × 2,2 cresce mais devagar que a renda multiplicada (+25%/rebirth, +1 slot); (3) **never** ganha ~50× menos dinheiro em 20 h — o Rebirth é obrigatório, não opcional; (4) para Ativo/Otimizador, medium ganha um pouco mais que early (renascer cedo zera Luck/Renda compradas várias vezes); para o Casual, early ganha mais (o teto do offline sobe com o custo do próximo Rebirth).",
 	}, "\n")
 end
 
@@ -302,7 +333,9 @@ end
 
 N.problems = function(A)
 	return table.concat({
-		"## 13. Problemas encontrados",
+		"## 13. Problemas encontrados (diagnóstico histórico do commit 07744e5, com status)",
+		"",
+		"Itens 1, 2, 4, 5, 6, 7, 8, 9, 10 e 11 foram corrigidos pela economia aplicada (refund 75%, fusão soma investimento, rolls por Dice, Forbidden 400M, Rebirth 15M, offline 25%, venda maior, loja de gemas, Índice 14/28/56/112, MaxLevel 30). Item novo 13: renda global por raridade (corrigido: Dice × Raridade, seção 0).",
 		"",
 		"1. **Venda ignora o nível** — o investimento em níveis (até 773× o valor de venda no nível 20) é destruído na troca/venda. Pior atrito de liberdade de troca.",
 		"2. **Fusão destrói o investimento** das cópias consumidas (o resultado fica só com o maior nível).",
@@ -316,15 +349,18 @@ N.problems = function(A)
 		"10. **Conquista `index` desatualizada** ({6,12,18,24} para 112 personagens).",
 		"11. **Nível 50 inalcançável** (payback de 82 h no nível 40 sem multiplicadores); a curva serve até ~25–30.",
 		"12. Ferramentas antigas (`tools/sim/EconomySim.luau`, `Odds.luau`) usam o RollCore global com pity 50/800 — marcadas como LEGACY; este relatório usa só o simulador novo por Dice.",
+		"13. **Renda global por raridade** (achado depois, no Studio): todo Mítico rendia $160/s, todo Lendário $60/s, todo Divino $425/s em qualquer Dice — o Dice mais avançado não tinha valor econômico. **Corrigido:** BaseIncome = Dice × Raridade (`CharacterConfig.IncomeCurve`, seção 0; `DICE_INCOME_AUDIT.md`).",
 	}, "\n")
 end
 
 N.recommendations = function(A)
 	local m = A.money
 	return table.concat({
-		"## 14. Proposta de economia (NÃO aplicada)",
+		"## 14. Proposta de economia (histórica) e STATUS",
 		"",
-		"| Item | ATUAL | PROPOSTO | JUSTIFICATIVA | EFEITO ESPERADO |",
+		"Proposta feita sobre o commit 07744e5. Coluna ATUAL = valor daquela época. **Status: todos os itens abaixo foram APLICADOS** (fase de economia, 473a292) — exceto a linha \"Renda\", substituída depois pela curva Dice × Raridade (6b4528e).",
+		"",
+		"| Item | ATUAL (07744e5) | PROPOSTO | JUSTIFICATIVA | EFEITO ESPERADO |",
 		"| --- | --- | --- | --- | --- |",
 		"| Reembolso na venda | 0% | **75%** do investimento em níveis, gravado por instância (B) | troca de estação sem destruir o investimento; 25% continua sink; prova de não-lucro | liberdade de troca; impacto de progressão ≈ 0 |",
 		"| Fusão | resultado = maior nível | resultado soma `UpgradeInvestment` das cópias (refund futuro) — nível continua o maior | fusão deixa de punir quem upou a cópia errada | mais fusões; nenhum dinheiro novo |",
@@ -332,7 +368,7 @@ N.recommendations = function(A)
 		"| Requisito de rolls Shinobi→Blade | 300 / 425 / 550 | 300 / 450 / 650 | no Ativo a missão dos 10 min paga Shinobi+Flame+Blade de uma vez (92% nunca rolam o Shinobi) | cada Dice rolado ≥ 2 min; Índice completo sem voltar |",
 		"| Preços de Dice (exceto Forbidden) | 2,5K…75M | **manter** | espera de 10–15 min por dinheiro por Dice (Ativo) é um ritmo saudável | — |",
 		"| Requisito de rolls Celestial | 8.000 | manter | — | — |",
-		"| Renda | BaseIncome provisório por raridade | manter | progressão em horas está no alvo | — |",
+		"| Renda | BaseIncome provisório por raridade (L 60 · M 160 · D 425 em todo Dice) | **SUBSTITUÍDO:** Dice × Raridade (`CharacterConfig.IncomeCurve`, 1,11 por Dice, pivô 0,10) | o Dice mais avançado precisa ter valor econômico | ver seção 0 e `DICE_INCOME_AUDIT.md` |",
 		"| Duplicatas | 12–40 s de renda | C/U 20 · R 25 · E 30 · L 35 · M 45 · D 60 · S 90 s | dar valor ao \"rolar sem nada novo\" do meio do jogo | duplicatas ≈ 3–5% do dinheiro em 5 h (hoje ~1%) |",
 		"| Custo de nível | 60 s × 1,2^(L−1) | manter a curva; **MaxLevel 50 → 30** (ou crescimento 1,2 → 1,15 depois do 20) | o 31–50 nunca é comprado | teto alcançável e visível |",
 		"| Rebirth | 10M × 2,2^n | 1º Rebirth 10M → **15M** (crescimento igual) | primeiro Rebirth depois do Colossus, não antes | 1º Rebirth ~15–20 min mais tarde para o Ativo |",
@@ -341,7 +377,7 @@ N.recommendations = function(A)
 		"| Conquista `index` | 6/12/18/24 | 14/28/56/112 (12,5/25/50/100%) | roster 112 | conquista volta a funcionar como meta |",
 		"| Loja de gemas | Pacote 40 gemas = 900 s | 60 gemas = 900 s, ou Jackpot dinheiro 600 → 1.200 s | equilibrar gema → dinheiro | Jackpot volta a ser opção |",
 		"",
-		"Nada acima foi aplicado: preços de Dice, custos de upgrade, renda, valores de duplicata, custos de Rebirth, reembolso de produção (0%), cargas do Prisma e o restante da economia continuam iguais ao commit 07744e5.",
+		"Aplicado: as tabelas das seções 1–12 deste documento já são do jogo atual (economia aplicada + renda Dice × Raridade).",
 	}, "\n")
 end
 
@@ -349,6 +385,7 @@ N.method = function(A)
 	return table.concat({
 		"## Método e limites",
 		"",
+		`- Renda: BaseIncome de cada personagem lido de \`CharacterConfig\` (F2P = \`IncomeCurve\` Dice × Raridade; Premium/Legacy = renda própria). A linha de base histórica da renda por raridade fica em \`tools/sim/dice_income_baseline.json\` (não é sobrescrita).`,
 		`- Simulador: \`tools/sim/EconomyModel.luau\` (puro). Roll **idêntico** ao \`DiceCore.roll\` (provado roll a roll em \`tests/EconomyModel.spec.luau\`): pesos de produção, Luck real (Dice × upgrade × boosts × Rebirth × gamepass, softcap {A.RollConfig.LuckSoftCap}), pity Lendário 50 / Mítico 250, Dice selecionado = o melhor comprado. Renda, níveis, venda (SaleCore), upgrades, Rebirth, torres (BattleCore), Jackpot, Diário, Missões, Offline, Fusão e Prisma (DiceCore:prismPick) vêm dos módulos e configs reais.`,
 		`- Monte Carlo: {A.counts.short} jogadores por perfil até 1 h (retenção) e {A.counts.long} por perfil até 20 h. Menos de 10.000 no horizonte de 20 h porque cada jogador de 20 h custa 0,2–0,7 s (≈ 25 min para tudo em 4 núcleos). Convergência medida: diferença entre as duas metades da amostra (sementes pares × ímpares) no ganho total de 20 h — {A.halves()}. Sensibilidades (refund, Prisma, Rebirth) com {A.counts.refund} jogadores por variante e as MESMAS sementes entre variantes.`,
 		"- Tempo = jogo ATIVO. O offline é aplicado entre as sessões do perfil (relógio real).",
