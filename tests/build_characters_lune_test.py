@@ -11,12 +11,16 @@ gravada como SharedString em TODAS as classes (o Lune 0.10.4 recusa), e confere:
   3. propriedade desconhecida recusada (Part.Locked) -> aborta com diagnóstico.
 """
 import hashlib
+import os
 import struct
 import subprocess
 import sys
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
+# Subprocessos Python escrevem em UTF-8 mesmo com a saída capturada: no Windows o padrão em pipe é
+# cp1252 e "lançamento"/"·"/"ATENÇÃO" chegavam corrompidos (as checagens de texto falhavam).
+UTF8_ENV = {**os.environ, "PYTHONIOENCODING": "utf-8", "PYTHONUTF8": "1"}
 sys.path.insert(0, str(RAIZ / "tools" / "packaudit"))
 import rbxm_reader as R  # noqa: E402
 
@@ -69,7 +73,7 @@ def rodar(pack: Path, nome: str):
     saida.unlink(missing_ok=True)
     r = subprocess.run(
         [sys.executable, "tools/build_characters.py", str(pack), "--out", str(saida), "--report", str(TMP / f"{nome}.md"), "--json", str(TMP / f"{nome}.json"), "--clothing", str(TMP / f"{nome}_clothing.md")],
-        cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=600,
+        cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=600, env=UTF8_ENV,
     )
     return r, saida
 

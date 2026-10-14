@@ -22,6 +22,7 @@ Os binários (versões fixas) são baixados para tools/bin na primeira vez.
 """
 
 import io
+import os
 import platform
 import re
 import subprocess
@@ -33,6 +34,17 @@ from pathlib import Path
 LUAU_VERSION = "0.700"
 LUNE_VERSION = "0.10.4"
 RAIZ = Path(__file__).resolve().parent.parent
+
+# Saída sempre em UTF-8, para este processo e para todos os testes/ferramentas filhos. No Windows,
+# com a saída em pipe (ex.: "| Tee-Object") o padrão é cp1252: imprimir ✓/✗ quebrava e textos como
+# "lançamento" chegavam corrompidos aos testes que leem a saída das ferramentas.
+os.environ.setdefault("PYTHONIOENCODING", "utf-8")
+os.environ.setdefault("PYTHONUTF8", "1")
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass
 
 
 def baixar_luau() -> Path:

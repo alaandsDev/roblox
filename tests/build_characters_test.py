@@ -5,11 +5,15 @@ do pack SINTÉTICO, e força a remoção de uma propriedade (como o Lune faz com
 pack real) para exercitar o caminho de recuperação. Saída em build/ (nunca em assets/).
 """
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
+# Subprocessos Python escrevem em UTF-8 mesmo com a saída capturada: no Windows o padrão em pipe é
+# cp1252 e "lançamento"/"·"/"ATENÇÃO" chegavam corrompidos (as checagens de texto falhavam).
+UTF8_ENV = {**os.environ, "PYTHONIOENCODING": "utf-8", "PYTHONUTF8": "1"}
 
 
 def main() -> int:
@@ -32,7 +36,7 @@ def main() -> int:
         arquivo.unlink(missing_ok=True)
     r = subprocess.run(
         [sys.executable, "tools/build_characters.py", str(pack), "--out", str(saida), "--report", str(md), "--json", str(js), "--clothing", str(roupas), "--strip", "Part.Anchored"],
-        cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", errors="replace",
+        cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", errors="replace", env=UTF8_ENV,
     )
     print("    " + "\n    ".join(l for l in r.stdout.splitlines() if "gerados em" in l or l.startswith(("Sanitizer:", "Roupas (", "Otimização:"))))
     check(r.returncode == 0, f"ferramenta terminou sem falhas (código {r.returncode})")
@@ -68,7 +72,7 @@ def main() -> int:
         saida2, md2 = RAIZ / "build/tool_missing.rbxm", RAIZ / "build/tool_missing.md"
         r2 = subprocess.run(
             [sys.executable, "tools/build_characters.py", str(faltante), "--out", str(saida2), "--report", str(md2), "--json", str(RAIZ / "build/tool_missing.json"), "--clothing", str(RAIZ / "build/tool_missing_clothing.md")],
-            cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", errors="replace",
+            cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", errors="replace", env=UTF8_ENV,
         )
         texto2 = md2.read_text(encoding="utf-8") if md2.exists() else ""
         faltam = [l for l in texto2.splitlines() if l.startswith("| `char_") and "MISSING_SOURCE" in l]

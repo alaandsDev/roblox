@@ -6,6 +6,7 @@ do pack SINTÉTICO) numa pasta de assets temporária e confere no .rbxlx gerado:
   - sem Characters.rbxm, CharacterAssets não aparece (o jogo usa o placeholder);
   - o DevService (interface ServerStorage.RollLegendsDev) está no build e no Bootstrap.
 """
+import os
 import re
 import shutil
 import subprocess
@@ -14,6 +15,9 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
+# Subprocessos Python escrevem em UTF-8 mesmo com a saída capturada: no Windows o padrão em pipe é
+# cp1252 e "lançamento"/"·"/"ATENÇÃO" chegavam corrompidos (as checagens de texto falhavam).
+UTF8_ENV = {**os.environ, "PYTHONIOENCODING": "utf-8", "PYTHONUTF8": "1"}
 PILOTOS = sorted(set(re.findall(r"^\t(char_[a-z0-9_]+) = \{", (RAIZ / "src/shared/Config/CharacterAssetConfig.luau").read_text(encoding="utf-8"), re.M)))
 
 
@@ -41,7 +45,7 @@ def achar(raiz, caminho: list[str]):
 
 
 def build(pasta: Path, saida: Path):
-    r = subprocess.run([sys.executable, "tools/build_place.py", "--assets", str(pasta), "--out", str(saida)], cwd=RAIZ, capture_output=True, text=True)
+    r = subprocess.run([sys.executable, "tools/build_place.py", "--assets", str(pasta), "--out", str(saida)], cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", errors="replace", env=UTF8_ENV)
     return r, (ET.parse(saida).getroot() if saida.exists() else None)
 
 

@@ -12,12 +12,16 @@ classes, propriedade desconhecida (cai no leitor tolerante), modo só-estático 
 """
 import hashlib
 import json
+import os
 import struct
 import subprocess
 import sys
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
+# Subprocessos Python escrevem em UTF-8 mesmo com a saída capturada: no Windows o padrão em pipe é
+# cp1252 e "lançamento"/"·"/"ATENÇÃO" chegavam corrompidos (as checagens de texto falhavam).
+UTF8_ENV = {**os.environ, "PYTHONIOENCODING": "utf-8", "PYTHONUTF8": "1"}
 sys.path.insert(0, str(RAIZ / "tools"))
 sys.path.insert(0, str(RAIZ / "tools" / "packaudit"))
 import rbxm_reader as R  # noqa: E402
@@ -77,7 +81,7 @@ def auditar(pack: Path, nome: str, *extra: str):
     js.unlink(missing_ok=True)
     r = subprocess.run(
         [sys.executable, "tools/audit_auras_pack.py", str(pack), "--md", str(md), "--json", str(js), *extra],
-        cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300,
+        cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300, env=UTF8_ENV,
     )
     rep = json.loads(js.read_text(encoding="utf-8")) if js.exists() else None
     texto = md.read_text(encoding="utf-8") if md.exists() else ""
@@ -97,7 +101,7 @@ def main() -> int:
     TMP.mkdir(parents=True, exist_ok=True)
     base = TMP / "pack.rbxm"
     lune = baixar_lune()
-    g = subprocess.run([str(lune), "run", "tests/roblox/SyntheticAurasPack.luau", str(base)], cwd=RAIZ, capture_output=True, text=True)
+    g = subprocess.run([str(lune), "run", "tests/roblox/SyntheticAurasPack.luau", str(base)], cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", errors="replace")
     if g.returncode != 0 or not base.exists():
         print("  ✗ não gerou o pack sintético:", g.stdout, g.stderr)
         return 1
@@ -109,7 +113,7 @@ def main() -> int:
     probe = TMP / "probe.luau"
     probe.write_text('local r = require("@lune/roblox"); local fs = require("@lune/fs"); local p = require("@lune/process")\n'
                      'local ok, e = pcall(r.deserializeModel, fs.readFile(p.args[1])); print(ok, e)\n')
-    pr = subprocess.run([str(lune), "run", str(probe), str(pack)], cwd=RAIZ, capture_output=True, text=True)
+    pr = subprocess.run([str(lune), "run", str(probe), str(pack)], cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", errors="replace")
     check("Property Animator.Tags should be SharedString, but it was Tags" in pr.stdout + pr.stderr,
           "reproduz o erro real: 'Type mismatch: Property Animator.Tags should be SharedString, but it was Tags'")
 
