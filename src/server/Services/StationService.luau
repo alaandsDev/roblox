@@ -9,7 +9,7 @@
 
 	Renda/s (produção) e custo de upgrade ficam SEPARADOS visualmente (billboard x pad).
 	Desempenho: nada de loop por personagem. Um loop central:
-	  - a cada DISPLAY_INTERVAL atualiza o "$ produzido" das placas (só se o texto mudou);
+	  - a placa da frente mostra o preço do próximo nível + "Nível X > Y" (só muda com nível/renda);
 	  - a cada PAD_INTERVAL checa quem está pisando em algum pad.
 	Billboard/placa só mudam quando nível, renda ou equipamento mudam. MaxDistance limita
 	o custo de UI a distância; o cliente (LodController) desliga partículas de longe.
@@ -44,7 +44,6 @@ local log = Logger.new("Station")
 
 local StationService = {}
 
-local DISPLAY_INTERVAL = 3
 local BILLBOARD_DISTANCE = 90
 local PLATE_DISTANCE = 55
 local PAD_COLOR = Color3.fromRGB(60, 230, 90)
@@ -57,7 +56,7 @@ type Station = {
 	model: Model,
 	pad: BasePart,
 	labels: { [string]: TextLabel },
-	produced: number,
+
 	texts: { [string]: string },
 }
 
@@ -172,18 +171,27 @@ local function build(player: Player, base: Model, slotId: number, uid: string): 
 		Income = textLabel(gui, "Income", 0.74, 0.26, Color3.fromRGB(110, 255, 110), 2.5),
 	}
 
-	-- Placa na frente do pedestal: produzido + nível atual > próximo
-	local front = point.CFrame * CFrame.new(0, -BaseConfig.PedestalHeight / 2 + 0.2, -(BaseConfig.PedestalSize / 2 + 0.15))
-	local plate = decorPart("Plate", Vector3.new(BaseConfig.PedestalSize * 0.7, 1.8, 0.25), front * CFrame.Angles(math.rad(-12), 0, 0), Color3.fromRGB(35, 40, 70), model)
-	local surface = Instance.new("SurfaceGui")
+	--[[
+		Placa na FRENTE do pedestal, no estilo dos anime simulators:
+		    $1.25K            <- preço do próximo nível (no máximo: renda/s)
+		    Nível 26 > 27     <- (no máximo: "Nível 30 · MÁX")
+		Placa blocky (moldura na cor da raridade) presa na borda da frente, na altura do topo do
+		pedestal (nunca dentro da plataforma nem atrás do personagem). O texto é um BillboardGui
+		em tamanho de STUDS: legível de perto e de longe sem virar painel gigante; sempre de frente
+		para a câmera (mobile em qualquer ângulo). Some além de PLATE_DISTANCE.
+	]]
+	local front = point.CFrame * CFrame.new(0, -0.55, -(BaseConfig.PedestalSize / 2 + 0.35))
+	local plate = decorPart("Plate", Vector3.new(BaseConfig.PedestalSize * 0.78, 1.5, 0.35), front, Color3.fromRGB(30, 34, 62), model)
+	decorPart("PlateFrame", Vector3.new(BaseConfig.PedestalSize * 0.78 + 0.3, 1.8, 0.25), front * CFrame.new(0, 0, 0.08), rgb(rarity.Color), model)
+	local surface = Instance.new("BillboardGui")
 	surface.Name = "PlateGui"
-	surface.Face = Enum.NormalId.Front
-	surface.CanvasSize = Vector2.new(280, 90)
+	surface.Size = UDim2.new(5.2, 0, 2.3, 0)
+	surface.StudsOffsetWorldSpace = Vector3.new(0, 0.35, 0)
 	surface.LightInfluence = 0
 	surface.MaxDistance = PLATE_DISTANCE
 	surface.Parent = plate
-	labels.Produced = textLabel(surface, "Produced", 0.02, 0.5, Color3.fromRGB(255, 225, 90))
-	labels.LevelNext = textLabel(surface, "LevelNext", 0.52, 0.46, Color3.new(1, 1, 1))
+	labels.PlateValue = textLabel(surface, "PlateValue", 0, 0.56, Color3.fromRGB(255, 220, 70), 3)
+	labels.LevelNext = textLabel(surface, "LevelNext", 0.56, 0.44, Color3.new(1, 1, 1), 2.5)
 
 	-- Pad de upgrade no chão, à frente
 	local padCf = point.CFrame * CFrame.new(0, -BaseConfig.PedestalHeight + 0.18, -(BaseConfig.PedestalSize / 2 + 2.6))
@@ -228,7 +236,7 @@ local function build(player: Player, base: Model, slotId: number, uid: string): 
 		model = model,
 		pad = pad,
 		labels = labels,
-		produced = 0,
+
 		texts = {},
 	} :: any)
 end
@@ -248,14 +256,15 @@ local function refresh(player: Player, station: Station)
 	setText(station, "Rarity", Localization.t("rarity." .. character.Rarity))
 	setText(station, "Level", Localization.t("station.level", { level = level }))
 	setText(station, "Income", NumberFormatter.money(Formulas:stationIncome(data, item)) .. "/s")
-	setText(station, "Produced", NumberFormatter.money(station.produced))
 	local cost, levels = Formulas:characterUpgradeCost(item.Id, level, 1)
 	if levels > 0 then
+		setText(station, "PlateValue", NumberFormatter.money(cost))
 		setText(station, "LevelNext", Localization.t("station.level_next", { level = level, next = level + 1 }))
 		setText(station, "Cost", NumberFormatter.money(cost))
 		station.pad.Color = PAD_COLOR
 	else
-		setText(station, "LevelNext", Localization.t("station.level_max"))
+		setText(station, "PlateValue", NumberFormatter.money(Formulas:stationIncome(data, item)) .. "/s")
+		setText(station, "LevelNext", Localization.t("station.level_max_plate", { level = level }))
 		setText(station, "Cost", Localization.t("station.max"))
 		station.pad.Color = PAD_MAX_COLOR
 	end
@@ -476,24 +485,7 @@ function StationService.Start()
 		task.spawn(StationService.Sync, player)
 	end
 
-	-- Loop central: "$ produzido" das placas
-	task.spawn(function()
-		while true do
-			local dt = task.wait(DISPLAY_INTERVAL)
-			for player, list in stations do
-				local data = PlayerDataService.GetData(player)
-				if data then
-					for _, station in list do
-						local item = data.Inventory[station.uid]
-						if item then
-							station.produced += Formulas:stationIncome(data, item) * dt
-							setText(station, "Produced", NumberFormatter.money(math.floor(station.produced)))
-						end
-					end
-				end
-			end
-		end
-	end)
+	-- (a placa só muda com nível/renda/equipamento: nenhum texto é replicado a cada segundo)
 	-- Loop central: pisar no pad (segurar em cima = vários níveis, no ritmo do config)
 	task.spawn(function()
 		while true do

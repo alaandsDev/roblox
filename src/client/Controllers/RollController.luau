@@ -22,6 +22,7 @@ local Net = require(Shared.Modules.Net)
 
 local UI = script.Parent.Parent.UI
 local UIKit = require(UI.UIKit)
+local CharacterPreview = require(UI.CharacterPreview)
 local Theme = require(UI.UITheme)
 local DataController = require(script.Parent.DataController)
 local HudController = require(script.Parent.HudController)
@@ -55,7 +56,10 @@ local function refreshToggles()
 	setToggle(hideButton, settings.HideRollAnimation == true, "roll.hide")
 end
 
+-- Faixa dos últimos rolls: MESMO sistema de retrato da MOCHILA (CharacterPreview), enquadrado no
+-- rosto/cabelo/busto. Os chips são reaproveitados (o modelo volta ao pool e é reusado).
 local function renderHistory()
+	CharacterPreview.releaseScope(historyRow)
 	for _, child in historyRow:GetChildren() do
 		if child:IsA("Frame") then
 			child:Destroy()
@@ -64,14 +68,17 @@ local function renderHistory()
 	for i, entry in history do
 		local character = CharacterConfig.ById[entry.CharacterId]
 		local chip = UIKit.new("Frame", {
-			Size = UDim2.fromOffset(38, 38),
-			BackgroundColor3 = Theme.Colors.Card,
+			Name = "Recent" .. i,
+			Size = UDim2.fromOffset(44, 44),
+			BackgroundColor3 = UIKit.darken(UIKit.rarityColor(entry.Rarity), 0.55),
 			LayoutOrder = i,
+			ClipsDescendants = true,
 		}, historyRow)
-		UIKit.corner(chip, 8)
+		UIKit.corner(chip, 10)
 		UIKit.stroke(chip, 2.5, UIKit.rarityColor(entry.Rarity), true)
-		UIKit.text(chip, { text = character and character.VisualTheme.Icon or "?", size = UDim2.fromScale(0.8, 0.8), position = UDim2.fromScale(0.5, 0.5), anchor = Vector2.new(0.5, 0.5), stroke = 0 })
+		CharacterPreview.attach(chip, entry.CharacterId, entry.Variant, "head", character and character.VisualTheme.Icon or "?")
 	end
+	CharacterPreview.update()
 end
 
 local function cooldownSeconds(): number
@@ -223,7 +230,7 @@ function RollController.Start()
 	historyRow = UIKit.new("Frame", {
 		Name = "History",
 		BackgroundTransparency = 1,
-		Size = UDim2.fromOffset(440, 40),
+		Size = UDim2.fromOffset(500, 46),
 		Position = UDim2.new(0.5, 0, 1, -(Theme.ButtonSizes.Roll.Y + 76)),
 		AnchorPoint = Vector2.new(0.5, 1),
 	}, bottom.Parent)

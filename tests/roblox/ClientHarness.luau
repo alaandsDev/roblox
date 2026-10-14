@@ -296,6 +296,16 @@ check(Env.waitFor(function()
 	return not C.RevealController.Busy()
 end, 5), "reveal normal termina sozinho")
 check(#C.RollController.History() == 1, "histórico da sessão com 1 roll")
+do -- faixa de rolls recentes: retrato do MESMO sistema (CharacterPreview), sem ícone de Dice
+	local Preview = clientRequire(env.client.UI.CharacterPreview)
+	Preview._isVisible = function(g)
+		return g:FindFirstAncestorWhichIsA("LayerCollector") ~= nil
+	end
+	Preview.update()
+	local chip = gui("HUD") and find(gui("HUD"), "Recent1")
+	local view = chip and chip:FindFirstChild("Preview")
+	check(view ~= nil and view:FindFirstChildOfClass("Model") ~= nil, "faixa de rolls: retrato 3D do personagem (enquadrado no rosto)")
+end
 
 -- Compacto (OCULTAR)
 click(find(hud, "Hide"))
@@ -373,6 +383,25 @@ for _, d in inv.content:GetDescendants() do
 	end
 end
 check(cards >= 4, "MOCHILA mostra os cards (" .. cards .. ")")
+do -- retratos reais (CharacterPreview): lazy, teto de ativos, pool e limpeza ao fechar
+	local Preview = clientRequire(env.client.UI.CharacterPreview)
+	Preview._isVisible = function(g)
+		return g:FindFirstAncestorWhichIsA("LayerCollector") ~= nil
+	end
+	Preview.update()
+	local withPreview, withModel = 0, 0
+	for _, d in inv.content:GetDescendants() do
+		if d:IsA("ViewportFrame") and d.Name == "Preview" then
+			withPreview += 1
+			if d:FindFirstChildOfClass("Model") then
+				withModel += 1
+			end
+		end
+	end
+	check(withPreview >= cards and withModel >= 4, "MOCHILA: cada card tem retrato 3D real (" .. withModel .. " modelos)")
+	check(Preview.stats().active <= Preview.MaxActive, "MOCHILA: teto de retratos ativos respeitado")
+	_G.__previewModule = Preview
+end
 -- seleciona o primeiro card e equipa
 local firstCard
 for _, d in inv.content:GetDescendants() do
@@ -403,6 +432,18 @@ for _, name in { "DiceShop", "Upgrades", "Sell", "Index", "Daily", "Settings" } 
 	check(w ~= nil and w.isOpen, name .. " abre")
 end
 UIKit.Windows.closeAll()
+do -- fechar a MOCHILA solta todos os retratos e esvazia o pool
+	local Preview = _G.__previewModule
+	Preview.update()
+	local st = Preview.stats()
+	local alive = 0
+	for _, d in inv.content:GetDescendants() do
+		if d:IsA("ViewportFrame") and d.Name == "Preview" and d:FindFirstChildOfClass("Model") then
+			alive += 1
+		end
+	end
+	check(st.pooled == 0 and alive == 0, "MOCHILA fechada: nenhum modelo de retrato vivo, pool vazio")
+end
 
 -- Diário: resgatar Dia 1
 local daily = openWindow("Daily")
@@ -826,10 +867,11 @@ end
 
 do
 	-- PILOTOS do pipeline de personagens no cliente: Reveal, Hero Landing, Mochila e Índice
+	-- (retratos dos CARDS ficam em ViewportFrames "Preview" e são do pool; aqui conta só o resto)
 	local function count(root, name)
 		local n = 0
 		for _, d in root:GetDescendants() do
-			if d.Name == name then
+			if d.Name == name and not d:FindFirstAncestor("Preview") then
 				n += 1
 			end
 		end

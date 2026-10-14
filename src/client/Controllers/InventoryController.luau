@@ -24,6 +24,7 @@ local Net = require(Shared.Modules.Net)
 
 local UI = script.Parent.Parent.UI
 local UIKit = require(UI.UIKit)
+local CharacterPreview = require(UI.CharacterPreview)
 local Theme = require(UI.UITheme)
 local DataController = require(script.Parent.DataController)
 local NotificationController = require(script.Parent.NotificationController)
@@ -42,6 +43,7 @@ local detail: Frame
 local detailLabels: { [string]: TextLabel } = {}
 local detailButtons: { [string]: TextButton } = {}
 local portrait: ViewportFrame
+local duplicates: { [string]: number } = {}
 local portraitModel: Model? = nil
 
 local filter = "All"
@@ -168,7 +170,16 @@ local function card(data: any, uid: string, order: number)
 	UIKit.corner(button, Theme.CornerRadiusSmall)
 	UIKit.stroke(button, if uid == selected then 4 else 3, color, true)
 	UIKit.gradient(button, UIKit.darken(color, 0.45), Theme.Colors.Card, 90)
-	UIKit.text(button, { text = character.VisualTheme.Icon, size = UDim2.fromScale(0.62, 0.45), position = UDim2.fromScale(0.5, 0.05), anchor = Vector2.new(0.5, 0), stroke = 0 })
+	-- retrato REAL (lazy + pool; ícone só se o asset falhar)
+	local portraitArea = UIKit.new("Frame", { Name = "Portrait", BackgroundTransparency = 1, Size = UDim2.fromScale(0.86, 0.5), Position = UDim2.fromScale(0.5, 0.02), AnchorPoint = Vector2.new(0.5, 0) }, button)
+	CharacterPreview.attach(portraitArea, item.Id, item.Variant, "body", character.VisualTheme.Icon)
+	if (item.Variant or "Normal") ~= "Normal" then
+		UIKit.text(button, { name = "Variant", text = Localization.t("variant." .. item.Variant), size = UDim2.new(0.6, 0, 0.12, 0), position = UDim2.new(0, 4, 0.4, 0), align = Enum.TextXAlignment.Left, color = Color3.fromRGB(255, 225, 120) })
+	end
+	local copies = duplicates[item.Id] or 1
+	if copies > 1 then
+		UIKit.text(button, { name = "Copies", text = "x" .. copies, size = UDim2.new(0.4, 0, 0.12, 0), position = UDim2.new(1, -4, 0.4, 0), anchor = Vector2.new(1, 0), align = Enum.TextXAlignment.Right, color = Theme.Colors.TextMuted })
+	end
 	UIKit.text(button, { text = character.Name, size = UDim2.fromScale(0.94, 0.17), position = UDim2.fromScale(0.5, 0.52), anchor = Vector2.new(0.5, 0) })
 	UIKit.text(button, { text = Localization.t("rarity." .. character.Rarity), size = UDim2.fromScale(0.9, 0.12), position = UDim2.fromScale(0.5, 0.69), anchor = Vector2.new(0.5, 0), color = color })
 	UIKit.text(button, { text = NumberFormatter.money(Formulas:unitIncome(item)) .. "/s", size = UDim2.fromScale(0.9, 0.14), position = UDim2.fromScale(0.5, 0.83), anchor = Vector2.new(0.5, 0), color = Theme.Colors.Money })
@@ -193,10 +204,15 @@ function InventoryController.Refresh()
 		return
 	end
 	dirty = false
+	CharacterPreview.releaseScope(grid) -- devolve os modelos ao pool antes de refazer os cards
 	for _, child in grid:GetChildren() do
 		if child:IsA("GuiButton") then
 			child:Destroy()
 		end
+	end
+	table.clear(duplicates)
+	for _, it in data.Inventory do
+		duplicates[it.Id] = (duplicates[it.Id] or 0) + 1
 	end
 	local list = sortedUids(data)
 	for i, uid in list do
@@ -212,6 +228,7 @@ function InventoryController.Refresh()
 		UIKit.setButtonColor(button, if id == filter then Theme.Colors.Primary else Color3.fromRGB(70, 70, 92))
 	end
 	refreshDetail()
+	CharacterPreview.update()
 end
 
 local function request(name: string, ...: any)
@@ -406,6 +423,11 @@ local function build()
 			end
 		end,
 	})
+	-- fechar a MOCHILA: solta todos os retratos e esvazia o pool (nenhum modelo fica vivo)
+	window.Closed:Connect(function()
+		CharacterPreview.releaseScope(grid)
+		CharacterPreview.trimPool()
+	end)
 	window.Opened:Connect(function()
 		InventoryController.Refresh()
 	end)

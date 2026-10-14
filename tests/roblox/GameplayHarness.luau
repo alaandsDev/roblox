@@ -299,7 +299,11 @@ local info = station and station:FindFirstChild("InfoAnchor") and station.InfoAn
 check(info ~= nil and info.Detail.Title.Text == "Dragon Knight", "billboard: nome")
 check(info ~= nil and info.Detail.Rarity.Text ~= "" and info.Detail.Level.Text ~= "" and string.find(info.Income.Text, "/s") ~= nil, "billboard: raridade, nível e renda/s")
 check(station and station:FindFirstChild("UpgradePad") ~= nil and station.UpgradePad.Cost.Cost.Text ~= "", "pad de upgrade com custo")
-check(station and station:FindFirstChild("Plate") ~= nil, "placa do pedestal (produzido + nível)")
+check(
+	station and station:FindFirstChild("Plate") ~= nil and station.Plate.PlateGui.PlateValue.Text == station.UpgradePad.Cost.Cost.Text
+		and string.find(station.Plate.PlateGui.LevelNext.Text, ">") ~= nil and station.Plate.PlateGui:IsA("BillboardGui"),
+	"placa do pedestal: preço do próximo nível + Nível X > Y, de frente para a câmera"
+)
 local figure = station and station:FindFirstChild("dragon_knight")
 local okParts = figure ~= nil
 if figure then
