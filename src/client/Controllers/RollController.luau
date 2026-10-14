@@ -182,6 +182,7 @@ function RollController.Start()
 		color = Color3.fromRGB(255, 170, 40),
 		size = UDim2.fromOffset(Theme.ButtonSizes.Roll.X, Theme.ButtonSizes.Roll.Y),
 		order = 2,
+		primary = true, -- HUDPrimaryButton: ação principal, chip maior
 		onClick = function()
 			task.spawn(RollController.Roll)
 		end,
@@ -196,8 +197,8 @@ function RollController.Start()
 		Size = UDim2.fromScale(1, 0),
 		Visible = false,
 		ZIndex = 4,
-	}, rollButton)
-	UIKit.corner(cooldownBar, Theme.CornerRadius)
+	}, rollButton:FindFirstChild("Chip") or rollButton)
+	UIKit.new("UICorner", { CornerRadius = UDim.new(Theme.Hud.ChipRoundness, 0) }, cooldownBar)
 
 	-- AUTO e OCULTAR acima do ROLAR + histórico acima deles
 	local toggles = UIKit.new("Frame", {

@@ -198,7 +198,7 @@ function StoreController.Start()
 	if right then
 		UIKit.list(right, false, 12, "center")
 		local function shortcut(name: string, icon: string, key: string, color: Color3, order: number, onClick: () -> ())
-			UIKit.iconButton(right, { name = name, icon = icon, text = Localization.t(key), color = color, size = UDim2.fromOffset(120, 120), order = order, onClick = onClick })
+			UIKit.iconButton(right, { name = name, icon = icon, text = Localization.t(key), color = color, size = UDim2.fromOffset(96, 100), order = order, onClick = onClick })
 		end
 		shortcut("VipShortcut", "👑", "store.short.vip", Color3.fromRGB(255, 190, 40), 1, function()
 			UIKit.Windows.open("Store")

@@ -17,7 +17,8 @@ local Localization = require(Shared.Localization.Localization)
 local AssetLoader = require(Shared.Modules.AssetLoader)
 
 local COOLDOWN = 1
-local BUTTON_WIDTH, BUTTON_HEIGHT, GAP = 160, 58, 12
+-- NavButton do design system (HUD icon-first): pílula escura translúcida + chip colorido do ícone
+local BUTTON_WIDTH, BUTTON_HEIGHT, GAP = 150, 52, 10
 
 -- Ícones provisórios (emoji); trocar por imagens da Store depois (tools/FindAssets.lua)
 local BUTTONS = {
@@ -60,24 +61,32 @@ local function makeButton(info: any, parent: Instance, order: number): TextButto
 	button.Name = info.id
 	button.LayoutOrder = order
 	button.Size = UDim2.fromOffset(BUTTON_WIDTH, BUTTON_HEIGHT)
-	button.BackgroundColor3 = info.color
+	button.BackgroundColor3 = Color3.fromRGB(28, 27, 40)
+	button.BackgroundTransparency = 0.2
 	button.Text = ""
 	button.AutoButtonColor = true
 	button.ClipsDescendants = true
 	button.Parent = parent
 
 	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 14)
+	corner.CornerRadius = UDim.new(0.5, 0)
 	corner.Parent = button
 	local stroke = Instance.new("UIStroke")
-	stroke.Thickness = 3
-	stroke.Color = Color3.fromRGB(30, 25, 45)
+	stroke.Thickness = 2.5
+	stroke.Color = info.color
 	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 	stroke.Parent = button
-	local gradient = Instance.new("UIGradient")
-	gradient.Rotation = 90
-	gradient.Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(200, 200, 200))
-	gradient.Parent = button
+	-- chip colorido do ícone (mesma linguagem do CurrencyDisplay)
+	local chip = Instance.new("Frame")
+	chip.Name = "Chip"
+	chip.BackgroundColor3 = info.color
+	chip.Position = UDim2.new(0, 4, 0.5, 0)
+	chip.AnchorPoint = Vector2.new(0, 0.5)
+	chip.Size = UDim2.fromOffset(BUTTON_HEIGHT - 8, BUTTON_HEIGHT - 8)
+	chip.Parent = button
+	local chipCorner = Instance.new("UICorner")
+	chipCorner.CornerRadius = UDim.new(0.5, 0)
+	chipCorner.Parent = chip
 	local scale = Instance.new("UIScale")
 	scale.Name = "Feedback"
 	scale.Parent = button
@@ -85,8 +94,9 @@ local function makeButton(info: any, parent: Instance, order: number): TextButto
 	local icon = Instance.new("TextLabel")
 	icon.Name = "Icon"
 	icon.BackgroundTransparency = 1
-	icon.Position = UDim2.new(0, 8, 0, 6)
-	icon.Size = UDim2.new(0, BUTTON_HEIGHT - 12, 1, -12)
+	icon.Position = UDim2.new(0, 9, 0, 9)
+	icon.Size = UDim2.new(0, BUTTON_HEIGHT - 18, 1, -18)
+	icon.ZIndex = 2
 	icon.Text = info.icon
 	icon.TextScaled = true
 	icon.Parent = button

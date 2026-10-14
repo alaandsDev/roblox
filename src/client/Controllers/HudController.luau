@@ -68,11 +68,11 @@ local function refreshStats()
 		return
 	end
 	moneyLabel.Text = NumberFormatter.money(data.Money or 0)
-	gemsLabel.Text = "💎 " .. NumberFormatter.abbreviate(data.Gems or 0)
+	gemsLabel.Text = NumberFormatter.abbreviate(data.Gems or 0)
 	local now = os.time()
 	-- Mostra a Luck EFETIVA (a que entra no sorteio, com retornos decrescentes)
 	local luck = Formulas:effectiveLuck(data, now)
-	luckLabel.Text = string.format("🍀 %sx", NumberFormatter.abbreviate(math.floor(luck * 100 + 0.5) / 100))
+	luckLabel.Text = string.format("%sx", NumberFormatter.abbreviate(math.floor(luck * 100 + 0.5) / 100))
 	local runtime = data.Runtime or {}
 	friendLabel.Text = Localization.t("hud.friend_boost", { percent = math.floor((runtime.FriendBonus or 0) * 100 + 0.5) })
 	local boost = data.Boosts and data.Boosts.Luck
@@ -204,19 +204,21 @@ function HudController.Init()
 	badges.Upgrades = UIKit.badge(upgrades)
 
 	-- TOPO DIREITA
+	-- (icon-first: chip pequeno + rótulo curto; toque de 74 px)
 	local topRight = container(root, "TopRight", {
-		Size = UDim2.fromOffset(420, 54),
-		Position = UDim2.new(1, -12, 0, 8),
+		Size = UDim2.fromOffset(300, 78),
+		Position = UDim2.new(1, -12, 0, 6),
 		AnchorPoint = Vector2.new(1, 0),
 	})
-	local trList = UIKit.list(topRight, true, 10)
+	local trList = UIKit.list(topRight, true, 6)
 	trList.HorizontalAlignment = Enum.HorizontalAlignment.Right
-	local function pill(name: string, text: string, color: Color3, order: number, width: number, onClick: () -> ())
-		local button = UIKit.button(topRight, {
+	local function pill(name: string, icon: string, text: string, color: Color3, order: number, onClick: () -> ())
+		local button = UIKit.iconButton(topRight, {
 			name = name,
+			icon = icon,
 			text = text,
 			color = color,
-			size = UDim2.fromOffset(width, 50),
+			size = UDim2.fromOffset(74, 78),
 			order = order,
 			onClick = onClick,
 		})
@@ -224,14 +226,14 @@ function HudController.Init()
 		badges[name] = UIKit.badge(button)
 		return button
 	end
-	local offline = pill("Offline", "🎁 " .. Localization.t("hud.offline"), Color3.fromRGB(80, 200, 110), 1, 140, function()
+	local offline = pill("Offline", "🎁", Localization.t("hud.offline"), Color3.fromRGB(80, 200, 110), 1, function()
 		UIKit.Windows.open("Offline")
 	end)
 	offline.Visible = false
-	pill("Daily", "📅 " .. Localization.t("hud.daily"), Color3.fromRGB(45, 45, 65), 2, 140, function()
+	pill("Daily", "📅", Localization.t("hud.daily"), Color3.fromRGB(255, 120, 90), 2, function()
 		UIKit.Windows.toggle("Daily")
 	end)
-	pill("Settings", "⚙️", Color3.fromRGB(45, 45, 65), 3, 54, function()
+	pill("Settings", "⚙️", "", Color3.fromRGB(110, 115, 150), 3, function()
 		UIKit.Windows.toggle("Settings")
 	end)
 
@@ -248,10 +250,13 @@ function HudController.Init()
 		Position = UDim2.new(0, 16, 1, -10),
 		AnchorPoint = Vector2.new(0, 1),
 	})
+	-- CurrencyDisplay: pílulas (ícone + valor) em vez de texto solto
 	boostLabel = UIKit.text(stats, { name = "Boost", size = UDim2.fromOffset(300, 26), position = UDim2.fromOffset(0, 0), color = Theme.Colors.Luck, align = Enum.TextXAlignment.Left })
-	luckLabel = UIKit.text(stats, { name = "Luck", size = UDim2.fromOffset(160, 32), position = UDim2.fromOffset(0, 28), color = Theme.Colors.Luck, align = Enum.TextXAlignment.Left })
-	gemsLabel = UIKit.text(stats, { name = "Gems", size = UDim2.fromOffset(150, 32), position = UDim2.fromOffset(170, 28), color = Theme.Colors.Gems, align = Enum.TextXAlignment.Left })
-	moneyLabel = UIKit.text(stats, { name = "Money", text = "$0", size = UDim2.fromOffset(400, 70), position = UDim2.fromOffset(0, 60), color = Theme.Colors.Money, align = Enum.TextXAlignment.Left, stroke = 4 })
+	local _, luck = UIKit.currency(stats, { name = "LuckPill", valueName = "Luck", icon = "🍀", color = Theme.Colors.Luck, size = UDim2.fromOffset(150, 36), position = UDim2.fromOffset(0, 28) })
+	local _, gems = UIKit.currency(stats, { name = "GemsPill", valueName = "Gems", icon = "💎", color = Theme.Colors.Gems, size = UDim2.fromOffset(150, 36), position = UDim2.fromOffset(160, 28) })
+	local _, money = UIKit.currency(stats, { name = "MoneyPill", valueName = "Money", icon = "💵", color = Theme.Colors.Money, size = UDim2.fromOffset(330, 58), position = UDim2.fromOffset(0, 70) })
+	luckLabel, gemsLabel, moneyLabel = luck, gems, money
+	moneyLabel.Text = "$0"
 	friendLabel = UIKit.text(stats, {
 		name = "FriendBoost",
 		text = Localization.t("hud.friend_boost", { percent = 0 }),

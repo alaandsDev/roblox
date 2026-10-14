@@ -261,6 +261,30 @@ local hud = gui("HUD")
 for _, name in { "Backpack", "Upgrades", "Shop", "Rebirth", "Index", "Daily", "Settings", "Money", "Luck", "FriendBoost", "Auto", "Hide" } do
 	check(find(hud, name) ~= nil, "HUD tem " .. name)
 end
+do -- HUD icon-first (design system): chip visual compacto, toque grande, badge pequeno no canto
+	local ok, minTouch = true, math.huge
+	for _, name in { "Backpack", "Upgrades", "Shop", "Rebirth", "Index", "Daily", "Settings", "Roll" } do
+		local b = find(hud, name)
+		local chip = b and b:FindFirstChild("Chip")
+		if not (b and chip and b.BackgroundTransparency == 1 and chip.Size.X.Scale < 0.9) then
+			ok = false
+		end
+		if b then
+			minTouch = math.min(minTouch, b.Size.X.Offset, b.Size.Y.Offset)
+		end
+	end
+	check(ok, "HUD: botões icon-first (área de toque invisível + chip compacto com ícone)")
+	check(minTouch >= 44, "HUD: área de toque >= 44 px em todos os botões (" .. minTouch .. ")")
+	local roll = find(hud, "Roll")
+	check(roll ~= nil and roll.Chip.Size.X.Scale > find(hud, "Backpack").Chip.Size.X.Scale, "HUD: ROLAR é o botão primário (chip maior)")
+	C.HudController.SetBadge("Backpack", "3")
+	local badge = find(hud, "Backpack").Chip:FindFirstChild("Badge")
+	check(badge ~= nil and badge.Visible and badge.Size.Y.Offset <= 24 and find(hud, "Backpack").Size.X.Offset == 104, "HUD: badge pequeno no canto do ícone, sem aumentar o botão")
+	C.HudController.SetBadge("Backpack", nil)
+	UIKit.setDisabled(find(hud, "Index"), true)
+	check(find(hud, "Index"):GetAttribute("Disabled") == true, "HUD: estado Disabled")
+	UIKit.setDisabled(find(hud, "Index"), false)
+end
 check(gui("NavigationHud") ~= nil, "barra CENTRO/CASA/LOJA")
 
 -- TUTORIAL (auditoria): jogador novo vê o passo 1 e o HUD reduzido

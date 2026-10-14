@@ -388,42 +388,80 @@ function UIKit.setButtonColor(button: GuiObject, color: Color3)
 	end
 end
 
--- Botão "quadrado" de HUD: ícone grande + texto embaixo (estilo simulator)
-function UIKit.iconButton(parent: Instance, opts: ButtonOptions): TextButton
+--[[
+	HUD ICON-FIRST (design system; ver HUD_DESIGN.md):
+	    HUDIconButton  = UIKit.iconButton(parent, opts)            área de toque grande e INVISÍVEL +
+	                     chip compacto colorido com o ícone + rótulo curto embaixo
+	    HUDPrimaryButton = iconButton com opts.primary = true      (ROLAR: chip maior, aro dourado)
+	    NotificationBadge = UIKit.badge(button)                    bolinha pequena no canto do CHIP
+	    CurrencyDisplay  = UIKit.currency(parent, opts)            pílula ícone + valor
+	    estados: Default / Hover (1.06) / Pressed (0.92) / Disabled (UIKit.setDisabled) / Notification
+	O botão não desenha mais a área clicável inteira: o visual é o chip; o toque continua grande.
+]]
+export type IconButtonOptions = ButtonOptions & { primary: boolean? }
+
+function UIKit.iconButton(parent: Instance, opts: IconButtonOptions): TextButton
 	local color = opts.color or Theme.Colors.Primary
+	local primary = opts.primary == true
 	local button = UIKit.new("TextButton", {
 		Name = opts.name or "IconButton",
 		Size = opts.size or UDim2.fromOffset(Theme.ButtonSizes.Side.X, Theme.ButtonSizes.Side.Y),
 		Position = opts.position or UDim2.new(),
 		AnchorPoint = opts.anchor or Vector2.zero,
-		BackgroundColor3 = color,
+		BackgroundTransparency = 1,
 		AutoButtonColor = false,
 		Text = "",
 		LayoutOrder = opts.order or 0,
 	}, parent)
-	UIKit.corner(button, Theme.CornerRadius)
-	UIKit.stroke(button, Theme.StrokeThickness + 1, Theme.StrokeColor, true)
-	UIKit.gradient(button, UIKit.lighten(color, 0.3), UIKit.darken(color, 0.2), 90)
-	UIKit.text(button, {
+	local chipScale = if primary then Theme.Hud.PrimaryChipScale else Theme.Hud.ChipScale
+	local chip = UIKit.new("Frame", {
+		Name = "Chip",
+		Size = UDim2.fromScale(chipScale, chipScale),
+		Position = UDim2.fromScale(0.5, 0.02),
+		AnchorPoint = Vector2.new(0.5, 0),
+		BackgroundColor3 = color,
+		ZIndex = 1,
+	}, button)
+	UIKit.new("UIAspectRatioConstraint", { AspectRatio = 1 }, chip)
+	UIKit.new("UICorner", { CornerRadius = UDim.new(Theme.Hud.ChipRoundness, 0) }, chip)
+	UIKit.stroke(chip, if primary then 4 else 2.5, if primary then Theme.Colors.Warning else Theme.StrokeColor, true)
+	UIKit.gradient(chip, UIKit.lighten(color, 0.35), UIKit.darken(color, 0.15), 90)
+	-- brilho de cima (leitura "brinquedo"/blocky, sem moldura pesada)
+	local shine = UIKit.new("Frame", {
+		Name = "Shine",
+		Size = UDim2.fromScale(0.78, 0.22),
+		Position = UDim2.fromScale(0.5, 0.08),
+		AnchorPoint = Vector2.new(0.5, 0),
+		BackgroundColor3 = Color3.new(1, 1, 1),
+		BackgroundTransparency = 0.72,
+		ZIndex = 2,
+	}, chip)
+	UIKit.new("UICorner", { CornerRadius = UDim.new(0.5, 0) }, shine)
+	UIKit.text(chip, {
 		name = "Icon",
 		text = opts.icon or "",
-		size = UDim2.fromScale(0.8, 0.62),
-		position = UDim2.fromScale(0.5, 0.05),
-		anchor = Vector2.new(0.5, 0),
+		size = UDim2.fromScale(0.74, 0.74),
+		position = UDim2.fromScale(0.5, 0.5),
+		anchor = Vector2.new(0.5, 0.5),
 		stroke = 0,
+		z = 3,
 	})
 	UIKit.text(button, {
 		name = "Label",
 		text = opts.text or "",
-		size = UDim2.fromScale(0.96, 0.3),
-		position = UDim2.fromScale(0.5, 0.97),
+		size = UDim2.fromScale(1, 1 - chipScale - 0.02),
+		position = UDim2.fromScale(0.5, 1),
 		anchor = Vector2.new(0.5, 1),
 		stroke = 2.5,
 	})
+	button:SetAttribute("BaseColor", color)
 	pressAnimation(button)
 	if opts.onClick then
 		local onClick = opts.onClick
 		button.Activated:Connect(function()
+			if button:GetAttribute("Disabled") == true then
+				return
+			end
 			UIKit.sound("Click")
 			onClick()
 		end)
@@ -431,24 +469,83 @@ function UIKit.iconButton(parent: Instance, opts: ButtonOptions): TextButton
 	return button
 end
 
--- Bolinha de aviso no canto do botão. Devolve setBadge(texto | nil)
+-- Estado DISABLED do botão de HUD (chip dessaturado, sem clique)
+function UIKit.setDisabled(button: GuiObject, disabled: boolean)
+	button:SetAttribute("Disabled", disabled)
+	local chip = button:FindFirstChild("Chip")
+	local base = button:GetAttribute("BaseColor")
+	if chip and chip:IsA("Frame") and typeof(base) == "Color3" then
+		local color = if disabled then Theme.Colors.Locked else base
+		chip.BackgroundColor3 = color
+		local gradient = chip:FindFirstChildOfClass("UIGradient")
+		if gradient then
+			gradient.Color = ColorSequence.new(UIKit.lighten(color, 0.35), UIKit.darken(color, 0.15))
+		end
+	end
+	local label = button:FindFirstChild("Label")
+	if label and label:IsA("TextLabel") then
+		label.TextTransparency = if disabled then 0.45 else 0
+	end
+end
+
+-- Bolinha de aviso PEQUENA no canto do chip (ou do botão). Devolve setBadge(texto | nil).
+-- Não aumenta o botão: fica por cima do canto.
 function UIKit.badge(button: GuiObject): (string?) -> ()
+	local host = (button:FindFirstChild("Chip") :: GuiObject?) or button
+	local size = Theme.Hud.BadgeSize
 	local badge = UIKit.new("Frame", {
 		Name = "Badge",
-		Size = UDim2.fromOffset(30, 30),
-		Position = UDim2.new(1, 6, 0, -8),
+		Size = UDim2.fromOffset(size, size),
+		Position = UDim2.new(1, size * 0.25, 0, -size * 0.3),
 		AnchorPoint = Vector2.new(1, 0),
 		BackgroundColor3 = Theme.Colors.Danger,
 		Visible = false,
-		ZIndex = 5,
-	}, button)
-	UIKit.corner(badge, 15)
-	UIKit.stroke(badge, 2.5, Color3.new(1, 1, 1), true)
-	local label = UIKit.text(badge, { text = "!", size = UDim2.fromScale(0.8, 0.8), position = UDim2.fromScale(0.5, 0.5), anchor = Vector2.new(0.5, 0.5), z = 6, stroke = 0 })
+		ZIndex = 8,
+	}, host)
+	UIKit.corner(badge, size)
+	UIKit.stroke(badge, 2, Color3.new(1, 1, 1), true)
+	local label = UIKit.text(badge, { text = "!", size = UDim2.fromScale(0.78, 0.78), position = UDim2.fromScale(0.5, 0.5), anchor = Vector2.new(0.5, 0.5), z = 9, stroke = 0 })
 	return function(text: string?)
 		badge.Visible = text ~= nil
 		label.Text = text or ""
+		-- números com 2+ dígitos alargam a bolinha (pílula), sem crescer o botão
+		badge.Size = UDim2.fromOffset(if text and #text > 1 then size + (#text - 1) * 8 else size, size)
 	end
+end
+
+-- CurrencyDisplay: pílula com ícone + valor (dinheiro, gemas, sorte). Devolve (pílula, rótulo do valor)
+function UIKit.currency(parent: Instance, opts: { name: string, icon: string, color: Color3, size: UDim2, position: UDim2?, valueName: string? }): (Frame, TextLabel)
+	local pill = UIKit.new("Frame", {
+		Name = opts.name,
+		Size = opts.size,
+		Position = opts.position or UDim2.new(),
+		BackgroundColor3 = Theme.Colors.PanelInner,
+		BackgroundTransparency = 0.25,
+	}, parent)
+	UIKit.new("UICorner", { CornerRadius = UDim.new(0.5, 0) }, pill)
+	UIKit.stroke(pill, 2.5, UIKit.darken(opts.color, 0.45), true)
+	local iconHolder = UIKit.new("Frame", {
+		Name = "IconChip",
+		Size = UDim2.fromScale(1, 1),
+		BackgroundColor3 = opts.color,
+	}, pill)
+	UIKit.new("UIAspectRatioConstraint", { AspectRatio = 1 }, iconHolder)
+	UIKit.new("UICorner", { CornerRadius = UDim.new(0.5, 0) }, iconHolder)
+	UIKit.stroke(iconHolder, 2.5, Theme.StrokeColor, true)
+	UIKit.text(iconHolder, { name = "Icon", text = opts.icon, size = UDim2.fromScale(0.72, 0.72), position = UDim2.fromScale(0.5, 0.5), anchor = Vector2.new(0.5, 0.5), stroke = 0 })
+	local value = UIKit.text(pill, {
+		name = opts.valueName or "Value",
+		text = "",
+		size = UDim2.new(1, -16, 0.84, 0),
+		position = UDim2.new(1, -10, 0.5, 0),
+		anchor = Vector2.new(1, 0.5),
+		color = opts.color,
+		align = Enum.TextXAlignment.Right,
+		stroke = 3,
+	})
+	-- o valor começa depois do ícone (largura = altura da pílula)
+	value.Size = UDim2.new(1, -opts.size.Y.Offset - 18, 0.84, 0)
+	return pill, value
 end
 
 ------------------------------------------------------------------------------------

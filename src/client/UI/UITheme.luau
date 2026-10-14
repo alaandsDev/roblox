@@ -26,12 +26,19 @@ return {
 	-- Tamanhos (em pixels "de referência" 1280x720; o UIScale da tela ajusta)
 	ButtonSizes = {
 		Nav = Vector2.new(150, 54),
-		Side = Vector2.new(96, 96),
-		Bottom = Vector2.new(116, 116),
-		Roll = Vector2.new(150, 150),
+		Side = Vector2.new(88, 92),
+		Bottom = Vector2.new(104, 108),
+		Roll = Vector2.new(140, 146),
 		Small = Vector2.new(120, 44),
 		Action = Vector2.new(190, 56),
 		Close = Vector2.new(56, 56),
+	},
+	-- HUD icon-first: o chip ocupa só parte da área de toque (que continua grande no mobile)
+	Hud = {
+		ChipScale = 0.68,
+		PrimaryChipScale = 0.84,
+		ChipRoundness = 0.3,
+		BadgeSize = 22,
 	},
 	PopupSizes = {
 		Small = Vector2.new(520, 400),
