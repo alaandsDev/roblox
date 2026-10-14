@@ -33,6 +33,8 @@ require("./TradeCore.spec")
 require("./MissionCore.spec")
 require("./JackpotCore.spec")
 require("./Odds.spec")
+require("./SaleCore.spec")
+require("./EconomyModel.spec")
 require("./DataSize.spec")
 
 if not T.report() then

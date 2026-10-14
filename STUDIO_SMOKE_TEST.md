@@ -191,6 +191,7 @@ personagem em cima precisa deste teste manual.
 |---|---|---|---|
 | E-A | Subir na esteira e ficar parado | O personagem é levado no sentido das setas/ripas | [ ] |
 | E-B | Observar a direção | Mesma direção da animação (ripas e dados andando) | [ ] |
+| E-B2 | Olhar as setas (chevrons) em CADA trecho da esteira, inclusive curvas | A ponta da seta aponta para onde o jogador e os dados vão (as barras se encontram NA FRENTE) | [ ] |
 | E-C | Andar CONTRA a esteira | Avança mais devagar (sente a esteira) | [ ] |
 | E-D | Andar A FAVOR | Mais rápido que andando no chão, sem tranco | [ ] |
 | E-E | Pular em cima | No ar não é empurrado; ao cair continua sendo levado; não é lançado | [ ] |

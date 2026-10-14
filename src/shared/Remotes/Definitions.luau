@@ -83,6 +83,8 @@ local Definitions: Definitions = {
 			args = { { type = "string", enum = BATCH_MODES }, { type = "boolean" } },
 			rate = { capacity = 5, refill = 1 },
 		},
+		-- Só cotação (base + reembolso do investimento em níveis); não vende nada
+		PreviewSale = { args = { { type = "array", maxItems = 500, of = UID } }, rate = { capacity = 5, refill = 2 } },
 		SetAutoSell = {
 			args = { { type = "string", enum = AUTO_SELL_RARITIES }, { type = "boolean" } },
 			rate = { capacity = 10, refill = 4 },

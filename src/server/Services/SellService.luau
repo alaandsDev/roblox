@@ -4,8 +4,11 @@
 	    SellCharacter({ uid })              -> vende os não protegidos (falha se nenhum puder)
 	    SellBatch(modo, confirmar)          -> confirmar=false só devolve a prévia { count, total }
 	    SetAutoSell(raridade, ligado)       -> Secret nunca (Definitions + RollConfig)
+	    PreviewSale({ uid })                -> só mostra: por unidade { Base, Invested, Percent,
+	                                           Refund, Total } + somas. Mesma conta da venda.
 	    SellService.ShouldAutoSell(player, raridade)
-	Preço sempre calculado no servidor (Formulas:sellValue). Travados, favoritos e equipados
+	Preço sempre calculado no servidor (SaleCore.quote: valor base + reembolso do investimento em
+	níveis, EconomyConfig.UpgradeRefundPercent = 0 hoje). Travados, favoritos e equipados
 	nunca são vendidos (nem em massa).
 ]]
 
@@ -14,8 +17,10 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage.Shared
 local CharacterConfig = require(Shared.Config.CharacterConfig)
 local RollConfig = require(Shared.Config.RollConfig)
+local EconomyConfig = require(Shared.Config.EconomyConfig)
 local Formulas = require(Shared.Modules.GameFormulas)
 local TableUtil = require(Shared.Modules.TableUtil)
+local SaleCore = require(Shared.Modules.SaleCore)
 local Net = require(Shared.Modules.Net)
 
 local InventoryCore = require(script.Parent.Parent.Core.InventoryCore)
@@ -35,10 +40,14 @@ local function dataOf(player: Player): any
 	return data
 end
 
+-- Cotação de UMA unidade do inventário do servidor (nunca valores do cliente)
+local function quoteOf(data: any, uid: string): SaleCore.Quote
+	return SaleCore.quote(Formulas, data.Inventory[uid], EconomyConfig.UpgradeRefundPercent)
+end
+
 local function valueOf(data: any): (string) -> number
 	return function(uid: string): number
-		local item = data.Inventory[uid]
-		return if item then Formulas:sellValue(item.Id, item.Variant) else 0
+		return quoteOf(data, uid).Total
 	end
 end
 
@@ -101,6 +110,31 @@ function SellService.SellBatch(player: Player, mode: string, confirm: boolean)
 	return { count = #sale.uids, total = total, preview = false }
 end
 
+-- Prévia autoritativa (não vende): só unidades que existem e PODEM ser vendidas
+function SellService.PreviewSale(player: Player, uids: { string })
+	local data = dataOf(player)
+	local sale = plan(data, uids)
+	local items, sum = {}, { Base = 0, Invested = 0, Refund = 0, Total = 0 }
+	for _, uid in sale.uids do
+		local quote = quoteOf(data, uid)
+		items[uid] = quote
+		sum.Base += quote.Base
+		sum.Invested += quote.Invested
+		sum.Refund += quote.Refund
+		sum.Total += quote.Total
+	end
+	return {
+		items = items,
+		count = #sale.uids,
+		skipped = sale.skipped,
+		percent = SaleCore.percent(EconomyConfig.UpgradeRefundPercent),
+		base = sum.Base,
+		invested = sum.Invested,
+		refund = sum.Refund,
+		total = sum.Total,
+	}
+end
+
 function SellService.ShouldAutoSell(player: Player, rarity: string): boolean
 	if table.find(RollConfig.ProtectedFromAutoSell, rarity) then
 		return false
@@ -124,6 +158,7 @@ function SellService.Init()
 	Net.handle("SellCharacter", SellService.SellCharacter)
 	Net.handle("SellBatch", SellService.SellBatch)
 	Net.handle("SetAutoSell", SellService.SetAutoSell)
+	Net.handle("PreviewSale", SellService.PreviewSale)
 	MapService.RegisterInteraction("Sell", function(player)
 		Net.fire("OpenMenu", player, "Sell")
 	end)

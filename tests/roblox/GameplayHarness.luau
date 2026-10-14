@@ -89,7 +89,7 @@ end
 
 local for_each_required = {
 	"RequestRoll", "EquipCharacter", "UnequipCharacter", "EquipBest", "SetCharacterFlag", "UpgradeCharacter",
-	"CollectMoney", "BuyDice", "EquipDice", "BuyUpgrade", "SellCharacter", "SellBatch", "SetAutoSell",
+	"CollectMoney", "BuyDice", "EquipDice", "BuyUpgrade", "SellCharacter", "SellBatch", "SetAutoSell", "PreviewSale",
 	"ClaimOfflineReward", "GetDailyStatus", "ClaimDaily",
 }
 local missing = {}
@@ -449,6 +449,23 @@ local okL2, codeL2 = call("SellCharacter", p1, { v2 })
 check(not okL2 and codeL2 == "favorite", "vender favorito: recusado")
 local okL3, codeL3 = call("SellCharacter", p1, { a })
 check(not okL3 and codeL3 == "equipped", "vender equipado: recusado")
+do -- prévia de venda (SaleCore): autoritativa, igual à venda, refund 0% no jogo atual
+	local SaleCore = req(env.shared.Modules.SaleCore)
+	d1.Inventory[v3].Level = 10
+	local okPv, pv = call("PreviewSale", p1, { v3, v3, v1, "c999999" })
+	local q = okPv and pv.items[v3]
+	check(
+		okPv and pv.count == 1 and pv.skipped == 2 and q and q.Base == Formulas:sellValue("tide_apprentice")
+			and q.Invested == SaleCore.curveInvestment(Formulas, "tide_apprentice", 10) and q.Invested > 0
+			and q.Percent == 0 and q.Refund == 0 and q.Total == q.Base and pv.total == q.Total
+			and d1.Inventory[v3] ~= nil and pv.items[v1] == nil,
+		"PreviewSale: base/investido/%/reembolso/total do servidor; repetido, travado e inexistente fora; nada vendido"
+	)
+	d1.Money = 0
+	local okS3, sold3 = call("SellCharacter", p1, { v3 })
+	check(okS3 and sold3.total == pv.total and d1.Money == pv.total, "venda = total da prévia (mesma conta)")
+	v3 = S.InventoryService.Add(p1, "tide_apprentice")
+end
 d1.Money = 0
 local okSell, sold = call("SellCharacter", p1, { v3 })
 check(okSell and sold.total == Formulas:sellValue("tide_apprentice") and d1.Money == sold.total and d1.Inventory[v3] == nil, "vender livre: preço do servidor")

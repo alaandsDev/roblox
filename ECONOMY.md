@@ -5,13 +5,18 @@ Os números abaixo são gerados pela simulação com as **mesmas configs e fórm
 (`tools/sim/EconomySim.luau`, rode `tools/bin/lune-0.10.4/lune run tools/sim/simulate_economy.luau`).
 A regressão `tests/Economy.spec.luau` falha se a progressão "quebrar".
 
+> **Auditoria completa (por Dice, Monte Carlo, 4 perfis):** `ECONOMY_BALANCE_ANALYSIS.md`, gerado
+> por `python3 tools/sim/run_economy_analysis.py` com o simulador NOVO `tools/sim/EconomyModel.luau`
+> (roll idêntico ao DiceCore, pity 50/250). `EconomySim.luau`/`Odds.luau` são **LEGACY** (RollCore
+> global, pity 50/800 fixado) e ficam só para as regressões antigas.
+
 ## Fontes de dinheiro
 
 | Fonte | Fórmula | Config |
 |---|---|---|
 | Renda das estações | Σ (BaseIncome × (1 + (Level−1) × 0,25) × Variante) × (1 + nível Income × 10%) | CharacterConfig, CharacterLevelConfig, VariantConfig, UpgradeConfig |
 | Coletor | renda acumula em `UncollectedMoney` (teto = 1 h de renda) e vai para Money ao pisar/usar | EconomyConfig |
-| Venda | BaseIncome × SellSeconds[raridade] × Variante.SellMultiplier | EconomyConfig.SellSeconds |
+| Venda | `SaleCore.quote`: BaseIncome × SellSeconds[raridade] × Variante.SellMultiplier + reembolso de `UpgradeRefundPercent` × investimento em níveis (**0% hoje**: venda = só a base). Prévia autoritativa: remote `PreviewSale` | EconomyConfig.SellSeconds / UpgradeRefundPercent |
 | Offline | renda/s salva × min(tempo fora, 8 h) × 12% | OfflineIncomeConfig |
 | Diário | tabela de 7 dias (dinheiro escala com a renda) | DailyConfig |
 

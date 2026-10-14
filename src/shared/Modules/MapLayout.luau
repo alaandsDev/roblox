@@ -162,6 +162,25 @@ function MapLayout:conveyorPath(): Path
 end
 
 --[[
+	SENTIDO ÚNICO DA ESTEIRA. Seta, animação do cliente e transporte físico derivam daqui
+	(MapConfig.Conveyor.Direction sobre a direção LOCAL do trecho, nunca um eixo global fixo):
+	    fluxo = direção do trecho na ordem do caminho × Direction
+	    animação  : distância percorrida = tempo × Speed × Direction        (AmbientController)
+	    física    : AssemblyLinearVelocity = fluxo × Speed                   (beltVelocity)
+	    seta ">"  : chevron com a PONTA no sentido do fluxo                  (conveyorChevron)
+]]
+local function conveyorFlow(conveyor: any, dx: number, dz: number): (number, number)
+	assert(conveyor.Direction == 1 or conveyor.Direction == -1, "Conveyor.Direction deve ser 1 ou -1")
+	local len = math.sqrt(dx * dx + dz * dz)
+	assert(len > 1e-9, "direção nula")
+	return dx / len * conveyor.Direction, dz / len * conveyor.Direction
+end
+
+function MapLayout.conveyorFlow(conveyor: any, dx: number, dz: number): (number, number)
+	return conveyorFlow(conveyor, dx, dz)
+end
+
+--[[
 	Velocidade FÍSICA de um trecho da esteira (de `fromX,fromZ` para `toX,toZ`, na ordem do
 	caminho), em studs/s: AssemblyLinearVelocity da parte ancorada = o contato transporta o
 	personagem (mesmo sentido e velocidade da animação do cliente). Devolve (vx, vz).
@@ -175,33 +194,17 @@ function MapLayout.beltVelocity(conveyor: any, fromX: number, fromZ: number, toX
 	end
 	local dx, dz = toX - fromX, toZ - fromZ
 	assert(math.sqrt(dx * dx + dz * dz) > 1e-6, "trecho de esteira com comprimento zero")
-	local fx, fz = MapLayout.conveyorFlow(conveyor, dx, dz)
+	local fx, fz = conveyorFlow(conveyor, dx, dz)
 	return fx * conveyor.Speed, fz * conveyor.Speed
 end
 
---[[
-	SENTIDO ÚNICO DA ESTEIRA. Seta, animação do cliente e transporte físico derivam daqui
-	(MapConfig.Conveyor.Direction sobre a direção LOCAL do trecho, nunca um eixo global fixo):
-	    fluxo = direção do trecho na ordem do caminho × Direction
-	    animação  : distância percorrida = tempo × Speed × Direction        (AmbientController)
-	    física    : AssemblyLinearVelocity = fluxo × Speed                   (beltVelocity)
-	    seta ">"  : chevron com a PONTA no sentido do fluxo                  (conveyorChevron)
-]]
-function MapLayout.conveyorFlow(conveyor: any, dx: number, dz: number): (number, number)
-	assert(conveyor.Direction == 1 or conveyor.Direction == -1, "Conveyor.Direction deve ser 1 ou -1")
-	local len = math.sqrt(dx * dx + dz * dz)
-	assert(len > 1e-9, "direção nula")
-	return dx / len * conveyor.Direction, dz / len * conveyor.Direction
-end
-
--- Barras do chevron ">" no referencial da seta (CFrame.lookAt(posição, posição + fluxo): frente = −Z).
--- Cada barra: deslocamento lateral X e giro em Y (rad). As duas barras se encontram na FRENTE (−Z):
+-- Barras do chevron ">" no referencial da seta (CFrame.lookAt(posição, posição + fluxo): frente = -Z).
+-- Cada barra: deslocamento lateral X e giro em Y (rad). As duas barras se encontram na FRENTE (-Z):
 -- a ponta aponta para o fluxo. (Antes o giro tinha o sinal trocado: a ponta ficava para trás.)
-MapLayout.ChevronHalfWidth = 0.75
-MapLayout.ChevronAngle = math.rad(35)
 function MapLayout.conveyorChevron(side: number): (number, number)
 	assert(side == 1 or side == -1, "lado do chevron: 1 ou -1")
-	return side * MapLayout.ChevronHalfWidth, side * MapLayout.ChevronAngle
+	local halfWidth, angle = 0.75, math.rad(35)
+	return side * halfWidth, side * angle
 end
 
 -- Posição e direção a uma distância ao longo da pista (com volta)

@@ -18,4 +18,7 @@ return {
 	-- Teto do dinheiro não coletado = renda por segundo * MaxUncollectedSeconds (evita AFK infinito)
 	MaxUncollectedSeconds = 60 * 60,
 	CollectCooldown = 0.5,
+	-- Reembolso, na VENDA, do investimento em níveis da unidade (SaleCore). 0 = jogo atual:
+	-- venda = só o valor base. Análise e proposta em ECONOMY_BALANCE_ANALYSIS.md (não aplicada).
+	UpgradeRefundPercent = 0,
 }
