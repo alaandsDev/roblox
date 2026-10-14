@@ -62,6 +62,7 @@ Todos passam por rate limit + `Validator` (tipos, tamanhos, enums) antes do hand
 | SetCharacterFlag | uid, enum Locked/Favorite, bool | dono do uid |
 | UpgradeCharacter | uid, quantidade? (int 1–100) | dono; equipado; nível < máximo; custo calculado no servidor; saldo; sem yield (spam não duplica) |
 | SellCharacter | lista de uids (≤ 500) | dono; nunca travado/favorito/equipado; preço do servidor |
+| PreviewBulkSale / SellBulk | uids (≤ 500) + total visto + requestId (≤ 40) | revalida dono, uid repetido (paga 1x), travado, favorito, equipado, time da Torre, em troca; preço = Σ SaleCore.quote; total diferente da prévia → `price_changed`; requestId repetido → resultado anterior sem pagar; pedido simultâneo → `busy`; rate 3/1 s; resultado estruturado `{sold, count, total, skipped={uid,reason}}` |
 | SellBatch | enum de modo, bool confirmar | seleção e preço no servidor; protegidos nunca entram |
 | SetAutoSell | enum Common..Divine, bool | Secret nem existe no enum e é recusado de novo no handler |
 | BuyDice | id | existe; não exclusivo; não possui; requisito (rolls + anterior); saldo |

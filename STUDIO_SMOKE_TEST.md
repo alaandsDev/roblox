@@ -239,3 +239,30 @@ número do teste + a mensagem do Output.
 | E2 | ECONOMIA | fundir 3 upados, trocar e vender | o investimento soma na fusão e viaja na troca; nunca dinheiro extra | [ ] |
 | E3 | ECONOMIA | Rebirth / offline | 1º Rebirth custa 15M; offline até 25% do próximo Rebirth | [ ] |
 | E4 | ECONOMIA | loja de Dice | Flame 450 / Blade 650 rolls + 60 rolls com o Dice anterior; Forbidden $400M | [ ] |
+
+## FASE V2: MOCHILA + VENDA EM MASSA + TORRE + ROLL/BASE + SKY + AURAS PACK (roteiro objetivo)
+
+**Antes:** `assets/ClassicRobloxSky.rbxm` e `third_party/AurasPack.rbxm` salvos do Studio (ver
+fase anterior). `python tools\build_place.py` deve imprimir "Incluindo ClassicRobloxSky.rbxm em
+Lighting.ClassicRobloxSky" e "Validação do céu: exatamente 1 Sky em Lighting (ClassicRobloxSky)".
+Testar no PC e no emulador (celular paisagem 844×390 e retrato 390×844, tablet 768×1024).
+
+| # | Área | Ação | Esperado | OK |
+|---|---|---|---|---|
+| M1 | MOCHILA | abrir no PC largo | 1 linha: MOCHILA + capacidade · filtros + busca · ⚡ EQUIPAR MELHORES + 🗑; nada cortado/sobreposto | [ ] |
+| M2 | MOCHILA | abrir no tablet e no celular retrato | 2 linhas (compacto: filtros embaixo; retrato: ⚡ só ícone, filtro que cicla + busca); botões confortáveis | [ ] |
+| M3 | MOCHILA | 🗑 | entra no MODO VENDA; rodapé "MODO VENDA · 0 selecionados" | [ ] |
+| M4 | MOCHILA | tocar em 3 cards | borda vermelha, ✓, véu discreto; retrato continua visível e NÃO pisca/recarrega | [ ] |
+| M5 | MOCHILA | tocar num favorito/travado/na base/no time da Torre | aviso do motivo; não marca (cadeado no card) | [ ] |
+| M6 | MOCHILA | SELECIONAR DUPLICATAS | marca só cópias excedentes por personagem+variante; sempre sobra 1; protegidos nunca | [ ] |
+| M7 | MOCHILA | conferir "Você receberá" | igual à soma das vendas individuais (detalhe de cada card) | [ ] |
+| M8 | MOCHILA | 🗑 VENDER X • $Y | pede "Vender X personagens por $Y?"; CANCELAR não vende; CONFIRMAR VENDA vende e paga exatamente $Y | [ ] |
+| M9 | MOCHILA | venda individual (detalhe) | continua funcionando com a prévia base/investido/75% | [ ] |
+| T4 | TORRE | abrir no PC e no celular | linha 1: "Time automático ⚔ poder" + [AUTO: ON]; linha 2: chips (retratos) + [TIME AUTO]; nunca encostados | [ ] |
+| T5 | TORRE | passar o mouse em chip/AUTO/TIME AUTO | tooltip pequeno, dentro da tela, sem cobrir AUTO/TIME AUTO | [ ] |
+| R3 | ROLL | OCULTAR ligado, rolar várias vezes | NENHUM cartão grande no topo; só "Nome • RARIDADE" pequeno; faixa recente com retratos (sem 🎲) | [ ] |
+| B4 | BASE | olhar a base de perto e de longe | letreiro de 3 linhas NOME / RARIDADE • Nv. X / $/s (renda maior); de longe só a renda; some além de ~70 studs | [ ] |
+| B5 | BASE | placa do pedestal | preço do próximo nível + "Nível X > Y"; no 30: renda/s + MÁX (inalterada) | [ ] |
+| S1 | SKY | Play → Explorer > Lighting | exatamente 1 Sky (ClassicRobloxSky); nenhum Sky antigo; céu clássico visível | [ ] |
+| P1 | AURAS PACK | `python tools\audit_auras_pack.py` | termina sem erro (WARNING de Animator.Tags é esperado); gera AURAS_PACK_AUDIT.md (27 seções) + third_party/auras_pack_report.json | [ ] |
+| P2 | AURAS PACK | conferir o jogo | NADA do pack no place (Explorer: sem AurasPack); auras continuam só nos personagens colecionáveis, nunca no avatar | [ ] |

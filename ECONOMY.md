@@ -23,6 +23,7 @@ A regressão `tests/Economy.spec.luau` falha se a progressão "quebrar".
 | Renda das estações | Σ (BaseIncome × (1 + (Level−1) × 0,25) × Variante) × (1 + nível Income × 10%) | CharacterConfig, CharacterLevelConfig, VariantConfig, UpgradeConfig |
 | Coletor | renda acumula em `UncollectedMoney` (teto = 1 h de renda) e vai para Money ao pisar/usar | EconomyConfig |
 | Venda | `SaleCore.quote`: BaseIncome × SellSeconds[raridade] × Variante.SellMultiplier + **75%** do investimento em níveis gravado na própria unidade (`UpgradeInvestment`). SellSeconds: C/U 20 · R 25 · E 30 · L 35 · M 45 · D 60 · S 90 s. Prévia autoritativa: remote `PreviewSale` (base, investido, %, recuperado, total) | EconomyConfig.SellSeconds / UpgradeRefundPercent |
+| Venda em massa (Mochila) | `BulkSaleCore.plan`: total = **Σ `SaleCore.quote`** das unidades válidas (mesma fonte da venda individual, sem bônus nem dinheiro extra). Prévia `PreviewBulkSale`; venda `SellBulk(uids, totalVisto, requestId)` recalcula no servidor e recusa `price_changed` | BulkSaleCore / SellService |
 | Offline | renda/s salva × min(tempo fora, 8 h) × 12% | OfflineIncomeConfig |
 | Diário | tabela de 7 dias (dinheiro escala com a renda) | DailyConfig |
 
