@@ -37,6 +37,7 @@ require("./SaleCore.spec")
 require("./EconomyModel.spec")
 require("./EconomyApplied.spec")
 require("./TowerSession.spec")
+require("./Aura.spec")
 require("./DataSize.spec")
 
 if not T.report() then

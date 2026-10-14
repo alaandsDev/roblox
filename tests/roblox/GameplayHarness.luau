@@ -630,6 +630,71 @@ local _ = weakData
 
 ------------------------------------------------------------------------------------
 end
+do -- AURAS de alta raridade (AuraBuilder via factory): componentes reais, Light < Full, None vazio
+	local Factory = req(env.shared.Modules.CharacterModelFactory)
+	local AuraCfg = req(env.shared.Config.AuraConfig)
+	local CharCfg = req(env.shared.Config.CharacterConfig)
+	local probe = { ok = true, rates = {}, kinds = {} }
+	local function firstOf(rarity)
+		for _, c in CharCfg.List do
+			if c.Rarity == rarity then
+				return c.Id
+			end
+		end
+		return nil
+	end
+	local function measure(model)
+		local rate, emitters, beams, orbits = 0, 0, 0, 0
+		for _, d in model:GetDescendants() do
+			if d:IsA("ParticleEmitter") and d:FindFirstAncestor("AuraCore") or (d:IsA("ParticleEmitter") and d.Parent and string.sub(d.Parent.Name, 1, 4) == "Aura") then
+				emitters += 1
+				rate += d.Rate
+			elseif d:IsA("Beam") and d:GetAttribute("AuraRole") then
+				beams += 1
+			elseif d:IsA("Attachment") and d:GetAttribute("AuraRole") == "Orbit" then
+				orbits += 1
+			end
+		end
+		return rate, emitters, beams, orbits
+	end
+	local last = -1
+	for _, rarity in { "Legendary", "Mythic", "Divine", "Secret" } do
+		local id = firstOf(rarity)
+		local full = Factory.build(id, { vfx = "Full" })
+		local light = Factory.build(id, { vfx = "Light" })
+		local none = Factory.build(id, { vfx = "None" })
+		local rF, eF, bF, oF = measure(full)
+		local rL = measure(light)
+		probe.ok = probe.ok and full:FindFirstChild("AuraCore") ~= nil and none:FindFirstChild("AuraCore") == nil
+			and rF > last and rL < rF and rL > 0 and rF <= AuraCfg.Budget.MaxRatePerAura and full:GetAttribute("AuraStyle") ~= nil
+		probe.rates[rarity] = rF
+		probe.kinds[rarity] = { eF, bF, oF }
+		last = rF
+		full:Destroy()
+		light:Destroy()
+		none:Destroy()
+	end
+	check(probe.ok, "auras: Lendário<Mítico<Divino<Secreto em densidade; Light < Full; None sem aura; dentro do orçamento")
+	check(probe.kinds.Secret[2] >= 4 and probe.kinds.Secret[3] >= 4 and probe.kinds.Legendary[3] == 0, "auras: Secreto com raios/fitas e órbitas; Lendário só corpo + subida")
+	local electric = Factory.build("char_killuo_godspeed", { vfx = "Full" })
+	local bolts = 0
+	for _, d in electric:GetDescendants() do
+		if d:IsA("Beam") and d:GetAttribute("AuraRole") == "Bolt" then
+			bolts += 1
+		end
+	end
+	check(electric:GetAttribute("AuraStyle") == "Electric" and bolts >= 1, "auras: Killuo Relâmpago = Electric com raios (Beam) de verdade")
+	electric:Destroy()
+	-- 10 raros numa base (Light): partículas somadas dentro do orçamento
+	local total = 0
+	for i = 1, 10 do
+		local rarity = ({ "Legendary", "Mythic", "Divine", "Secret" })[(i % 4) + 1]
+		local m = Factory.build(firstOf(rarity), { vfx = "Light" })
+		total += measure(m)
+		m:Destroy()
+	end
+	check(total <= 10 * AuraCfg.Budget.MaxRatePerAura * 0.5, string.format("auras: 10 raros em Light somam %d partículas/s (orçamento)", total))
+end
 do -- TORRE CONTÍNUA (sessão, AUTO, idempotência, PARAR, derrota, desconexão)
 	local clock = 90000
 	S.TowerService._clock = function()

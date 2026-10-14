@@ -245,6 +245,8 @@ function Env.create()
 	end
 
 	local tags = {}
+	local taggedInstances = {}
+	local tagAdded, tagRemoved = {}, {}
 	local stubs = {
 		Players = Players,
 		RunService = {
@@ -265,14 +267,37 @@ function Env.create()
 			AddTag = function(_, instance, tag)
 				tags[tag] = tags[tag] or {}
 				tags[tag][instance:GetFullName()] = true
+				taggedInstances[tag] = taggedInstances[tag] or {}
+				taggedInstances[tag][instance] = true
+				if tagAdded[tag] then
+					tagAdded[tag]:Fire(instance)
+				end
 			end,
 			RemoveTag = function(_, instance, tag)
 				if tags[tag] then
 					tags[tag][instance:GetFullName()] = nil
 				end
+				if taggedInstances[tag] then
+					taggedInstances[tag][instance] = nil
+				end
 			end,
 			HasTag = function(_, instance, tag)
 				return tags[tag] ~= nil and tags[tag][instance:GetFullName()] == true
+			end,
+			GetTagged = function(_, tag)
+				local list = {}
+				for instance in taggedInstances[tag] or {} do
+					table.insert(list, instance)
+				end
+				return list
+			end,
+			GetInstanceAddedSignal = function(_, tag)
+				tagAdded[tag] = tagAdded[tag] or Env.signal()
+				return tagAdded[tag]
+			end,
+			GetInstanceRemovedSignal = function(_, tag)
+				tagRemoved[tag] = tagRemoved[tag] or Env.signal()
+				return tagRemoved[tag]
 			end,
 		},
 		DataStoreService = {

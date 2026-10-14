@@ -33,6 +33,7 @@ local ORDER = {
 	"MusicController",
 	"FeedbackController",
 	"LodController",
+	"AuraController",
 	"TutorialController",
 }
 

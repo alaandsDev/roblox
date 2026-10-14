@@ -199,7 +199,7 @@ local CLIENT_ORDER = {
 	"RevealController", "RollController", "InventoryController", "DiceShopController", "UpgradesController",
 	"SellController", "IndexController", "DailyController", "OfflineController", "SettingsController", "TowerController",
 	"RebirthController", "FusionController", "TradeController", "MissionController", "StoreController", "MusicController",
-	"FeedbackController", "LodController", "TutorialController",
+	"FeedbackController", "LodController", "AuraController", "TutorialController",
 }
 local C = {}
 for _, name in CLIENT_ORDER do
@@ -541,6 +541,26 @@ check(Env.waitFor(function()
 	return data.Settings.ReducedEffects == true
 end, 2), "CONFIGURAÇÕES: Efeitos reduzidos salvo")
 UIKit.Windows.closeAll()
+
+do -- AuraController: um loop central anima órbitas/raios das auras com tag (servidor monta, cliente move)
+	local Factory = clientRequire(env.shared.Modules.CharacterModelFactory)
+	local model = Factory.build("char_killuo_godspeed", { vfx = "Full" })
+	model.Parent = workspace
+	task.wait(0.1)
+	local total = C.AuraController.Count()
+	local orbit, before
+	for _, d in model:GetDescendants() do
+		if d:IsA("Attachment") and d:GetAttribute("AuraRole") == "Orbit" then
+			orbit = d
+		end
+	end
+	C.AuraController._step(0.6) -- força o ranking (perto da câmera) e um passo de animação
+	before = orbit and orbit.Position
+	C.AuraController._step(0.1)
+	local moved = orbit == nil or (orbit.Position - before).Magnitude > 0.01
+	check(total >= 1 and moved, "auras: AuraController registra a aura (tag) e anima no loop central")
+	model:Destroy()
+end
 
 -- Torres: abrir, lutar, animação da batalha, fechar
 S.InventoryService.Add(player, "eclipse_sovereign")

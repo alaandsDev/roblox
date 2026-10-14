@@ -27,6 +27,7 @@ local VariantConfig = require(Shared.Config.VariantConfig)
 local CharacterAssetConfig = require(Shared.Config.CharacterAssetConfig)
 local Pipeline = require(script.Parent.CharacterAssetPipeline)
 local VariantVisualModifier = require(script.Parent.VariantVisualModifier)
+local AuraBuilder = require(script.Parent.AuraBuilder)
 
 local CharacterModelFactory = {}
 
@@ -443,6 +444,16 @@ local function aura(model: Model, torso: BasePart, kind: string, color: Color3)
 	model:SetAttribute("Aura", kind)
 end
 
+-- Aura de raridade: Épico = suave (acima); Lendário+ = sistema de auras (AuraConfig/AuraBuilder:
+-- raridade = intensidade, estilo do personagem = comportamento). Nada disso é só "glow".
+local function rarityAura(model: Model, character: any, rarity: any, mode: string, torso: BasePart)
+	if AuraBuilder.resolve(character.Id, character.Rarity, mode) then
+		AuraBuilder.attach(model, character.Id, character.Rarity, mode, CharacterModelFactory.height(character.Id))
+	elseif rarity.Aura then
+		aura(model, torso, rarity.Aura, rgb(rarity.Color))
+	end
+end
+
 ------------------------------------------------------------------------------------
 
 export type BuildOptions = {
@@ -557,7 +568,7 @@ local function buildAsset(template: Model, character: CharacterConfig.Character,
 	applyVFXMode(model, mode)
 	local torso = model:FindFirstChild("Torso")
 	if mode ~= "None" and opts.aura ~= false and rarity.Aura and torso and torso:IsA("BasePart") then
-		aura(model, torso, rarity.Aura, rgb(rarity.Color))
+		rarityAura(model, character, rarity, mode, torso)
 	end
 	model.WorldPivot = pivot
 	return model
@@ -657,7 +668,7 @@ function CharacterModelFactory.build(characterId: string, options: BuildOptions?
 		end
 	end
 	if mode ~= "None" and opts.aura ~= false and rarity.Aura then
-		aura(model, rig.parts.Torso, rarity.Aura, rgb(rarity.Color))
+		rarityAura(model, character, rarity, mode, rig.parts.Torso)
 	end
 
 	root.CFrame = CFrame.new(0, 0.1, 0)
