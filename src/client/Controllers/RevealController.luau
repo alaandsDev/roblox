@@ -3,7 +3,7 @@
 	RevealController: apresenta o resultado do roll (só visual; o servidor já decidiu tudo).
 	O TIPO de apresentação vem do RevealPlanner (RevealConfig), nunca de ifs por raridade:
 	  Normal/Enhanced -> dado gira e quica, flash, personagem, raridade, nome, NOVO (1.2–1.8 s)
-	  Compact         -> cartão compacto no topo (OCULTAR ligado), estilo por raridade
+	  Compact         -> rótulo pequeno "Nome • RARIDADE" no topo (OCULTAR ligado)
 	  HeroLanding     -> cinemática (Effects/HeroLanding)
 	    RevealController.Play(resultado, { autoRoll = true }) -> plano (bloqueia até terminar,
 	                                                              exceto o compacto)
@@ -71,77 +71,40 @@ end
 ------------------------------------------------------------------------------------
 -- Compacto (topo da tela)
 
-local COMPACT_STYLES = {
-	Plain = { width = 360, height = 64, stroke = 3, glow = false, rainbow = false },
-	Glow = { width = 380, height = 68, stroke = 4, glow = true, rainbow = false },
-	Special = { width = 430, height = 78, stroke = 5, glow = true, rainbow = false },
-	Highlight = { width = 480, height = 88, stroke = 6, glow = true, rainbow = false },
-	Premium = { width = 540, height = 96, stroke = 7, glow = true, rainbow = true },
-}
-
+-- OCULTAR ligado: o antigo cartão grande (360–540 px, com o EMOJI do personagem — 🎲 genérico
+-- nos 121 de lançamento) saiu. O retrato real já aparece na faixa de rolls recentes
+-- (CharacterPreview); aqui fica só um rótulo pequeno "Nome • RARIDADE" que some sozinho.
 local function playCompact(result: any, plan: RevealPlanner.Plan)
-	local style = COMPACT_STYLES[plan.compactStyle] or COMPACT_STYLES.Plain
 	local character = CharacterConfig.ById[result.CharacterId]
 	local color = UIKit.rarityColor(result.Rarity)
 	for _, child in compactRoot:GetChildren() do
-		if child:IsA("Frame") then
+		if child:IsA("GuiObject") then
 			child:Destroy()
 		end
 	end
-	local card = UIKit.new("Frame", {
-		Name = "Compact",
-		Size = UDim2.fromOffset(style.width, style.height),
-		Position = UDim2.new(0.5, 0, 0, 74),
-		AnchorPoint = Vector2.new(0.5, 0),
-		BackgroundColor3 = Theme.Colors.PanelBackground,
-	}, compactRoot)
-	UIKit.corner(card, Theme.CornerRadius)
-	local stroke = UIKit.stroke(card, style.stroke, color, true)
-	if style.rainbow then
-		local gradient = UIKit.new("UIGradient", {
-			Color = ColorSequence.new({
-				ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 80, 80)),
-				ColorSequenceKeypoint.new(0.33, Color3.fromRGB(255, 240, 90)),
-				ColorSequenceKeypoint.new(0.66, Color3.fromRGB(90, 220, 255)),
-				ColorSequenceKeypoint.new(1, Color3.fromRGB(220, 90, 255)),
-			}),
-		}, stroke)
-		task.spawn(function()
-			while gradient.Parent do
-				gradient.Rotation = (gradient.Rotation + 6) % 360
-				task.wait(0.03)
-			end
-		end)
-	elseif style.glow then
-		UIKit.gradient(card, UIKit.darken(color, 0.55), Theme.Colors.PanelBackground, 0)
-	end
-	UIKit.text(card, { text = character.VisualTheme.Icon, size = UDim2.new(0, style.height - 14, 1, -14), position = UDim2.fromOffset(8, 7), stroke = 0 })
-	UIKit.text(card, {
-		text = character.Name,
-		size = UDim2.new(1, -(style.height + 16), 0.52, 0),
-		position = UDim2.new(0, style.height + 4, 0.06, 0),
-		align = Enum.TextXAlignment.Left,
-	})
-	local sub = Localization.t("rarity." .. result.Rarity)
+	local text = (if character then character.Name else "?") .. " • " .. Localization.t("rarity." .. result.Rarity)
 	if result.IsNew then
-		sub ..= "  " .. Localization.t("reveal.new")
+		text ..= " · " .. Localization.t("reveal.new")
 	end
 	if result.AutoSold then
-		sub ..= "  " .. Localization.t("reveal.autosold")
+		text ..= " · " .. Localization.t("reveal.autosold")
 	end
-	UIKit.text(card, {
-		text = sub,
-		size = UDim2.new(1, -(style.height + 16), 0.36, 0),
-		position = UDim2.new(0, style.height + 4, 0.58, 0),
-		align = Enum.TextXAlignment.Left,
+	local tip = UIKit.text(compactRoot, {
+		name = "RollTip",
+		text = text,
+		size = UDim2.fromOffset(280, 34),
+		position = UDim2.new(0.5, 0, 0, 74),
+		anchor = Vector2.new(0.5, 0),
 		color = color,
+		stroke = 2,
 	})
-	local s = UIKit.new("UIScale", { Scale = 0.6 }, card)
-	TweenService:Create(s, TweenInfo.new(0.18, Enum.EasingStyle.Back), { Scale = 1 }):Play()
-	task.delay(if style.rainbow then 2.6 elseif style.glow then 1.8 else 1.3, function()
-		if card.Parent then
-			TweenService:Create(card, TweenInfo.new(0.2), { BackgroundTransparency = 1 }):Play()
-			task.delay(0.2, card.Destroy, card)
+	tip.BackgroundTransparency = 0.25
+	tip.BackgroundColor3 = Theme.Colors.PanelBackground
+	UIKit.corner(tip, 10)
+	local premium = plan.compactStyle == "Premium" or plan.compactStyle == "Highlight"
+	task.delay(if premium then 2.2 else 1.3, function()
+		if tip.Parent then
+			tip:Destroy()
 		end
 	end)
 end

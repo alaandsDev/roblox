@@ -340,8 +340,18 @@ task.wait(1.1)
 click(rollButton)
 check(Env.waitFor(function()
 	local compact = gui("RevealCompact")
-	return compact ~= nil and find(compact, "Compact") ~= nil
-end, 3), "OCULTAR: cartão compacto no topo")
+	return compact ~= nil and find(compact, "RollTip") ~= nil
+end, 3), "OCULTAR: rótulo pequeno no topo")
+do -- o cartão grande (com emoji/Dice genérico) foi removido: só "Nome • RARIDADE"
+	local compact = gui("RevealCompact")
+	local tip = compact and find(compact, "RollTip")
+	local CharacterConfigC = clientRequire(env.shared.Config.CharacterConfig)
+	local last = C.RollController.History()[1]
+	local name = last and CharacterConfigC.ById[last.CharacterId] and CharacterConfigC.ById[last.CharacterId].Name
+	check(compact ~= nil and find(compact, "Compact") == nil and tip ~= nil and tip.Size.X.Offset <= 280 and tip.Size.Y.Offset <= 40
+		and name ~= nil and string.find(tip.Text, name, 1, true) ~= nil and string.find(tip.Text, "🎲", 1, true) == nil,
+		"rolls recentes: sem popup grande nem Dice genérico; só tooltip pequeno Nome • RARIDADE")
+end
 click(find(hud, "Hide"))
 task.wait(0.3)
 
@@ -697,6 +707,35 @@ end
 S.InventoryService.Add(player, "eclipse_sovereign")
 local towers = openWindow("Towers")
 check(towers ~= nil and towers.isOpen, "TORRES abre")
+do -- TORRE: cabeçalho em 2 linhas, AUTO e TIME AUTO separados, chips dentro, em várias larguras
+	local top = find(towers.content, "TowerHeader")
+	for _, w in { 940, 716, 520, 340 } do
+		C.TowerController._layoutFor(w)
+		local function r(name)
+			local g = top and top:FindFirstChild(name, true)
+			return g and { x = g.Position.X.Offset, y = g.Position.Y.Offset, w = g.Size.X.Offset, h = g.Size.Y.Offset }
+		end
+		local auto, team, label = r("AutoPreference"), r("AutoTeam"), r("TeamLabel")
+		local function ov(a, b)
+			return a.x < b.x + b.w and b.x < a.x + a.w and a.y < b.y + b.h and b.y < a.y + a.h
+		end
+		local ok = auto ~= nil and team ~= nil and label ~= nil and auto.y ~= team.y and not ov(auto, team) and not ov(auto, label) and not ov(team, label)
+			and auto.x + auto.w <= w and team.x + team.w <= w and auto.h >= 44 and team.h >= 44
+		local row = top and top:FindFirstChild("TeamRow")
+		for _, chip in (row and row:GetChildren()) or {} do
+			if chip:IsA("Frame") then
+				local c = { x = chip.Position.X.Offset, y = chip.Position.Y.Offset, w = chip.Size.X.Offset, h = chip.Size.Y.Offset }
+				ok = ok and c.x + c.w <= w and c.y + c.h <= top.Size.Y.Offset and not ov(c, team) and not ov(c, auto)
+			end
+		end
+		check(ok, "TORRE cabeçalho " .. w .. ": AUTO e TIME AUTO separados, chips dentro dos limites")
+	end
+	-- tooltip: dentro da tela e sem cobrir os controles críticos (posicionamento por ResponsiveLayout)
+	local L = clientRequire(env.client.UI.ResponsiveLayout)
+	local tipRect = L.placeTooltip({ x = 1000, y = 150, w = 150, h = 44 }, 200, 34, 1280, 720, { { x = 1000, y = 200, w = 170, h = 44 } })
+	check(tipRect.x + tipRect.w <= 1280 and tipRect.y >= 0 and not L.overlaps(tipRect, { x = 1000, y = 200, w = 170, h = 44 }) and not L.overlaps(tipRect, { x = 1000, y = 150, w = 150, h = 44 }),
+		"tooltip da TORRE: dentro da tela, sem cobrir AUTO/TIME AUTO")
+end
 local fight = find(towers.content, "Fight_Ember")
 check(fight ~= nil, "botão LUTAR da Torre das Brasas")
 if fight then

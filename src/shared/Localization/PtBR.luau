@@ -327,6 +327,8 @@ return {
 	["tower.defeat"] = "DERROTA",
 	["tower.start"] = "INICIAR",
 	["tower.auto_on"] = "AUTO: ON",
+	["tower.tip_auto"] = "AUTO: sobe os andares sozinho",
+	["tower.tip_auto_team"] = "Escolhe os 5 mais fortes",
 	["tower.auto_off"] = "AUTO: OFF",
 	["tower.next"] = "PRÓXIMO ▶",
 	["tower.hide"] = "OCULTAR",

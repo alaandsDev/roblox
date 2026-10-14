@@ -734,6 +734,83 @@ function UIKit.window(opts: WindowOptions): Window
 end
 
 --[[
+	TOOLTIP compacto (só PC/mouse; no toque não aparece e não cobre nada): posição escolhida por
+	ResponsiveLayout.placeTooltip — abaixo/acima/lado, sempre dentro da tela e longe do alvo e
+	dos controles críticos passados em "avoid". Um único rótulo reaproveitado (sem criar por hover).
+]]
+local tooltipGui: ScreenGui? = nil
+local tooltipLabel: TextLabel? = nil
+local function absRect(g: GuiObject): ResponsiveLayout.Rect?
+	local ok, pos, size = pcall(function()
+		return g.AbsolutePosition, g.AbsoluteSize
+	end)
+	if not ok then
+		return nil
+	end
+	return { x = pos.X, y = pos.Y, w = size.X, h = size.Y }
+end
+UIKit._absRect = absRect
+
+function UIKit.showTooltip(target: GuiObject, text: string, avoid: { GuiObject }?): TextLabel?
+	local gui = tooltipGui
+	if not gui then
+		local created = UIKit.screen("Tooltip", 200)
+		created.IgnoreGuiInset = true
+		tooltipGui = created
+		gui = created
+		local label = UIKit.text(created, { name = "Tip", text = "", z = 10, stroke = 2 })
+		label.BackgroundTransparency = 0.15
+		label.BackgroundColor3 = Theme.Colors.PanelBackground
+		UIKit.corner(label, 8)
+		tooltipLabel = label
+	end
+	local label = tooltipLabel :: TextLabel
+	local r = absRect(target)
+	if not r then
+		return nil
+	end
+	local viewport = viewportSize()
+	local w = math.clamp(#text * 7 + 24, 120, 260)
+	local h = 34
+	local rects = {}
+	local avoidList: { GuiObject } = avoid or {}
+	for _, g in avoidList do
+		local a = absRect(g)
+		if a and g ~= target then
+			table.insert(rects, a)
+		end
+	end
+	local place = ResponsiveLayout.placeTooltip(r, w, h, viewport.X, viewport.Y, rects)
+	label.Text = text
+	label.Size = UDim2.fromOffset(place.w, place.h)
+	label.Position = UDim2.fromOffset(place.x, place.y)
+	label.Visible = true
+	if gui then
+		gui.Enabled = true
+	end
+	return label
+end
+
+function UIKit.hideTooltip()
+	if tooltipGui then
+		tooltipGui.Enabled = false
+	end
+end
+
+-- Liga um tooltip a um botão/chip (texto pode ser função para valores atuais)
+function UIKit.tooltip(target: GuiObject, text: string | () -> string, avoid: (() -> { GuiObject })?)
+	-- pcall: fora do Roblox (harness) nem toda classe expõe os eventos de mouse
+	pcall(function()
+		target.MouseEnter:Connect(function()
+			local value: string = if type(text) == "function" then (text :: () -> string)() else text :: string
+			UIKit.showTooltip(target, value, if avoid then avoid() else nil)
+		end)
+		target.MouseLeave:Connect(UIKit.hideTooltip)
+		target.Destroying:Connect(UIKit.hideTooltip)
+	end)
+end
+
+--[[
 	Janela RESPONSIVA: o painel acompanha a tela (ResponsiveLayout.fitWindow) e o controller
 	REORGANIZA o conteúdo pela largura recebida em onLayout(larguraConteúdo, alturaConteúdo).
 	Em telas pequenas o painel ganha um "boost" de leitura (alvos de toque legíveis), mas a

@@ -22,6 +22,8 @@ local Net = require(Shared.Modules.Net)
 
 local UI = script.Parent.Parent.UI
 local UIKit = require(UI.UIKit)
+local CharacterPreview = require(UI.CharacterPreview)
+local ResponsiveLayout = require(UI.ResponsiveLayout)
 local Theme = require(UI.UITheme)
 local DataController = require(script.Parent.DataController)
 local NotificationController = require(script.Parent.NotificationController)
@@ -34,6 +36,10 @@ local window: UIKit.Window
 local list: Frame
 local teamRow: Frame
 local teamLabel: TextLabel
+local towerTop: Frame
+local autoButton: TextButton
+local autoTeamButton: TextButton
+local towerSize = Vector2.new(736, 438)
 local fighting = false
 local battleGui: ScreenGui
 
@@ -436,6 +442,7 @@ function TowerController.Refresh()
 			child:Destroy()
 		end
 	end
+	CharacterPreview.releaseScope(teamRow)
 	for _, child in teamRow:GetChildren() do
 		if child:IsA("Frame") then
 			child:Destroy()
@@ -447,12 +454,19 @@ function TowerController.Refresh()
 		local item = data.Inventory[uid]
 		teamPower += Formulas:unitPower(item, data)
 		local character = CharacterConfig.ById[item.Id]
-		local chip = UIKit.new("Frame", { Size = UDim2.fromOffset(52, 52), BackgroundColor3 = Theme.Colors.Card, LayoutOrder = i }, teamRow)
+		local chip = UIKit.new("Frame", { Name = "TeamChip" .. i, Size = UDim2.fromOffset(44, 44), BackgroundColor3 = Theme.Colors.Card, LayoutOrder = i, ClipsDescendants = true }, teamRow)
 		UIKit.corner(chip, 10)
 		UIKit.stroke(chip, 3, UIKit.rarityColor(character.Rarity), true)
-		UIKit.text(chip, { text = character.VisualTheme.Icon, size = UDim2.fromScale(0.8, 0.8), position = UDim2.fromScale(0.5, 0.5), anchor = Vector2.new(0.5, 0.5), stroke = 0 })
+		-- retrato real (mesmo CharacterPreview da Mochila); ícone só se o asset falhar
+		CharacterPreview.attach(chip, item.Id, item.Variant, "head", character.VisualTheme.Icon)
+		local power = Formulas:unitPower(item, data)
+		UIKit.tooltip(chip, character.Name .. " · ⚔️ " .. NumberFormatter.abbreviate(power), function()
+			return { autoButton, autoTeamButton }
+		end)
 	end
 	teamLabel.Text = Localization.t(if #(data.TowerTeam or {}) > 0 then "tower.team_custom" else "tower.team_auto", { power = NumberFormatter.abbreviate(teamPower) })
+	TowerController.Layout()
+	CharacterPreview.update()
 	for _, tower in TowerConfig.List do
 		local high = highest(data, tower.Id)
 		local isUnlocked = unlocked(data, tower)
@@ -498,24 +512,69 @@ function TowerController.Refresh()
 	end
 end
 
+-- Cabeçalho em 2 linhas pela largura atual: AUTO e TIME AUTO nunca se sobrepõem
+local function place(g: GuiObject, r: ResponsiveLayout.Rect)
+	g.AnchorPoint = Vector2.zero
+	g.Position = UDim2.fromOffset(r.x, r.y)
+	g.Size = UDim2.fromOffset(r.w, r.h)
+end
+
+function TowerController.Layout()
+	if not towerTop or not autoButton then
+		return
+	end
+	local chips = {}
+	for _, child in teamRow:GetChildren() do
+		if child:IsA("Frame") then
+			table.insert(chips, child)
+		end
+	end
+	table.sort(chips, function(a, b)
+		return a.LayoutOrder < b.LayoutOrder
+	end)
+	local th = ResponsiveLayout.towerHeader(towerSize.X, #chips)
+	towerTop.Size = UDim2.fromOffset(towerSize.X, th.height)
+	towerTop:SetAttribute("LayoutMode", th.mode)
+	place(teamLabel, th.label)
+	place(autoButton, th.auto)
+	place(autoTeamButton, th.autoTeam)
+	-- chips posicionados à mão (sem UIListLayout competindo)
+	local layout = teamRow:FindFirstChildOfClass("UIListLayout")
+	if layout then
+		layout:Destroy()
+	end
+	teamRow.Position = UDim2.fromOffset(0, 0)
+	teamRow.Size = UDim2.fromOffset(towerSize.X, th.height)
+	for i, chip in chips do
+		place(chip, th.chips[i])
+	end
+	list.Position = UDim2.fromOffset(10, th.height + 16)
+	list.Size = UDim2.new(1, -20, 1, -(th.height + 18))
+end
+
 function TowerController.Init()
 	window = UIKit.window({ name = "Towers", title = Localization.t("tower.title"), icon = "🗼", size = Theme.PopupSizes.Medium, header = Color3.fromRGB(120, 70, 220) })
 	local content = window.content
-	local top = UIKit.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, -20, 0, 60), Position = UDim2.fromOffset(10, 8) }, content)
-	teamLabel = UIKit.text(top, { size = UDim2.new(0.42, 0, 0, 28), position = UDim2.fromOffset(0, 16), align = Enum.TextXAlignment.Left })
-	teamRow = UIKit.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(0.38, 0, 1, 0), Position = UDim2.fromScale(0.42, 0) }, top)
+	-- CABEÇALHO em 2 linhas (ResponsiveLayout.towerHeader, posições em Layout()):
+	--   "Time automático · ⚔ poder" ........ [AUTO: ON]
+	--   [chip][chip][chip][chip][chip] ..... [TIME AUTO]
+	local top = UIKit.new("Frame", { Name = "TowerHeader", BackgroundTransparency = 1, Size = UDim2.new(1, -20, 0, 94), Position = UDim2.fromOffset(10, 8) }, content)
+	towerTop = top
+	teamLabel = UIKit.text(top, { name = "TeamLabel", size = UDim2.new(0.42, 0, 0, 28), position = UDim2.fromOffset(0, 16), align = Enum.TextXAlignment.Left })
+	teamRow = UIKit.new("Frame", { Name = "TeamRow", BackgroundTransparency = 1, Size = UDim2.new(0.38, 0, 1, 0), Position = UDim2.fromScale(0.42, 0) }, top)
 	UIKit.list(teamRow, true, 6)
-	UIKit.button(top, {
+	autoTeamButton = UIKit.button(top, {
+		name = "AutoTeam",
 		text = Localization.t("tower.auto_team"),
 		color = Theme.Colors.Purple,
-		size = UDim2.fromOffset(150, 48),
-		position = UDim2.new(1, 0, 0.5, 0),
-		anchor = Vector2.new(1, 0.5),
 		onClick = function()
 			Net.request("SetTowerTeam", {})
 		end,
 	})
-	list = UIKit.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, -20, 1, -84), Position = UDim2.fromOffset(10, 76) }, content)
+	UIKit.tooltip(autoTeamButton, Localization.t("tower.tip_auto_team"), function()
+		return { autoButton }
+	end)
+	list = UIKit.new("ScrollingFrame", { Name = "TowerList", BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 6, CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y, Size = UDim2.new(1, -20, 1, -112), Position = UDim2.fromOffset(10, 110) }, content) :: any
 	UIKit.list(list, false, 10)
 	window.Opened:Connect(TowerController.Refresh)
 	battleGui = UIKit.screen("Battle", 120)
@@ -523,20 +582,33 @@ function TowerController.Init()
 	battleGui.Enabled = false
 	buildCompact()
 	-- AUTO (preferência deste cliente; o servidor decide o resto)
-	local autoButton: TextButton
 	autoButton = UIKit.button(top, {
 		name = "AutoPreference",
 		text = Localization.t(if autoWanted then "tower.auto_on" else "tower.auto_off"),
 		color = if autoWanted then Theme.Colors.Success else Color3.fromRGB(70, 70, 92),
-		size = UDim2.fromOffset(130, 48),
-		position = UDim2.new(1, -160, 0.5, 0),
-		anchor = Vector2.new(1, 0.5),
 		onClick = function()
 			autoWanted = not autoWanted
 			UIKit.setButtonText(autoButton, Localization.t(if autoWanted then "tower.auto_on" else "tower.auto_off"))
 			UIKit.setButtonColor(autoButton, if autoWanted then Theme.Colors.Success else Color3.fromRGB(70, 70, 92))
 		end,
 	})
+	UIKit.tooltip(autoButton, Localization.t("tower.tip_auto"), function()
+		return { autoTeamButton }
+	end)
+	window.Closed:Connect(function()
+		UIKit.hideTooltip()
+		CharacterPreview.releaseScope(teamRow)
+	end)
+	UIKit.fitWindow(window, Vector2.new(980, 600), function(w, h)
+		towerSize = Vector2.new(w - 20, h)
+		TowerController.Layout()
+	end)
+end
+
+-- (testes/DEV) força uma largura para conferir os modos do cabeçalho
+function TowerController._layoutFor(w: number)
+	towerSize = Vector2.new(w, towerSize.Y)
+	TowerController.Layout()
 end
 
 function TowerController.Start()
