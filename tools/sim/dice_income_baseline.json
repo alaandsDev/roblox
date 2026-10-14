@@ -1,0 +1,1922 @@
+{
+ "label": "before",
+ "hours": 40,
+ "seeds": 24,
+ "dice": [
+  "Starter",
+  "Lucky",
+  "Rampart",
+  "Shinobi",
+  "Flame",
+  "Blade",
+  "Fighter",
+  "Storm",
+  "Spirit",
+  "Arcane",
+  "Shadow",
+  "Void",
+  "Colossus",
+  "Awakened",
+  "Celestial",
+  "Forbidden"
+ ],
+ "rows": [
+  {
+   "baseIncome": 1,
+   "dice": "Starter",
+   "id": "char_anny_school",
+   "incomeL1": 1,
+   "incomeL30": 8.25,
+   "order": 1,
+   "rarity": "Common",
+   "sell": 20,
+   "tier": 1,
+   "upgradeToMax": 59029
+  },
+  {
+   "baseIncome": 1,
+   "dice": "Starter",
+   "id": "char_mikaza_formal",
+   "incomeL1": 1,
+   "incomeL30": 8.25,
+   "order": 1,
+   "rarity": "Common",
+   "sell": 20,
+   "tier": 1,
+   "upgradeToMax": 59029
+  },
+  {
+   "baseIncome": 1,
+   "dice": "Starter",
+   "id": "char_sacha_base",
+   "incomeL1": 1,
+   "incomeL30": 8.25,
+   "order": 1,
+   "rarity": "Common",
+   "sell": 20,
+   "tier": 1,
+   "upgradeToMax": 59029
+  },
+  {
+   "baseIncome": 1,
+   "dice": "Starter",
+   "id": "char_sacha_suit",
+   "incomeL1": 1,
+   "incomeL30": 8.25,
+   "order": 1,
+   "rarity": "Common",
+   "sell": 20,
+   "tier": 1,
+   "upgradeToMax": 59029
+  },
+  {
+   "baseIncome": 4,
+   "dice": "Starter",
+   "id": "char_chiko_base",
+   "incomeL1": 4,
+   "incomeL30": 33,
+   "order": 1,
+   "rarity": "Uncommon",
+   "sell": 80,
+   "tier": 2,
+   "upgradeToMax": 236163
+  },
+  {
+   "baseIncome": 4,
+   "dice": "Starter",
+   "id": "char_erwyn_gala",
+   "incomeL1": 4,
+   "incomeL30": 33,
+   "order": 1,
+   "rarity": "Uncommon",
+   "sell": 80,
+   "tier": 2,
+   "upgradeToMax": 236163
+  },
+  {
+   "baseIncome": 9,
+   "dice": "Starter",
+   "id": "char_kurilo_base",
+   "incomeL1": 9,
+   "incomeL30": 74.25,
+   "order": 1,
+   "rarity": "Rare",
+   "sell": 225,
+   "tier": 3,
+   "upgradeToMax": 531382
+  },
+  {
+   "baseIncome": 25,
+   "dice": "Starter",
+   "id": "char_saitano_base",
+   "incomeL1": 25,
+   "incomeL30": 206.25,
+   "order": 1,
+   "rarity": "Epic",
+   "sell": 750,
+   "tier": 4,
+   "upgradeToMax": 1476087
+  },
+  {
+   "baseIncome": 1,
+   "dice": "Lucky",
+   "id": "char_gom_base",
+   "incomeL1": 1,
+   "incomeL30": 8.25,
+   "order": 2,
+   "rarity": "Common",
+   "sell": 20,
+   "tier": 1,
+   "upgradeToMax": 59029
+  },
+  {
+   "baseIncome": 1,
+   "dice": "Lucky",
+   "id": "char_sanjo_young",
+   "incomeL1": 1,
+   "incomeL30": 8.25,
+   "order": 2,
+   "rarity": "Common",
+   "sell": 20,
+   "tier": 1,
+   "upgradeToMax": 59029
+  },
+  {
+   "baseIncome": 4,
+   "dice": "Lucky",
+   "id": "char_kazumo_base",
+   "incomeL1": 4,
+   "incomeL30": 33,
+   "order": 2,
+   "rarity": "Uncommon",
+   "sell": 80,
+   "tier": 2,
+   "upgradeToMax": 236163
+  },
+  {
+   "baseIncome": 4,
+   "dice": "Lucky",
+   "id": "char_rinn_base",
+   "incomeL1": 4,
+   "incomeL30": 33,
+   "order": 2,
+   "rarity": "Uncommon",
+   "sell": 80,
+   "tier": 2,
+   "upgradeToMax": 236163
+  },
+  {
+   "baseIncome": 9,
+   "dice": "Lucky",
+   "id": "char_grei_base",
+   "incomeL1": 9,
+   "incomeL30": 74.25,
+   "order": 2,
+   "rarity": "Rare",
+   "sell": 225,
+   "tier": 3,
+   "upgradeToMax": 531382
+  },
+  {
+   "baseIncome": 9,
+   "dice": "Lucky",
+   "id": "char_rukya_base",
+   "incomeL1": 9,
+   "incomeL30": 74.25,
+   "order": 2,
+   "rarity": "Rare",
+   "sell": 225,
+   "tier": 3,
+   "upgradeToMax": 531382
+  },
+  {
+   "baseIncome": 25,
+   "dice": "Lucky",
+   "id": "char_hizoka_base",
+   "incomeL1": 25,
+   "incomeL30": 206.25,
+   "order": 2,
+   "rarity": "Epic",
+   "sell": 750,
+   "tier": 4,
+   "upgradeToMax": 1476087
+  },
+  {
+   "baseIncome": 1,
+   "dice": "Rampart",
+   "id": "char_erem_base",
+   "incomeL1": 1,
+   "incomeL30": 8.25,
+   "order": 3,
+   "rarity": "Common",
+   "sell": 20,
+   "tier": 1,
+   "upgradeToMax": 59029
+  },
+  {
+   "baseIncome": 4,
+   "dice": "Rampart",
+   "id": "char_anny_base",
+   "incomeL1": 4,
+   "incomeL30": 33,
+   "order": 3,
+   "rarity": "Uncommon",
+   "sell": 80,
+   "tier": 2,
+   "upgradeToMax": 236163
+  },
+  {
+   "baseIncome": 4,
+   "dice": "Rampart",
+   "id": "char_mikaza_base",
+   "incomeL1": 4,
+   "incomeL30": 33,
+   "order": 3,
+   "rarity": "Uncommon",
+   "sell": 80,
+   "tier": 2,
+   "upgradeToMax": 236163
+  },
+  {
+   "baseIncome": 9,
+   "dice": "Rampart",
+   "id": "char_erem_veteran",
+   "incomeL1": 9,
+   "incomeL30": 74.25,
+   "order": 3,
+   "rarity": "Rare",
+   "sell": 225,
+   "tier": 3,
+   "upgradeToMax": 531382
+  },
+  {
+   "baseIncome": 9,
+   "dice": "Rampart",
+   "id": "char_erwyn_base",
+   "incomeL1": 9,
+   "incomeL30": 74.25,
+   "order": 3,
+   "rarity": "Rare",
+   "sell": 225,
+   "tier": 3,
+   "upgradeToMax": 531382
+  },
+  {
+   "baseIncome": 25,
+   "dice": "Rampart",
+   "id": "char_anny_titan",
+   "incomeL1": 25,
+   "incomeL30": 206.25,
+   "order": 3,
+   "rarity": "Epic",
+   "sell": 750,
+   "tier": 4,
+   "upgradeToMax": 1476087
+  },
+  {
+   "baseIncome": 25,
+   "dice": "Rampart",
+   "id": "char_erem_titan",
+   "incomeL1": 25,
+   "incomeL30": 206.25,
+   "order": 3,
+   "rarity": "Epic",
+   "sell": 750,
+   "tier": 4,
+   "upgradeToMax": 1476087
+  },
+  {
+   "baseIncome": 1,
+   "dice": "Shinobi",
+   "id": "char_narotu_young",
+   "incomeL1": 1,
+   "incomeL30": 8.25,
+   "order": 4,
+   "rarity": "Common",
+   "sell": 20,
+   "tier": 1,
+   "upgradeToMax": 59029
+  },
+  {
+   "baseIncome": 1,
+   "dice": "Shinobi",
+   "id": "char_sasuko_young",
+   "incomeL1": 1,
+   "incomeL30": 8.25,
+   "order": 4,
+   "rarity": "Common",
+   "sell": 20,
+   "tier": 1,
+   "upgradeToMax": 59029
+  },
+  {
+   "baseIncome": 4,
+   "dice": "Shinobi",
+   "id": "char_nejo_base",
+   "incomeL1": 4,
+   "incomeL30": 33,
+   "order": 4,
+   "rarity": "Uncommon",
+   "sell": 80,
+   "tier": 2,
+   "upgradeToMax": 236163
+  },
+  {
+   "baseIncome": 4,
+   "dice": "Shinobi",
+   "id": "char_roqueli_base",
+   "incomeL1": 4,
+   "incomeL30": 33,
+   "order": 4,
+   "rarity": "Uncommon",
+   "sell": 80,
+   "tier": 2,
+   "upgradeToMax": 236163
+  },
+  {
+   "baseIncome": 9,
+   "dice": "Shinobi",
+   "id": "char_gaaro_base",
+   "incomeL1": 9,
+   "incomeL30": 74.25,
+   "order": 4,
+   "rarity": "Rare",
+   "sell": 225,
+   "tier": 3,
+   "upgradeToMax": 531382
+  },
+  {
+   "baseIncome": 9,
+   "dice": "Shinobi",
+   "id": "char_zabuzo_base",
+   "incomeL1": 9,
+   "incomeL30": 74.25,
+   "order": 4,
+   "rarity": "Rare",
+   "sell": 225,
+   "tier": 3,
+   "upgradeToMax": 531382
+  },
+  {
+   "baseIncome": 25,
+   "dice": "Shinobi",
+   "id": "char_kakaxi_base",
+   "incomeL1": 25,
+   "incomeL30": 206.25,
+   "order": 4,
+   "rarity": "Epic",
+   "sell": 750,
+   "tier": 4,
+   "upgradeToMax": 1476087
+  },
+  {
+   "baseIncome": 25,
+   "dice": "Shinobi",
+   "id": "char_narotu_base",
+   "incomeL1": 25,
+   "incomeL30": 206.25,
+   "order": 4,
+   "rarity": "Epic",
+   "sell": 750,
+   "tier": 4,
+   "upgradeToMax": 1476087
+  },
+  {
+   "baseIncome": 4,
+   "dice": "Flame",
+   "id": "char_natzu_base",
+   "incomeL1": 4,
+   "incomeL30": 33,
+   "order": 5,
+   "rarity": "Uncommon",
+   "sell": 80,
+   "tier": 2,
+   "upgradeToMax": 236163
+  },
+  {
+   "baseIncome": 4,
+   "dice": "Flame",
+   "id": "char_todoruki_base",
+   "incomeL1": 4,
+   "incomeL30": 33,
+   "order": 5,
+   "rarity": "Uncommon",
+   "sell": 80,
+   "tier": 2,
+   "upgradeToMax": 236163
+  },
+  {
+   "baseIncome": 9,
+   "dice": "Flame",
+   "id": "char_ase_base",
+   "incomeL1": 9,
+   "incomeL30": 74.25,
+   "order": 5,
+   "rarity": "Rare",
+   "sell": 225,
+   "tier": 3,
+   "upgradeToMax": 531382
+  },
+  {
+   "baseIncome": 9,
+   "dice": "Flame",
+   "id": "char_bakugu_base",
+   "incomeL1": 9,
+   "incomeL30": 74.25,
+   "order": 5,
+   "rarity": "Rare",
+   "sell": 225,
+   "tier": 3,
+   "upgradeToMax": 531382
+  },
+  {
+   "baseIncome": 25,
+   "dice": "Flame",
+   "id": "char_yamamotu_base",
+   "incomeL1": 25,
+   "incomeL30": 206.25,
+   "order": 5,
+   "rarity": "Epic",
+   "sell": 750,
+   "tier": 4,
+   "upgradeToMax": 1476087
+  },
+  {
+   "baseIncome": 60,
+   "dice": "Flame",
+   "id": "char_akaino_base",
+   "incomeL1": 60,
+   "incomeL30": 495,
+   "order": 5,
+   "rarity": "Legendary",
+   "sell": 2100,
+   "tier": 5,
+   "upgradeToMax": 3542630
+  },
+  {
+   "baseIncome": 4,
+   "dice": "Blade",
+   "id": "char_ichiro_base",
+   "incomeL1": 4,
+   "incomeL30": 33,
+   "order": 6,
+   "rarity": "Uncommon",
+   "sell": 80,
+   "tier": 2,
+   "upgradeToMax": 236163
+  },
+  {
+   "baseIncome": 4,
+   "dice": "Blade",
+   "id": "char_zoru_young",
+   "incomeL1": 4,
+   "incomeL30": 33,
+   "order": 6,
+   "rarity": "Uncommon",
+   "sell": 80,
+   "tier": 2,
+   "upgradeToMax": 236163
+  },
+  {
+   "baseIncome": 9,
+   "dice": "Blade",
+   "id": "char_ginn_base",
+   "incomeL1": 9,
+   "incomeL30": 74.25,
+   "order": 6,
+   "rarity": "Rare",
+   "sell": 225,
+   "tier": 3,
+   "upgradeToMax": 531382
+  },
+  {
+   "baseIncome": 9,
+   "dice": "Blade",
+   "id": "char_kisuko_base",
+   "incomeL1": 9,
+   "incomeL30": 74.25,
+   "order": 6,
+   "rarity": "Rare",
+   "sell": 225,
+   "tier": 3,
+   "upgradeToMax": 531382
+  },
+  {
+   "baseIncome": 9,
+   "dice": "Blade",
+   "id": "char_trunkz_base",
+   "incomeL1": 9,
+   "incomeL30": 74.25,
+   "order": 6,
+   "rarity": "Rare",
+   "sell": 225,
+   "tier": 3,
+   "upgradeToMax": 531382
+  },
+  {
+   "baseIncome": 25,
+   "dice": "Blade",
+   "id": "char_tanjiru_base",
+   "incomeL1": 25,
+   "incomeL30": 206.25,
+   "order": 6,
+   "rarity": "Epic",
+   "sell": 750,
+   "tier": 4,
+   "upgradeToMax": 1476087
+  },
+  {
+   "baseIncome": 25,
+   "dice": "Blade",
+   "id": "char_zoru_base",
+   "incomeL1": 25,
+   "incomeL30": 206.25,
+   "order": 6,
+   "rarity": "Epic",
+   "sell": 750,
+   "tier": 4,
+   "upgradeToMax": 1476087
+  },
+  {
+   "baseIncome": 60,
+   "dice": "Blade",
+   "id": "char_shankz_base",
+   "incomeL1": 60,
+   "incomeL30": 495,
+   "order": 6,
+   "rarity": "Legendary",
+   "sell": 2100,
+   "tier": 5,
+   "upgradeToMax": 3542630
+  },
+  {
+   "baseIncome": 4,
+   "dice": "Fighter",
+   "id": "char_deko_base",
+   "incomeL1": 4,
+   "incomeL30": 33,
+   "order": 7,
+   "rarity": "Uncommon",
+   "sell": 80,
+   "tier": 2,
+   "upgradeToMax": 236163
+  },
+  {
+   "baseIncome": 4,
+   "dice": "Fighter",
+   "id": "char_goko_base",
+   "incomeL1": 4,
+   "incomeL30": 33,
+   "order": 7,
+   "rarity": "Uncommon",
+   "sell": 80,
+   "tier": 2,
+   "upgradeToMax": 236163
+  },
+  {
+   "baseIncome": 4,
+   "dice": "Fighter",
+   "id": "char_yuzuke_base",
+   "incomeL1": 4,
+   "incomeL30": 33,
+   "order": 7,
+   "rarity": "Uncommon",
+   "sell": 80,
+   "tier": 2,
+   "upgradeToMax": 236163
+  },
+  {
+   "baseIncome": 9,
+   "dice": "Fighter",
+   "id": "char_lemilio_base",
+   "incomeL1": 9,
+   "incomeL30": 74.25,
+   "order": 7,
+   "rarity": "Rare",
+   "sell": 225,
+   "tier": 3,
+   "upgradeToMax": 531382
+  },
+  {
+   "baseIncome": 9,
+   "dice": "Fighter",
+   "id": "char_lufy_base",
+   "incomeL1": 9,
+   "incomeL30": 74.25,
+   "order": 7,
+   "rarity": "Rare",
+   "sell": 225,
+   "tier": 3,
+   "upgradeToMax": 531382
+  },
+  {
+   "baseIncome": 25,
+   "dice": "Fighter",
+   "id": "char_pikkolo_base",
+   "incomeL1": 25,
+   "incomeL30": 206.25,
+   "order": 7,
+   "rarity": "Epic",
+   "sell": 750,
+   "tier": 4,
+   "upgradeToMax": 1476087
+  },
+  {
+   "baseIncome": 60,
+   "dice": "Fighter",
+   "id": "char_olmaito_base",
+   "incomeL1": 60,
+   "incomeL30": 495,
+   "order": 7,
+   "rarity": "Legendary",
+   "sell": 2100,
+   "tier": 5,
+   "upgradeToMax": 3542630
+  },
+  {
+   "baseIncome": 9,
+   "dice": "Storm",
+   "id": "char_killuo_base",
+   "incomeL1": 9,
+   "incomeL30": 74.25,
+   "order": 8,
+   "rarity": "Rare",
+   "sell": 225,
+   "tier": 3,
+   "upgradeToMax": 531382
+  },
+  {
+   "baseIncome": 9,
+   "dice": "Storm",
+   "id": "char_lanseiro_base",
+   "incomeL1": 9,
+   "incomeL30": 74.25,
+   "order": 8,
+   "rarity": "Rare",
+   "sell": 225,
+   "tier": 3,
+   "upgradeToMax": 531382
+  },
+  {
+   "baseIncome": 9,
+   "dice": "Storm",
+   "id": "char_minatu_base",
+   "incomeL1": 9,
+   "incomeL30": 74.25,
+   "order": 8,
+   "rarity": "Rare",
+   "sell": 225,
+   "tier": 3,
+   "upgradeToMax": 531382
+  },
+  {
+   "baseIncome": 25,
+   "dice": "Storm",
+   "id": "char_goko_majin_saga",
+   "incomeL1": 25,
+   "incomeL30": 206.25,
+   "order": 8,
+   "rarity": "Epic",
+   "sell": 750,
+   "tier": 4,
+   "upgradeToMax": 1476087
+  },
+  {
+   "baseIncome": 25,
+   "dice": "Storm",
+   "id": "char_kaulifa_base",
+   "incomeL1": 25,
+   "incomeL30": 206.25,
+   "order": 8,
+   "rarity": "Epic",
+   "sell": 750,
+   "tier": 4,
+   "upgradeToMax": 1476087
+  },
+  {
+   "baseIncome": 60,
+   "dice": "Storm",
+   "id": "char_deko_awakened",
+   "incomeL1": 60,
+   "incomeL30": 495,
+   "order": 8,
+   "rarity": "Legendary",
+   "sell": 2100,
+   "tier": 5,
+   "upgradeToMax": 3542630
+  },
+  {
+   "baseIncome": 60,
+   "dice": "Storm",
+   "id": "char_killuo_godspeed",
+   "incomeL1": 60,
+   "incomeL30": 495,
+   "order": 8,
+   "rarity": "Legendary",
+   "sell": 2100,
+   "tier": 5,
+   "upgradeToMax": 3542630
+  },
+  {
+   "baseIncome": 9,
+   "dice": "Spirit",
+   "id": "char_toshiru_base",
+   "incomeL1": 9,
+   "incomeL30": 74.25,
+   "order": 9,
+   "rarity": "Rare",
+   "sell": 225,
+   "tier": 3,
+   "upgradeToMax": 531382
+  },
+  {
+   "baseIncome": 25,
+   "dice": "Spirit",
+   "id": "char_byakuto_base",
+   "incomeL1": 25,
+   "incomeL30": 206.25,
+   "order": 9,
+   "rarity": "Epic",
+   "sell": 750,
+   "tier": 4,
+   "upgradeToMax": 1476087
+  },
+  {
+   "baseIncome": 25,
+   "dice": "Spirit",
+   "id": "char_shunzo_base",
+   "incomeL1": 25,
+   "incomeL30": 206.25,
+   "order": 9,
+   "rarity": "Epic",
+   "sell": 750,
+   "tier": 4,
+   "upgradeToMax": 1476087
+  },
+  {
+   "baseIncome": 25,
+   "dice": "Spirit",
+   "id": "char_starko_base",
+   "incomeL1": 25,
+   "incomeL30": 206.25,
+   "order": 9,
+   "rarity": "Epic",
+   "sell": 750,
+   "tier": 4,
+   "upgradeToMax": 1476087
+  },
+  {
+   "baseIncome": 60,
+   "dice": "Spirit",
+   "id": "char_hiey_base",
+   "incomeL1": 60,
+   "incomeL30": 495,
+   "order": 9,
+   "rarity": "Legendary",
+   "sell": 2100,
+   "tier": 5,
+   "upgradeToMax": 3542630
+  },
+  {
+   "baseIncome": 60,
+   "dice": "Spirit",
+   "id": "char_yoruka_base",
+   "incomeL1": 60,
+   "incomeL30": 495,
+   "order": 9,
+   "rarity": "Legendary",
+   "sell": 2100,
+   "tier": 5,
+   "upgradeToMax": 3542630
+  },
+  {
+   "baseIncome": 160,
+   "dice": "Spirit",
+   "id": "char_yuzuke_demon",
+   "incomeL1": 160,
+   "incomeL30": 1320,
+   "order": 9,
+   "rarity": "Mythic",
+   "sell": 7200,
+   "tier": 6,
+   "upgradeToMax": 9447036
+  },
+  {
+   "baseIncome": 9,
+   "dice": "Arcane",
+   "id": "char_kiritsugo_base",
+   "incomeL1": 9,
+   "incomeL30": 74.25,
+   "order": 10,
+   "rarity": "Rare",
+   "sell": 225,
+   "tier": 3,
+   "upgradeToMax": 531382
+  },
+  {
+   "baseIncome": 9,
+   "dice": "Arcane",
+   "id": "char_seiba_base",
+   "incomeL1": 9,
+   "incomeL30": 74.25,
+   "order": 10,
+   "rarity": "Rare",
+   "sell": 225,
+   "tier": 3,
+   "upgradeToMax": 531382
+  },
+  {
+   "baseIncome": 9,
+   "dice": "Arcane",
+   "id": "char_shiro_base",
+   "incomeL1": 9,
+   "incomeL30": 74.25,
+   "order": 10,
+   "rarity": "Rare",
+   "sell": 225,
+   "tier": 3,
+   "upgradeToMax": 531382
+  },
+  {
+   "baseIncome": 25,
+   "dice": "Arcane",
+   "id": "char_akcel_base",
+   "incomeL1": 25,
+   "incomeL30": 206.25,
+   "order": 10,
+   "rarity": "Epic",
+   "sell": 750,
+   "tier": 4,
+   "upgradeToMax": 1476087
+  },
+  {
+   "baseIncome": 25,
+   "dice": "Arcane",
+   "id": "char_lau_base",
+   "incomeL1": 25,
+   "incomeL30": 206.25,
+   "order": 10,
+   "rarity": "Epic",
+   "sell": 750,
+   "tier": 4,
+   "upgradeToMax": 1476087
+  },
+  {
+   "baseIncome": 25,
+   "dice": "Arcane",
+   "id": "char_rika_base",
+   "incomeL1": 25,
+   "incomeL30": 206.25,
+   "order": 10,
+   "rarity": "Epic",
+   "sell": 750,
+   "tier": 4,
+   "upgradeToMax": 1476087
+  },
+  {
+   "baseIncome": 60,
+   "dice": "Arcane",
+   "id": "char_gilgamex_base",
+   "incomeL1": 60,
+   "incomeL30": 495,
+   "order": 10,
+   "rarity": "Legendary",
+   "sell": 2100,
+   "tier": 5,
+   "upgradeToMax": 3542630
+  },
+  {
+   "baseIncome": 160,
+   "dice": "Arcane",
+   "id": "char_shiro_archer",
+   "incomeL1": 160,
+   "incomeL30": 1320,
+   "order": 10,
+   "rarity": "Mythic",
+   "sell": 7200,
+   "tier": 6,
+   "upgradeToMax": 9447036
+  },
+  {
+   "baseIncome": 25,
+   "dice": "Shadow",
+   "id": "char_grimjau_base",
+   "incomeL1": 25,
+   "incomeL30": 206.25,
+   "order": 11,
+   "rarity": "Epic",
+   "sell": 750,
+   "tier": 4,
+   "upgradeToMax": 1476087
+  },
+  {
+   "baseIncome": 25,
+   "dice": "Shadow",
+   "id": "char_shinjo_base",
+   "incomeL1": 25,
+   "incomeL30": 206.25,
+   "order": 11,
+   "rarity": "Epic",
+   "sell": 750,
+   "tier": 4,
+   "upgradeToMax": 1476087
+  },
+  {
+   "baseIncome": 25,
+   "dice": "Shadow",
+   "id": "char_ulkiorra_base",
+   "incomeL1": 25,
+   "incomeL30": 206.25,
+   "order": 11,
+   "rarity": "Epic",
+   "sell": 750,
+   "tier": 4,
+   "upgradeToMax": 1476087
+  },
+  {
+   "baseIncome": 60,
+   "dice": "Shadow",
+   "id": "char_itaxi_base",
+   "incomeL1": 60,
+   "incomeL30": 495,
+   "order": 11,
+   "rarity": "Legendary",
+   "sell": 2100,
+   "tier": 5,
+   "upgradeToMax": 3542630
+  },
+  {
+   "baseIncome": 60,
+   "dice": "Shadow",
+   "id": "char_peinn_base",
+   "incomeL1": 60,
+   "incomeL30": 495,
+   "order": 11,
+   "rarity": "Legendary",
+   "sell": 2100,
+   "tier": 5,
+   "upgradeToMax": 3542630
+  },
+  {
+   "baseIncome": 160,
+   "dice": "Shadow",
+   "id": "char_goko_dark_base",
+   "incomeL1": 160,
+   "incomeL30": 1320,
+   "order": 11,
+   "rarity": "Mythic",
+   "sell": 7200,
+   "tier": 6,
+   "upgradeToMax": 9447036
+  },
+  {
+   "baseIncome": 160,
+   "dice": "Shadow",
+   "id": "char_ichiro_hollow",
+   "incomeL1": 160,
+   "incomeL30": 1320,
+   "order": 11,
+   "rarity": "Mythic",
+   "sell": 7200,
+   "tier": 6,
+   "upgradeToMax": 9447036
+  },
+  {
+   "baseIncome": 25,
+   "dice": "Void",
+   "id": "char_ilumi_base",
+   "incomeL1": 25,
+   "incomeL30": 206.25,
+   "order": 12,
+   "rarity": "Epic",
+   "sell": 750,
+   "tier": 4,
+   "upgradeToMax": 1476087
+  },
+  {
+   "baseIncome": 25,
+   "dice": "Void",
+   "id": "char_vejita_base",
+   "incomeL1": 25,
+   "incomeL30": 206.25,
+   "order": 12,
+   "rarity": "Epic",
+   "sell": 750,
+   "tier": 4,
+   "upgradeToMax": 1476087
+  },
+  {
+   "baseIncome": 60,
+   "dice": "Void",
+   "id": "char_ilumi_awakened",
+   "incomeL1": 60,
+   "incomeL30": 495,
+   "order": 12,
+   "rarity": "Legendary",
+   "sell": 2100,
+   "tier": 5,
+   "upgradeToMax": 3542630
+  },
+  {
+   "baseIncome": 60,
+   "dice": "Void",
+   "id": "char_vejita_majin",
+   "incomeL1": 60,
+   "incomeL30": 495,
+   "order": 12,
+   "rarity": "Legendary",
+   "sell": 2100,
+   "tier": 5,
+   "upgradeToMax": 3542630
+  },
+  {
+   "baseIncome": 160,
+   "dice": "Void",
+   "id": "char_ulkiorra_release",
+   "incomeL1": 160,
+   "incomeL30": 1320,
+   "order": 12,
+   "rarity": "Mythic",
+   "sell": 7200,
+   "tier": 6,
+   "upgradeToMax": 9447036
+  },
+  {
+   "baseIncome": 425,
+   "dice": "Void",
+   "id": "char_ichiro_vasto",
+   "incomeL1": 425,
+   "incomeL30": 3506.25,
+   "order": 12,
+   "rarity": "Divine",
+   "sell": 25500,
+   "tier": 7,
+   "upgradeToMax": 25093720
+  },
+  {
+   "baseIncome": 25,
+   "dice": "Colossus",
+   "id": "char_gohin_base",
+   "incomeL1": 25,
+   "incomeL30": 206.25,
+   "order": 13,
+   "rarity": "Epic",
+   "sell": 750,
+   "tier": 4,
+   "upgradeToMax": 1476087
+  },
+  {
+   "baseIncome": 25,
+   "dice": "Colossus",
+   "id": "char_mighto_base",
+   "incomeL1": 25,
+   "incomeL30": 206.25,
+   "order": 13,
+   "rarity": "Epic",
+   "sell": 750,
+   "tier": 4,
+   "upgradeToMax": 1476087
+  },
+  {
+   "baseIncome": 60,
+   "dice": "Colossus",
+   "id": "char_brolli_base",
+   "incomeL1": 60,
+   "incomeL30": 495,
+   "order": 13,
+   "rarity": "Legendary",
+   "sell": 2100,
+   "tier": 5,
+   "upgradeToMax": 3542630
+  },
+  {
+   "baseIncome": 60,
+   "dice": "Colossus",
+   "id": "char_sasuko_base",
+   "incomeL1": 60,
+   "incomeL30": 495,
+   "order": 13,
+   "rarity": "Legendary",
+   "sell": 2100,
+   "tier": 5,
+   "upgradeToMax": 3542630
+  },
+  {
+   "baseIncome": 160,
+   "dice": "Colossus",
+   "id": "char_lufy_snake",
+   "incomeL1": 160,
+   "incomeL30": 1320,
+   "order": 13,
+   "rarity": "Mythic",
+   "sell": 7200,
+   "tier": 6,
+   "upgradeToMax": 9447036
+  },
+  {
+   "baseIncome": 160,
+   "dice": "Colossus",
+   "id": "char_mighto_gate5",
+   "incomeL1": 160,
+   "incomeL30": 1320,
+   "order": 13,
+   "rarity": "Mythic",
+   "sell": 7200,
+   "tier": 6,
+   "upgradeToMax": 9447036
+  },
+  {
+   "baseIncome": 60,
+   "dice": "Awakened",
+   "id": "char_bakugu_awakened",
+   "incomeL1": 60,
+   "incomeL30": 495,
+   "order": 14,
+   "rarity": "Legendary",
+   "sell": 2100,
+   "tier": 5,
+   "upgradeToMax": 3542630
+  },
+  {
+   "baseIncome": 60,
+   "dice": "Awakened",
+   "id": "char_grei_awakened",
+   "incomeL1": 60,
+   "incomeL30": 495,
+   "order": 14,
+   "rarity": "Legendary",
+   "sell": 2100,
+   "tier": 5,
+   "upgradeToMax": 3542630
+  },
+  {
+   "baseIncome": 60,
+   "dice": "Awakened",
+   "id": "char_rika_awakened",
+   "incomeL1": 60,
+   "incomeL30": 495,
+   "order": 14,
+   "rarity": "Legendary",
+   "sell": 2100,
+   "tier": 5,
+   "upgradeToMax": 3542630
+  },
+  {
+   "baseIncome": 160,
+   "dice": "Awakened",
+   "id": "char_gom_adult",
+   "incomeL1": 160,
+   "incomeL30": 1320,
+   "order": 14,
+   "rarity": "Mythic",
+   "sell": 7200,
+   "tier": 6,
+   "upgradeToMax": 9447036
+  },
+  {
+   "baseIncome": 160,
+   "dice": "Awakened",
+   "id": "char_natzu_awakened",
+   "incomeL1": 160,
+   "incomeL30": 1320,
+   "order": 14,
+   "rarity": "Mythic",
+   "sell": 7200,
+   "tier": 6,
+   "upgradeToMax": 9447036
+  },
+  {
+   "baseIncome": 160,
+   "dice": "Awakened",
+   "id": "char_roqueli_gates",
+   "incomeL1": 160,
+   "incomeL30": 1320,
+   "order": 14,
+   "rarity": "Mythic",
+   "sell": 7200,
+   "tier": 6,
+   "upgradeToMax": 9447036
+  },
+  {
+   "baseIncome": 60,
+   "dice": "Celestial",
+   "id": "char_sanjo_base",
+   "incomeL1": 60,
+   "incomeL30": 495,
+   "order": 15,
+   "rarity": "Legendary",
+   "sell": 2100,
+   "tier": 5,
+   "upgradeToMax": 3542630
+  },
+  {
+   "baseIncome": 60,
+   "dice": "Celestial",
+   "id": "char_yujo_base",
+   "incomeL1": 60,
+   "incomeL30": 495,
+   "order": 15,
+   "rarity": "Legendary",
+   "sell": 2100,
+   "tier": 5,
+   "upgradeToMax": 3542630
+  },
+  {
+   "baseIncome": 160,
+   "dice": "Celestial",
+   "id": "char_narotu_sage",
+   "incomeL1": 160,
+   "incomeL30": 1320,
+   "order": 15,
+   "rarity": "Mythic",
+   "sell": 7200,
+   "tier": 6,
+   "upgradeToMax": 9447036
+  },
+  {
+   "baseIncome": 160,
+   "dice": "Celestial",
+   "id": "char_olmaito_mode",
+   "incomeL1": 160,
+   "incomeL30": 1320,
+   "order": 15,
+   "rarity": "Mythic",
+   "sell": 7200,
+   "tier": 6,
+   "upgradeToMax": 9447036
+  },
+  {
+   "baseIncome": 425,
+   "dice": "Celestial",
+   "id": "char_deko_full",
+   "incomeL1": 425,
+   "incomeL30": 3506.25,
+   "order": 15,
+   "rarity": "Divine",
+   "sell": 25500,
+   "tier": 7,
+   "upgradeToMax": 25093720
+  },
+  {
+   "baseIncome": 425,
+   "dice": "Celestial",
+   "id": "char_goju_base",
+   "incomeL1": 425,
+   "incomeL30": 3506.25,
+   "order": 15,
+   "rarity": "Divine",
+   "sell": 25500,
+   "tier": 7,
+   "upgradeToMax": 25093720
+  },
+  {
+   "baseIncome": 425,
+   "dice": "Celestial",
+   "id": "char_vegitto_base",
+   "incomeL1": 425,
+   "incomeL30": 3506.25,
+   "order": 15,
+   "rarity": "Divine",
+   "sell": 25500,
+   "tier": 7,
+   "upgradeToMax": 25093720
+  },
+  {
+   "baseIncome": 170,
+   "dice": "Forbidden",
+   "id": "char_barbalva_base",
+   "incomeL1": 170,
+   "incomeL30": 1402.5,
+   "order": 16,
+   "rarity": "Mythic",
+   "sell": 7650,
+   "tier": 6,
+   "upgradeToMax": 10037479
+  },
+  {
+   "baseIncome": 425,
+   "dice": "Forbidden",
+   "id": "char_aizo_base",
+   "incomeL1": 425,
+   "incomeL30": 3506.25,
+   "order": 16,
+   "rarity": "Divine",
+   "sell": 25500,
+   "tier": 7,
+   "upgradeToMax": 25093720
+  },
+  {
+   "baseIncome": 425,
+   "dice": "Forbidden",
+   "id": "char_brolli_legend",
+   "incomeL1": 425,
+   "incomeL30": 3506.25,
+   "order": 16,
+   "rarity": "Divine",
+   "sell": 25500,
+   "tier": 7,
+   "upgradeToMax": 25093720
+  },
+  {
+   "baseIncome": 425,
+   "dice": "Forbidden",
+   "id": "char_madaro_base",
+   "incomeL1": 425,
+   "incomeL30": 3506.25,
+   "order": 16,
+   "rarity": "Divine",
+   "sell": 25500,
+   "tier": 7,
+   "upgradeToMax": 25093720
+  },
+  {
+   "baseIncome": 1200,
+   "dice": "Forbidden",
+   "id": "char_ichiro_mugetsu",
+   "incomeL1": 1200,
+   "incomeL30": 9900,
+   "order": 16,
+   "rarity": "Secret",
+   "sell": 108000,
+   "tier": 8,
+   "upgradeToMax": 70852881
+  },
+  {
+   "baseIncome": 1200,
+   "dice": "Forbidden",
+   "id": "char_mighto_gate8",
+   "incomeL1": 1200,
+   "incomeL30": 9900,
+   "order": 16,
+   "rarity": "Secret",
+   "sell": 108000,
+   "tier": 8,
+   "upgradeToMax": 70852881
+  },
+  {
+   "baseIncome": 1200,
+   "dice": "Forbidden",
+   "id": "char_vegitto_blue",
+   "incomeL1": 1200,
+   "incomeL30": 9900,
+   "order": 16,
+   "rarity": "Secret",
+   "sell": 108000,
+   "tier": 8,
+   "upgradeToMax": 70852881
+  }
+ ],
+ "grid": {
+  "Starter|Common": [
+   1
+  ],
+  "Starter|Uncommon": [
+   4
+  ],
+  "Starter|Rare": [
+   9
+  ],
+  "Starter|Epic": [
+   25
+  ],
+  "Lucky|Common": [
+   1
+  ],
+  "Lucky|Uncommon": [
+   4
+  ],
+  "Lucky|Rare": [
+   9
+  ],
+  "Lucky|Epic": [
+   25
+  ],
+  "Rampart|Common": [
+   1
+  ],
+  "Rampart|Uncommon": [
+   4
+  ],
+  "Rampart|Rare": [
+   9
+  ],
+  "Rampart|Epic": [
+   25
+  ],
+  "Shinobi|Common": [
+   1
+  ],
+  "Shinobi|Uncommon": [
+   4
+  ],
+  "Shinobi|Rare": [
+   9
+  ],
+  "Shinobi|Epic": [
+   25
+  ],
+  "Flame|Uncommon": [
+   4
+  ],
+  "Flame|Rare": [
+   9
+  ],
+  "Flame|Epic": [
+   25
+  ],
+  "Flame|Legendary": [
+   60
+  ],
+  "Blade|Uncommon": [
+   4
+  ],
+  "Blade|Rare": [
+   9
+  ],
+  "Blade|Epic": [
+   25
+  ],
+  "Blade|Legendary": [
+   60
+  ],
+  "Fighter|Uncommon": [
+   4
+  ],
+  "Fighter|Rare": [
+   9
+  ],
+  "Fighter|Epic": [
+   25
+  ],
+  "Fighter|Legendary": [
+   60
+  ],
+  "Storm|Rare": [
+   9
+  ],
+  "Storm|Epic": [
+   25
+  ],
+  "Storm|Legendary": [
+   60
+  ],
+  "Spirit|Rare": [
+   9
+  ],
+  "Spirit|Epic": [
+   25
+  ],
+  "Spirit|Legendary": [
+   60
+  ],
+  "Spirit|Mythic": [
+   160
+  ],
+  "Arcane|Rare": [
+   9
+  ],
+  "Arcane|Epic": [
+   25
+  ],
+  "Arcane|Legendary": [
+   60
+  ],
+  "Arcane|Mythic": [
+   160
+  ],
+  "Shadow|Epic": [
+   25
+  ],
+  "Shadow|Legendary": [
+   60
+  ],
+  "Shadow|Mythic": [
+   160
+  ],
+  "Void|Epic": [
+   25
+  ],
+  "Void|Legendary": [
+   60
+  ],
+  "Void|Mythic": [
+   160
+  ],
+  "Void|Divine": [
+   425
+  ],
+  "Colossus|Epic": [
+   25
+  ],
+  "Colossus|Legendary": [
+   60
+  ],
+  "Colossus|Mythic": [
+   160
+  ],
+  "Awakened|Legendary": [
+   60
+  ],
+  "Awakened|Mythic": [
+   160
+  ],
+  "Celestial|Legendary": [
+   60
+  ],
+  "Celestial|Mythic": [
+   160
+  ],
+  "Celestial|Divine": [
+   425
+  ],
+  "Forbidden|Mythic": [
+   170
+  ],
+  "Forbidden|Divine": [
+   425
+  ],
+  "Forbidden|Secret": [
+   1200
+  ]
+ },
+ "sameAcrossDice": [
+  {
+   "rarity": "Common",
+   "baseIncome": 1,
+   "dice": [
+    "Starter",
+    "Lucky",
+    "Rampart",
+    "Shinobi"
+   ]
+  },
+  {
+   "rarity": "Uncommon",
+   "baseIncome": 4,
+   "dice": [
+    "Starter",
+    "Lucky",
+    "Rampart",
+    "Shinobi",
+    "Flame",
+    "Blade",
+    "Fighter"
+   ]
+  },
+  {
+   "rarity": "Rare",
+   "baseIncome": 9,
+   "dice": [
+    "Starter",
+    "Lucky",
+    "Rampart",
+    "Shinobi",
+    "Flame",
+    "Blade",
+    "Fighter",
+    "Storm",
+    "Spirit",
+    "Arcane"
+   ]
+  },
+  {
+   "rarity": "Epic",
+   "baseIncome": 25,
+   "dice": [
+    "Starter",
+    "Lucky",
+    "Rampart",
+    "Shinobi",
+    "Flame",
+    "Blade",
+    "Fighter",
+    "Storm",
+    "Spirit",
+    "Arcane",
+    "Shadow",
+    "Void",
+    "Colossus"
+   ]
+  },
+  {
+   "rarity": "Legendary",
+   "baseIncome": 60,
+   "dice": [
+    "Flame",
+    "Blade",
+    "Fighter",
+    "Storm",
+    "Spirit",
+    "Arcane",
+    "Shadow",
+    "Void",
+    "Colossus",
+    "Awakened",
+    "Celestial"
+   ]
+  },
+  {
+   "rarity": "Mythic",
+   "baseIncome": 160,
+   "dice": [
+    "Spirit",
+    "Arcane",
+    "Shadow",
+    "Void",
+    "Colossus",
+    "Awakened",
+    "Celestial"
+   ]
+  },
+  {
+   "rarity": "Divine",
+   "baseIncome": 425,
+   "dice": [
+    "Void",
+    "Celestial",
+    "Forbidden"
+   ]
+  }
+ ],
+ "sims": {
+  "Casual": {
+   "ownedAt": [
+    0.0,
+    180.0,
+    360.0,
+    540.0,
+    720.0,
+    960.0,
+    1260.0,
+    1440.0,
+    2160.0,
+    2880.0,
+    3600.0,
+    4830.0,
+    6660.0,
+    8640.0,
+    11490.0,
+    17280.0
+   ],
+   "rollUnlockAt": [
+    0.0,
+    70.5,
+    174.5,
+    423.0,
+    637.0,
+    921.5,
+    1100.5,
+    1420.0,
+    2142.5,
+    2861.0,
+    3579.5,
+    4288.0,
+    6420.5,
+    8569.5,
+    11421.5,
+    17147.5
+   ],
+   "reached": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "firstRebirth": 4140.0,
+   "rebirths": 13.0,
+   "finalIps": 1141993.125,
+   "earnedShare": {
+    "Collector": 0.23995414247467958,
+    "Daily": 0.02025999572740267,
+    "Mission": 0.05584879116679888,
+    "Offline": 0.681629330531013,
+    "Sell": 0.0019141289152148837,
+    "SellUpgraded": 7.093323229017462e-05,
+    "Tower": 0.00032267795260078374
+   },
+   "earnedTotal": 378277402100.7083
+  },
+  "Ativo": {
+   "ownedAt": [
+    0.0,
+    90.0,
+    270.0,
+    615.0,
+    810.0,
+    930.0,
+    1350.0,
+    1605.0,
+    2010.0,
+    2625.0,
+    3045.0,
+    3615.0,
+    4860.0,
+    7035.0,
+    10815.0,
+    16980.0
+   ],
+   "rollUnlockAt": [
+    0.0,
+    50.0,
+    125.0,
+    300.0,
+    450.0,
+    650.0,
+    775.0,
+    1000.0,
+    1500.0,
+    2000.0,
+    2500.0,
+    3000.0,
+    4500.0,
+    6000.0,
+    8000.0,
+    12000.0
+   ],
+   "reached": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "firstRebirth": 7605.0,
+   "rebirths": 13.0,
+   "finalIps": 2533721.84375,
+   "earnedShare": {
+    "Collector": 0.501599330499144,
+    "Daily": 0.007131136558227511,
+    "Jackpot": 0.026984196155930756,
+    "Mission": 0.030973964486075783,
+    "Offline": 0.429877624819662,
+    "Sell": 0.0027744065985403047,
+    "SellUpgraded": 4.890350645861577e-05,
+    "Tower": 0.0006104373759610813
+   },
+   "earnedTotal": 370897674764.5416
+  },
+  "Otimizador": {
+   "ownedAt": [
+    0.0,
+    100.0,
+    252.5,
+    605.0,
+    865.0,
+    1025.0,
+    1570.0,
+    1950.0,
+    2265.0,
+    2805.0,
+    3135.0,
+    3880.0,
+    4985.0,
+    7080.0,
+    11300.0,
+    17615.0
+   ],
+   "rollUnlockAt": [
+    0.0,
+    50.0,
+    125.0,
+    300.0,
+    450.0,
+    650.0,
+    775.0,
+    1000.0,
+    1500.0,
+    2000.0,
+    2500.0,
+    3000.0,
+    4500.0,
+    6000.0,
+    8000.0,
+    12000.0
+   ],
+   "reached": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "firstRebirth": 7585.0,
+   "rebirths": 12.0,
+   "finalIps": 2452432.5,
+   "earnedShare": {
+    "Collector": 0.6910682577985207,
+    "Daily": 0.0024889299566496588,
+    "Jackpot": 0.01499507346588241,
+    "Mission": 0.0211781510530323,
+    "Offline": 0.2655087842302825,
+    "Sell": 0.0037529206057222027,
+    "SellUpgraded": 0.00010764151672900017,
+    "Tower": 0.0009002413731812645
+   },
+   "earnedTotal": 273956614087.62503
+  },
+  "Pago": {
+   "ownedAt": [
+    0.0,
+    60.0,
+    105.0,
+    300.0,
+    480.0,
+    615.0,
+    810.0,
+    975.0,
+    1200.0,
+    1530.0,
+    1695.0,
+    2025.0,
+    2707.5,
+    3900.0,
+    6315.0,
+    10245.0
+   ],
+   "rollUnlockAt": [
+    0.0,
+    25.0,
+    63.0,
+    150.0,
+    225.0,
+    325.0,
+    388.0,
+    500.0,
+    750.0,
+    1000.0,
+    1250.0,
+    1500.0,
+    2250.0,
+    3000.0,
+    4000.0,
+    6000.0
+   ],
+   "reached": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "firstRebirth": 4275.0,
+   "rebirths": 14.0,
+   "finalIps": 6897730.078124999,
+   "earnedShare": {
+    "Collector": 0.5016478254570216,
+    "Daily": 0.006887688297987549,
+    "Jackpot": 0.027279360555289733,
+    "Mission": 0.03138475163280556,
+    "Offline": 0.43019338821621456,
+    "Sell": 0.002082850831431458,
+    "SellUpgraded": 2.361315245013085e-05,
+    "Tower": 0.0005005218567993819
+   },
+   "earnedTotal": 1024228145073.4169
+  }
+ }
+}
