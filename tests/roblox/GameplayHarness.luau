@@ -1720,11 +1720,37 @@ d1.EquippedDice = "Starter"
 d1.Runtime.Capacity = inventoryCap
 end
 
+do
+	-- Velocidade base: o SERVIDOR aplica MovementConfig.BaseWalkSpeed no spawn (maior que o
+	-- padrão 16, abaixo do teto); a estação grava o piso do seu andar (letreiros por andar)
+	local MovementConfig = req(env.shared.Config.MovementConfig)
+	local body = Instance.new("Model")
+	local humanoid = Instance.new("Humanoid")
+	humanoid.Parent = body
+	local hrp = Instance.new("Part")
+	hrp.Name = "HumanoidRootPart"
+	hrp.Parent = body
+	local previous = p1.Character
+	p1.Character = body
+	p1.CharacterAdded:Fire(body)
+	check(Env.waitFor(function()
+		return humanoid.WalkSpeed == MovementConfig.BaseWalkSpeed
+	end, 2), "spawn: WalkSpeed = MovementConfig.BaseWalkSpeed (servidor)")
+	check(MovementConfig.BaseWalkSpeed > MovementConfig.DefaultWalkSpeed and MovementConfig.BaseWalkSpeed <= MovementConfig.DefaultWalkSpeed * 1.5 and MovementConfig.MaxWalkSpeed >= MovementConfig.BaseWalkSpeed, "velocidade base moderada (16 < base <= 24) e abaixo do teto")
+	p1.Character = previous
+end
+
 ------------------------------------------------------------------------------------
 -- DEMO + SAÍDA
 local placedDemo = S.StationService.PopulateDemo(p2, true)
 local base2 = S.BaseService.GetPlayerBase(p2)
 check(placedDemo == 8 and #base2.RuntimeCharacters:GetChildren() == 8, "PopulateDemoBase: 8 estações com raridades/níveis/variantes")
+do
+	local station = base2.RuntimeCharacters:GetChildren()[1]
+	local floorY = station and station:GetAttribute("FloorY")
+	local pad = station and station:FindFirstChild("UpgradePad")
+	check(type(floorY) == "number" and pad ~= nil and math.abs(pad.CFrame.Position.Y - floorY) < 3, "estação grava FloorY (topo do piso do seu andar: letreiros por andar)")
+end
 check(S.BaseService.Dev.PopulateDemoBase ~= nil, "atalho BaseService.Dev.PopulateDemoBase")
 env.leave(p2)
 check(Env.waitFor(function()

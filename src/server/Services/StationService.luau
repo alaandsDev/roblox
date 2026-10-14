@@ -141,6 +141,8 @@ local function build(player: Player, base: Model, slotId: number, uid: string): 
 	model:SetAttribute("SlotId", slotId)
 	model:SetAttribute("Uid", uid)
 	model:SetAttribute("Station", true)
+	-- topo do piso do andar desta estação (LodController: letreiros por andar, FloorLegibility)
+	model:SetAttribute("FloorY", point.CFrame.Position.Y - BaseConfig.PedestalHeight)
 
 	local figure = CharacterModelFactory.build(item.Id, { variant = item.Variant, vfx = CharacterAssetConfig.VFXModes.Base })
 	figure:PivotTo(point.CFrame)

@@ -858,6 +858,54 @@ do -- AuraController: um loop central anima órbitas/raios das auras com tag (se
 	check(after <= before - 12 and C.AuraController.Outlines() == 0, string.format("auras V2: remover as auras libera o controlador (%d -> %d registradas, 0 contornos)", before, after))
 end
 
+do -- Letreiros entre andares (LodController + FloorLegibility): outro andar não polui o do jogador
+	local function fakeStation(floorY: number)
+		local station = Instance.new("Model")
+		station:SetAttribute("FloorY", floorY)
+		local anchor = Instance.new("Part")
+		anchor.Name = "InfoAnchor"
+		anchor.Parent = station
+		local info = Instance.new("BillboardGui")
+		info.Name = "Info"
+		info.Parent = anchor
+		local detail = Instance.new("Frame")
+		detail.Name = "Detail"
+		detail.Parent = info
+		local plate = Instance.new("Part")
+		plate.Name = "Plate"
+		plate.Parent = station
+		local plateGui = Instance.new("BillboardGui")
+		plateGui.Name = "PlateGui"
+		plateGui.Parent = plate
+		local pad = Instance.new("Part")
+		pad.Name = "UpgradePad"
+		pad.Parent = station
+		local cost = Instance.new("BillboardGui")
+		cost.Name = "Cost"
+		cost.Parent = pad
+		return station, info, detail, plateGui, cost
+	end
+	local H = 20
+	local same, sInfo, sDetail, sPlate, sCost = fakeStation(10)
+	local above, aInfo, aDetail, aPlate, aCost = fakeStation(10 + H)
+	local twoUp, tInfo = fakeStation(10 + 2 * H)
+	local feet = 10.2 -- jogador no Floor01
+	C.LodController._apply(same, 10, false, feet)
+	C.LodController._apply(above, 10, false, feet)
+	C.LodController._apply(twoUp, 10, false, feet)
+	check(sInfo.Enabled and sDetail.Visible and sPlate.Enabled and sCost.Enabled, "andares: no andar do jogador o letreiro fica completo (perto)")
+	check(aInfo.Enabled and not aDetail.Visible and not aPlate.Enabled and not aCost.Enabled, "andares: andar de cima só mostra a renda (sem nome/raridade/nível, sem placa MÁX/custo)")
+	check(not tInfo.Enabled, "andares: 2 andares acima, letreiro oculto")
+	-- o jogador sobe para o Floor02: a regra se inverte (nada fixo no andar)
+	feet = 10 + H + 0.2
+	C.LodController._apply(same, 10, false, feet)
+	C.LodController._apply(above, 10, false, feet)
+	check(aInfo.Enabled and aDetail.Visible and aPlate.Enabled and not sDetail.Visible and not sPlate.Enabled and sInfo.Enabled, "andares: no Floor02 o letreiro dele volta completo e o do Floor01 fica só com a renda")
+	-- sem personagem: nada é escondido
+	C.LodController._apply(twoUp, 10, false, nil)
+	check(tInfo.Enabled, "andares: sem personagem, nada é escondido")
+end
+
 -- Torres: abrir, lutar, animação da batalha, fechar
 S.InventoryService.Add(player, "eclipse_sovereign")
 local towers = openWindow("Towers")

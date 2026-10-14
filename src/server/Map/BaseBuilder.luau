@@ -179,6 +179,38 @@ local function rail(parent: Instance, size: Vector3, cf: CFrame, color: Color3)
 	Build.decor(Build.part(cap, cf * CFrame.new(0, size.Y / 2 + 0.25, 0), { Name = "RailCap", Color = color:Lerp(Color3.new(0, 0, 0), 0.2), Parent = parent }))
 end
 
+-- Luminárias sob o piso de um andar superior (topo do piso em y): iluminam o andar de baixo.
+-- Ficam no próprio andar de cima: somem junto com ele (volta de Rebirth/DEV) e valem p/ 2..MaxFloors.
+local function buildUnderLights(structure: Instance, origin: CFrame, y: number)
+	local L = BaseConfig.FloorLighting
+	if not L.Enabled then
+		return
+	end
+	local folder = Build.folder("UnderLights", structure)
+	local color = rgb(L.Color[1], L.Color[2], L.Color[3])
+	local size = Vector3.new(L.LampSize[1], L.LampSize[2], L.LampSize[3])
+	for col = 1, L.Columns do
+		for row = 1, L.Rows do
+			local x = (col - 0.5) / L.Columns * W - W / 2
+			local z = (row - 0.5) / L.Rows * D - D / 2
+			local lamp = Build.decor(Build.part(size, origin * CFrame.new(x, y - 1 - size.Y / 2, z), {
+				Name = "CeilingLamp",
+				Color = color,
+				Material = Enum.Material.SmoothPlastic,
+				Parent = folder,
+			}))
+			lamp.CastShadow = false
+			local light = Instance.new("PointLight")
+			light.Name = "FloorLight"
+			light.Color = color
+			light.Brightness = L.Brightness
+			light.Range = L.Range
+			light.Shadows = L.Shadows
+			light.Parent = lamp
+		end
+	end
+end
+
 local function buildFloor(base: Model, origin: CFrame, floor: number, progression: ProgressionLike): Model
 	local floors = base:FindFirstChild("Floors") :: Folder
 	local theme = themeOf(base)
@@ -317,6 +349,7 @@ local function buildFloor(base: Model, origin: CFrame, floor: number, progressio
 				Parent = structure,
 			}))
 		end
+		buildUnderLights(structure, origin, y)
 		-- placa do andar (lê o progresso de longe: "2F", "3F"...)
 		local tag = Build.decor(Build.part(Vector3.new(4.2, 2.2, 0.5), origin * CFrame.new(W / 2 - 4, y + 3.6, -D / 2 - 0.2), {
 			Name = "FloorTagBoard",

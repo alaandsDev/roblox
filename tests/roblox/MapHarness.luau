@@ -361,6 +361,51 @@ check(floor02:FindFirstChild("Slot09", true):GetAttribute("Unlocked") == true, "
 check(floor02:FindFirstChild("Slot10", true):GetAttribute("Unlocked") == false, "RB5: Slot10 bloqueado")
 check(floor01:FindFirstChild("Ramp") ~= nil, "RB5: rampa do Floor01 para o Floor02")
 check(#MapService.ValidateMap() == 0, "MapValidator sem problemas com Floor02")
+do
+	-- Iluminação entre andares: cada andar N >= 2 traz luminárias sob o piso (ilumina o N-1);
+	-- genérico de 2 a MaxFloors, sem caso especial do Floor02; o andar do topo não tem teto
+	local BaseConfig = requireModule(shared.Config.BaseConfig)
+	local L = BaseConfig.FloorLighting
+	local function lightsOf(floorModel: any): { any }
+		local out = {}
+		local folder = floorModel and floorModel:FindFirstChild("UnderLights", true)
+		if folder then
+			for _, lamp in folder:GetChildren() do
+				local light = lamp:FindFirstChildOfClass("PointLight")
+				if light then
+					table.insert(out, { lamp = lamp, light = light })
+				end
+			end
+		end
+		return out
+	end
+	check(#lightsOf(floor01) == 0, "luz entre andares: Floor01 (térreo) não tem luminárias sob o piso")
+	local rb = progression:floorUnlockRebirth(BaseConfig.MaxFloors)
+	BaseBuilder.applyState(base03, progression:state(rb), progression)
+	local allOk = true
+	for n = 2, BaseConfig.MaxFloors do
+		local model = base03.Floors:FindFirstChild(string.format("Floor%02d", n))
+		local below = base03.Floors:FindFirstChild(string.format("Floor%02d", n - 1))
+		local lights = lightsOf(model)
+		if #lights ~= L.Columns * L.Rows then
+			allOk = false
+		end
+		for _, item in lights do
+			local p = item.lamp.CFrame.Position.Y
+			local platform = model:FindFirstChild("Platform")
+			local floorBelowY = below:FindFirstChild("Platform").CFrame.Position.Y
+			-- sob o piso de cima, acima do andar coberto; brilho baixo, sem sombra, alcance curto, sem colisão
+			if not (p < platform.CFrame.Position.Y and p > floorBelowY + 10) then
+				allOk = false
+			end
+			if item.light.Brightness > 1 or item.light.Shadows or item.light.Range > BaseConfig.FloorHeight + 2 or item.lamp.CanCollide then
+				allOk = false
+			end
+		end
+	end
+	check(allOk, "luz entre andares: Floor02..Floor0" .. BaseConfig.MaxFloors .. " iluminam o andar de baixo (grade completa, brilho <= 1, sem sombra, sem colisão)")
+	check(#MapService.ValidateMap() == 0, "MapValidator sem problemas com " .. BaseConfig.MaxFloors .. " andares iluminados")
+end
 BaseBuilder.applyState(base03, progression:state(0), progression)
 check(base03.Floors:FindFirstChild("Floor02") == nil and floor01:FindFirstChild("Ramp") == nil, "volta ao RB0 remove Floor02 e rampa")
 

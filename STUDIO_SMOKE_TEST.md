@@ -272,3 +272,6 @@ Testar no PC e no emulador (celular paisagem 844×390 e retrato 390×844, tablet
 | AV2 | AURAS V2 | repetir com "Electric", "Flame", "Void" e com "Full" | cada estilo tem assinatura clara; aura visível sobre grama, chão amarelo, céu e roxo | [ ] |
 | AV3 | AURAS V2 | `AuraStress` 4 Divine, depois 10 mixed | personagens legíveis, sem parede branca, sem cobrir HUD, FPS estável | [ ] |
 | P2 | AURAS PACK | conferir o jogo | NADA do pack no place (Explorer: sem AurasPack); auras continuam só nos personagens colecionáveis, nunca no avatar | [ ] |
+| MF1 | ANDARES | `Dev:Invoke("PreviewFloors", player, 5)` e andar pelo Floor01..04 | o andar coberto não fica escuro; luz quente suave (sem branco estourado); exterior/céu iguais | [ ] |
+| MF2 | ANDARES | no Floor01 olhar para cima (Floor02/03 com personagens) | Floor02 só mostra `$X/s`; Floor03+ sem letreiro; nada de parede de MÁX/nomes; subindo a rampa o Floor02 volta completo | [ ] |
+| MF3 | MOVIMENTO | andar Hub ↔ base ↔ rampas (PC e emulador mobile) | velocidade 22 confortável; rampas, esteira e colisões normais | [ ] |

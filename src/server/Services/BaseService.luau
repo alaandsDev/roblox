@@ -30,6 +30,7 @@ local RunService = game:GetService("RunService")
 local Shared = ReplicatedStorage.Shared
 local MapConfig = require(Shared.Config.MapConfig)
 local BaseConfig = require(Shared.Config.BaseConfig)
+local MovementConfig = require(Shared.Config.MovementConfig)
 local Logger = require(Shared.Modules.Logger)
 local Signal = require(Shared.Modules.Signal)
 local Net = require(Shared.Modules.Net)
@@ -377,6 +378,8 @@ local function watchPlayer(player: Player)
 		if not humanoid or not root or player.Character ~= character then
 			return
 		end
+		-- velocidade base do jogo (MovementConfig; servidor define, o cliente nunca escolhe)
+		humanoid.WalkSpeed = MovementConfig.BaseWalkSpeed
 		humanoid.Died:Once(function()
 			coordinator:died(player)
 			task.delay(Players.RespawnTime, function()
