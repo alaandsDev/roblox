@@ -107,26 +107,30 @@ MapConfig.Conveyor = {
 	Poucos objetos grandes > muitos pequenos. Cores por família de área; Neon só como detalhe.
 ]]
 MapConfig.Visual = {
+	-- Paleta SATURADA (World Art Pass): verde vivo, azul forte, contraste entre áreas
 	Palette = {
-		Grass = { 105, 200, 85 },
-		GrassDark = { 82, 176, 72 },
-		Sand = { 240, 220, 165 },
-		Path = { 236, 224, 196 },
-		PathAlt = { 224, 208, 176 },
-		Curb = { 196, 178, 140 },
-		Stone = { 150, 148, 160 },
-		StoneDark = { 112, 110, 126 },
-		Wood = { 170, 120, 75 },
-		WoodDark = { 120, 82, 52 },
-		Trunk = { 128, 88, 56 },
-		Leaves = { { 76, 186, 80 }, { 60, 162, 72 }, { 104, 206, 92 } },
-		Flowers = { { 255, 120, 160 }, { 255, 215, 80 }, { 150, 120, 255 }, { 255, 255, 255 } },
-		Gold = { 255, 205, 70 },
-		HubStone = { 236, 230, 248 },
-		HubPurple = { 120, 90, 200 },
-		HubPurpleDark = { 86, 62, 160 },
-		Accent = { 255, 210, 80 },
+		Grass = { 88, 206, 64 },
+		GrassDark = { 64, 182, 52 },
+		Sand = { 248, 222, 150 },
+		Path = { 242, 226, 186 },
+		PathAlt = { 228, 206, 160 },
+		Curb = { 206, 176, 120 },
+		Stone = { 160, 158, 178 },
+		StoneDark = { 116, 112, 138 },
+		Wood = { 186, 124, 70 },
+		WoodDark = { 128, 82, 46 },
+		Trunk = { 140, 92, 52 },
+		Leaves = { { 64, 196, 72 }, { 40, 172, 64 }, { 110, 222, 80 } },
+		PineLeaves = { { 30, 150, 90 }, { 22, 128, 80 }, { 50, 170, 100 } },
+		Blossom = { { 255, 160, 200 }, { 255, 128, 182 }, { 255, 196, 222 } },
+		Flowers = { { 255, 110, 160 }, { 255, 220, 70 }, { 150, 110, 255 }, { 255, 255, 255 } },
+		Gold = { 255, 205, 60 },
+		HubStone = { 238, 232, 252 },
+		HubPurple = { 124, 86, 218 },
+		HubPurpleDark = { 84, 58, 170 },
+		Accent = { 255, 212, 70 },
 	},
+
 	-- Margens livres para decoração (studs)
 	DecorClearance = {
 		Path = 3, -- fora dos caminhos
@@ -149,6 +153,28 @@ MapConfig.Visual = {
 	PalmHeight = { 18, 26 },
 	-- Recortes de areia/grama na borda da ilha (irregularidade só visual)
 	EdgeBiteSpacing = 18,
+}
+
+-- Iluminação (World Art Pass). Sky escolhido: Classic Roblox Sky (Creator Store 339406852):
+-- reutilizado se já estiver em Lighting (nome SkyName tem prioridade); ver MapBuilder.chooseSky.
+MapConfig.Lighting = {
+	SkyAssetId = 339406852,
+	SkyName = "ClassicRobloxSky",
+	ClockTime = 13.6,
+	Brightness = 3,
+	Exposure = 0.05,
+	Ambient = { 128, 124, 144 },
+	OutdoorAmbient = { 150, 152, 172 },
+	ColorShiftTop = { 255, 244, 225 },
+	Saturation = 0.26,
+	Contrast = 0.12,
+	-- Bloom só complementa (limiar alto: Neon/VFX brilham, o resto não estoura)
+	BloomIntensity = 0.22,
+	BloomThreshold = 2.1,
+	SunRays = 0.05,
+	-- menos névoa = cores mais vivas e leitura de longe
+	AtmosphereDensity = 0.16,
+	AtmosphereHaze = 0.55,
 }
 
 MapConfig.Decor = {

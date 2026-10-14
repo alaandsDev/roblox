@@ -486,6 +486,44 @@ do
 	check(pairsChecked > 0 and arrowsOk == pairsChecked, string.format("esteira: %d/%d barras de seta com a ponta no sentido da velocidade física (= animação)", arrowsOk, pairsChecked))
 end
 
+do -- World Art Pass: linguagem blocky aplicada por papel, sem tocar na esteira
+	local E = roblox.Enum
+	local studded, groundStudded, ground, conveyorTouched, styled, inlet, trees, species = 0, 0, 0, 0, 0, 0, 0, {}
+	for _, d in workspace:GetDescendants() do
+		if d:IsA("BasePart") then
+			if d:GetAttribute("ArtStyled") == true then
+				styled += 1
+			end
+			if d.TopSurface == E.SurfaceType.Studs then
+				studded += 1
+			end
+			if d.BottomSurface == E.SurfaceType.Inlet then
+				inlet += 1
+			end
+			if d:FindFirstAncestor("Conveyor") and d:GetAttribute("ArtStyled") == true and d.TopSurface == E.SurfaceType.Studs then
+				conveyorTouched += 1
+			end
+			if d.Name == "Grass" or d.Name == "Platform" then
+				ground += 1
+				if d.TopSurface == E.SurfaceType.Studs then
+					groundStudded += 1
+				end
+			end
+		elseif d:IsA("Model") and d:GetAttribute("Species") then
+			trees += 1
+			species[d:GetAttribute("Species")] = true
+		end
+	end
+	local nSpecies = 0
+	for _ in species do
+		nSpecies += 1
+	end
+	check(styled > 1000 and studded > 400 and inlet > 100, string.format("art pass: %d peças estilizadas, %d com studs, %d com inlet", styled, studded, inlet))
+	check(ground > 0 and groundStudded == ground, string.format("art pass: grama/pisos com studs (%d/%d)", groundStudded, ground))
+	check(conveyorTouched == 0, "art pass: esteira intocada (física/seta/animação preservadas)")
+	check(trees >= 30 and nSpecies == 4, string.format("art pass: %d árvores, %d espécies", trees, nSpecies))
+end
+
 print(string.format("\n[Harness] %d peças no total", partCount))
 for label, count in byFolder do
 	print(string.format("    %-18s %d", label, count))

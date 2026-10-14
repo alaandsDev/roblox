@@ -220,6 +220,36 @@ describe("MapLayout: decoração blocky (vegetação e borda)", function()
 		end
 	end)
 
+	it("árvores variadas: 4 espécies, clusters de 2–4, algumas isoladas maiores (sem cópia em fileira)", function()
+		local species, scales, clustered, trees = {}, {}, 0, {}
+		for _, s in spots do
+			if s.kind == "Tree" then
+				table.insert(trees, s)
+				species[s.species] = (species[s.species] or 0) + 1
+				scales[math.floor(s.scale * 10)] = true
+			end
+		end
+		for _, a in trees do
+			for _, b in trees do
+				if a ~= b and math.sqrt((a.x - b.x) ^ 2 + (a.z - b.z) ^ 2) <= 11 then
+					clustered += 1
+					break
+				end
+			end
+		end
+		local nSpecies, nScales = 0, 0
+		for _ in species do
+			nSpecies += 1
+		end
+		for _ in scales do
+			nScales += 1
+		end
+		expect(nSpecies).toBe(#MapLayout.TreeSpecies)
+		expect(nScales >= 4).toBeTruthy()
+		expect(clustered >= 6).toBeTruthy()
+		expect(clustered < #trees).toBeTruthy() -- também há árvores isoladas
+	end)
+
 	it("spawns incluem Hub/Shop/TowerEntrance e o PlayerSpawn das 10 bases", function()
 		expect(#map:spawnPoints() >= 3 + 2 * MapConfig.Bases.PerSide).toBeTruthy()
 	end)

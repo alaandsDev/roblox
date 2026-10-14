@@ -6,6 +6,7 @@ Uso:  python tools\\build_place.py
   arquivos .rbxm salvos pelo Studio atual, por isso não usamos o Rojo do PATH).
 - Se existir assets/Assets.rbxm, vira ReplicatedStorage.Assets (sons, VFX, ícones, modelos).
 - Se existir assets/Map.rbxm, vira Workspace.Map (decoração feita no Studio).
+- Se existir assets/ClassicRobloxSky.rbxm, vira Lighting.ClassicRobloxSky (céu escolhido).
 - Se existir assets/Characters.rbxm (gerado por tools/build_characters.py), vira
   ReplicatedStorage.CharacterAssets (personagens sanitizados; o Anime Pack nunca entra no build).
 """
@@ -31,6 +32,9 @@ ASSETS = {
     # Personagens sanitizados pelo pipeline (python tools/build_characters.py)
     "Characters.rbxm": ("ReplicatedStorage", "CharacterAssets"),
     "Map.rbxm": ("Workspace", "Map"),
+    # Céu escolhido (Classic Roblox Sky, asset 339406852) salvo do Studio: Lighting > Sky >
+    # botão direito > Save to File... > assets/ClassicRobloxSky.rbxm (o MapBuilder reutiliza)
+    "ClassicRobloxSky.rbxm": ("Lighting", "ClassicRobloxSky"),
 }
 
 

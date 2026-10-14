@@ -37,6 +37,7 @@ local Localization = require(Shared.Localization.Localization)
 
 local Build = require(script.Parent.Build)
 local Decor = require(script.Parent.Decor)
+local WorldStyle = require(script.Parent.WorldStyle)
 
 local rgb = Build.rgb
 local baseLayout = BaseLayout.new(BaseConfig)
@@ -289,6 +290,40 @@ local function buildFloor(base: Model, origin: CFrame, floor: number, progressio
 				}))
 			end
 		end
+	end
+
+	-- Acabamento montado peça por peça (World Art Pass): borda com studs em volta do piso e,
+	-- nos andares de cima, VIGAS sob as bordas da frente/fundo (o andar lê como estrutura
+	-- encaixada, não como uma placa copiada em cima). Tudo decor: não muda colisão nem caminho.
+	for _, z in { -D / 2 - 0.35, D / 2 + 0.35 } do
+		Build.decor(Build.part(Vector3.new(W + 1.4, 0.9, 0.7), origin * CFrame.new(0, y - 0.55, z), {
+			Name = "EdgeTrim",
+			Color = theme,
+			Parent = structure,
+		}))
+	end
+	for _, side in { -1, 1 } do
+		Build.decor(Build.part(Vector3.new(0.7, 0.9, D), origin * CFrame.new(side * (W / 2 + 0.35), y - 0.55, 0), {
+			Name = "EdgeTrim",
+			Color = theme,
+			Parent = structure,
+		}))
+	end
+	if floor > 1 then
+		for _, z in { -D / 2 + 1.5, D / 2 - 1.5 } do
+			Build.decor(Build.part(Vector3.new(W - 2, 1.2, 1.4), origin * CFrame.new(0, y - 1.6, z), {
+				Name = "Beam",
+				Color = lighten(theme, 0.2),
+				Parent = structure,
+			}))
+		end
+		-- placa do andar (lê o progresso de longe: "2F", "3F"...)
+		local tag = Build.decor(Build.part(Vector3.new(4.2, 2.2, 0.5), origin * CFrame.new(W / 2 - 4, y + 3.6, -D / 2 - 0.2), {
+			Name = "FloorTagBoard",
+			Color = theme,
+			Parent = structure,
+		}))
+		Build.sign(tag, Enum.NormalId.Front, { { floor .. "F", 0.9, Color3.new(1, 1, 1) } })
 	end
 
 	-- Corredor (tapete) no meio
@@ -628,6 +663,7 @@ function BaseBuilder.applyState(base: Model, state: State, progression: Progress
 		end
 	end
 	buildRoof(base, origin, target)
+	WorldStyle.apply(base) -- andares novos ganham a linguagem blocky (o resto já estava marcado)
 	return before, target
 end
 

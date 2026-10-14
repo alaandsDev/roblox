@@ -313,7 +313,10 @@ local function hash01(a: number, b: number, seed: number): number
 end
 MapLayout.hash01 = hash01
 
-export type DecorSpot = { kind: string, x: number, z: number, radius: number, scale: number, seed: number }
+export type DecorSpot = { kind: string, x: number, z: number, radius: number, scale: number, seed: number, species: string? }
+
+-- Espécies das árvores anime/cartoon (Decor.tree): variedade sem copiar a mesma árvore
+MapLayout.TreeSpecies = { "Oak", "Round", "Pine", "Blossom" }
 
 --[[
 	Onde plantar a vegetação blocky. Grade regular com deslocamento determinístico; cada ponto
@@ -352,6 +355,50 @@ function MapLayout:decorSpots(): { DecorSpot }
 				local radius = RADIUS[kind]
 				if not self:decorBlocked(x, z, radius) then
 					table.insert(spots, { kind = kind, x = x, z = z, radius = radius, scale = 0.85 + r1 * 0.3, seed = math.floor(r2 * 1e6) })
+				end
+			end
+		end
+	end
+	-- Árvores: espécie + CLUSTERS de 2–4 (vizinhas menores ao redor) e algumas isoladas maiores.
+	-- Cada vizinha passa por decorBlocked e não encosta em nenhum outro ponto (sem fileiras).
+	local function free(x: number, z: number, radius: number): boolean
+		if self:decorBlocked(x, z, radius) then
+			return false
+		end
+		for _, other in spots do
+			if math.sqrt((x - other.x) ^ 2 + (z - other.z) ^ 2) < (radius + other.radius) * 0.8 then
+				return false
+			end
+		end
+		return true
+	end
+	local species = MapLayout.TreeSpecies
+	local count = #spots
+	for i = 1, count do
+		local spot = spots[i]
+		if spot.kind == "Tree" then
+			local h1, h2 = hash01(spot.x, spot.z, v.DecorSeed + 9), hash01(spot.z, spot.x, v.DecorSeed + 10)
+			spot.species = species[math.floor(h2 * #species) % #species + 1]
+			if h1 > 0.86 then
+				spot.scale *= 1.35 -- isolada e maior
+			elseif h1 < 0.5 then
+				local members = 1 + math.floor(hash01(spot.x + 3, spot.z - 3, v.DecorSeed + 11) * 3) -- 1..3 vizinhas
+				for m = 1, members do
+					local angle = h2 * math.pi * 2 + m * 2.1
+					local distance = 7 + hash01(spot.x, m, v.DecorSeed + 12) * 3
+					local x, z = spot.x + math.cos(angle) * distance, spot.z + math.sin(angle) * distance
+					local radius = 3.5
+					if math.sqrt(x * x + z * z) >= v.OpenCenterRadius and free(x, z, radius) then
+						table.insert(spots, {
+							kind = "Tree",
+							x = x,
+							z = z,
+							radius = radius,
+							scale = 0.72 + hash01(x, z, v.DecorSeed + 13) * 0.22,
+							seed = spot.seed + m * 977,
+							species = species[(math.floor(h2 * #species) + m) % #species + 1],
+						})
+					end
 				end
 			end
 		end

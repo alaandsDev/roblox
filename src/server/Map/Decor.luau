@@ -37,32 +37,78 @@ end
 ------------------------------------------------------------------------------------
 -- Vegetação
 
-function Decor.tree(parent: Instance, base: CFrame, height: number, seed: number): Model
-	local model = Build.model("BlockyTree", parent)
-	local random = Random.new(seed)
-	local cf = base * CFrame.Angles(0, random:NextNumber(0, math.pi / 2), 0)
-	local trunkH = height * 0.45
-	local trunkW = 1.8 + height * 0.03
-	Build.part(Vector3.new(trunkW, trunkH, trunkW), cf * CFrame.new(0, trunkH / 2, 0), {
+--[[
+	Árvores anime/cartoon (poucas peças cada, mobile primeiro). species:
+	  "Oak"     tronco blocky + 2–4 blocos de copa (clássico Roblox)
+	  "Round"   tronco + 3 copas redondas sobrepostas (cartoon)
+	  "Pine"    tronco + 3 camadas quadradas girando e afinando (pinheiro blocky)
+	  "Blossom" copa redonda rosa (cerejeira anime)
+	Só o tronco colide; copa sem colisão/consulta (não prende câmera nem jogador).
+]]
+local function trunk(model: Model, cf: CFrame, w: number, h: number)
+	Build.part(Vector3.new(w, h, w), cf * CFrame.new(0, h / 2, 0), {
 		Name = "Trunk",
 		Color = color(P.Trunk),
 		Material = Enum.Material.Wood,
 		Parent = model,
 	})
-	-- copa: 1 bloco grande + 1–3 menores em cima/ao lado
-	local crown = height * 0.42
-	local blocks = 2 + random:NextInteger(0, 2)
-	for i = 1, blocks do
-		local s = crown * (if i == 1 then 1 else random:NextNumber(0.55, 0.75))
-		local offset = if i == 1
-			then Vector3.new(0, trunkH + s * 0.4, 0)
-			else Vector3.new(random:NextNumber(-0.35, 0.35) * crown, trunkH + crown * random:NextNumber(0.55, 0.95), random:NextNumber(-0.35, 0.35) * crown)
-		Build.decor(Build.part(Vector3.new(s, s * 0.85, s), cf * CFrame.new(offset) * CFrame.Angles(0, random:NextNumber(-0.4, 0.4), 0), {
-			Name = "Leaves",
-			Color = pick(P.Leaves, seed + i),
-			Material = Enum.Material.SmoothPlastic,
-			Parent = model,
-		}))
+	-- raiz/base mais larga (lê como peça encaixada no chão)
+	Build.decor(Build.part(Vector3.new(w * 1.5, 0.6, w * 1.5), cf * CFrame.new(0, 0.3, 0), {
+		Name = "Root",
+		Color = color(P.WoodDark),
+		Material = Enum.Material.Wood,
+		Parent = model,
+	}))
+end
+
+local function leaves(model: Model, size: Vector3, cf: CFrame, c: Color3, ball: boolean?)
+	local part = Build.decor(Build.part(size, cf, { Name = "Leaves", Color = c, Material = Enum.Material.SmoothPlastic, Parent = model }))
+	if ball then
+		part.Shape = Enum.PartType.Ball
+	end
+end
+
+function Decor.tree(parent: Instance, base: CFrame, height: number, seed: number, species: string?): Model
+	local kind = species or "Oak"
+	local model = Build.model("Tree" .. kind, parent)
+	model:SetAttribute("Species", kind)
+	local random = Random.new(seed)
+	local cf = base * CFrame.Angles(0, random:NextNumber(0, math.pi * 2), 0)
+	if kind == "Pine" then
+		local trunkH = height * 0.3
+		trunk(model, cf, 1.6, trunkH)
+		local tiers = 3
+		for i = 1, tiers do
+			local w = height * (0.62 - i * 0.14)
+			local h = height * 0.22
+			leaves(model, Vector3.new(w, h, w), cf * CFrame.new(0, trunkH + (i - 0.6) * h * 0.95, 0) * CFrame.Angles(0, math.rad(45 * i), 0), pick(P.PineLeaves, seed + i))
+		end
+		leaves(model, Vector3.new(1.4, 1.4, 1.4), cf * CFrame.new(0, trunkH + tiers * height * 0.21 + 0.6, 0), pick(P.PineLeaves, seed))
+	elseif kind == "Round" or kind == "Blossom" then
+		local trunkH = height * 0.42
+		trunk(model, cf, 1.5 + height * 0.02, trunkH)
+		local palette = if kind == "Blossom" then P.Blossom else P.Leaves
+		local main = height * 0.5
+		leaves(model, Vector3.one * main, cf * CFrame.new(0, trunkH + main * 0.35, 0), pick(palette, seed), true)
+		for i = 1, 2 do
+			local d = main * random:NextNumber(0.55, 0.7)
+			local angle = random:NextNumber(0, math.pi * 2)
+			leaves(model, Vector3.one * d, cf * CFrame.new(math.cos(angle) * main * 0.38, trunkH + main * random:NextNumber(0.2, 0.55), math.sin(angle) * main * 0.38), pick(palette, seed + i), true)
+		end
+	else
+		-- Oak: blocky clássico
+		local trunkH = height * 0.45
+		local trunkW = 1.8 + height * 0.03
+		trunk(model, cf, trunkW, trunkH)
+		local crown = height * 0.42
+		local blocks = 2 + random:NextInteger(0, 2)
+		for i = 1, blocks do
+			local s2 = crown * (if i == 1 then 1 else random:NextNumber(0.55, 0.75))
+			local offset = if i == 1
+				then Vector3.new(0, trunkH + s2 * 0.4, 0)
+				else Vector3.new(random:NextNumber(-0.35, 0.35) * crown, trunkH + crown * random:NextNumber(0.55, 0.95), random:NextNumber(-0.35, 0.35) * crown)
+			leaves(model, Vector3.new(s2, s2 * 0.85, s2), cf * CFrame.new(offset) * CFrame.Angles(0, random:NextNumber(-0.4, 0.4), 0), pick(P.Leaves, seed + i))
+		end
 	end
 	return model
 end

@@ -29,6 +29,7 @@ local Localization = require(Shared.Localization.Localization)
 
 local Build = require(script.Parent.Build)
 local Decor = require(script.Parent.Decor)
+local WorldStyle = require(script.Parent.WorldStyle)
 
 local rgb = Build.rgb
 local layout = MapLayout.new(MapConfig, BaseConfig)
@@ -94,15 +95,54 @@ end
 ------------------------------------------------------------------------------------
 -- Iluminação: dia claro de anime, sombras suaves, cores vivas (sem pós-processamento pesado)
 
+--[[
+	Iluminação do World Art Pass: dia claro, cores vivas, contraste (anime simulator blocky).
+	Bloom é só complemento (limiar alto: só Neon/VFX brilham, a imagem não estoura).
+	SKY: o céu escolhido é o "Classic Roblox Sky" (asset 339406852, MapConfig.Lighting.SkyAssetId).
+	  - se já existe um Sky em Lighting (inserido no Studio ou vindo de assets/ClassicRobloxSky.rbxm
+	    pelo build), ele é REUTILIZADO; se houver mais de um, fica só um (o de nome
+	    "ClassicRobloxSky" tem prioridade) — nunca dois céus conflitantes;
+	  - sem nenhum Sky, usa o de ReplicatedStorage.Assets (AssetLoader) se existir; nada é baixado.
+]]
+local function chooseSky()
+	local skies = {}
+	for _, child in Lighting:GetChildren() do
+		if child:IsA("Sky") then
+			table.insert(skies, child)
+		end
+	end
+	local keep: Instance? = nil
+	for _, sky in skies do
+		if sky.Name == MapConfig.Lighting.SkyName then
+			keep = sky
+		end
+	end
+	keep = keep or skies[1]
+	for _, sky in skies do
+		if sky ~= keep then
+			sky:Destroy()
+		end
+	end
+	if not keep then
+		local fallback = AssetLoader.clone("Sky", "Sky")
+		if fallback and fallback:IsA("Sky") then
+			fallback.Parent = Lighting
+		end
+	end
+end
+
 local function applyLighting()
-	Lighting.ClockTime = 14
+	local L = MapConfig.Lighting
+	Lighting.ClockTime = L.ClockTime
 	Lighting.GeographicLatitude = 25
-	Lighting.Brightness = 2.6
-	Lighting.Ambient = rgb(118, 116, 132)
-	Lighting.OutdoorAmbient = rgb(168, 168, 184)
+	Lighting.Brightness = L.Brightness
+	Lighting.Ambient = rgb(table.unpack(L.Ambient))
+	Lighting.OutdoorAmbient = rgb(table.unpack(L.OutdoorAmbient))
+	Lighting.ExposureCompensation = L.Exposure
+	Lighting.ColorShift_Top = rgb(table.unpack(L.ColorShiftTop))
 	Lighting.EnvironmentDiffuseScale = 1
-	Lighting.EnvironmentSpecularScale = 0.5
-	Lighting.ShadowSoftness = 0.35
+	Lighting.EnvironmentSpecularScale = 0.4
+	Lighting.ShadowSoftness = 0.3
 	Lighting.GlobalShadows = true
 
 	local function effect(className: string, name: string): Instance
@@ -116,30 +156,25 @@ local function applyLighting()
 		return created
 	end
 	local cc = effect("ColorCorrectionEffect", "RollLegendsColor") :: ColorCorrectionEffect
-	cc.Saturation = 0.18
-	cc.Contrast = 0.08
+	cc.Saturation = L.Saturation
+	cc.Contrast = L.Contrast
 	cc.Brightness = 0.02
-	cc.TintColor = rgb(255, 252, 245)
+	cc.TintColor = rgb(255, 252, 246)
 	local bloom = effect("BloomEffect", "RollLegendsBloom") :: BloomEffect
-	bloom.Intensity = 0.3
-	bloom.Size = 18
-	bloom.Threshold = 1.8
+	bloom.Intensity = L.BloomIntensity
+	bloom.Size = 20
+	bloom.Threshold = L.BloomThreshold
+	local rays = effect("SunRaysEffect", "RollLegendsSunRays") :: SunRaysEffect
+	rays.Intensity = L.SunRays
+	rays.Spread = 0.6
 	local atmosphere = effect("Atmosphere", "RollLegendsAtmosphere") :: Atmosphere
-	atmosphere.Density = 0.24
-	atmosphere.Offset = 0.05
-	atmosphere.Haze = 1.2
-	atmosphere.Color = rgb(210, 232, 255)
-	atmosphere.Decay = rgb(120, 170, 230)
-	atmosphere.Glare = 0.2
-
-	local sky = AssetLoader.clone("Sky", "Sky")
-	if sky and sky:IsA("Sky") then
-		local old = Lighting:FindFirstChildOfClass("Sky")
-		if old then
-			old:Destroy()
-		end
-		sky.Parent = Lighting
-	end
+	atmosphere.Density = L.AtmosphereDensity
+	atmosphere.Offset = 0.04
+	atmosphere.Haze = L.AtmosphereHaze
+	atmosphere.Color = rgb(205, 230, 255)
+	atmosphere.Decay = rgb(110, 165, 235)
+	atmosphere.Glare = 0.15
+	chooseSky()
 end
 
 ------------------------------------------------------------------------------------
@@ -240,7 +275,8 @@ local function buildEnvironment(parent: Folder)
 		if spot.kind == "Palm" then
 			Decor.palm(decor, base, v.PalmHeight[1] + (v.PalmHeight[2] - v.PalmHeight[1]) * (spot.scale - 0.85) / 0.3, spot.seed)
 		elseif spot.kind == "Tree" then
-			Decor.tree(decor, base, v.TreeHeight[1] + (v.TreeHeight[2] - v.TreeHeight[1]) * (spot.scale - 0.85) / 0.3, spot.seed)
+			-- altura pela escala (clusters menores, isoladas maiores)
+			Decor.tree(decor, base, math.max(9, v.TreeHeight[1] + (v.TreeHeight[2] - v.TreeHeight[1]) * (spot.scale - 0.85) / 0.3), spot.seed, spot.species)
 		elseif spot.kind == "Bush" then
 			Decor.bush(decor, base, 3.2 * spot.scale, spot.seed)
 		elseif spot.kind == "Rocks" then
@@ -1111,6 +1147,8 @@ function MapBuilder.build(): Refs
 	local shopSpawn = buildShops(Build.folder("Shops", map))
 	local towerEntrance = buildTowers(Build.folder("Towers", map))
 	buildSocial(Build.folder("Social", map))
+	-- World Art Pass: studs/inlet/saturação por papel (não move nem redimensiona nada)
+	WorldStyle.apply(map)
 
 	map.Parent = workspace
 
