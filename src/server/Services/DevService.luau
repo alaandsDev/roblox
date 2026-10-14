@@ -448,6 +448,75 @@ DevService.Register("CharacterGallery", "([player], vfx?) pilotos lado a lado no
 	end
 	return showRow(player, entries)
 end)
+-- AURAS V2: comparação lado a lado NO CENÁRIO REAL (à frente do jogador, na base/mapa claro)
+local AuraBuilder = require(Shared.Modules.AuraBuilder)
+local AuraConfig = require(Shared.Config.AuraConfig)
+local AURA_RARITIES = { "Legendary", "Mythic", "Divine", "Secret" }
+
+local function auraRow(player: Player?, specs: { { rarity: string, style: string?, label: string } }, characterId: string, mode: string, spacing: number): string
+	local workspaceService = game:GetService("Workspace")
+	local old = workspaceService:FindFirstChild("DevAuraLineup")
+	if old then
+		old:Destroy()
+	end
+	local folder = Instance.new("Folder")
+	folder.Name = "DevAuraLineup"
+	folder.Parent = workspaceService
+	-- à frente do jogador (no chão onde ele está), virados para ele
+	local root = player and player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	local origin = if root and root:IsA("BasePart") then root.CFrame else CFrame.new(0, 3, 0)
+	local look = Vector3.new(origin.LookVector.X, 0, origin.LookVector.Z)
+	look = if look.Magnitude > 0.01 then look.Unit else Vector3.new(0, 0, -1)
+	local right = look:Cross(Vector3.new(0, 1, 0))
+	local center = origin.Position + look * 16 - Vector3.new(0, 3, 0)
+	local width = (#specs - 1) * spacing
+	for i, spec in specs do
+		local pos = center + right * (-width / 2 + (i - 1) * spacing)
+		local cf = CFrame.lookAt(pos, pos - look)
+		local model = CharacterModelFactory.spawn(characterId, cf, { vfx = "None" })
+		AuraBuilder.attach(model, characterId, spec.rarity, mode, CharacterModelFactory.height(characterId), spec.style)
+		galleryLabel(model, spec.label, `{model:GetAttribute("AuraStyle")} · {mode} · {model:GetAttribute("AuraLayers")} camadas`)
+		model.Parent = folder
+	end
+	return `{#specs} auras em Workspace.DevAuraLineup ({mode}); apague com Invoke("AuraClear")`
+end
+
+DevService.Register("AuraLineup", "([player], estilo?, modo?, characterId?) Lendário/Mítico/Divino/Secreto lado a lado, MESMO personagem e estilo, à frente do jogador. estilo: Electric|Flame|Void|Dark|Celestial|Wind|Ice|Energy|Spirit|Gravity (padrão Celestial); modo: Light (base) | Full (reveal)", function(...)
+	local player, style, mode, characterId = splitPlayer(...)
+	style = style or "Celestial"
+	assert(AuraConfig.Styles[style], "estilo inválido: " .. tostring(style))
+	mode = mode or "Light"
+	assert(mode == "Light" or mode == "Full", "modo: Light ou Full")
+	characterId = characterId or "char_killuo_godspeed"
+	assert(CharacterConfig.ById[characterId], "personagem inválido: " .. tostring(characterId))
+	local specs = {}
+	for _, rarity in AURA_RARITIES do
+		table.insert(specs, { rarity = rarity, style = style, label = rarity })
+	end
+	return auraRow(player, specs, characterId, mode, 9)
+end)
+
+DevService.Register("AuraStress", "([player], quantidade 4|8|10, raridade? (Divine | mixed), modo?) N auras lado a lado à frente do jogador (teste de legibilidade/FPS)", function(...)
+	local player, count, rarity, mode = splitPlayer(...)
+	count = math.clamp(tonumber(count) or 4, 1, 12)
+	rarity = rarity or "Divine"
+	mode = mode or "Light"
+	local specs = {}
+	for i = 1, count do
+		local r = if rarity == "mixed" then AURA_RARITIES[(i - 1) % 4 + 1] else rarity
+		table.insert(specs, { rarity = r, style = nil, label = `{r} #{i}` })
+	end
+	return auraRow(player, specs, "char_killuo_godspeed", mode, 6)
+end)
+
+DevService.Register("AuraClear", "() remove Workspace.DevAuraLineup", function()
+	local old = game:GetService("Workspace"):FindFirstChild("DevAuraLineup")
+	if old then
+		old:Destroy()
+	end
+	return "ok"
+end)
+
 -- Galeria PAGINADA do catálogo de lançamento (no máximo GALLERY_PAGE por vez)
 local GALLERY_PAGE = 12
 local FILTER_KEYS = { dice = "DefaultDice", rarity = "Rarity", pool = "LaunchPool", launchpool = "LaunchPool", family = "CharacterFamily" }

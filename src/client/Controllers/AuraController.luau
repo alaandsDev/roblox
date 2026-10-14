@@ -1,14 +1,17 @@
 --!strict
 --[[
-	AuraController: o MOVIMENTO das auras de alta raridade (AuraBuilder) num ÚNICO loop central.
-	    órbitas (Attachment + Trail girando), raios elétricos piscando/recurvando, fitas (wisps)
-	    ondulando, pulsos periódicos (Emit).
+	AuraController (V2): o MOVIMENTO das auras de alta raridade (AuraBuilder) num ÚNICO loop central.
+	    órbitas      raio/altura/velocidade/sentido próprios + oscilação vertical; Void/Gravity com
+	                 órbita irregular (raio "respirando")
+	    raios        arcos piscando e mudando de curva (Electric)
+	    fitas        Ribbon/Gust ondulando (Gust mais rápido)
+	    rajadas      Pulse / Shockwave / Flash / anel de energia / erupção do Secreto: cada uma com
+	                 intervalo próprio ±25% (nada sincronizado entre auras nem entre camadas)
+	    contorno     Highlight (Mítico+) só nas MaxHighlights auras mais próximas
 	Orçamento (AuraConfig.Budget):
-	    - só anima as MaxAnimated auras mais próximas da câmera e dentro de CullDistance
-	      (o ranking é refeito 2x/s, não a cada frame);
+	    - só anima as MaxAnimated auras mais próximas e dentro de CullDistance (ranking 2x/s);
+	    - além de MidDistance a taxa cai pela metade (mesma identidade);
 	    - no máximo MaxFull auras "Full" com taxa cheia; as excedentes caem para a taxa Light;
-	    - longe/fora do ranking: raios desligados, nada é animado (o LodController ainda desliga as
-	      partículas das estações distantes);
 	    - mobile/touch sem teclado: taxas × LowEndRateScale.
 	Nenhum loop por personagem; nenhuma conexão por frame além desta.
 ]]
@@ -25,24 +28,28 @@ local AuraBuilder = require(Shared.Modules.AuraBuilder)
 
 local AuraController = {}
 
+type Burst = { emitter: ParticleEmitter, every: number, count: number, nextAt: number }
 type Entry = {
 	model: Model,
 	orbits: { Attachment },
 	bolts: { Beam },
 	wisps: { Beam },
-	pulses: { { emitter: ParticleEmitter, every: number, count: number, nextAt: number } },
+	gusts: { Beam },
+	bursts: { Burst },
 	emitters: { ParticleEmitter },
+	outline: Highlight?,
 	rateScale: number,
 	active: boolean,
 }
 
-local entries: { [Model]: Entry } = {}
+local entries: { [string]: Entry } = {} -- chave = id estável gravado no modelo (não a Instance)
 local B = AuraConfig.Budget
 local lowEnd = false
 local clock = 0
 local rankAt = 0
 local boltAt = 0
 local random = Random.new()
+local nextId = 0
 
 local function setRates(entry: Entry, scale: number)
 	if entry.rateScale == scale then
@@ -57,11 +64,29 @@ local function setRates(entry: Entry, scale: number)
 	end
 end
 
+local function keyOf(model: Instance, create: boolean): string?
+	local id = model:GetAttribute("AuraEntryId")
+	if type(id) == "string" then
+		return id
+	end
+	if not create then
+		return nil
+	end
+	nextId += 1
+	local newId = "aura" .. nextId
+	model:SetAttribute("AuraEntryId", newId)
+	return newId
+end
+
 local function register(model: Instance)
-	if not model:IsA("Model") or entries[model] then
+	if not model:IsA("Model") then
 		return
 	end
-	local entry: Entry = { model = model, orbits = {}, bolts = {}, wisps = {}, pulses = {}, emitters = {}, rateScale = 1, active = false }
+	local key = keyOf(model, true) :: string
+	if entries[key] then
+		return
+	end
+	local entry: Entry = { model = model, orbits = {}, bolts = {}, wisps = {}, gusts = {}, bursts = {}, emitters = {}, outline = nil, rateScale = 1, active = false }
 	for _, obj in model:GetDescendants() do
 		local role = obj:GetAttribute("AuraRole")
 		if obj:IsA("Attachment") and role == "Orbit" then
@@ -70,30 +95,42 @@ local function register(model: Instance)
 			table.insert(entry.bolts, obj)
 		elseif obj:IsA("Beam") and role == "Wisp" then
 			table.insert(entry.wisps, obj)
+		elseif obj:IsA("Beam") and role == "Gust" then
+			table.insert(entry.gusts, obj)
+		elseif obj:IsA("Highlight") and role == "Outline" then
+			entry.outline = obj
 		elseif obj:IsA("ParticleEmitter") then
-			if role == "Pulse" then
-				table.insert(entry.pulses, {
+			if role == "Burst" then
+				local every = (obj:GetAttribute("AuraBurstEvery") :: number?) or 3
+				table.insert(entry.bursts, {
 					emitter = obj,
-					every = (obj:GetAttribute("AuraPulseEvery") :: number?) or 3,
-					count = (obj:GetAttribute("AuraPulseCount") :: number?) or 20,
-					nextAt = clock + random:NextNumber(0, 2),
+					every = every,
+					count = (obj:GetAttribute("AuraBurstCount") :: number?) or 10,
+					nextAt = clock + random:NextNumber(0, every), -- fases diferentes desde o início
 				})
 			elseif obj:GetAttribute("BaseRate") ~= nil then
 				table.insert(entry.emitters, obj)
 			end
 		end
 	end
-	entries[model] = entry
+	entries[key] = entry
 	if lowEnd then
 		setRates(entry, B.LowEndRateScale)
 	end
 end
 
 local function unregister(model: Instance)
-	entries[model :: Model] = nil
+	local key = keyOf(model, false)
+	if key then
+		local entry = entries[key]
+		if entry and entry.outline then
+			entry.outline.Enabled = false
+		end
+		entries[key] = nil
+	end
 end
 
--- Ranking (2x/s): quais auras animar e quais Full mantêm taxa cheia
+-- Ranking (2x/s): quais auras animar, quais Full mantêm taxa cheia e quais ganham contorno
 local function rank()
 	local camera = Workspace.CurrentCamera
 	if not camera then
@@ -101,11 +138,11 @@ local function rank()
 	end
 	local origin = camera.CFrame.Position
 	local list = {}
-	for model, entry in entries do
-		if model.Parent == nil then
-			entries[model] = nil
+	for key, entry in entries do
+		if entry.model.Parent == nil then
+			entries[key] = nil
 		else
-			local ok, pivot = pcall(model.GetPivot, model)
+			local ok, pivot = pcall(entry.model.GetPivot, entry.model)
 			local distance = if ok then (pivot.Position - origin).Magnitude else math.huge
 			table.insert(list, { entry = entry, distance = distance })
 		end
@@ -113,7 +150,7 @@ local function rank()
 	table.sort(list, function(a, b)
 		return a.distance < b.distance
 	end)
-	local full = 0
+	local full, outlines = 0, 0
 	for i, item in list do
 		local entry = item.entry
 		local active = i <= B.MaxAnimated and item.distance <= B.CullDistance
@@ -124,6 +161,9 @@ local function rank()
 		end
 		entry.active = active
 		local scale = if lowEnd then B.LowEndRateScale else 1
+		if item.distance > B.MidDistance then
+			scale *= 0.5
+		end
 		if entry.model:GetAttribute("AuraMode") == "Full" then
 			full += 1
 			if full > B.MaxFull then
@@ -131,6 +171,13 @@ local function rank()
 			end
 		end
 		setRates(entry, scale)
+		if entry.outline then
+			local on = active and outlines < B.MaxHighlights
+			if on then
+				outlines += 1
+			end
+			entry.outline.Enabled = on
+		end
 	end
 end
 
@@ -152,8 +199,11 @@ local function animate(dt: number)
 				local radius = (a:GetAttribute("AuraRadius") :: number?) or 2
 				local height = (a:GetAttribute("AuraHeight") :: number?) or 0
 				local speed = (a:GetAttribute("AuraSpeed") :: number?) or 3
+				local bob = (a:GetAttribute("AuraBob") :: number?) or 0.4
+				local wobble = (a:GetAttribute("AuraWobble") :: number?) or 0
 				local angle = clock * speed + index * (math.pi * 2 / count)
-				a.Position = Vector3.new(math.cos(angle) * radius, height + math.sin(clock * 2 + index) * 0.4, math.sin(angle) * radius)
+				local r = radius * (1 + wobble * 0.35 * math.sin(clock * 1.7 + index * 2.1))
+				a.Position = Vector3.new(math.cos(angle) * r, height + math.sin(clock * (1.6 + index * 0.3) + index) * bob, math.sin(angle) * r)
 			end
 			if flicker then
 				-- raios: arcos que mudam de forma e piscam (não um brilho parado)
@@ -164,13 +214,17 @@ local function animate(dt: number)
 				end
 			end
 			for i, beam in entry.wisps do
-				beam.CurveSize0 = math.sin(clock * 1.7 + i) * 2.5
-				beam.CurveSize1 = math.cos(clock * 1.3 + i) * 2.5
+				beam.CurveSize0 = 3 + math.sin(clock * 1.3 + i) * 2.5
+				beam.CurveSize1 = -3 + math.cos(clock * 1.1 + i * 1.7) * 2.5
 			end
-			for _, pulse in entry.pulses do
-				if clock >= pulse.nextAt then
-					pulse.nextAt = clock + pulse.every
-					pulse.emitter:Emit(math.max(1, math.floor(pulse.count * entry.rateScale)))
+			for i, beam in entry.gusts do
+				beam.CurveSize0 = math.sin(clock * 4 + i) * 4
+				beam.CurveSize1 = math.cos(clock * 3.4 + i) * 4
+			end
+			for _, burst in entry.bursts do
+				if clock >= burst.nextAt then
+					burst.nextAt = clock + burst.every * random:NextNumber(0.75, 1.25)
+					burst.emitter:Emit(math.max(1, math.floor(burst.count * entry.rateScale + 0.5)))
 				end
 			end
 		end
@@ -186,6 +240,17 @@ function AuraController.Count(): (number, number)
 		end
 	end
 	return total, active
+end
+
+-- quantos contornos (Highlight) estão ligados agora (orçamento MaxHighlights)
+function AuraController.Outlines(): number
+	local n = 0
+	for _, entry in entries do
+		if entry.outline and entry.outline.Enabled then
+			n += 1
+		end
+	end
+	return n
 end
 
 -- (testes/DEV) roda um passo do loop

@@ -8,14 +8,18 @@
 	"Efeitos reduzidos" desliga as auras sempre (e os VFX próprios dos personagens: atributo VFXTier).
 ]]
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
+
+local AuraConfig = require(ReplicatedStorage.Shared.Config.AuraConfig)
 
 local DataController = require(script.Parent.DataController)
 
 local LodController = {}
 
 local NEAR = 40
-local FAR = 75
+-- auras (V2) continuam ligadas até a distância normal de jogo da base (antes: 75 studs)
+local FAR = AuraConfig.Budget.CullDistance
 
 local function apply(station: Instance, distance: number, reduced: boolean)
 	local level = if distance < NEAR then 1 elseif distance < FAR then 2 else 3

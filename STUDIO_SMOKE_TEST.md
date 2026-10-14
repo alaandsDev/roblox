@@ -268,4 +268,7 @@ Testar no PC e no emulador (celular paisagem 844×390 e retrato 390×844, tablet
 | F1 | MOCHILA | aberta, clicar rápido entre vários personagens | só o card antigo/novo e o painel mudam; os outros retratos ficam 100% estáveis (zero "mini F5") | [ ] |
 | F2 | MOCHILA | 🗑 modo venda: marcar, desmarcar, SELECIONAR DUPLICATAS | nenhum retrato pisca/recarrega | [ ] |
 | F3 | ROLL | AUTO ligado olhando a faixa de rolls recentes | cada roll novo entra sem fazer os retratos já exibidos piscarem | [ ] |
+| AV1 | AURAS V2 | `Dev:Invoke("AuraLineup", player, "Celestial", "Light")` na Base, câmera na distância normal | sem ler texto dá para separar Lendário < Mítico < Divino < Secreto pela silhueta/movimento | [ ] |
+| AV2 | AURAS V2 | repetir com "Electric", "Flame", "Void" e com "Full" | cada estilo tem assinatura clara; aura visível sobre grama, chão amarelo, céu e roxo | [ ] |
+| AV3 | AURAS V2 | `AuraStress` 4 Divine, depois 10 mixed | personagens legíveis, sem parede branca, sem cobrir HUD, FPS estável | [ ] |
 | P2 | AURAS PACK | conferir o jogo | NADA do pack no place (Explorer: sem AurasPack); auras continuam só nos personagens colecionáveis, nunca no avatar | [ ] |

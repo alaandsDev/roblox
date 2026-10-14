@@ -787,7 +787,7 @@ UIKit.Windows.closeAll()
 do -- AuraController: um loop central anima órbitas/raios das auras com tag (servidor monta, cliente move)
 	local Factory = clientRequire(env.shared.Modules.CharacterModelFactory)
 	local model = Factory.build("char_killuo_godspeed", { vfx = "Full" })
-	model.Parent = workspace
+	model.Parent = env.real.Workspace
 	task.wait(0.1)
 	local total = C.AuraController.Count()
 	local orbit, before
@@ -802,6 +802,60 @@ do -- AuraController: um loop central anima órbitas/raios das auras com tag (se
 	local moved = orbit == nil or (orbit.Position - before).Magnitude > 0.01
 	check(total >= 1 and moved, "auras: AuraController registra a aura (tag) e anima no loop central")
 	model:Destroy()
+	-- V2: 12 auras Mítico+ perto da câmera -> contornos (Highlight) limitados a MaxHighlights;
+	-- órbitas com raios/alturas diferentes; nenhuma conexão/instância órfã ao remover
+	local AuraCfgC = clientRequire(env.shared.Config.AuraConfig)
+	local CharCfgC = clientRequire(env.shared.Config.CharacterConfig)
+	local divineId
+	for _, c in CharCfgC.List do
+		if c.Rarity == "Divine" then
+			divineId = c.Id
+			break
+		end
+	end
+	local models = {}
+	for i = 1, 12 do
+		local m = Factory.build(divineId, { vfx = "Light" })
+		m:PivotTo(roblox.CFrame.new(i * 6, 0, 0))
+		m.Parent = env.real.Workspace
+		table.insert(models, m)
+	end
+	task.wait(0.1)
+	C.AuraController._step(0.6)
+	local outlines = C.AuraController.Outlines()
+	local radii, heights = {}, {}
+	for _, d in models[1]:GetDescendants() do
+		if d:IsA("Attachment") and d:GetAttribute("AuraRole") == "Orbit" then
+			radii[d:GetAttribute("AuraRadius")] = true
+			heights[d:GetAttribute("AuraHeight")] = true
+		end
+	end
+	local nR, nH = 0, 0
+	for _ in radii do
+		nR += 1
+	end
+	for _ in heights do
+		nH += 1
+	end
+	check(outlines >= 1 and outlines <= AuraCfgC.Budget.MaxHighlights, string.format("auras V2: %d contornos ligados para 12 auras (teto %d)", outlines, AuraCfgC.Budget.MaxHighlights))
+	check(nR >= 2 and nH >= 2, "auras V2: órbitas com raios e alturas diferentes (nada sincronizado)")
+	local orbitV2
+	for _, d in models[1]:GetDescendants() do
+		if d:IsA("Attachment") and d:GetAttribute("AuraRole") == "Orbit" then
+			orbitV2 = d
+		end
+	end
+	local p0 = orbitV2 and orbitV2.Position
+	C.AuraController._step(0.15)
+	check(orbitV2 ~= nil and (orbitV2.Position - p0).Magnitude > 0.05, "auras V2: órbita do Divino se move no loop central")
+	local before = C.AuraController.Count()
+	for _, m in models do
+		m:Destroy()
+	end
+	task.wait(0.1)
+	C.AuraController._step(0.6)
+	local after = C.AuraController.Count()
+	check(after <= before - 12 and C.AuraController.Outlines() == 0, string.format("auras V2: remover as auras libera o controlador (%d -> %d registradas, 0 contornos)", before, after))
 end
 
 -- Torres: abrir, lutar, animação da batalha, fechar

@@ -529,7 +529,16 @@ local based = Factory.build("char_killuo_godspeed", { vfx = "Light" })
 do -- aura de raridade agora é o sistema AuraConfig/AuraBuilder (fora do limite de VFX PRÓPRIO do asset)
 	local own, auraRate = 0, 0
 	for _, obj in based:GetDescendants() do
-		local inAura = obj:FindFirstAncestor("AuraCore") ~= nil or obj:FindFirstAncestor("AuraGround") ~= nil
+		-- aura V2: tudo que o AuraBuilder cria tem nome "Aura..." (zonas AuraCore/Ring/Outer/Ground, órbitas)
+		local inAura = false
+		local node: Instance? = obj
+		while node and node ~= based do
+			if string.sub(node.Name, 1, 4) == "Aura" then
+				inAura = true
+				break
+			end
+			node = node.Parent
+		end
 		if table.find(Config.VFXClasses, obj.ClassName) and not inAura then
 			own += 1
 		elseif inAura and obj:IsA("ParticleEmitter") then

@@ -1,4 +1,4 @@
--- Auras de alta raridade (AuraPlanner/AuraConfig): raridade = intensidade, estilo = comportamento
+-- Auras V2 (AuraPlanner/AuraConfig): raridade = composição/alcance, estilo = identidade/assinatura
 local T = require("./TestLib")
 local AuraPlanner = require("../src/shared/Modules/AuraPlanner")
 local AuraConfig = require("../src/shared/Config/AuraConfig")
@@ -8,6 +8,8 @@ local describe, it, expect = T.describe, T.it, T.expect
 
 local planner = AuraPlanner.new(AuraConfig, CharacterConfig, DiceConfig)
 local ORDER = { "Legendary", "Mythic", "Divine", "Secret" }
+-- assinaturas implementadas pelo AuraBuilder (uma por estilo)
+local SIGNATURES = { Lightning = true, Flames = true, Fragments = true, Shadows = true, Stars = true, Gusts = true, Shards = true, Rings = true, Wisps = true, Pull = true }
 
 local function anyOf(rarity: string): string
 	for _, c in CharacterConfig.List do
@@ -26,22 +28,21 @@ local function kinds(plan: any): { [string]: number }
 	return out
 end
 
-local function countKinds(plan: any): number
-	local n = 0
-	for _ in kinds(plan) do
-		n += 1
-	end
-	return n
-end
-
-describe("Auras: arquitetura raridade × estilo", function()
-	it("estilos completos: 2–3 cores, textura nativa, comportamento definido", function()
+describe("Auras V2: estilos (identidade)", function()
+	it("cada estilo: 2–3 cores + tom ESCURO de contraste, textura nativa e UMA assinatura própria", function()
+		local used = {}
 		for name, style in AuraConfig.Styles do
 			expect(#style.Colors >= 2 and #style.Colors <= 3).toBeTruthy()
-			expect(AuraConfig.Textures[style.Texture] ~= nil).toBeTruthy()
+			expect(type(style.Dark) == "table" and #style.Dark == 3).toBeTruthy()
+			-- o tom escuro é de fato mais escuro que a cor principal (contraste sobre fundo claro)
+			local lum = function(c)
+				return c[1] * 0.3 + c[2] * 0.59 + c[3] * 0.11
+			end
+			expect(lum(style.Dark) < lum(style.Colors[1])).toBeTruthy()
 			expect(string.sub(AuraConfig.Textures[style.Texture], 1, 9)).toBe("rbxasset:")
-			expect(style.Direction ~= nil and style.Bolts ~= nil).toBeTruthy()
-			local _ = name
+			expect(SIGNATURES[style.Signature]).toBeTruthy()
+			expect(used[style.Signature]).toBeNil()
+			used[style.Signature] = name
 		end
 		for _, dice in DiceConfig.List do
 			if dice.Pool == "F2P" then
@@ -50,75 +51,111 @@ describe("Auras: arquitetura raridade × estilo", function()
 		end
 	end)
 
-	it("escalada clara: Lendário < Mítico < Divino < Secreto (densidade e nº de componentes)", function()
-		local lastRate, lastKinds = -1, 0
+	it("Killuo (referência elétrica) usa Electric com raios (assinatura Lightning)", function()
+		expect(planner:styleOf("char_killuo_godspeed")).toBe("Electric")
+		local plan = planner:resolve("char_killuo_godspeed", "Legendary", "Light")
+		assert(plan)
+		expect(plan.signature).toBe("Lightning")
+		expect(kinds(plan).Signature >= 1).toBeTruthy()
+	end)
+end)
+
+describe("Auras V2: hierarquia por raridade (camadas e silhueta)", function()
+	it("camadas coordenadas: Lendário 2–3 · Mítico 4–5 · Divino 6–8 · Secreto 8–12", function()
+		local ranges = { Legendary = { 2, 3 }, Mythic = { 4, 5 }, Divine = { 6, 8 }, Secret = { 8, 12 } }
 		for _, rarity in ORDER do
 			local plan = planner:resolve(anyOf(rarity), rarity, "Full")
 			assert(plan)
-			expect(plan.totalRate > lastRate).toBeTruthy()
-			expect(countKinds(plan) >= lastKinds).toBeTruthy()
-			lastRate, lastKinds = plan.totalRate, countKinds(plan)
+			local r = ranges[rarity]
+			expect(plan.layers >= r[1] and plan.layers <= r[2]).toBeTruthy()
 		end
+	end)
+
+	it("silhueta: Lendário ~1,2 · Mítico ~1,5 · Divino ~2,0 · Secreto ~2,5 (× personagem)", function()
+		local ranges = { Legendary = { 1.15, 1.25 }, Mythic = { 1.4, 1.6 }, Divine = { 1.8, 2.2 }, Secret = { 2.2, 2.8 } }
+		for _, rarity in ORDER do
+			local plan = planner:resolve(anyOf(rarity), rarity, "Light")
+			assert(plan)
+			expect(plan.silhouette >= ranges[rarity][1] and plan.silhouette <= ranges[rarity][2]).toBeTruthy()
+		end
+	end)
+
+	it("escalada estrita (camadas, densidade, silhueta) e Divino = composição completa", function()
+		local last = { layers = 0, rate = -1, silhouette = 0 }
+		for _, rarity in ORDER do
+			local plan = planner:resolve(anyOf(rarity), rarity, "Full")
+			assert(plan)
+			expect(plan.layers > last.layers and plan.totalRate > last.rate and plan.silhouette > last.silhouette).toBeTruthy()
+			last = { layers = plan.layers, rate = plan.totalRate, silhouette = plan.silhouette }
+		end
+		local divine = planner:resolve(anyOf("Divine"), "Divine", "Full")
+		assert(divine)
+		local k = kinds(divine)
+		-- corpo, externas subindo, frente/trás, 2–3 órbitas, fita, anel no chão, shockwave, assinatura
+		for _, kind in { "Body", "Rise", "Depth", "Ribbon", "Ground", "Shockwave", "Signature" } do
+			expect(k[kind] ~= nil).toBeTruthy()
+		end
+		expect(k.Orbit >= 2 and k.Orbit <= 3).toBeTruthy()
 		local secret = planner:resolve(anyOf("Secret"), "Secret", "Full")
 		assert(secret)
-		local k = kinds(secret)
-		-- Secreto: 3–4+ componentes coordenados além do corpo
-		expect((k.Orbit or 0) >= 4 and (k.Pulse or 0) == 1 and (k.Ground or 0) == 1 and ((k.Bolt or 0) + (k.Wisp or 0)) >= 4).toBeTruthy()
-		local legendary = planner:resolve(anyOf("Legendary"), "Legendary", "Full")
-		assert(legendary)
-		expect(kinds(legendary).Body).toBe(1)
-		expect(kinds(legendary).Rise).toBe(1)
+		local s = kinds(secret)
+		expect(s.Orbit >= 3 and s.Orbit <= 4 and s.Crown == 1 and s.Contrast == 1 and s.Outer == 1).toBeTruthy()
+		-- Lendário: corpo + subida + assinatura (sem órbitas)
+		local legendary = kinds(planner:resolve(anyOf("Legendary"), "Legendary", "Full"))
+		expect(legendary.Body == 1 and legendary.Rise == 1 and legendary.Signature ~= nil and legendary.Orbit == nil).toBeTruthy()
+	end)
+
+	it("contorno de silhueta (Highlight) a partir do Mítico", function()
+		expect((planner:resolve(anyOf("Legendary"), "Legendary", "Light") :: any).highlight).toBe(false)
+		for _, rarity in { "Mythic", "Divine", "Secret" } do
+			expect((planner:resolve(anyOf(rarity), rarity, "Light") :: any).highlight).toBe(true)
+		end
 	end)
 
 	it("mesmo espetáculo para estilos diferentes na mesma raridade (Mythic Electric × Mythic Flame)", function()
-		local electric, flame = "char_killuo_godspeed", nil
-		for _, c in CharacterConfig.List do
-			if planner:styleOf(c.Id) == "Flame" then
-				flame = c.Id
-				break
-			end
-		end
-		assert(flame)
-		local a = planner:resolve(electric, "Mythic", "Full")
-		local b = planner:resolve(flame, "Mythic", "Full")
+		local a = planner:resolve("char_killuo_godspeed", "Mythic", "Full", "Electric")
+		local b = planner:resolve("char_killuo_godspeed", "Mythic", "Full", "Flame")
 		assert(a and b)
 		expect(a.style).toBe("Electric")
 		expect(b.style).toBe("Flame")
 		expect(a.totalRate).toBe(b.totalRate)
-		expect(countKinds(a)).toBe(countKinds(b))
-		expect(kinds(a).Bolt ~= nil).toBeTruthy() -- elétrico: raios de verdade
-		expect(kinds(b).Wisp ~= nil).toBeTruthy() -- fogo: fitas/chamas
+		expect(a.layers).toBe(b.layers)
+		expect(a.signature ~= b.signature).toBeTruthy()
 	end)
+end)
 
-	it("Killuo (referência elétrica) usa Electric com raios", function()
-		expect(planner:styleOf("char_killuo_godspeed")).toBe("Electric")
-		expect(AuraConfig.Styles.Electric.Bolts).toBe("Lightning")
-	end)
-
-	it("modos: None/Inventário sem aura; Light <= Full; Épico fora do sistema", function()
-		local id = anyOf("Divine")
-		expect(planner:resolve(id, "Divine", "None")).toBeNil()
+describe("Auras V2: Light × Full e orçamento", function()
+	it("Light = MESMA identidade (mesmas camadas e assinatura) com menos partículas; None/Épico sem aura", function()
+		expect(planner:resolve(anyOf("Divine"), "Divine", "None")).toBeNil()
 		expect(planner:resolve(anyOf("Epic"), "Epic", "Full")).toBeNil()
 		for _, rarity in ORDER do
 			local full = planner:resolve(anyOf(rarity), rarity, "Full")
 			local light = planner:resolve(anyOf(rarity), rarity, "Light")
 			assert(full and light)
-			expect(light.totalRate <= full.totalRate).toBeTruthy()
-			expect(light.totalRate > 0).toBeTruthy() -- Light ainda tem presença
+			expect(light.layers).toBe(full.layers)
+			expect(light.signature).toBe(full.signature)
+			expect(light.silhouette).toBe(full.silhouette)
+			for kind in kinds(full) do
+				expect(kinds(light)[kind] ~= nil).toBeTruthy()
+			end
+			expect(light.totalRate > 0 and light.totalRate <= full.totalRate * 0.6).toBeTruthy()
 		end
 	end)
 
-	it("orçamento: nenhuma aura Full passa de MaxRatePerAura partículas/s", function()
+	it("orçamento: nenhuma aura Full passa de MaxRatePerAura partículas/s nem de MaxAlivePerAura vivas", function()
 		for _, rarity in ORDER do
 			for _, c in CharacterConfig.List do
 				if c.Rarity == rarity then
 					local plan = planner:resolve(c.Id, rarity, "Full")
 					assert(plan)
 					expect(plan.totalRate <= AuraConfig.Budget.MaxRatePerAura).toBeTruthy()
+					expect(plan.alive <= AuraConfig.Budget.MaxAlivePerAura).toBeTruthy()
 				end
 			end
 		end
-		expect(AuraConfig.Budget.MaxFull >= 1 and AuraConfig.Budget.MaxAnimated >= AuraConfig.Budget.MaxFull).toBeTruthy()
+		local B = AuraConfig.Budget
+		expect(B.MaxFull >= 1 and B.MaxAnimated >= B.MaxFull and B.MaxHighlights <= 31).toBeTruthy()
+		expect(B.CullDistance > B.MidDistance).toBeTruthy()
 	end)
 end)
 

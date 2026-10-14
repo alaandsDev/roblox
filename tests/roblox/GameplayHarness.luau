@@ -752,7 +752,7 @@ do -- AURAS de alta raridade (AuraBuilder via factory): componentes reais, Light
 		none:Destroy()
 	end
 	check(probe.ok, "auras: Lendário<Mítico<Divino<Secreto em densidade; Light < Full; None sem aura; dentro do orçamento")
-	check(probe.kinds.Secret[2] >= 4 and probe.kinds.Secret[3] >= 4 and probe.kinds.Legendary[3] == 0, "auras: Secreto com raios/fitas e órbitas; Lendário só corpo + subida")
+	check(probe.kinds.Secret[2] >= 2 and probe.kinds.Secret[3] >= 3 and probe.kinds.Legendary[3] == 0, "auras V2: Secreto com fitas e 3–4 órbitas; Lendário sem órbitas (corpo + subida + assinatura)")
 	local electric = Factory.build("char_killuo_godspeed", { vfx = "Full" })
 	local bolts = 0
 	for _, d in electric:GetDescendants() do
@@ -771,6 +771,51 @@ do -- AURAS de alta raridade (AuraBuilder via factory): componentes reais, Light
 		m:Destroy()
 	end
 	check(total <= 10 * AuraCfg.Budget.MaxRatePerAura * 0.5, string.format("auras: 10 raros em Light somam %d partículas/s (orçamento)", total))
+	-- V2: alcance (silhueta) por raridade e zonas; mesmo personagem nas 4 raridades (só o salto)
+	local Builder = req(env.shared.Modules.AuraBuilder)
+	local reach, layers = {}, {}
+	for _, rarity in { "Legendary", "Mythic", "Divine", "Secret" } do
+		local m = Factory.build(firstOf("Legendary"), { vfx = "None" })
+		Builder.attach(m, firstOf("Legendary"), rarity, "Light", nil, "Celestial")
+		reach[rarity] = m:GetAttribute("AuraReach")
+		layers[rarity] = m:GetAttribute("AuraLayers")
+		m:Destroy()
+	end
+	check(reach.Legendary < reach.Mythic and reach.Mythic < reach.Divine and reach.Divine < reach.Secret and reach.Divine >= 3.5 and reach.Secret <= AuraCfg.Zones.OuterMax,
+		string.format("auras V2: alcance Lendário %.1f < Mítico %.1f < Divino %.1f < Secreto %.1f studs (zonas Mid/Outer)", reach.Legendary, reach.Mythic, reach.Divine, reach.Secret))
+	check(layers.Legendary == 3 and layers.Mythic == 5 and layers.Divine == 8 and layers.Secret == 11, "auras V2: mesmo personagem/estilo, só a raridade muda: 3/5/8/11 camadas")
+	-- ESTRESSE: 4 Divinos lado a lado, 8 raros, 10 no orçamento (Light, como na base)
+	local function stress(rarities)
+		local rate, instances, scripts, maxPer = 0, 0, 0, 0
+		for i, rarity in rarities do
+			local m = Factory.build(firstOf(rarity), { vfx = "Light" })
+			local n = 0
+			for _, d in m:GetDescendants() do
+				if string.sub(d.Name, 1, 4) == "Aura" then
+					n += 1
+					if d:IsA("ParticleEmitter") then
+						rate += d.Rate
+					end
+				end
+				if d:IsA("Script") or d:IsA("LocalScript") or d:IsA("ModuleScript") then
+					scripts += 1
+				end
+			end
+			instances += n
+			maxPer = math.max(maxPer, n)
+			m:Destroy()
+			local _ = i
+		end
+		return rate, instances, scripts, maxPer
+	end
+	local fourDivine = { "Divine", "Divine", "Divine", "Divine" }
+	local eight = { "Legendary", "Mythic", "Divine", "Secret", "Legendary", "Mythic", "Divine", "Secret" }
+	local ten = { "Legendary", "Mythic", "Divine", "Secret", "Legendary", "Mythic", "Divine", "Secret", "Divine", "Mythic" }
+	for label, set in { ["4 Divinos"] = fourDivine, ["8 raros"] = eight, ["10 raros"] = ten } do
+		local rate, instances, scripts, maxPer = stress(set)
+		check(scripts == 0 and maxPer <= AuraCfg.Budget.MaxInstancesPerAura and rate <= #set * AuraCfg.Budget.MaxRatePerAura * AuraCfg.LightScale.Rate,
+			string.format("auras V2 estresse %s (Light): %d partículas/s, %d instâncias (máx %d por aura), 0 scripts", label, rate, instances, maxPer))
+	end
 end
 do -- TORRE CONTÍNUA (sessão, AUTO, idempotência, PARAR, derrota, desconexão)
 	local clock = 90000
@@ -1337,6 +1382,25 @@ local function galleryModels()
 		end
 	end
 	return models
+end
+do -- DEV AURAS V2: comparação lado a lado (mesmo personagem/estilo) e estresse; só no Studio
+	local resultL = Dev.Run("AuraLineup", p1, "Electric", "Light")
+	local folder = env.real.Workspace:FindFirstChild("DevAuraLineup")
+	local tiers, styles = {}, {}
+	for _, m in (folder and folder:GetChildren()) or {} do
+		if m:IsA("Model") then
+			table.insert(tiers, m:GetAttribute("Aura"))
+			styles[m:GetAttribute("AuraStyle")] = true
+		end
+	end
+	table.sort(tiers)
+	check(#tiers == 4 and table.concat(tiers, ",") == "Divine,Legendary,Mythic,Secret" and styles.Electric and next(styles, "Electric") == nil,
+		"DEV AuraLineup: Lendário/Mítico/Divino/Secreto lado a lado, mesmo estilo (" .. tostring(resultL) .. ")")
+	Dev.Run("AuraStress", p1, 10, "mixed")
+	folder = env.real.Workspace:FindFirstChild("DevAuraLineup")
+	check(folder ~= nil and #folder:GetChildren() == 10, "DEV AuraStress: 10 auras lado a lado")
+	Dev.Run("AuraClear")
+	check(env.real.Workspace:FindFirstChild("DevAuraLineup") == nil, "DEV AuraClear remove a comparação")
 end
 local resultG = Dev.Run("CharacterGallery", p1)
 local models = galleryModels()
