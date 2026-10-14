@@ -24,6 +24,7 @@ local Signal = require(Shared.Modules.Signal)
 local Localization = require(Shared.Localization.Localization)
 local RarityConfig = require(Shared.Config.RarityConfig)
 local Theme = require(script.Parent.UITheme)
+local ResponsiveLayout = require(script.Parent.ResponsiveLayout)
 
 local UIKit = {}
 UIKit.Theme = Theme
@@ -560,6 +561,7 @@ export type Window = {
 	Opened: any,
 	Closed: any,
 	isOpen: boolean,
+	boost: number,
 	Open: (self: Window) -> (),
 	Close: (self: Window) -> (),
 }
@@ -683,6 +685,8 @@ function UIKit.window(opts: WindowOptions): Window
 		Opened = Signal.new(),
 		Closed = Signal.new(),
 		isOpen = false,
+		-- escala extra de leitura em telas pequenas (UIKit.fitWindow); 1 = normal
+		boost = 1,
 	} :: any
 
 	function window.Open(self: Window)
@@ -695,8 +699,8 @@ function UIKit.window(opts: WindowOptions): Window
 		end
 		self.isOpen = true
 		gui.Enabled = true
-		openScale.Scale = Theme.OpenScaleFrom
-		TweenService:Create(openScale, TweenInfo.new(Theme.OpenTime, Enum.EasingStyle.Back), { Scale = 1 }):Play()
+		openScale.Scale = Theme.OpenScaleFrom * self.boost
+		TweenService:Create(openScale, TweenInfo.new(Theme.OpenTime, Enum.EasingStyle.Back), { Scale = self.boost }):Play()
 		self.Opened:Fire()
 	end
 	function window.Close(self: Window)
@@ -717,8 +721,35 @@ function UIKit.window(opts: WindowOptions): Window
 	dim.Activated:Connect(function()
 		window:Close()
 	end)
+	-- (UIKit.fitWindow) novo tamanho do painel + escala de leitura
+	function window.setLayout(self: Window, width: number, height: number, boost: number)
+		panel.Size = UDim2.fromOffset(width, height)
+		self.boost = boost
+		if self.isOpen then
+			openScale.Scale = boost
+		end
+	end
 	registry[opts.name] = window
 	return window
+end
+
+--[[
+	Janela RESPONSIVA: o painel acompanha a tela (ResponsiveLayout.fitWindow) e o controller
+	REORGANIZA o conteúdo pela largura recebida em onLayout(larguraConteúdo, alturaConteúdo).
+	Em telas pequenas o painel ganha um "boost" de leitura (alvos de toque legíveis), mas a
+	largura muda junto — o conteúdo troca de modo (compacto/retrato) em vez de só encolher.
+]]
+function UIKit.fitWindow(window: Window, maxSize: Vector2, onLayout: (number, number) -> ())
+	local function apply()
+		local viewport = viewportSize()
+		local fit = ResponsiveLayout.fitWindow(viewport.X, viewport.Y, maxSize.X, maxSize.Y, 320, 300)
+		;(window :: any):setLayout(fit.w, fit.h, fit.boost)
+		onLayout(fit.w - 24, fit.h - (Theme.HeaderHeight + 18))
+	end
+	apply()
+	UIKit.ViewportChanged:Connect(apply)
+	window.Opened:Connect(apply)
+	return apply
 end
 
 function Windows.get(name: string): Window?

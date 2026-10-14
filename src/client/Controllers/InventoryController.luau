@@ -5,6 +5,14 @@
 	    (Todos / Raridade / Power / Income / Recentes) + busca por nome
 	    painel de detalhes: EQUIPAR / DESEQUIPAR / TRAVAR / FAVORITAR / VENDER
 	    EQUIPAR MELHORES e capacidade (45/100)
+	Cabeçalho RESPONSIVO (ResponsiveLayout.backpackHeader): MOCHILA + capacidade · filtros +
+	busca · EQUIPAR MELHORES + 🗑; uma linha no largo, duas no compacto/retrato (reorganiza,
+	não só encolhe). A janela acompanha a tela (UIKit.fitWindow).
+	MODO VENDA (🗑): tocar nos cards marca/desmarca (borda vermelha, ✓, véu discreto — o
+	retrato continua visível e NENHUM ViewportFrame é recriado); rodapé com "X selecionados",
+	"Você receberá" (prévia do SERVIDOR, PreviewBulkSale), SELECIONAR DUPLICATAS, CANCELAR e
+	VENDER; sempre pede confirmação; o servidor revalida tudo (SellBulk). Favoritos, travados,
+	na base e no time da Torre não são selecionáveis (o jogador desvincula antes).
 	Toda ação é um PEDIDO; o servidor valida (dono, slot, proteção) e responde.
 ]]
 
@@ -15,6 +23,7 @@ local CharacterConfig = require(Shared.Config.CharacterConfig)
 local RarityConfig = require(Shared.Config.RarityConfig)
 local Formulas = require(Shared.Modules.GameFormulas)
 local SaleCore = require(Shared.Modules.SaleCore)
+local BulkSaleCore = require(Shared.Modules.BulkSaleCore)
 local EconomyConfig = require(Shared.Config.EconomyConfig)
 local CharacterModelFactory = require(Shared.Modules.CharacterModelFactory)
 local CharacterAssetConfig = require(Shared.Config.CharacterAssetConfig)
@@ -26,6 +35,7 @@ local UI = script.Parent.Parent.UI
 local UIKit = require(UI.UIKit)
 local CharacterPreview = require(UI.CharacterPreview)
 local Theme = require(UI.UITheme)
+local ResponsiveLayout = require(UI.ResponsiveLayout)
 local DataController = require(script.Parent.DataController)
 local NotificationController = require(script.Parent.NotificationController)
 local HudController = require(script.Parent.HudController)
@@ -50,6 +60,53 @@ local filter = "All"
 local search = ""
 local selected: string? = nil
 local dirty = true
+
+-- cabeçalho/rodapé responsivos
+local header: Frame
+local headerParts: { [string]: GuiObject } = {}
+local footer: Frame
+local footerParts: { [string]: GuiObject } = {}
+local footerInfo: TextLabel
+local detailClose: TextButton
+local layoutSize = Vector2.new(856, 478)
+
+-- MODO VENDA
+local saleMode = false
+local saleSelection: { [string]: boolean } = {}
+local salePreview: any = nil
+local salePending = false
+local saleToken = 0
+local saleRequests = 0
+
+-- motivo de bloqueio no CLIENTE (só para não deixar selecionar; o servidor revalida tudo)
+local function clientProtection(data: any, uid: string): string?
+	local item = data.Inventory[uid]
+	if not item then
+		return "not_owned"
+	end
+	if item.Locked then
+		return "locked"
+	end
+	if item.Favorite then
+		return "favorite"
+	end
+	for _, equipped in data.EquippedCharacters or {} do
+		if equipped == uid then
+			return "equipped"
+		end
+	end
+	return nil
+end
+
+-- textos fixos por motivo (o verificador de chaves exige chaves literais)
+local BLOCK_KEYS = {
+	locked = "error.locked",
+	favorite = "error.favorite",
+	equipped = "error.equipped",
+	tower_team = "error.tower_team",
+	in_trade = "error.in_trade",
+	not_owned = "error.not_owned",
+}
 
 function InventoryController.Selected(): string?
 	return selected
@@ -168,7 +225,9 @@ local function card(data: any, uid: string, order: number)
 		LayoutOrder = order,
 	}, grid)
 	UIKit.corner(button, Theme.CornerRadiusSmall)
-	UIKit.stroke(button, if uid == selected then 4 else 3, color, true)
+	local stroke = UIKit.stroke(button, if uid == selected then 4 else 3, color, true)
+	stroke.Name = "RarityStroke"
+	button:SetAttribute("RarityColor", color)
 	UIKit.gradient(button, UIKit.darken(color, 0.45), Theme.Colors.Card, 90)
 	-- retrato REAL (lazy + pool; ícone só se o asset falhar)
 	local portraitArea = UIKit.new("Frame", { Name = "Portrait", BackgroundTransparency = 1, Size = UDim2.fromScale(0.86, 0.5), Position = UDim2.fromScale(0.5, 0.02), AnchorPoint = Vector2.new(0.5, 0) }, button)
@@ -191,9 +250,241 @@ local function card(data: any, uid: string, order: number)
 		UIKit.text(button, { text = "Nv " .. item.Level, size = UDim2.new(0.5, 0, 0.14, 0), position = UDim2.new(1, -4, 0, 2), anchor = Vector2.new(1, 0), align = Enum.TextXAlignment.Right, color = Color3.fromRGB(150, 230, 255) })
 	end
 	button.Activated:Connect(function()
+		if saleMode then
+			InventoryController.ToggleSale(uid)
+			return
+		end
 		selected = uid
 		dirty = true
 		InventoryController.Refresh()
+	end)
+end
+
+------------------------------------------------------------------------------------
+-- MODO VENDA: só muda o visual dos cards existentes (nenhum card/ViewportFrame é recriado)
+
+local function cardOf(uid: string): GuiButton?
+	local b = grid:FindFirstChild(uid)
+	return if b and b:IsA("GuiButton") then b else nil
+end
+
+local function saleVisual(button: GuiButton, uid: string, data: any)
+	local picked = saleMode and saleSelection[uid] == true
+	local blocked = saleMode and (clientProtection(data, uid) ~= nil or table.find(data.TowerTeam or {}, uid) ~= nil)
+	local stroke = button:FindFirstChild("RarityStroke") :: UIStroke?
+	if stroke then
+		stroke.Color = if picked then Theme.Colors.Danger else (button:GetAttribute("RarityColor") :: Color3? or stroke.Color)
+		stroke.Thickness = if picked then 5 else 3
+	end
+	local veil = button:FindFirstChild("SaleVeil") :: Frame?
+	if (picked or blocked) and not veil then
+		local v = UIKit.new("Frame", {
+			Name = "SaleVeil",
+			Size = UDim2.fromScale(1, 1),
+			BackgroundColor3 = Theme.Colors.Danger,
+			BackgroundTransparency = 0.82,
+			ZIndex = 6,
+			Active = false,
+		}, button)
+		UIKit.corner(v, Theme.CornerRadiusSmall)
+		local check = UIKit.text(v, { name = "Check", text = "✓", size = UDim2.fromOffset(28, 28), position = UDim2.new(1, -4, 0, 4), anchor = Vector2.new(1, 0), z = 7, stroke = 2 })
+		local badge = UIKit.new("Frame", { Name = "CheckBadge", Size = UDim2.fromOffset(30, 30), Position = UDim2.new(1, -3, 0, 3), AnchorPoint = Vector2.new(1, 0), BackgroundColor3 = Theme.Colors.Danger, ZIndex = 6 }, v)
+		UIKit.corner(badge, 15)
+		UIKit.text(v, { name = "Blocked", text = "🔒", size = UDim2.fromOffset(28, 28), position = UDim2.new(0.5, 0, 0.3, 0), anchor = Vector2.new(0.5, 0.5), z = 7, stroke = 0 })
+		local _ = check
+		veil = v
+	end
+	if veil then
+		veil.Visible = picked or blocked
+		veil.BackgroundColor3 = if blocked then Color3.new(0, 0, 0) else Theme.Colors.Danger
+		veil.BackgroundTransparency = if blocked then 0.55 else 0.82
+		for _, name in { "Check", "CheckBadge" } do
+			local part = veil:FindFirstChild(name) :: GuiObject?
+			if part then
+				part.Visible = picked
+			end
+		end
+		local lockIcon = veil:FindFirstChild("Blocked") :: GuiObject?
+		if lockIcon then
+			lockIcon.Visible = blocked
+		end
+	end
+end
+
+local function saleUids(): { string }
+	local list = {}
+	for uid in saleSelection do
+		table.insert(list, uid)
+	end
+	table.sort(list)
+	return list
+end
+
+local function updateFooter()
+	if not footer then
+		return
+	end
+	local count = #saleUids()
+	local sellButton = footerParts.Sell :: TextButton
+	if count == 0 then
+		footerInfo.Text = Localization.t("bulk.mode") .. " · " .. Localization.t("bulk.selected", { count = 0 })
+		UIKit.setButtonText(sellButton, Localization.t("bulk.sell_empty"))
+		UIKit.setDisabled(sellButton, true)
+		return
+	end
+	if salePending or not salePreview then
+		footerInfo.Text = Localization.t("bulk.selected", { count = count }) .. " · " .. Localization.t("bulk.calculating")
+		UIKit.setButtonText(sellButton, Localization.t("bulk.sell_empty"))
+		UIKit.setDisabled(sellButton, true)
+		return
+	end
+	local amount = NumberFormatter.money(salePreview.total)
+	footerInfo.Text = Localization.t("bulk.selected", { count = count }) .. " · " .. Localization.t("bulk.receive", { amount = amount })
+	UIKit.setButtonText(sellButton, Localization.t("bulk.sell", { count = salePreview.count, amount = amount }))
+	UIKit.setDisabled(sellButton, salePreview.count == 0)
+end
+
+-- prévia AUTORITATIVA (debounce 0,25 s: tocar em vários cards gera 1 pedido)
+local function schedulePreview()
+	saleToken += 1
+	local token = saleToken
+	salePreview = nil
+	salePending = next(saleSelection) ~= nil
+	updateFooter()
+	if not salePending then
+		return
+	end
+	task.delay(0.25, function()
+		if token ~= saleToken or not saleMode then
+			return
+		end
+		local uids = saleUids()
+		local result = Net.request("PreviewBulkSale", uids)
+		if token ~= saleToken then
+			return
+		end
+		salePending = false
+		salePreview = if result.ok then result.data else nil
+		if not result.ok then
+			NotificationController.Show("error." .. tostring(result.code))
+		end
+		updateFooter()
+	end)
+end
+
+local function applySaleVisuals()
+	local data = DataController.GetAll()
+	if not data or not grid then
+		return
+	end
+	for uid in saleSelection do
+		if not data.Inventory[uid] then
+			saleSelection[uid] = nil
+		end
+	end
+	for _, child in grid:GetChildren() do
+		if child:IsA("GuiButton") then
+			saleVisual(child, child.Name, data)
+		end
+	end
+end
+
+function InventoryController.ToggleSale(uid: string)
+	local data = DataController.GetAll()
+	if not data or not saleMode then
+		return
+	end
+	local reason = clientProtection(data, uid) or (if table.find(data.TowerTeam or {}, uid) then "tower_team" else nil)
+	if reason then
+		NotificationController.Show(BLOCK_KEYS[reason] or "bulk.protected")
+		return
+	end
+	if saleSelection[uid] then
+		saleSelection[uid] = nil
+	else
+		saleSelection[uid] = true
+	end
+	local button = cardOf(uid)
+	if button then
+		saleVisual(button, uid, data)
+	end
+	schedulePreview()
+end
+
+function InventoryController.SelectDuplicates()
+	local data = DataController.GetAll()
+	if not data or not saleMode then
+		return
+	end
+	local picked = BulkSaleCore.selectDuplicates(data, clientProtection)
+	if #picked == 0 then
+		NotificationController.Show("bulk.no_dupes")
+		return
+	end
+	table.clear(saleSelection)
+	for _, uid in picked do
+		saleSelection[uid] = true
+	end
+	applySaleVisuals()
+	schedulePreview()
+end
+
+function InventoryController.SaleMode(): boolean
+	return saleMode
+end
+
+function InventoryController.SaleSelection(): { string }
+	return saleUids()
+end
+
+function InventoryController.SetSaleMode(on: boolean)
+	if saleMode == on then
+		return
+	end
+	saleMode = on
+	table.clear(saleSelection)
+	salePreview = nil
+	salePending = false
+	saleToken += 1
+	if on then
+		selected = nil
+		refreshDetail()
+	end
+	if footer then
+		footer.Visible = on
+		InventoryController.Layout()
+	end
+	applySaleVisuals()
+	updateFooter()
+end
+
+local function sellSelected()
+	local preview = salePreview
+	if not saleMode or salePending or not preview or preview.count == 0 then
+		return
+	end
+	local uids = saleUids()
+	local amount = NumberFormatter.money(preview.total)
+	UIKit.confirm(Localization.t("bulk.confirm", { count = preview.count, amount = amount }), Localization.t("bulk.confirm_yes"), Localization.t("bulk.cancel"), function()
+		saleRequests += 1
+		local requestId = string.format("bulk-%d-%d", math.floor(os.clock() * 1000) % 1000000000, saleRequests)
+		local result = Net.request("SellBulk", uids, preview.total, requestId)
+		if not result.ok then
+			NotificationController.Show("error." .. tostring(result.code))
+			if result.code == "price_changed" then
+				schedulePreview()
+			end
+			return
+		end
+		UIKit.sound("Coin")
+		NotificationController.Show("bulk.done", { count = result.data.count, amount = NumberFormatter.money(result.data.total) })
+		if #(result.data.skipped or {}) > 0 then
+			NotificationController.Show("bulk.done_skipped", { count = #result.data.skipped })
+		end
+		table.clear(saleSelection)
+		salePreview = nil
+		applySaleVisuals()
+		updateFooter()
 	end)
 end
 
@@ -227,7 +518,14 @@ function InventoryController.Refresh()
 	for id, button in filterButtons do
 		UIKit.setButtonColor(button, if id == filter then Theme.Colors.Primary else Color3.fromRGB(70, 70, 92))
 	end
+	if headerParts.FilterCycle then
+		UIKit.setButtonText(headerParts.FilterCycle :: TextButton, Localization.t("inv.filter_cycle", { name = Localization.t("inv.filter." .. filter) }))
+	end
 	refreshDetail()
+	if saleMode then
+		applySaleVisuals()
+		updateFooter()
+	end
 	CharacterPreview.update()
 end
 
@@ -239,18 +537,77 @@ local function request(name: string, ...: any)
 	return result
 end
 
+local function place(gui: GuiObject?, r: ResponsiveLayout.Rect?)
+	if not gui then
+		return
+	end
+	gui.Visible = r ~= nil
+	if r then
+		gui.Position = UDim2.fromOffset(r.x, r.y)
+		gui.Size = UDim2.fromOffset(r.w, r.h)
+		gui.AnchorPoint = Vector2.zero
+	end
+end
+
+-- Reorganiza cabeçalho, grade, detalhes e rodapé para a largura atual (sem UIScale)
+function InventoryController.Layout()
+	if not header then
+		return
+	end
+	local w, h = layoutSize.X, layoutSize.Y
+	local hd = ResponsiveLayout.backpackHeader(w)
+	header.Size = UDim2.fromOffset(w, hd.height)
+	header:SetAttribute("LayoutMode", hd.mode)
+	place(headerParts.Title, hd.title)
+	place(headerParts.Capacity, hd.capacity)
+	place(headerParts.Search, hd.search)
+	place(headerParts.EquipBest, hd.equipBest)
+	place(headerParts.Trash, hd.trash)
+	for i, id in FILTERS do
+		place(filterButtons[id], hd.filters[i])
+	end
+	place(headerParts.FilterCycle, hd.filterCycle)
+	UIKit.setButtonText(headerParts.EquipBest :: TextButton, if hd.equipBestIconOnly then "⚡" else "⚡ " .. Localization.t("inv.equip_best"))
+	UIKit.setButtonText(headerParts.FilterCycle :: TextButton, Localization.t("inv.filter_cycle", { name = Localization.t("inv.filter." .. filter) }))
+	local ft = ResponsiveLayout.backpackFooter(w)
+	footer.Position = UDim2.fromOffset(0, h - ft.height)
+	footer.Size = UDim2.fromOffset(w, ft.height)
+	footer:SetAttribute("LayoutMode", ft.mode)
+	place(footerParts.Info, ft.info)
+	place(footerParts.Dupes, ft.dupes)
+	place(footerParts.Cancel, ft.cancel)
+	place(footerParts.Sell, ft.sell)
+	footer.Visible = saleMode
+	local body = ResponsiveLayout.backpackBody(w, h, hd.height, if saleMode then ft.height else nil)
+	grid.Position = UDim2.fromOffset(body.grid.x, body.grid.y)
+	grid.Size = UDim2.fromOffset(body.grid.w, body.grid.h)
+	detail.Position = UDim2.fromOffset(body.detail.x, body.detail.y)
+	detail.Size = UDim2.fromOffset(body.detail.w, body.detail.h)
+	detail.AnchorPoint = Vector2.zero
+	detailClose.Visible = body.detailOverlay
+end
+
+-- (testes/DEV) força uma área interna para conferir os modos wide/compact/portrait
+function InventoryController._layoutFor(w: number, h: number)
+	layoutSize = Vector2.new(w, h)
+	InventoryController.Layout()
+end
+
 local function build()
 	window = UIKit.window({ name = "Inventory", title = Localization.t("inv.title"), icon = "🎒", size = Theme.PopupSizes.Large, header = Color3.fromRGB(100, 110, 255) })
 	local content = window.content
 	UIKit.padding(content, 10)
 
-	-- Barra superior: filtros, busca, capacidade, equipar melhores
-	local top = UIKit.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 44) }, content)
-	UIKit.list(top, true, 6)
+	-- CABEÇALHO (3 áreas, posições pelo ResponsiveLayout.backpackHeader em Layout())
+	header = UIKit.new("Frame", { Name = "Header", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 44) }, content)
+	headerParts.Title = UIKit.text(header, { name = "Title", text = Localization.t("inv.title"), align = Enum.TextXAlignment.Left, color = Theme.Colors.TextMuted })
+	capacityLabel = UIKit.text(header, { name = "Capacity", text = "0 / 100" })
+	headerParts.Capacity = capacityLabel
 	for i, id in FILTERS do
-		filterButtons[id] = UIKit.button(top, {
+		filterButtons[id] = UIKit.button(header, {
+			name = "Filter_" .. id,
 			text = Localization.t("inv.filter." .. id),
-			size = UDim2.fromOffset(92, 40),
+			size = UDim2.fromOffset(92, 44),
 			order = i,
 			onClick = function()
 				filter = id
@@ -258,8 +615,19 @@ local function build()
 			end,
 		})
 	end
+	-- retrato: um botão só que cicla os filtros (cabe com a busca na 2ª linha)
+	headerParts.FilterCycle = UIKit.button(header, {
+		name = "FilterCycle",
+		text = "",
+		color = Theme.Colors.Primary,
+		onClick = function()
+			local index = table.find(FILTERS, filter) or 1
+			filter = FILTERS[index % #FILTERS + 1]
+			InventoryController.Refresh()
+		end,
+	})
 	searchBox = UIKit.new("TextBox", {
-		Size = UDim2.fromOffset(150, 40),
+		Name = "Search",
 		BackgroundColor3 = Theme.Colors.Card,
 		PlaceholderText = Localization.t("inv.search"),
 		Text = "",
@@ -267,17 +635,37 @@ local function build()
 		TextScaled = true,
 		TextColor3 = Theme.Colors.Text,
 		ClearTextOnFocus = false,
-		LayoutOrder = 10,
-	}, top)
+	}, header)
 	UIKit.corner(searchBox, 8)
 	searchBox:GetPropertyChangedSignal("Text"):Connect(function()
 		search = string.sub(searchBox.Text, 1, 30)
 		InventoryController.Refresh()
 	end)
-	capacityLabel = UIKit.text(top, { text = "0 / 100", size = UDim2.fromOffset(90, 40), order = 11 })
+	headerParts.Search = searchBox
+	-- EQUIPAR MELHORES (sem precisar selecionar) e a LIXEIRA (modo venda), separados
+	headerParts.EquipBest = UIKit.button(header, {
+		name = "EquipBestTop",
+		text = "⚡ " .. Localization.t("inv.equip_best"),
+		color = Theme.Colors.Purple,
+		onClick = function()
+			local result = request("EquipBest")
+			if result.ok then
+				NotificationController.Show("inv.best_done", { count = result.data })
+			end
+		end,
+	})
+	headerParts.Trash = UIKit.button(header, {
+		name = "SellMode",
+		text = "🗑",
+		color = Theme.Colors.Danger,
+		onClick = function()
+			InventoryController.SetSaleMode(not saleMode)
+		end,
+	})
 
 	-- Grade
 	grid = UIKit.new("ScrollingFrame", {
+		Name = "Grid",
 		BackgroundTransparency = 1,
 		Size = UDim2.new(1, -280, 1, -54),
 		Position = UDim2.fromOffset(0, 54),
@@ -293,8 +681,24 @@ local function build()
 	}, grid)
 	UIKit.padding(grid, 4)
 
+	-- RODAPÉ do MODO VENDA (escondido fora do modo)
+	footer = UIKit.new("Frame", { Name = "SaleFooter", BackgroundColor3 = Theme.Colors.Card, Visible = false, ZIndex = 5 }, content)
+	UIKit.corner(footer, Theme.CornerRadiusSmall)
+	UIKit.stroke(footer, 3, Theme.Colors.Danger, true)
+	footerInfo = UIKit.text(footer, { name = "Info", text = "", align = Enum.TextXAlignment.Left, z = 6 })
+	footerParts.Info = footerInfo
+	footerParts.Dupes = UIKit.button(footer, { name = "SelectDuplicates", text = Localization.t("bulk.select_dupes"), color = Theme.Colors.Purple, onClick = function()
+		InventoryController.SelectDuplicates()
+	end })
+	footerParts.Cancel = UIKit.button(footer, { name = "CancelSale", text = Localization.t("bulk.cancel"), color = Color3.fromRGB(90, 90, 120), onClick = function()
+		InventoryController.SetSaleMode(false)
+	end })
+	footerParts.Sell = UIKit.button(footer, { name = "SellSelected", text = Localization.t("bulk.sell_empty"), color = Theme.Colors.Danger, onClick = sellSelected })
+
 	-- Detalhes
 	detail = UIKit.new("Frame", {
+		Name = "Detail",
+		ZIndex = 4,
 		BackgroundColor3 = Theme.Colors.Card,
 		Size = UDim2.new(0, 268, 1, -54),
 		Position = UDim2.new(1, 0, 0, 54),
@@ -410,21 +814,19 @@ local function build()
 		request("SetTowerTeam", team)
 	end })
 	detailButtons.Sell.Name = "SellOne"
-	-- EQUIPAR MELHORES também na barra (sem precisar selecionar)
-	UIKit.button(top, {
-		text = "⚡ " .. Localization.t("inv.equip_best"),
-		color = Theme.Colors.Purple,
-		size = UDim2.fromOffset(200, 40),
-		order = 12,
-		onClick = function()
-			local result = request("EquipBest")
-			if result.ok then
-				NotificationController.Show("inv.best_done", { count = result.data })
-			end
-		end,
-	})
+	-- tela estreita: os detalhes sobrepõem a grade e ganham um ✕
+	detailClose = UIKit.button(detail, { name = "DetailClose", text = "✕", color = Color3.fromRGB(90, 90, 120), size = UDim2.fromOffset(44, 44), position = UDim2.new(1, -6, 0, 6), anchor = Vector2.new(1, 0), onClick = function()
+		selected = nil
+		refreshDetail()
+	end })
+	detailClose.Visible = false
+	UIKit.fitWindow(window, Vector2.new(1180, 640), function(w, h)
+		layoutSize = Vector2.new(w - 20, h - 20) -- área interna (padding 10)
+		InventoryController.Layout()
+	end)
 	-- fechar a MOCHILA: solta todos os retratos e esvazia o pool (nenhum modelo fica vivo)
 	window.Closed:Connect(function()
+		InventoryController.SetSaleMode(false)
 		CharacterPreview.releaseScope(grid)
 		CharacterPreview.trimPool()
 	end)

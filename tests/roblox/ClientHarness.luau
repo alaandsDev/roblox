@@ -550,6 +550,113 @@ check(Env.waitFor(function()
 end, 2), "confirmar vende as duplicatas")
 UIKit.Windows.closeAll()
 
+do -- MOCHILA: cabeçalho responsivo + MODO VENDA (seleção sem recriar retratos, confirmação, servidor)
+	local function rectOf(g)
+		return { x = g.Position.X.Offset, y = g.Position.Y.Offset, w = g.Size.X.Offset, h = g.Size.Y.Offset }
+	end
+	local function overlaps(a, b)
+		return a.x < b.x + b.w and b.x < a.x + a.w and a.y < b.y + b.h and b.y < a.y + a.h
+	end
+	local inv2 = openWindow("Inventory")
+	task.wait(0.3)
+	local header = find(inv2.content, "Header")
+	for _, size in { { 1136, 520, "wide" }, { 820, 480, "compact" }, { 460, 600, "portrait" } } do
+		C.InventoryController._layoutFor(size[1], size[2])
+		local parts = {}
+		for _, name in { "Title", "Capacity", "Search", "EquipBestTop", "SellMode", "Filter_All", "Filter_Rarity", "Filter_Power", "Filter_Income", "Filter_Recent", "FilterCycle" } do
+			local g = header and header:FindFirstChild(name)
+			if g and g.Visible then
+				table.insert(parts, { name = name, r = rectOf(g) })
+			end
+		end
+		local ok = header ~= nil and header:GetAttribute("LayoutMode") == size[3] and #parts >= 6
+		for i, a in parts do
+			ok = ok and a.r.x >= 0 and a.r.x + a.r.w <= size[1] and a.r.y + a.r.h <= header.Size.Y.Offset and a.r.h >= 44
+			for j = i + 1, #parts do
+				if overlaps(a.r, parts[j].r) then
+					ok = false
+					print("    sobreposição:", a.name, parts[j].name)
+				end
+			end
+		end
+		check(ok, "MOCHILA cabeçalho " .. size[3] .. ": MOCHILA+capacidade, filtros+busca, EQUIPAR MELHORES e 🗑 sem sobreposição nem corte")
+	end
+	C.InventoryController._layoutFor(1136, 520)
+	-- inventário de teste: 3 cópias iguais + 1 favorita
+	local dupes = {}
+	for _ = 1, 3 do
+		table.insert(dupes, S.InventoryService.Add(player, "tide_apprentice"))
+	end
+	local favUid = S.InventoryService.Add(player, "tide_apprentice")
+	data.Inventory[favUid].Favorite = true
+	S.InventoryService.SendDelta(player, { favUid }, nil)
+	task.wait(0.5)
+	C.InventoryController.Refresh()
+	local function card(uid)
+		local grid = find(inv2.content, "Grid")
+		return grid and grid:FindFirstChild(uid)
+	end
+	local cardA = card(dupes[1])
+	local viewA = cardA and cardA:FindFirstChild("Preview", true)
+	click(find(header, "SellMode"))
+	local footer = find(inv2.content, "SaleFooter")
+	check(C.InventoryController.SaleMode() and footer and footer.Visible, "🗑 entra no MODO VENDA com rodapé")
+	if cardA then
+		click(cardA)
+	end
+	local veil = cardA and cardA:FindFirstChild("SaleVeil")
+	check(#C.InventoryController.SaleSelection() == 1 and veil and veil.Visible and veil:FindFirstChild("Check").Visible, "MODO VENDA: tocar no card marca (borda vermelha, ✓, véu discreto)")
+	check(card(dupes[1]) == cardA and (cardA and cardA:FindFirstChild("Preview", true)) == viewA, "MODO VENDA: selecionar NÃO recria o card nem o ViewportFrame do retrato")
+	local favCard = card(favUid)
+	if favCard then
+		click(favCard)
+	end
+	check(#C.InventoryController.SaleSelection() == 1, "MODO VENDA: favorito não é selecionável (aviso, sem vender em silêncio)")
+	click(find(footer, "SelectDuplicates"))
+	local picked = C.InventoryController.SaleSelection()
+	local hasFav = table.find(picked, favUid) ~= nil
+	check(#picked >= 2 and not hasFav, "SELECIONAR DUPLICATAS: só excedentes, nunca o favorito (" .. #picked .. ")")
+	local info = find(footer, "Info")
+	check(Env.waitFor(function()
+		return info ~= nil and string.find(info.Text, "Você receberá", 1, true) ~= nil
+	end, 3), "rodapé: X selecionados + Você receberá (prévia do servidor)")
+	local invCount = 0
+	for _ in data.Inventory do
+		invCount += 1
+	end
+	local moneyBeforeBulk = data.Money
+	click(find(footer, "SellSelected"))
+	check(Env.waitFor(function()
+		return gui("Confirm") ~= nil
+	end, 2), "VENDER pede confirmação (Vender X personagens por $Y?)")
+	local nowCount = 0
+	for _ in data.Inventory do
+		nowCount += 1
+	end
+	check(nowCount == invCount, "nada é vendido antes de confirmar")
+	local confirmYes
+	for _, d in gui("Confirm"):GetDescendants() do
+		if d:IsA("TextButton") and d:FindFirstChild("Label") and d.Label.Text == "CONFIRMAR VENDA" then
+			confirmYes = d
+		end
+	end
+	if confirmYes then
+		click(confirmYes)
+	end
+	check(Env.waitFor(function()
+		local n = 0
+		for _ in data.Inventory do
+			n += 1
+		end
+		return n == invCount - #picked and data.Money > moneyBeforeBulk and data.Inventory[favUid] ~= nil
+	end, 3), "CONFIRMAR VENDA: servidor vende as selecionadas, paga e o favorito fica")
+	click(find(footer, "CancelSale"))
+	check(not C.InventoryController.SaleMode() and not footer.Visible, "CANCELAR sai do MODO VENDA")
+	data.Inventory[favUid].Favorite = false
+	S.InventoryService.SendDelta(player, { favUid }, nil)
+	UIKit.Windows.closeAll()
+end
+
 -- Configurações
 local settingsWindow = openWindow("Settings")
 local toggles = {}
