@@ -178,7 +178,7 @@ Barra de comandos, aba **SERVER**, com o jogo em Play.
 |---|---|---|---|
 | R1 | Ir até os 3 painéis de ranking do Hub | 3 painéis lado a lado em arco, SEM sobreposição (antes ficavam um dentro do outro) | [ ] |
 | R2 | Ler "MAIS REBIRTHS" de perto e de longe | 5 linhas: `1.` · nome · valor alinhado à direita; nada encavalado | [ ] |
-| R3 | Entrar com um jogador de nome longo | Nome cortado com "…", sem invadir a coluna do valor | [ ] |
+| R3 | ROLL | OCULTAR ligado + AUTO (e Roll Rápido), rolar várias vezes | NENHUM texto/toast de resultado na tela (nem cartão, nem "Nome • RARIDADE"); o resultado aparece só na faixa de rolls recentes (retratos, sem 🎲) | [ ] |
 | R4 | Servidor com 1 jogador | Linha 1 preenchida, linhas 2–5 com "—" | [ ] |
 
 ## ESTEIRA DO HUB (extra) — física só é confirmável aqui
@@ -265,4 +265,7 @@ Testar no PC e no emulador (celular paisagem 844×390 e retrato 390×844, tablet
 | B5 | BASE | placa do pedestal | preço do próximo nível + "Nível X > Y"; no 30: renda/s + MÁX (inalterada) | [ ] |
 | S1 | SKY | Play → Explorer > Lighting | exatamente 1 Sky (ClassicRobloxSky); nenhum Sky antigo; céu clássico visível | [ ] |
 | P1 | AURAS PACK | `python tools\audit_auras_pack.py` | termina sem erro (WARNING de Animator.Tags é esperado); gera AURAS_PACK_AUDIT.md (27 seções) + third_party/auras_pack_report.json | [ ] |
+| F1 | MOCHILA | aberta, clicar rápido entre vários personagens | só o card antigo/novo e o painel mudam; os outros retratos ficam 100% estáveis (zero "mini F5") | [ ] |
+| F2 | MOCHILA | 🗑 modo venda: marcar, desmarcar, SELECIONAR DUPLICATAS | nenhum retrato pisca/recarrega | [ ] |
+| F3 | ROLL | AUTO ligado olhando a faixa de rolls recentes | cada roll novo entra sem fazer os retratos já exibidos piscarem | [ ] |
 | P2 | AURAS PACK | conferir o jogo | NADA do pack no place (Explorer: sem AurasPack); auras continuam só nos personagens colecionáveis, nunca no avatar | [ ] |

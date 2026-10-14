@@ -213,7 +213,51 @@ local function refreshDetail()
 	UIKit.setButtonText(detailButtons.Sell, Localization.t("inv.sell", { amount = NumberFormatter.money(quote.Total) }))
 end
 
-local function card(data: any, uid: string, order: number)
+-- Cards PERSISTENTES por uid: Refresh só ATUALIZA o que mudou (textos, ordem, visibilidade) —
+-- nunca destrói/recria a grade inteira; o retrato (CharacterPreview.set) fica montado enquanto o
+-- card representa o mesmo personagem/variante. Seleção muda só o card antigo, o novo e o painel.
+local cards: { [string]: TextButton } = {}
+
+local function setSelectedVisual(button: TextButton?, on: boolean)
+	if not button then
+		return
+	end
+	button.BackgroundColor3 = if on then Theme.Colors.CardHover else Theme.Colors.Card
+	local stroke = button:FindFirstChild("RarityStroke") :: UIStroke?
+	if stroke and not (saleMode and saleSelection[button.Name]) then
+		stroke.Thickness = if on then 4 else 3
+	end
+end
+
+local function setText(button: Instance, name: string, text: string, visible: boolean?)
+	local label = button:FindFirstChild(name) :: TextLabel?
+	if label then
+		if label.Text ~= text then
+			label.Text = text
+		end
+		label.Visible = if visible == nil then true else visible
+	end
+end
+
+-- Atualiza o card no lugar (textos/tags/retrato só se mudou)
+local function updateCard(button: TextButton, data: any, uid: string)
+	local item = data.Inventory[uid]
+	local character = CharacterConfig.ById[item.Id]
+	local variant = item.Variant or "Normal"
+	setText(button, "Variant", if variant ~= "Normal" then Localization.t("variant." .. variant) else "", variant ~= "Normal")
+	local copies = duplicates[item.Id] or 1
+	setText(button, "Copies", "x" .. copies, copies > 1)
+	setText(button, "Income", NumberFormatter.money(Formulas:unitIncome(item)) .. "/s")
+	local tags = (if item.Locked then "🔒" else "") .. (if item.Favorite then "⭐" else "") .. (if isEquipped(data, uid) then "🏠" else "")
+	setText(button, "Tags", tags, tags ~= "")
+	setText(button, "Level", "Nv " .. tostring(item.Level or 1), (item.Level or 1) > 1)
+	local portraitArea = button:FindFirstChild("Portrait") :: Frame?
+	if portraitArea then
+		CharacterPreview.set(portraitArea, item.Id, variant, "body", character.VisualTheme.Icon)
+	end
+end
+
+local function card(data: any, uid: string, order: number): TextButton
 	local item = data.Inventory[uid]
 	local character = CharacterConfig.ById[item.Id]
 	local color = UIKit.rarityColor(character.Rarity)
@@ -221,43 +265,46 @@ local function card(data: any, uid: string, order: number)
 		Name = uid,
 		Text = "",
 		AutoButtonColor = true,
-		BackgroundColor3 = if uid == selected then Theme.Colors.CardHover else Theme.Colors.Card,
+		BackgroundColor3 = Theme.Colors.Card,
 		LayoutOrder = order,
 	}, grid)
 	UIKit.corner(button, Theme.CornerRadiusSmall)
-	local stroke = UIKit.stroke(button, if uid == selected then 4 else 3, color, true)
+	local stroke = UIKit.stroke(button, 3, color, true)
 	stroke.Name = "RarityStroke"
 	button:SetAttribute("RarityColor", color)
 	UIKit.gradient(button, UIKit.darken(color, 0.45), Theme.Colors.Card, 90)
 	-- retrato REAL (lazy + pool; ícone só se o asset falhar)
-	local portraitArea = UIKit.new("Frame", { Name = "Portrait", BackgroundTransparency = 1, Size = UDim2.fromScale(0.86, 0.5), Position = UDim2.fromScale(0.5, 0.02), AnchorPoint = Vector2.new(0.5, 0) }, button)
-	CharacterPreview.attach(portraitArea, item.Id, item.Variant, "body", character.VisualTheme.Icon)
-	if (item.Variant or "Normal") ~= "Normal" then
-		UIKit.text(button, { name = "Variant", text = Localization.t("variant." .. item.Variant), size = UDim2.new(0.6, 0, 0.12, 0), position = UDim2.new(0, 4, 0.4, 0), align = Enum.TextXAlignment.Left, color = Color3.fromRGB(255, 225, 120) })
-	end
-	local copies = duplicates[item.Id] or 1
-	if copies > 1 then
-		UIKit.text(button, { name = "Copies", text = "x" .. copies, size = UDim2.new(0.4, 0, 0.12, 0), position = UDim2.new(1, -4, 0.4, 0), anchor = Vector2.new(1, 0), align = Enum.TextXAlignment.Right, color = Theme.Colors.TextMuted })
-	end
-	UIKit.text(button, { text = character.Name, size = UDim2.fromScale(0.94, 0.17), position = UDim2.fromScale(0.5, 0.52), anchor = Vector2.new(0.5, 0) })
-	UIKit.text(button, { text = Localization.t("rarity." .. character.Rarity), size = UDim2.fromScale(0.9, 0.12), position = UDim2.fromScale(0.5, 0.69), anchor = Vector2.new(0.5, 0), color = color })
-	UIKit.text(button, { text = NumberFormatter.money(Formulas:unitIncome(item)) .. "/s", size = UDim2.fromScale(0.9, 0.14), position = UDim2.fromScale(0.5, 0.83), anchor = Vector2.new(0.5, 0), color = Theme.Colors.Money })
-	local tags = (if item.Locked then "🔒" else "") .. (if item.Favorite then "⭐" else "") .. (if isEquipped(data, uid) then "🏠" else "")
-	if tags ~= "" then
-		UIKit.text(button, { text = tags, size = UDim2.new(1, -8, 0.16, 0), position = UDim2.fromOffset(4, 2), align = Enum.TextXAlignment.Left, stroke = 0 })
-	end
-	if (item.Level or 1) > 1 then
-		UIKit.text(button, { text = "Nv " .. item.Level, size = UDim2.new(0.5, 0, 0.14, 0), position = UDim2.new(1, -4, 0, 2), anchor = Vector2.new(1, 0), align = Enum.TextXAlignment.Right, color = Color3.fromRGB(150, 230, 255) })
-	end
+	UIKit.new("Frame", { Name = "Portrait", BackgroundTransparency = 1, Size = UDim2.fromScale(0.86, 0.5), Position = UDim2.fromScale(0.5, 0.02), AnchorPoint = Vector2.new(0.5, 0) }, button)
+	UIKit.text(button, { name = "Variant", text = "", size = UDim2.new(0.6, 0, 0.12, 0), position = UDim2.new(0, 4, 0.4, 0), align = Enum.TextXAlignment.Left, color = Color3.fromRGB(255, 225, 120) })
+	UIKit.text(button, { name = "Copies", text = "", size = UDim2.new(0.4, 0, 0.12, 0), position = UDim2.new(1, -4, 0.4, 0), anchor = Vector2.new(1, 0), align = Enum.TextXAlignment.Right, color = Theme.Colors.TextMuted })
+	UIKit.text(button, { name = "CharName", text = character.Name, size = UDim2.fromScale(0.94, 0.17), position = UDim2.fromScale(0.5, 0.52), anchor = Vector2.new(0.5, 0) })
+	UIKit.text(button, { name = "Rarity", text = Localization.t("rarity." .. character.Rarity), size = UDim2.fromScale(0.9, 0.12), position = UDim2.fromScale(0.5, 0.69), anchor = Vector2.new(0.5, 0), color = color })
+	UIKit.text(button, { name = "Income", text = "", size = UDim2.fromScale(0.9, 0.14), position = UDim2.fromScale(0.5, 0.83), anchor = Vector2.new(0.5, 0), color = Theme.Colors.Money })
+	UIKit.text(button, { name = "Tags", text = "", size = UDim2.new(1, -8, 0.16, 0), position = UDim2.fromOffset(4, 2), align = Enum.TextXAlignment.Left, stroke = 0 })
+	UIKit.text(button, { name = "Level", text = "", size = UDim2.new(0.5, 0, 0.14, 0), position = UDim2.new(1, -4, 0, 2), anchor = Vector2.new(1, 0), align = Enum.TextXAlignment.Right, color = Color3.fromRGB(150, 230, 255) })
 	button.Activated:Connect(function()
 		if saleMode then
 			InventoryController.ToggleSale(uid)
 			return
 		end
-		selected = uid
-		dirty = true
-		InventoryController.Refresh()
+		InventoryController.Select(uid)
 	end)
+	cards[uid] = button
+	updateCard(button, data, uid)
+	return button
+end
+
+-- Seleção: só o card antigo, o novo e o painel de detalhes mudam (nenhum retrato da grade remonta)
+function InventoryController.Select(uid: string?)
+	local previous = selected
+	selected = uid
+	if previous and previous ~= uid then
+		setSelectedVisual(cards[previous], false)
+	end
+	if uid then
+		setSelectedVisual(cards[uid], true)
+	end
+	refreshDetail()
 end
 
 ------------------------------------------------------------------------------------
@@ -447,8 +494,7 @@ function InventoryController.SetSaleMode(on: boolean)
 	salePending = false
 	saleToken += 1
 	if on then
-		selected = nil
-		refreshDetail()
+		InventoryController.Select(nil)
 	end
 	if footer then
 		footer.Visible = on
@@ -495,19 +541,39 @@ function InventoryController.Refresh()
 		return
 	end
 	dirty = false
-	CharacterPreview.releaseScope(grid) -- devolve os modelos ao pool antes de refazer os cards
-	for _, child in grid:GetChildren() do
-		if child:IsA("GuiButton") then
-			child:Destroy()
-		end
-	end
 	table.clear(duplicates)
 	for _, it in data.Inventory do
 		duplicates[it.Id] = (duplicates[it.Id] or 0) + 1
 	end
-	local list = sortedUids(data)
-	for i, uid in list do
-		card(data, uid, i)
+	-- 1) cards de unidades que saíram do inventário (vendidas/fundidas/trocadas)
+	for uid, button in cards do
+		if not data.Inventory[uid] then
+			local portraitArea = button:FindFirstChild("Portrait")
+			if portraitArea and portraitArea:IsA("GuiObject") then
+				CharacterPreview.detach(portraitArea)
+			end
+			button:Destroy()
+			cards[uid] = nil
+		end
+	end
+	-- 2) ordem/filtro: só LayoutOrder e Visible mudam; card novo só para uid novo
+	local shown: { [string]: boolean } = {}
+	for i, uid in sortedUids(data) do
+		shown[uid] = true
+		local button = cards[uid]
+		if button then
+			button.LayoutOrder = i
+			button.Visible = true
+			updateCard(button, data, uid)
+		else
+			button = card(data, uid, i)
+		end
+		setSelectedVisual(button, uid == selected)
+	end
+	for uid, button in cards do
+		if not shown[uid] then
+			button.Visible = false
+		end
 	end
 	local count = 0
 	for _ in data.Inventory do
@@ -527,6 +593,16 @@ function InventoryController.Refresh()
 		updateFooter()
 	end
 	CharacterPreview.update()
+end
+
+-- Fechar a MOCHILA: solta os retratos, esvazia o pool e descarta os cards (reabrir monta de novo)
+local function disposeCards()
+	CharacterPreview.releaseScope(grid)
+	CharacterPreview.trimPool()
+	for uid, button in cards do
+		button:Destroy()
+		cards[uid] = nil
+	end
 end
 
 local function request(name: string, ...: any)
@@ -784,7 +860,7 @@ local function build()
 				local result = request("SellCharacter", { uid })
 				if result.ok then
 					UIKit.sound("Coin")
-					selected = nil
+					InventoryController.Select(nil)
 				end
 			end
 		)
@@ -816,8 +892,7 @@ local function build()
 	detailButtons.Sell.Name = "SellOne"
 	-- tela estreita: os detalhes sobrepõem a grade e ganham um ✕
 	detailClose = UIKit.button(detail, { name = "DetailClose", text = "✕", color = Color3.fromRGB(90, 90, 120), size = UDim2.fromOffset(44, 44), position = UDim2.new(1, -6, 0, 6), anchor = Vector2.new(1, 0), onClick = function()
-		selected = nil
-		refreshDetail()
+		InventoryController.Select(nil)
 	end })
 	detailClose.Visible = false
 	UIKit.fitWindow(window, Vector2.new(1180, 640), function(w, h)
@@ -827,8 +902,7 @@ local function build()
 	-- fechar a MOCHILA: solta todos os retratos e esvazia o pool (nenhum modelo fica vivo)
 	window.Closed:Connect(function()
 		InventoryController.SetSaleMode(false)
-		CharacterPreview.releaseScope(grid)
-		CharacterPreview.trimPool()
+		disposeCards()
 	end)
 	window.Opened:Connect(function()
 		InventoryController.Refresh()

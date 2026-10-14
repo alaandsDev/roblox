@@ -9,7 +9,12 @@
 	  - POOL por personagem|variante: card que sai da tela devolve o modelo, o próximo reaproveita
 	    (sem montar de novo); pool limitado (MaxPooled);
 	  - UM loop central (Heartbeat, ~5x/s) e só quando há algo registrado;
-	  - releaseScope(container) ao fechar/refazer a janela; clear() destrói tudo.
+	  - releaseScope(container) ao fechar a janela; clear() destrói tudo.
+	  - IDEMPOTENTE: set(container, id, variante, enquadramento) num container que já mostra o
+	    MESMO personagem não faz nada (o retrato continua montado — sem piscar). Listas devem
+	    atualizar cards existentes em vez de destruir e recriar (MOCHILA / rolls recentes).
+	  - Instrumentação (testes/DEV): stats() conta modelos montados/reaproveitados/destruídos e
+	    ViewportFrames criados/destruídos.
 	  - FALLBACK: só se a montagem falhar de verdade, fica o ícone (texto) do personagem.
 	Os modelos vêm SEM aura/VFX (VFXModes.Inventory) e sem scripts (assets sanitizados).
 ]]
@@ -42,12 +47,37 @@ type Slot = {
 	failed: boolean,
 }
 
-local slots: { [GuiObject]: Slot } = {}
+-- Slots por ID numérico gravado no container (atributo PreviewSlotId), não pela Instance como
+-- chave de tabela: a identidade fica estável mesmo onde a mesma Instance chega como userdata
+-- diferente (ex.: ambiente de testes), e o set() idempotente sempre acha o slot certo.
+local slots: { [number]: Slot } = {}
+local nextSlotId = 0
+local SLOT_ATTR = "PreviewSlotId"
+
+local function slotIdOf(container: Instance, create: boolean): number?
+	local id = container:GetAttribute(SLOT_ATTR)
+	if type(id) == "number" then
+		return id
+	end
+	if not create then
+		return nil
+	end
+	nextSlotId += 1
+	container:SetAttribute(SLOT_ATTR, nextSlotId)
+	return nextSlotId
+end
+
+local function slotOf(container: Instance): Slot?
+	local id = slotIdOf(container, false)
+	return if id then slots[id] else nil
+end
 local pool: { [string]: { Model } } = {}
 local pooledCount = 0
 local activeCount = 0
 local connection: RBXScriptConnection? = nil
 local elapsed = 0
+-- contadores cumulativos (stats()): provam que troca de seleção/novo roll não remonta tudo
+local counters = { created = 0, reused = 0, destroyed = 0, viewportsCreated = 0, viewportsDestroyed = 0, setNoop = 0 }
 
 local function key(slot: Slot): string
 	return slot.characterId .. "|" .. slot.variant
@@ -115,6 +145,7 @@ local function acquire(slot: Slot): Model?
 	local list = pool[key(slot)]
 	if list and #list > 0 then
 		pooledCount -= 1
+		counters.reused += 1
 		return table.remove(list)
 	end
 	local ok, model = pcall(CharacterModelFactory.build, slot.characterId, {
@@ -125,6 +156,7 @@ local function acquire(slot: Slot): Model?
 	if not ok then
 		return nil
 	end
+	counters.created += 1
 	model:PivotTo(CFrame.Angles(0, math.pi, 0))
 	return model
 end
@@ -143,6 +175,7 @@ local function release(slot: Slot)
 		table.insert(pool[k], model)
 		pooledCount += 1
 	else
+		counters.destroyed += 1
 		model:Destroy()
 	end
 end
@@ -169,10 +202,10 @@ local function render(slot: Slot)
 end
 
 function CharacterPreview.update()
-	for container, slot in slots do
-		if container.Parent == nil then
+	for id, slot in slots do
+		if slot.container.Parent == nil then
 			release(slot)
-			slots[container] = nil
+			slots[id] = nil
 		elseif CharacterPreview._isVisible(slot.viewport) then
 			render(slot)
 		else
@@ -212,6 +245,7 @@ function CharacterPreview.attach(container: GuiObject, characterId: string, vari
 	viewport.LightColor = Color3.fromRGB(255, 250, 240)
 	viewport.LightDirection = Vector3.new(-0.4, -1, -0.6)
 	viewport.ZIndex = container.ZIndex
+	counters.viewportsCreated += 1
 	local camera = Instance.new("Camera")
 	camera.FieldOfView = if framing == "head" then 30 else 32
 	camera.Parent = viewport
@@ -229,7 +263,7 @@ function CharacterPreview.attach(container: GuiObject, characterId: string, vari
 		label.Parent = viewport
 		fallback = label
 	end
-	slots[container] = {
+	slots[slotIdOf(container, true) :: number] = {
 		container = container,
 		viewport = viewport,
 		camera = camera,
@@ -245,20 +279,50 @@ function CharacterPreview.attach(container: GuiObject, characterId: string, vari
 end
 
 function CharacterPreview.detach(container: GuiObject)
-	local slot = slots[container]
+	local slot = slotOf(container)
 	if slot then
 		release(slot)
-		slots[container] = nil
+		slots[slotIdOf(container, false) :: number] = nil
+		counters.viewportsDestroyed += 1
 		slot.viewport:Destroy()
 	end
 end
 
+--[[
+	Versão IDEMPOTENTE do attach: se o container já mostra o mesmo personagem/variante/enquadramento,
+	não faz nada (retrato continua montado). Se mudou, troca só o modelo (o ViewportFrame e a câmera
+	ficam). Sem registro ainda: equivale ao attach.
+]]
+function CharacterPreview.set(container: GuiObject, characterId: string, variant: string?, framing: Framing?, fallbackText: string?): ViewportFrame
+	local slot = slotOf(container)
+	local v = variant or "Normal"
+	local f: Framing = framing or "body"
+	if slot and slot.viewport.Parent ~= nil and slot.viewport:IsDescendantOf(container) then
+		if slot.characterId == characterId and slot.variant == v and slot.framing == f then
+			counters.setNoop += 1
+			return slot.viewport
+		end
+		release(slot)
+		slot.characterId, slot.variant, slot.framing, slot.failed = characterId, v, f, false
+		if slot.fallback and fallbackText then
+			slot.fallback.Text = fallbackText
+			slot.fallback.Visible = false
+		end
+		if CharacterPreview._isVisible(slot.viewport) then
+			render(slot)
+		end
+		return slot.viewport
+	end
+	return CharacterPreview.attach(container, characterId, variant, framing, fallbackText)
+end
+
 -- Solta todos os retratos dentro de `scope` (janela fechando / lista sendo refeita)
 function CharacterPreview.releaseScope(scope: Instance)
-	for container, slot in slots do
-		if container == scope or container:IsDescendantOf(scope) or container.Parent == nil then
+	for id, slot in slots do
+		local container = slot.container
+		if container == scope or container.Parent == nil or container:IsDescendantOf(scope) then
 			release(slot)
-			slots[container] = nil
+			slots[id] = nil
 		end
 	end
 end
@@ -267,6 +331,7 @@ end
 function CharacterPreview.trimPool()
 	for k, list in pool do
 		for _, model in list do
+			counters.destroyed += 1
 			model:Destroy()
 		end
 		pool[k] = nil
@@ -275,18 +340,28 @@ function CharacterPreview.trimPool()
 end
 
 function CharacterPreview.clear()
-	for container in slots do
-		CharacterPreview.detach(container)
+	for _, slot in slots do
+		CharacterPreview.detach(slot.container)
 	end
 	CharacterPreview.trimPool()
 end
 
-function CharacterPreview.stats(): { registered: number, active: number, pooled: number }
+function CharacterPreview.stats(): { [string]: number }
 	local registered = 0
 	for _ in slots do
 		registered += 1
 	end
-	return { registered = registered, active = activeCount, pooled = pooledCount }
+	return {
+		registered = registered,
+		active = activeCount,
+		pooled = pooledCount,
+		created = counters.created,
+		reused = counters.reused,
+		destroyed = counters.destroyed,
+		viewportsCreated = counters.viewportsCreated,
+		viewportsDestroyed = counters.viewportsDestroyed,
+		setNoop = counters.setNoop,
+	}
 end
 
 return CharacterPreview

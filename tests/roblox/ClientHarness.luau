@@ -337,20 +337,58 @@ check(Env.waitFor(function()
 	return data.Settings.HideRollAnimation == true
 end, 2), "OCULTAR salva a configuração no servidor")
 task.wait(1.1)
+local historyBeforeHide = #C.RollController.History()
 click(rollButton)
-check(Env.waitFor(function()
-	local compact = gui("RevealCompact")
-	return compact ~= nil and find(compact, "RollTip") ~= nil
-end, 3), "OCULTAR: rótulo pequeno no topo")
-do -- o cartão grande (com emoji/Dice genérico) foi removido: só "Nome • RARIDADE"
-	local compact = gui("RevealCompact")
-	local tip = compact and find(compact, "RollTip")
+-- Resultado de roll NÃO vira texto flutuante "Nome • RARIDADE" (redundante com os rolls recentes)
+local function rollToastOnScreen(): string?
 	local CharacterConfigC = clientRequire(env.shared.Config.CharacterConfig)
 	local last = C.RollController.History()[1]
 	local name = last and CharacterConfigC.ById[last.CharacterId] and CharacterConfigC.ById[last.CharacterId].Name
-	check(compact ~= nil and find(compact, "Compact") == nil and tip ~= nil and tip.Size.X.Offset <= 280 and tip.Size.Y.Offset <= 40
-		and name ~= nil and string.find(tip.Text, name, 1, true) ~= nil and string.find(tip.Text, "🎲", 1, true) == nil,
-		"rolls recentes: sem popup grande nem Dice genérico; só tooltip pequeno Nome • RARIDADE")
+	for _, screen in playerGui:GetChildren() do
+		if screen.Name ~= "HUD" then -- a faixa de rolls recentes (HUD) não tem texto de nome
+			for _, d in screen:GetDescendants() do
+				if d:IsA("TextLabel") and d.Visible and (d.Name == "RollTip" or (name and string.find(d.Text, name, 1, true) and string.find(d.Text, "•", 1, true))) then
+					return screen.Name .. "/" .. d.Name .. ": " .. d.Text
+				end
+			end
+		end
+	end
+	return nil
+end
+check(Env.waitFor(function()
+	return #C.RollController.History() > historyBeforeHide or historyBeforeHide >= 10
+end, 3), "OCULTAR: o resultado entra na faixa de rolls recentes")
+task.wait(0.2)
+local toast = rollToastOnScreen()
+check(toast == nil and gui("RevealCompact") == nil, "OCULTAR: nenhum toast/texto \"Nome • RARIDADE\" na tela (" .. tostring(toast) .. ")")
+do -- ROLLS RECENTES sem "mini F5": um roll novo cria SÓ o chip dele; os outros mantêm o retrato
+	local Preview = clientRequire(env.client.UI.CharacterPreview)
+	local row = gui("HUD") and find(gui("HUD"), "History")
+	local before = {}
+	for _, chip in (row and row:GetChildren()) or {} do
+		if chip:IsA("Frame") then
+			before[chip] = chip:FindFirstChild("Preview")
+		end
+	end
+	local st0 = Preview.stats()
+	local historyBefore = #C.RollController.History()
+	task.wait(1.1)
+	click(rollButton)
+	Env.waitFor(function()
+		return #C.RollController.History() > historyBefore or historyBefore >= 10
+	end, 3)
+	task.wait(0.3)
+	local st1 = Preview.stats()
+	local kept, same = 0, true
+	for chip, view in before do
+		if chip.Parent == row then
+			kept += 1
+			same = same and chip:FindFirstChild("Preview") == view
+		end
+	end
+	check(kept >= 1 and same, string.format("rolls recentes: %d chips antigos mantidos com o MESMO ViewportFrame (nada recriado)", kept))
+	check(st1.viewportsCreated - st0.viewportsCreated <= 1 and st1.viewportsDestroyed - st0.viewportsDestroyed <= 1,
+		string.format("rolls recentes: novo roll criou %d ViewportFrame(s) e destruiu %d (só o chip novo / o que saiu)", st1.viewportsCreated - st0.viewportsCreated, st1.viewportsDestroyed - st0.viewportsDestroyed))
 end
 click(find(hud, "Hide"))
 task.wait(0.3)
@@ -461,6 +499,69 @@ end
 check(Env.waitFor(function()
 	return S.InventoryService and data.EquippedCharacters["1"] ~= nil
 end, 2), "EQUIPAR pela MOCHILA coloca na base")
+do -- MOCHILA sem "mini F5": trocar a seleção / modo venda NÃO recria cards nem retratos
+	local Preview = _G.__previewModule
+	Preview.update()
+	local function snapshot()
+		local map = {}
+		for _, d in inv.content:GetDescendants() do
+			if d:IsA("TextButton") and string.match(d.Name, "^c%d+$") then
+				map[d.Name] = { button = d, view = d:FindFirstChild("Preview", true), model = (function()
+					local v = d:FindFirstChild("Preview", true)
+					return v and v:FindFirstChildOfClass("Model")
+				end)() }
+			end
+		end
+		return map
+	end
+	local function stable(a, b)
+		local n = 0
+		for uid, x in a do
+			local y = b[uid]
+			if not y or y.button ~= x.button or y.view ~= x.view or (x.model and y.model ~= x.model) then
+				return false, uid
+			end
+			n += 1
+		end
+		return n > 0, n
+	end
+	local s0, st0 = snapshot(), Preview.stats()
+	local uids = {}
+	for uid in s0 do
+		table.insert(uids, uid)
+	end
+	table.sort(uids)
+	for _, uid in { uids[1], uids[2], uids[#uids], uids[1] } do
+		click(s0[uid].button)
+		task.wait(0.05)
+	end
+	Preview.update()
+	local s1, st1 = snapshot(), Preview.stats()
+	local ok, n = stable(s0, s1)
+	check(ok and C.InventoryController.Selected() == uids[1], string.format("MOCHILA: trocar seleção X→Y→Z não recria cards nem retratos (%s cards estáveis)", tostring(n)))
+	check(st1.viewportsCreated == st0.viewportsCreated and st1.viewportsDestroyed == st0.viewportsDestroyed and st1.created == st0.created and st1.destroyed == st0.destroyed,
+		string.format("MOCHILA: seleção = 0 ViewportFrames/modelos criados ou destruídos (criados %d, destruídos %d)", st1.created - st0.created, st1.destroyed - st0.destroyed))
+	-- modo venda: marcar, desmarcar, SELECIONAR DUPLICATAS e sair
+	local header = find(inv.content, "Header")
+	click(find(header, "SellMode"))
+	click(s0[uids[2]].button)
+	click(s0[uids[2]].button)
+	click(s0[uids[#uids]].button)
+	click(find(find(inv.content, "SaleFooter"), "SelectDuplicates"))
+	click(find(find(inv.content, "SaleFooter"), "CancelSale"))
+	Preview.update()
+	local s2, st2 = snapshot(), Preview.stats()
+	ok, n = stable(s0, s2)
+	check(ok and st2.viewportsCreated == st0.viewportsCreated and st2.created == st0.created,
+		"MOCHILA: venda em massa (marcar/desmarcar/duplicatas/cancelar) não reconstrói a grade nem os retratos")
+	-- abrir/fechar o painel de detalhes (✕) também não mexe na grade
+	click(s0[uids[1]].button)
+	C.InventoryController.Select(nil)
+	Preview.update()
+	ok = stable(s0, snapshot())
+	check(ok and Preview.stats().viewportsCreated == st0.viewportsCreated, "MOCHILA: abrir/fechar detalhes não invalida os retratos")
+	check(Preview.stats().active <= Preview.MaxActive and Preview.stats().pooled <= Preview.MaxPooled, "MOCHILA: limites do pool/ativos preservados")
+end
 for _, name in { "DiceShop", "Upgrades", "Sell", "Index", "Daily", "Settings" } do
 	local w = openWindow(name)
 	check(w ~= nil and w.isOpen, name .. " abre")
@@ -972,6 +1073,17 @@ do
 	task.wait(1.1)
 	local hidden = autoFor(3.2)
 	check(hidden >= 2 and hidden <= 4, "OCULTAR + AUTO: mesma cadência de 1 roll/s (" .. hidden .. " rolls)")
+	do -- AUTO/OCULTAR: nenhum texto de resultado acumulado na tela (sem spam de nome/raridade)
+		local found = nil
+		for _, screen in playerGui:GetChildren() do
+			for _, x in screen:GetDescendants() do
+				if x:IsA("TextLabel") and x.Visible and x.Name == "RollTip" then
+					found = x.Text
+				end
+			end
+		end
+		check(found == nil and gui("RevealCompact") == nil, "AUTO + OCULTAR: sem spam de nome/raridade na tela")
+	end
 	local runtime = table.clone(d.Runtime or {})
 	runtime.FastRoll = true
 	S.PlayerDataService.Set(player, "Runtime", runtime)

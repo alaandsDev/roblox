@@ -57,26 +57,40 @@ local function refreshToggles()
 end
 
 -- Faixa dos últimos rolls: MESMO sistema de retrato da MOCHILA (CharacterPreview), enquadrado no
--- rosto/cabelo/busto. Os chips são reaproveitados (o modelo volta ao pool e é reusado).
+-- rosto/cabelo/busto. INCREMENTAL: cada chip pertence a UM roll (identidade = a entrada da lista,
+-- não o índice). Um roll novo cria só o chip dele; os outros só mudam de posição (LayoutOrder) —
+-- o retrato deles continua montado (sem piscar). Quem sai do fim da faixa é liberado.
+local chipOf: { [any]: Frame } = setmetatable({}, { __mode = "k" }) :: any
+local renderGeneration = 0
+
 local function renderHistory()
-	CharacterPreview.releaseScope(historyRow)
+	renderGeneration += 1
+	for i, entry in history do
+		local chip = chipOf[entry]
+		if not chip or chip.Parent ~= historyRow then
+			local character = CharacterConfig.ById[entry.CharacterId]
+			local newChip = UIKit.new("Frame", {
+				Size = UDim2.fromOffset(44, 44),
+				BackgroundColor3 = UIKit.darken(UIKit.rarityColor(entry.Rarity), 0.55),
+				ClipsDescendants = true,
+			}, historyRow)
+			UIKit.corner(newChip, 10)
+			UIKit.stroke(newChip, 2.5, UIKit.rarityColor(entry.Rarity), true)
+			CharacterPreview.set(newChip, entry.CharacterId, entry.Variant, "head", character and character.VisualTheme.Icon or "?")
+			chipOf[entry] = newChip
+			chip = newChip
+		end
+		local c = chip :: Frame
+		c.Name = "Recent" .. i
+		c.LayoutOrder = i
+		c:SetAttribute("RenderGeneration", renderGeneration)
+	end
+	-- chips que saíram da faixa (marcados por geração; nada de Instance como chave de tabela)
 	for _, child in historyRow:GetChildren() do
-		if child:IsA("Frame") then
+		if child:IsA("Frame") and child:GetAttribute("RenderGeneration") ~= renderGeneration then
+			CharacterPreview.detach(child)
 			child:Destroy()
 		end
-	end
-	for i, entry in history do
-		local character = CharacterConfig.ById[entry.CharacterId]
-		local chip = UIKit.new("Frame", {
-			Name = "Recent" .. i,
-			Size = UDim2.fromOffset(44, 44),
-			BackgroundColor3 = UIKit.darken(UIKit.rarityColor(entry.Rarity), 0.55),
-			LayoutOrder = i,
-			ClipsDescendants = true,
-		}, historyRow)
-		UIKit.corner(chip, 10)
-		UIKit.stroke(chip, 2.5, UIKit.rarityColor(entry.Rarity), true)
-		CharacterPreview.attach(chip, entry.CharacterId, entry.Variant, "head", character and character.VisualTheme.Icon or "?")
 	end
 	CharacterPreview.update()
 end

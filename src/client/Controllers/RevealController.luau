@@ -3,7 +3,7 @@
 	RevealController: apresenta o resultado do roll (só visual; o servidor já decidiu tudo).
 	O TIPO de apresentação vem do RevealPlanner (RevealConfig), nunca de ifs por raridade:
 	  Normal/Enhanced -> dado gira e quica, flash, personagem, raridade, nome, NOVO (1.2–1.8 s)
-	  Compact         -> rótulo pequeno "Nome • RARIDADE" no topo (OCULTAR ligado)
+	  Compact         -> nada na tela (OCULTAR/AUTO): só a faixa de rolls recentes
 	  HeroLanding     -> cinemática (Effects/HeroLanding)
 	    RevealController.Play(resultado, { autoRoll = true }) -> plano (bloqueia até terminar,
 	                                                              exceto o compacto)
@@ -43,8 +43,6 @@ local busy = false
 local current: any = nil
 
 local cardGui: ScreenGui
-local compactGui: ScreenGui
-local compactRoot: Frame
 
 function RevealController.Busy(): boolean
 	return busy
@@ -69,45 +67,9 @@ function RevealController.PlanFor(result: any, autoRoll: boolean?): RevealPlanne
 end
 
 ------------------------------------------------------------------------------------
--- Compacto (topo da tela)
-
--- OCULTAR ligado: o antigo cartão grande (360–540 px, com o EMOJI do personagem — 🎲 genérico
--- nos 121 de lançamento) saiu. O retrato real já aparece na faixa de rolls recentes
--- (CharacterPreview); aqui fica só um rótulo pequeno "Nome • RARIDADE" que some sozinho.
-local function playCompact(result: any, plan: RevealPlanner.Plan)
-	local character = CharacterConfig.ById[result.CharacterId]
-	local color = UIKit.rarityColor(result.Rarity)
-	for _, child in compactRoot:GetChildren() do
-		if child:IsA("GuiObject") then
-			child:Destroy()
-		end
-	end
-	local text = (if character then character.Name else "?") .. " • " .. Localization.t("rarity." .. result.Rarity)
-	if result.IsNew then
-		text ..= " · " .. Localization.t("reveal.new")
-	end
-	if result.AutoSold then
-		text ..= " · " .. Localization.t("reveal.autosold")
-	end
-	local tip = UIKit.text(compactRoot, {
-		name = "RollTip",
-		text = text,
-		size = UDim2.fromOffset(280, 34),
-		position = UDim2.new(0.5, 0, 0, 74),
-		anchor = Vector2.new(0.5, 0),
-		color = color,
-		stroke = 2,
-	})
-	tip.BackgroundTransparency = 0.25
-	tip.BackgroundColor3 = Theme.Colors.PanelBackground
-	UIKit.corner(tip, 10)
-	local premium = plan.compactStyle == "Premium" or plan.compactStyle == "Highlight"
-	task.delay(if premium then 2.2 else 1.3, function()
-		if tip.Parent then
-			tip:Destroy()
-		end
-	end)
-end
+-- Compacto (OCULTAR / AUTO): SEM texto na tela. O resultado já aparece na faixa de rolls
+-- recentes (retrato real, CharacterPreview) e no inventário; um "Nome • RARIDADE" flutuante era
+-- redundante e cobria a Mochila/filtros (com AUTO virava spam). Nada é desenhado aqui.
 
 ------------------------------------------------------------------------------------
 -- Normal / Enhanced (1.2–1.8 s)
@@ -242,8 +204,7 @@ end
 function RevealController.Play(result: any, context: { autoRoll: boolean? }?): RevealPlanner.Plan
 	local plan = RevealController.PlanFor(result, context and context.autoRoll)
 	if plan.mode == "Compact" then
-		playCompact(result, plan)
-		return plan
+		return plan -- só a faixa de rolls recentes (sem toast de nome/raridade)
 	end
 	busy = true
 	local ok, err = pcall(function()
@@ -327,8 +288,6 @@ function RevealController.Start()
 	cardGui = UIKit.screen("Reveal", 150)
 	cardGui.IgnoreGuiInset = true
 	cardGui.Enabled = false
-	compactGui = UIKit.screen("RevealCompact", 70)
-	compactRoot = UIKit.scaledRoot(compactGui)
 	Net.on("DevReveal", function(payload)
 		task.spawn(devPlay, payload)
 	end)
