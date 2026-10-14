@@ -34,6 +34,16 @@ local Net = require(Shared.Modules.Net)
 local Core = script.Parent.Parent.Core
 local ProfileCore = require(Core.ProfileCore)
 local Migrations = require(Core.Migrations)
+local SaleCore = require(Shared.Modules.SaleCore)
+local GameFormulas = require(Shared.Modules.GameFormulas)
+local CharacterLevelConfig = require(Shared.Config.CharacterLevelConfig)
+
+-- Migração v4 (investimento por instância + cap de nível): curva oficial do jogo
+local migrationContext = (Migrations :: any).Context
+migrationContext.investmentOf = function(characterId: string, level: number): number
+	return SaleCore.curveInvestment(GameFormulas, characterId, level)
+end
+migrationContext.maxLevel = CharacterLevelConfig.MaxLevel
 
 local log = Logger.new("PlayerData")
 

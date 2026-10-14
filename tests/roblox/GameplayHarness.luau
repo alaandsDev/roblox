@@ -109,7 +109,7 @@ check(Env.waitFor(function()
 end), "jogadores carregados e com base")
 local d1 = S.PlayerDataService.GetData(p1)
 local d2 = S.PlayerDataService.GetData(p2)
-check(d1.Version == 3 and d1.NextUid == 1 and d1.Pity.Legendary == 0, "perfil novo no schema v3")
+check(d1.Version == 4 and d1.NextUid == 1 and d1.Pity.Legendary == 0, "perfil novo no schema v4")
 check(d1.EquippedDice == "Starter" and d1.OwnedDice.Starter == true, "SelectedDiceId padrão seguro: Starter (desbloqueado)")
 
 -- Controle de tempo e sorte
@@ -363,7 +363,11 @@ check(not okNE and codeNE == "not_equipped", "personagem não equipado: não mel
 local okFO, codeFO = call("UpgradeCharacter", p1, foreign, 1)
 check(not okFO and codeFO == "not_owned", "uid de outro jogador: não melhora")
 local okMax, upMax = call("UpgradeCharacter", p1, a, 100)
-check(okMax and upMax.level == 50, "x100 para no MaxLevel (50)")
+check(okMax and upMax.level == 30, "x100 para no MaxLevel (30)")
+check(
+	d1.Inventory[a].UpgradeInvestment == req(env.shared.Modules.SaleCore).curveInvestment(Formulas, d1.Inventory[a].Id, 30),
+	"investimento da instância = soma exata do que foi cobrado até o 30"
+)
 local okMx, codeMx = call("UpgradeCharacter", p1, a, 1)
 check(not okMx and codeMx == "max_level", "no MaxLevel: recusado")
 
@@ -409,6 +413,12 @@ d1.Rolls = 0
 local okD, codeD = call("BuyDice", p1, "Lucky")
 check(not okD and codeD == "requires_rolls", "dado: requisito de rolls")
 d1.Rolls = 50
+d1.DiceRolls = { Starter = 10 }
+do
+	local okDR, codeDR = call("BuyDice", p1, "Lucky")
+	check(not okDR and codeDR == "requires_dice_rolls", "dado: precisa rolar o Dice anterior (sem compra em cascata)")
+end
+d1.DiceRolls = { Starter = 60 }
 local okD2, codeD2 = call("BuyDice", p1, "Lucky")
 check(not okD2 and codeD2 == "not_enough_money", "dado: falta dinheiro")
 d1.Money = 2500
@@ -449,7 +459,7 @@ local okL2, codeL2 = call("SellCharacter", p1, { v2 })
 check(not okL2 and codeL2 == "favorite", "vender favorito: recusado")
 local okL3, codeL3 = call("SellCharacter", p1, { a })
 check(not okL3 and codeL3 == "equipped", "vender equipado: recusado")
-do -- prévia de venda (SaleCore): autoritativa, igual à venda, refund 0% no jogo atual
+do -- prévia de venda (SaleCore): autoritativa, igual à venda, refund 75% do investido
 	local SaleCore = req(env.shared.Modules.SaleCore)
 	d1.Inventory[v3].Level = 10
 	local okPv, pv = call("PreviewSale", p1, { v3, v3, v1, "c999999" })
@@ -457,7 +467,7 @@ do -- prévia de venda (SaleCore): autoritativa, igual à venda, refund 0% no jo
 	check(
 		okPv and pv.count == 1 and pv.skipped == 2 and q and q.Base == Formulas:sellValue("tide_apprentice")
 			and q.Invested == SaleCore.curveInvestment(Formulas, "tide_apprentice", 10) and q.Invested > 0
-			and q.Percent == 0 and q.Refund == 0 and q.Total == q.Base and pv.total == q.Total
+			and q.Percent == 0.75 and q.Refund == math.floor(q.Invested * 0.75) and q.Total == q.Base + q.Refund and pv.total == q.Total
 			and d1.Inventory[v3] ~= nil and pv.items[v1] == nil,
 		"PreviewSale: base/investido/%/reembolso/total do servidor; repetido, travado e inexistente fora; nada vendido"
 	)
@@ -657,6 +667,10 @@ check(not okF0 and codeF0 == "not_enough_money" and d1.Inventory[f1] ~= nil, "fu
 d1.Money = 1e12
 local okF, fused = call("Fuse", p1, { f1, f2, f3 })
 check(okF and fused.variant == "Silver" and fused.level == 6, "fusão: 3 Normais -> 1 Prata com o maior nível")
+check(
+	d1.Inventory[fused.uid].UpgradeInvestment == req(env.shared.Modules.SaleCore).curveInvestment(Formulas, "solar_paladin", 6),
+	"fusão: a nova unidade soma o investimento das consumidas (uma vez)"
+)
 check(d1.Inventory[f1] == nil and d1.Inventory[f2] == nil and d1.Inventory[fused.uid].Variant == "Silver", "as 3 usadas somem; a nova existe")
 local okF2, codeF2 = call("Fuse", p1, { fused.uid, f1, f2 })
 check(not okF2 and codeF2 == "not_owned", "fusão com uids que não existem mais: recusada")

@@ -11,6 +11,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
 local MissionConfig = require(Shared.Config.MissionConfig)
+local CharacterConfig = require(Shared.Config.CharacterConfig)
 local MissionCore = require(Shared.Modules.MissionCore)
 local Formulas = require(Shared.Modules.GameFormulas)
 local TableUtil = require(Shared.Modules.TableUtil)
@@ -83,7 +84,7 @@ function MissionService.Claim(player: Player, kind: string, id: string)
 	if not achievement then
 		Net.fail("mission_invalid")
 	end
-	local tier = MissionCore.claimableTier(data, achievement)
+	local tier = MissionCore.claimableTier(data, achievement, CharacterConfig.ById)
 	if not tier then
 		Net.fail("mission_incomplete")
 	end

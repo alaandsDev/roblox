@@ -46,7 +46,7 @@ export type Dice = {
 	Currency: string,
 	-- Exclusivo: não aparece à venda (vem de recompensa, ex.: Dia 7 do Diário)
 	Exclusive: boolean?,
-	UnlockRequirement: { Rolls: number?, Dice: string? },
+	UnlockRequirement: { Rolls: number?, Dice: string?, RollsOnPrevious: number? },
 	Balance: string,
 	-- Quantos personagens por raridade (C/U/R/E/L/M/D/S) a DICE_PROGRESSION_PROPOSAL aprovou: só
 	-- AUDITORIA (DiceProbabilityReport acusa divergência), a lista vem do catálogo
@@ -68,6 +68,12 @@ local BASE_RARITY_PERCENT: { [string]: number } = {
 	Secret = 0.05,
 }
 
+-- Rolls que o jogador precisa fazer COM o Dice anterior antes de comprar o próximo
+-- (data.DiceRolls). Impede a compra em cascata: a auditoria mostrou dinheiro de missões/coletor
+-- chegando em bloco e pagando 2–3 Dice de uma vez (92% dos Ativos nunca rolavam o Shinobi).
+-- 60 rolls = 1 min no ritmo normal (30 s com Roll Rápido): o pool de 6–8 personagens tem chance real.
+local ROLLS_ON_PREVIOUS = 60
+
 local function f2p(order: number, id: string, catalogKey: string, luck: number, price: number, rolls: number, previous: string?, body: { number }, pips: { number }, expected: { number }, weights: { [string]: number }): Dice
 	return {
 		ExpectedCounts = expected,
@@ -82,7 +88,7 @@ local function f2p(order: number, id: string, catalogKey: string, luck: number, 
 		PityBehavior = "SupportedOnly",
 		Price = price,
 		Currency = "Money",
-		UnlockRequirement = if previous then { Rolls = rolls, Dice = previous } else {},
+		UnlockRequirement = if previous then { Rolls = rolls, Dice = previous, RollsOnPrevious = ROLLS_ON_PREVIOUS } else {},
 		Balance = "WEIGHTS_APPROVED · ECONOMY_PENDING",
 		VisualModel = id .. "Dice",
 		ColorTheme = { Body = body, Pips = pips },
@@ -92,7 +98,8 @@ end
 --[[
 	Ordem oficial (Variante B de DICE_BALANCE_ANALYSIS.md): Shinobi antes do Flame e Colossus antes
 	do Awakened. Pools iguais (personagens não mudaram de Dice).
-	Preço e rolls de desbloqueio pertencem à POSIÇÃO (#4 = 40k / 300 rolls, #5 = 75k / 425 ...);
+	Preço e rolls de desbloqueio pertencem à POSIÇÃO (#4 = 40k / 300 rolls, #5 = 75k / 450 ...;
+	balanceamento aplicado: Flame 425->450, Blade 550->650 rolls, Forbidden 750M->400M);
 	LuckMultiplier pertence ao Dice (não mudou com a troca de posição).
 	RarityWeights: aprovados (% por raridade, soma 100, só raridades do pool).
 ]]
@@ -106,9 +113,9 @@ local list: { Dice } = {
 	f2p(4, "Shinobi", "shinobi", 1.7, 40000, 300, "Rampart", { 240, 140, 40 }, { 30, 30, 40 }, { 2, 2, 2, 2, 0, 0, 0, 0 },
 		{ Common = 35, Uncommon = 33, Rare = 22, Epic = 10 }),
 	-- Primeiro Lendário: 1% (1 personagem)
-	f2p(5, "Flame", "flame", 1.6, 75000, 425, "Shinobi", { 255, 110, 40 }, { 255, 240, 120 }, { 0, 2, 2, 1, 1, 0, 0, 0 },
+	f2p(5, "Flame", "flame", 1.6, 75000, 450, "Shinobi", { 255, 110, 40 }, { 255, 240, 120 }, { 0, 2, 2, 1, 1, 0, 0, 0 },
 		{ Uncommon = 60, Rare = 28, Epic = 11, Legendary = 1 }),
-	f2p(6, "Blade", "blade", 1.8, 125000, 550, "Flame", { 200, 210, 225 }, { 30, 60, 110 }, { 0, 2, 3, 2, 1, 0, 0, 0 },
+	f2p(6, "Blade", "blade", 1.8, 125000, 650, "Flame", { 200, 210, 225 }, { 30, 60, 110 }, { 0, 2, 3, 2, 1, 0, 0, 0 },
 		{ Uncommon = 50, Rare = 32, Epic = 16, Legendary = 2 }),
 	f2p(7, "Fighter", "fighter", 1.9, 225000, 775, "Blade", { 230, 70, 60 }, { 255, 230, 120 }, { 0, 3, 2, 1, 1, 0, 0, 0 },
 		{ Uncommon = 45, Rare = 33, Epic = 19, Legendary = 3 }),
@@ -132,7 +139,7 @@ local list: { Dice } = {
 	f2p(15, "Celestial", "celestial", 4.0, 75000000, 8000, "Awakened", { 255, 245, 210 }, { 255, 190, 60 }, { 0, 0, 0, 0, 2, 2, 3, 0 },
 		{ Legendary = 64, Mythic = 35.5, Divine = 0.5 }),
 	-- Endgame: Secreto 0,0045% (< 1/h mesmo no máximo absoluto); Divino reduzido 0,75%
-	f2p(16, "Forbidden", "forbidden", 4.0, 750000000, 12000, "Celestial", { 20, 10, 25 }, { 255, 60, 90 }, { 0, 0, 0, 0, 0, 1, 3, 3 },
+	f2p(16, "Forbidden", "forbidden", 4.0, 400000000, 12000, "Celestial", { 20, 10, 25 }, { 255, 60, 90 }, { 0, 0, 0, 0, 0, 1, 3, 3 },
 		{ Mythic = 99.2455, Divine = 0.75, Secret = 0.0045 }),
 	-- Exclusivo da recompensa diária (Dia 7). Sem pool próprio nesta fase: fica na coleção do
 	-- jogador, mas não é sorteável (decisão de design pendente para a fase de balanceamento).
@@ -173,4 +180,5 @@ return {
 	Renamed = { Normal = "Starter" },
 	BaseRarityPercent = BASE_RARITY_PERCENT,
 	F2PCount = 16,
+	RollsOnPrevious = ROLLS_ON_PREVIOUS,
 }

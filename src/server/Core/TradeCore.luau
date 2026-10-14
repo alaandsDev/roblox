@@ -54,7 +54,7 @@ function TradeCore.execute(a: any, b: any, offerA: { string }, offerB: { string 
 	if count(b) - #offerB + #offerA > capB then
 		return false, "trade_full_b", {}, {}
 	end
-	-- Copia os itens antes de remover (nível, variante); flags voltam ao padrão
+	-- Copia os itens antes de remover (nível, variante, investimento em níveis); flags voltam ao padrão
 	local fromA, fromB = {}, {}
 	for _, uid in offerA do
 		table.insert(fromA, table.clone(a.Inventory[uid]))
@@ -72,11 +72,13 @@ function TradeCore.execute(a: any, b: any, offerA: { string }, offerB: { string 
 	for _, item in fromB do
 		local uid = inventory.add(a, item.Id, now, item.Variant)
 		a.Inventory[uid].Level = item.Level or 1
+		a.Inventory[uid].UpgradeInvestment = item.UpgradeInvestment
 		table.insert(newForA, uid)
 	end
 	for _, item in fromA do
 		local uid = inventory.add(b, item.Id, now, item.Variant)
 		b.Inventory[uid].Level = item.Level or 1
+		b.Inventory[uid].UpgradeInvestment = item.UpgradeInvestment
 		table.insert(newForB, uid)
 	end
 	return true, nil, newForA, newForB

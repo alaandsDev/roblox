@@ -22,6 +22,6 @@ return {
 	GemShop = ({
 		{ Id = "JackpotSpin", Cost = 150, Icon = "🎰" },
 		{ Id = "LuckBoost", Cost = 60, Kind = "LuckBoost", Multiplier = 2, Duration = 600, Icon = "🍀" },
-		{ Id = "MoneyPack", Cost = 40, Kind = "Money", Seconds = 900, Min = 5000, Icon = "💵" },
+		{ Id = "MoneyPack", Cost = 60, Kind = "Money", Seconds = 900, Min = 5000, Icon = "💵" },
 	} :: { any }),
 }

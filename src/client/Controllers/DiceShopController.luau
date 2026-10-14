@@ -58,6 +58,9 @@ local function requirementText(dice: any): string
 	if req.Dice then
 		table.insert(parts, Localization.t("dice.req_dice", { dice = Localization.t("dice." .. req.Dice) }))
 	end
+	if req.Dice and req.RollsOnPrevious then
+		table.insert(parts, Localization.t("dice.req_dice_rolls", { rolls = req.RollsOnPrevious, dice = Localization.t("dice." .. req.Dice) }))
+	end
 	return table.concat(parts, " · ")
 end
 
@@ -107,9 +110,8 @@ function DiceShopController.Refresh()
 		elseif owned then
 			text, color, action = Localization.t("dice.equip"), Theme.Colors.Primary, "EquipDice"
 		else
-			local req2 = dice.UnlockRequirement
-			local unlocked = (not req2.Dice or data.OwnedDice[req2.Dice]) and (not req2.Rolls or data.Rolls >= req2.Rolls)
-			if unlocked then
+			-- mesma regra do servidor (DiceCore.unlockBlocker); o servidor decide na compra
+			if DiceCore.unlockBlocker(dice, data) == nil then
 				text, color, action = Localization.t("dice.buy"), Theme.Colors.Success, "BuyDice"
 			else
 				text, color = "🔒 " .. Localization.t("dice.locked"), Theme.Colors.Locked
@@ -164,7 +166,7 @@ end
 
 function DiceShopController.Start()
 	DataController.Changed:Connect(function(key)
-		if key == "OwnedDice" or key == "EquippedDice" or key == "Money" or key == "Rolls" or key == "PrismCharges" then
+		if key == "OwnedDice" or key == "EquippedDice" or key == "Money" or key == "Rolls" or key == "DiceRolls" or key == "PrismCharges" then
 			DiceShopController.Refresh()
 		end
 	end)

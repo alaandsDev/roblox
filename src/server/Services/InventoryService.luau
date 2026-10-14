@@ -21,6 +21,7 @@ local Shared = ReplicatedStorage.Shared
 local CharacterConfig = require(Shared.Config.CharacterConfig)
 local CharacterLevelConfig = require(Shared.Config.CharacterLevelConfig)
 local Formulas = require(Shared.Modules.GameFormulas)
+local SaleCore = require(Shared.Modules.SaleCore)
 local TableUtil = require(Shared.Modules.TableUtil)
 local Signal = require(Shared.Modules.Signal)
 local Net = require(Shared.Modules.Net)
@@ -193,6 +194,8 @@ function InventoryService.UpgradeCharacter(player: Player, uid: string, count: n
 	if not EconomyService.TrySpend(player, cost) then
 		Net.fail("not_enough_money")
 	end
+	-- investimento da INSTÂNCIA: o que já tinha (ou a curva, em save antigo) + o custo cobrado agora
+	item.UpgradeInvestment = SaleCore.invested(Formulas, item) + cost
 	item.Level = level + levels
 	InventoryService.SendDelta(player, { uid }, nil)
 	InventoryService.ItemChanged:Fire(player, uid)

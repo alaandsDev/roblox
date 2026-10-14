@@ -406,7 +406,8 @@ describe("Dice: save (SelectedDiceId)", function()
 	it("perfil novo: Starter selecionado e desbloqueado", function()
 		expect(DataConfig.Template.EquippedDice).toBe(DiceConfig.Default)
 		expect(DataConfig.Template.OwnedDice.Starter).toBe(true)
-		expect(DataConfig.SchemaVersion).toBe(3)
+		expect(DataConfig.SchemaVersion).toBe(4) -- v4: investimento por instância + cap 30
+		expect(next(DataConfig.Template.DiceRolls)).toBeNil()
 	end)
 
 	it("migração v3: Normal -> Starter (âncoras mantidas), equipado inválido -> Starter", function()

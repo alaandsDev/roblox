@@ -66,6 +66,28 @@ function FusionCore.plan(data: any, uids: { string }, configs: any): (Plan?, str
 	return { characterId = first.Id, fromVariant = fromVariant, toVariant = toVariant, level = level, cost = cost }, nil
 end
 
+--[[
+	Investimento da unidade resultante = SOMA do investimento em níveis das unidades consumidas
+	(`investedOf` = SaleCore.invested). Política (DATA_SCHEMA.md):
+	  - nenhuma instância sobrevive: as consumidas são removidas e nasce UMA unidade nova
+	    (uid novo, variante seguinte);
+	  - nível da nova = o MAIOR nível entre as consumidas (como antes);
+	  - investimento da nova = soma do investimento de cada consumida, uma vez cada (uids
+	    repetidos já são recusados no plano); o custo em dinheiro da fusão NÃO entra (é sink);
+	  - venda posterior: base da variante nova + 75% desse investimento.
+]]
+function FusionCore.investment(data: any, uids: { string }, investedOf: (any) -> number): number
+	local total, seen = 0, {}
+	for _, uid in uids do
+		local item = data.Inventory[uid]
+		if item and not seen[uid] then
+			seen[uid] = true
+			total += math.max(0, investedOf(item))
+		end
+	end
+	return total
+end
+
 -- Grupos que já podem ser fundidos: { characterId, variant, uids (os Required primeiros livres) }
 function FusionCore.groups(data: any, configs: any): { any }
 	local buckets: { [string]: { string } } = {}

@@ -26,7 +26,7 @@ return {
 	} :: { any }),
 	Achievements = {
 		{ Id = "rolls", Stat = "Rolls", Tiers = { 100, 1000, 5000, 20000 }, Reward = { Kind = "Gems", Amount = 25 } },
-		{ Id = "index", Stat = "Discovered", Tiers = { 6, 12, 18, 24 }, Reward = { Kind = "Gems", Amount = 30 } },
+		{ Id = "index", Stat = "Discovered", Tiers = { 14, 28, 56, 112 }, Reward = { Kind = "Gems", Amount = 30 } },
 		{ Id = "rebirths", Stat = "Rebirths", Tiers = { 1, 3, 10, 25 }, Reward = { Kind = "Gems", Amount = 50 } },
 		{ Id = "towers", Stat = "TowerFloors", Tiers = { 10, 30, 70, 120 }, Reward = { Kind = "Gems", Amount = 40 } },
 	},

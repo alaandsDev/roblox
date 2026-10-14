@@ -176,6 +176,12 @@ local function doRoll(player: Player, options: RollOptions?): RollResult
 	PlayerDataService.Set(player, "Pity", rolled.pity)
 	local countsAsRoll = not opts.prism or PrismConfig.CountsAsRoll
 	local rolls = if countsAsRoll then PlayerDataService.Increment(player, "Rolls", 1) else data.Rolls
+	-- só o roll natural conta para liberar o próximo Dice (Prisma e prêmios não)
+	if not opts.prism and not opts.minRarity then
+		local byDice = TableUtil.deepCopy(data.DiceRolls or {})
+		byDice[diceId] = (byDice[diceId] or 0) + 1
+		PlayerDataService.Set(player, "DiceRolls", byDice)
+	end
 
 	local isNew = IndexService.Register(player, characterId, "Normal")
 	local views = TableUtil.deepCopy(data.RevealViews)

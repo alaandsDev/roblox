@@ -9,6 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
 local MissionConfig = require(Shared.Config.MissionConfig)
+local CharacterConfig = require(Shared.Config.CharacterConfig)
 local MissionCore = require(Shared.Modules.MissionCore)
 local NumberFormatter = require(Shared.Modules.NumberFormatter)
 local Localization = require(Shared.Localization.Localization)
@@ -40,7 +41,7 @@ local function claimable(data: any): number
 		end
 	end
 	for _, achievement in MissionConfig.Achievements do
-		if MissionCore.claimableTier(data, achievement) then
+		if MissionCore.claimableTier(data, achievement, CharacterConfig.ById) then
 			n += 1
 		end
 	end
@@ -118,8 +119,8 @@ function MissionController.Refresh()
 		local tier = math.min(claimed + 1, #achievement.Tiers)
 		local target = achievement.Tiers[tier]
 		local done = claimed >= #achievement.Tiers
-		local state = if done then "done" elseif MissionCore.claimableTier(data, achievement) then "ready" else "progress"
-		row(order, Localization.t("mission.ach." .. achievement.Id, { tier = tier, max = #achievement.Tiers }), MissionCore.stat(data, achievement.Stat), target, rewardText({ Kind = achievement.Reward.Kind, Amount = achievement.Reward.Amount * tier }), state, function()
+		local state = if done then "done" elseif MissionCore.claimableTier(data, achievement, CharacterConfig.ById) then "ready" else "progress"
+		row(order, Localization.t("mission.ach." .. achievement.Id, { tier = tier, max = #achievement.Tiers }), MissionCore.stat(data, achievement.Stat, CharacterConfig.ById), target, rewardText({ Kind = achievement.Reward.Kind, Amount = achievement.Reward.Amount * tier }), state, function()
 			claim("Achievement", achievement.Id)
 		end)
 		order += 1

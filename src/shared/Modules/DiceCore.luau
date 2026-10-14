@@ -505,6 +505,31 @@ function DiceCore:grantDice(selectedId: string?, minRarity: string): string?
 end
 
 -- Lista ordenada dos Dice sorteáveis
+--[[
+	Requisitos de desbloqueio (sem o preço): servidor (DiceService.CanBuy) e loja usam a MESMA regra.
+	    Dice anterior comprado -> total de rolls -> rolls feitos COM o Dice anterior (data.DiceRolls)
+	Devolve (motivo?, faltando?) — motivo nil = liberado.
+]]
+function DiceCore.unlockBlocker(dice: any, data: any): (string?, number?)
+	local req = dice.UnlockRequirement or {}
+	local owned = if type(data.OwnedDice) == "table" then data.OwnedDice else {}
+	if req.Dice and not owned[req.Dice] then
+		return "requires_previous", nil
+	end
+	local rolls = tonumber(data.Rolls) or 0
+	if req.Rolls and rolls < req.Rolls then
+		return "requires_rolls", req.Rolls - rolls
+	end
+	if req.Dice and req.RollsOnPrevious then
+		local byDice = if type(data.DiceRolls) == "table" then data.DiceRolls else {}
+		local done = tonumber(byDice[req.Dice]) or 0
+		if done < req.RollsOnPrevious then
+			return "requires_dice_rolls", req.RollsOnPrevious - done
+		end
+	end
+	return nil, nil
+end
+
 function DiceCore:diceList(): { any }
 	local list = {}
 	for _, pool in self.pools do

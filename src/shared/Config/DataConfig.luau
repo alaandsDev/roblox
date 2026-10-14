@@ -7,7 +7,7 @@ local DataConfig = {
 	StoreName = "RollLegends_PlayerData_v1",
 	KeyPrefix = "Player_",
 
-	SchemaVersion = 3,
+	SchemaVersion = 4,
 
 	-- Salvamento automático (segundos entre cada rodada)
 	AutosaveInterval = 120,
@@ -32,7 +32,7 @@ local DataConfig = {
 -- Formato inicial do perfil. Tabelas vazias são "mapas dinâmicos": o conteúdo não é
 -- comparado com o modelo, só o tipo.
 DataConfig.Template = {
-	Version = 3,
+	Version = 4,
 
 	Money = 0,
 	Gems = 0,
@@ -46,6 +46,8 @@ DataConfig.Template = {
 	EquippedDice = "Starter",
 	-- Dice desbloqueados ({ [diceId] = true })
 	OwnedDice = { Starter = true },
+	-- Rolls feitos com cada Dice ({ [diceId] = n }); libera o próximo Dice (RollsOnPrevious)
+	DiceRolls = {},
 	-- Prisma da Coleção: usos guardados e último uso (os.time). Campos novos com padrão seguro:
 	-- perfis antigos recebem 0 pelo Template (sem migração). Ver PrismConfig.
 	PrismCharges = 0,

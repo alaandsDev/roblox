@@ -11,8 +11,8 @@ local final = B.final
 describe("Balanceamento dos Dice (aprovado, em produção)", function()
 	it("ordem oficial da Variante B, com preço/rolls por POSIÇÃO e Luck por Dice", function()
 		local order = { "Starter", "Lucky", "Rampart", "Shinobi", "Flame", "Blade", "Fighter", "Storm", "Spirit", "Arcane", "Shadow", "Void", "Colossus", "Awakened", "Celestial", "Forbidden" }
-		local prices = { 0, 2500, 10000, 40000, 75000, 125000, 225000, 400000, 750000, 1400000, 2600000, 5000000, 12500000, 30000000, 75000000, 750000000 }
-		local rolls = { 0, 50, 125, 300, 425, 550, 775, 1000, 1500, 2000, 2500, 3000, 4500, 6000, 8000, 12000 }
+		local prices = { 0, 2500, 10000, 40000, 75000, 125000, 225000, 400000, 750000, 1400000, 2600000, 5000000, 12500000, 30000000, 75000000, 400000000 }
+		local rolls = { 0, 50, 125, 300, 450, 650, 775, 1000, 1500, 2000, 2500, 3000, 4500, 6000, 8000, 12000 }
 		for i, dice in final:diceList() do
 			expect(dice.Id).toBe(order[i])
 			expect(dice.Price).toBe(prices[i])

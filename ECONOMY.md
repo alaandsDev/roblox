@@ -5,6 +5,12 @@ Os números abaixo são gerados pela simulação com as **mesmas configs e fórm
 (`tools/sim/EconomySim.luau`, rode `tools/bin/lune-0.10.4/lune run tools/sim/simulate_economy.luau`).
 A regressão `tests/Economy.spec.luau` falha se a progressão "quebrar".
 
+> **Balanceamento aplicado (depois de d9a8da2):** refund 75% por instância (fusão soma, troca
+> carrega), MaxLevel 30, Forbidden 400M, rolls Flame 450 / Blade 650 + 60 rolls com o Dice anterior
+> (sem compra em cascata), venda base 20–90 s, 1º Rebirth 15M, offline 25% do próximo Rebirth,
+> conquista do Índice 14/28/56/112 (só F2P), Pacote de dinheiro 60 gemas. Prisma, pity, pesos e
+> cadência intocados. Testes: `tests/EconomyApplied.spec.luau`.
+>
 > **Auditoria completa (por Dice, Monte Carlo, 4 perfis):** `ECONOMY_BALANCE_ANALYSIS.md`, gerado
 > por `python3 tools/sim/run_economy_analysis.py` com o simulador NOVO `tools/sim/EconomyModel.luau`
 > (roll idêntico ao DiceCore, pity 50/250). `EconomySim.luau`/`Odds.luau` são **LEGACY** (RollCore
@@ -16,7 +22,7 @@ A regressão `tests/Economy.spec.luau` falha se a progressão "quebrar".
 |---|---|---|
 | Renda das estações | Σ (BaseIncome × (1 + (Level−1) × 0,25) × Variante) × (1 + nível Income × 10%) | CharacterConfig, CharacterLevelConfig, VariantConfig, UpgradeConfig |
 | Coletor | renda acumula em `UncollectedMoney` (teto = 1 h de renda) e vai para Money ao pisar/usar | EconomyConfig |
-| Venda | `SaleCore.quote`: BaseIncome × SellSeconds[raridade] × Variante.SellMultiplier + reembolso de `UpgradeRefundPercent` × investimento em níveis (**0% hoje**: venda = só a base). Prévia autoritativa: remote `PreviewSale` | EconomyConfig.SellSeconds / UpgradeRefundPercent |
+| Venda | `SaleCore.quote`: BaseIncome × SellSeconds[raridade] × Variante.SellMultiplier + **75%** do investimento em níveis gravado na própria unidade (`UpgradeInvestment`). SellSeconds: C/U 20 · R 25 · E 30 · L 35 · M 45 · D 60 · S 90 s. Prévia autoritativa: remote `PreviewSale` (base, investido, %, recuperado, total) | EconomyConfig.SellSeconds / UpgradeRefundPercent |
 | Offline | renda/s salva × min(tempo fora, 8 h) × 12% | OfflineIncomeConfig |
 | Diário | tabela de 7 dias (dinheiro escala com a renda) | DailyConfig |
 
@@ -25,7 +31,7 @@ A regressão `tests/Economy.spec.luau` falha se a progressão "quebrar".
 | Gasto | Fórmula | Config |
 |---|---|---|
 | Melhorias globais | BaseCost × Growth^nível, até MaxLevel | UpgradeConfig (Luck 2000×1,9ⁿ /20 · Income 1500×1,85ⁿ /25 · RollSpeed 5000×2ⁿ /11 · Inventory 1000×1,7ⁿ /20) |
-| Nível da estação | BaseUpgradeCost × 1,2^(Level−1), BaseUpgradeCost = BaseIncome × 60 s | CharacterLevelConfig (MaxLevel 50) |
+| Nível da estação | BaseUpgradeCost × 1,2^(Level−1), BaseUpgradeCost = BaseIncome × 60 s | CharacterLevelConfig (**MaxLevel 30**; saves acima migrados com o investimento preservado) |
 | Dados | preço fixo + requisito de rolls + dado anterior | DiceConfig (Lucky $2.5K/50 · Flame $40K/300 · Storm $400K/1000 · Void $5M/3000 · Celestial $75M/8000) |
 
 `Formulas:characterUpgradeCost(id, nível, n)` soma n níveis (x1/x5/x10) e
@@ -46,10 +52,10 @@ A regressão `tests/Economy.spec.luau` falha se a progressão "quebrar".
 5. **Torres** (Fase 7, revisado na auditoria): Brasas (150 → ~122K), Tempestade (120K → ~10M),
    Vazio (10M → ~250M). Chefe = 0,7× em 1 inimigo (antes 1,25× criava uma parede no andar 20).
    Recompensa por andar = max(poder dos inimigos, 8 s de renda), só na 1ª vitória (sem farm).
-6. **Renascimento** (Fase 8, revisado na auditoria): custo **10M × 2,2ⁿ** (antes 5M × 3ⁿ, que
+6. **Renascimento** (Fase 8, revisado na auditoria; balanceamento aplicado: 1º = **15M**): custo **15M × 2,2ⁿ** (antes 10M × 2,2ⁿ e, na Fase 8, 5M × 3ⁿ, que
    ficava atrás da renda). Cada renascimento: +25% renda, +2% sorte (teto +50%), +10% poder,
    +1 pedestal e fichas. Ativo renasce pela 1ª vez em ~1h40 e 6 vezes em 8 h.
-7. **Offline** limitado também a 50% do custo do próximo renascimento.
+7. **Offline** limitado também a **25%** do custo do próximo renascimento (era 50%: 68% da renda do Casual vinha do offline).
 8. Critérios automatizados: em 5 min (Hardcore) nenhuma melhoria ≥ 10 e no máximo o dado
    Flame; em 2 h (Ativo) ainda sem Celestial e com melhorias por comprar; 1º renascimento do
    Ativo entre 1 h e 3 h; offline ≤ metade do próximo renascimento.
@@ -144,7 +150,7 @@ A soma de TODOS os andares de uma torre fica abaixo de 1 custo de renascimento d
 
 Fórmula: renda/s salva × min(tempo fora, 8 h) × 12%. Com esses valores, **8 h offline ≈ 0.96 h**
 de renda passiva jogando ativo no mesmo ponto do jogo (coluna "8 h offline" acima),
-limitado a 50% do custo do próximo renascimento (não dá para comprar renascimentos dormindo).
+limitado a 25% do custo do próximo renascimento (não dá para comprar renascimentos dormindo).
 
 ### Recompensas diárias (valor por dia)
 
@@ -159,3 +165,15 @@ limitado a 50% do custo do próximo renascimento (não dá para comprar renascim
 | 7 | Dado exclusivo Prism (se já tiver: 250 gemas) |
 
 <!-- SIM:END -->
+
+## Compra em cascata e a "missão dos 10 minutos" (auditoria aplicada)
+
+O simulador (`EconomyModel`) entrega as 3 missões diárias aos 10 min de jogo; no jogo real elas
+pagam ao completar (roll_50, collect_5, rare_5... nos primeiros minutos), cada uma
+`max(Amount, renda/s × 240–400 s)`. Em ambos os casos o dinheiro chega EM BLOCO e, como o
+requisito era só de rolls TOTAIS, o jogador comprava Shinobi + Flame + Blade de uma vez (92% dos
+Ativos nunca rolavam o Shinobi). A recompensa em si é proporcional e foi mantida.
+
+Menor correção: cada Dice exige **60 rolls feitos com o Dice anterior** (`DiceConfig.RollsOnPrevious`,
+`data.DiceRolls`, regra única em `DiceCore.unlockBlocker` para servidor e loja). Resultado no
+simulador (400 Ativos, 6 h): Shinobi nunca rolado 92% → **0%**; Forbidden P50 ≈ 4,6 h.

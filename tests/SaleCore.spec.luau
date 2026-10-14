@@ -19,7 +19,7 @@ local f = Formulas.new({
 })
 
 local MAX = LevelConfig.MaxLevel
-local LEVELS = { 1, 2, 10, 20, MAX }
+local LEVELS = { 1, 2, 10, 20, 30, MAX }
 local PERCENTS = { 0, 0.5, 0.6, 0.7, 0.75, 0.8, 1 }
 
 -- soma independente da curva oficial: floor(base * growth^(L-1)) para L = 1..level-1
@@ -34,14 +34,20 @@ local function manualCurve(id: string, level: number): number
 end
 
 describe("SaleCore (venda com reembolso)", function()
-	it("jogo atual: UpgradeRefundPercent = 0 e o total é exatamente o sellValue antigo", function()
-		expect(EconomyConfig.UpgradeRefundPercent).toBe(0)
+	it("produção: refund 75% — total = base + floor(75% do investido); nível 1 = só a base", function()
+		expect(EconomyConfig.UpgradeRefundPercent).toBe(0.75)
 		for _, c in CharacterConfig.List do
 			for _, v in VariantConfig.List do
 				for _, level in LEVELS do
 					local q = SaleCore.quote(f, { Id = c.Id, Variant = v.Id, Level = level }, EconomyConfig.UpgradeRefundPercent)
-					expect(q.Total).toBe(f:sellValue(c.Id, v.Id))
-					expect(q.Refund).toBe(0)
+					local paid = manualCurve(c.Id, level)
+					expect(q.Base).toBe(f:sellValue(c.Id, v.Id))
+					expect(q.Invested).toBe(paid)
+					expect(q.Refund).toBe(math.floor(paid * 0.75))
+					expect(q.Total).toBe(q.Base + q.Refund)
+					if level == 1 then
+						expect(q.Total).toBe(q.Base)
+					end
 				end
 			end
 		end
@@ -91,8 +97,10 @@ describe("SaleCore (venda com reembolso)", function()
 		local id = CharacterConfig.List[1].Id
 		expect(SaleCore.quote(f, { Id = id, Level = -5 }, 1).Invested).toBe(0)
 		expect(SaleCore.quote(f, { Id = id, Level = 0 / 0 }, 1).Invested).toBe(0)
-		-- nível acima do máximo é limitado ao máximo (não inventa investimento)
-		expect(SaleCore.quote(f, { Id = id, Level = MAX + 100 }, 1).Invested).toBe(manualCurve(id, MAX))
+		-- save antigo acima do cap (até o LegacyMaxLevel 50): investimento real daquele nível;
+		-- acima disso é limitado (não inventa investimento)
+		expect(SaleCore.quote(f, { Id = id, Level = 45 }, 1).Invested).toBe(manualCurve(id, 45))
+		expect(SaleCore.quote(f, { Id = id, Level = 500 }, 1).Invested).toBe(manualCurve(id, LevelConfig.LegacyMaxLevel))
 	end)
 
 	it("investimento gravado por instância (B) vence a curva; negativo/NaN caem na curva (A)", function()

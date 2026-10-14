@@ -27,7 +27,8 @@ end
 return {
 	-- Auditoria: 1º renascimento por volta de 1,5–2 h (perfil Ativo); custo x2,2 por renascimento.
 	-- Bônus são LINEARES (não explodem em 20/30/36 renascimentos); ver ECONOMY.md.
-	BaseCost = 10_000_000,
+	-- 1º Rebirth 10M -> 15M (depois do Colossus de 12,5M); sequência = 15M * 2,2^n
+	BaseCost = 15_000_000,
 	Growth = 2.2,
 	MaxRebirths = 36,
 	IncomePerRebirth = 0.25,

@@ -12,7 +12,7 @@
 
 	Hipóteses (documentadas no relatório): sem amigos no servidor; Jackpot com as gemas ganhas;
 	missões diárias completadas com a probabilidade do perfil; personagem trocado na base é
-	VENDIDO (o investimento em níveis volta só pelo refund simulado, 0% = jogo atual).
+	VENDIDO (o investimento em níveis volta pelo refund: padrão = EconomyConfig, 75%).
 ]]
 
 local DiceCore = require("../../src/shared/Modules/DiceCore")
@@ -289,7 +289,7 @@ EconomyModel.Profiles = {
 }
 
 export type Options = {
-	refundPercent: number?, -- 0 = jogo atual
+	refundPercent: number?, -- padrão: EconomyConfig.UpgradeRefundPercent (0.75)
 	prism: { UsesPerReward: number, MaxCharges: number, CooldownSeconds: number }?,
 	rebirth: string?, -- sobrepõe o perfil
 	checkpoints: { number }?,
@@ -575,8 +575,12 @@ local function buyDice(p: any): boolean
 	if not nextDice then
 		return false
 	end
-	local req = nextDice.UnlockRequirement
-	if p.rolls < (req.Rolls or 0) then
+	-- mesma regra do servidor (rolls totais + rolls COM o Dice anterior)
+	local owned = {}
+	for i = 1, p.diceOwned do
+		owned[DICE[i].Id] = true
+	end
+	if DiceCore.unlockBlocker(nextDice, { OwnedDice = owned, Rolls = p.rolls, DiceRolls = p.rollsByDice }) then
 		return false
 	end
 	if not spend(p, "Dice", nextDice.Price) then
@@ -929,7 +933,7 @@ end
 -- Roda UM jogador por `activeSeconds` de jogo ATIVO (sessões por dia do perfil; o resto é offline)
 function EconomyModel.run(profile: Profile, activeSeconds: number, seed: number, options: Options?): any
 	local opts: Options = options or {}
-	local refund = opts.refundPercent or 0
+	local refund = opts.refundPercent or EconomyConfig.UpgradeRefundPercent
 	local prismCfg = opts.prism or PrismConfig
 	local policy = opts.rebirth or profile.rebirth
 	local checkpoints = opts.checkpoints or EconomyModel.DefaultCheckpoints

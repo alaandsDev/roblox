@@ -74,12 +74,9 @@ function DiceService.CanBuy(data: any, diceId: string): string?
 	if data.OwnedDice[diceId] then
 		return "already_owned"
 	end
-	local req = dice.UnlockRequirement
-	if req.Dice and not data.OwnedDice[req.Dice] then
-		return "requires_previous"
-	end
-	if req.Rolls and data.Rolls < req.Rolls then
-		return "requires_rolls"
+	local blocker = DiceCore.unlockBlocker(dice, data)
+	if blocker then
+		return blocker
 	end
 	if data.Money < dice.Price then
 		return "not_enough_money"

@@ -14,6 +14,8 @@ local Shared = ReplicatedStorage.Shared
 local CharacterConfig = require(Shared.Config.CharacterConfig)
 local RarityConfig = require(Shared.Config.RarityConfig)
 local Formulas = require(Shared.Modules.GameFormulas)
+local SaleCore = require(Shared.Modules.SaleCore)
+local EconomyConfig = require(Shared.Config.EconomyConfig)
 local CharacterModelFactory = require(Shared.Modules.CharacterModelFactory)
 local CharacterAssetConfig = require(Shared.Config.CharacterAssetConfig)
 local NumberFormatter = require(Shared.Modules.NumberFormatter)
@@ -147,7 +149,9 @@ local function refreshDetail()
 	UIKit.setButtonText(detailButtons.Favorite, (if item.Favorite then "⭐ " else "☆ ") .. Localization.t(if item.Favorite then "inv.unfavorite" else "inv.favorite"))
 	local inTeam = table.find(data.TowerTeam or {}, selected) ~= nil
 	UIKit.setButtonText(detailButtons.Team, (if inTeam then "✓ " else "🗼 ") .. Localization.t("inv.tower_team"))
-	UIKit.setButtonText(detailButtons.Sell, Localization.t("inv.sell", { amount = NumberFormatter.money(Formulas:sellValue(item.Id, item.Variant)) }))
+	-- só exibição (mesma conta do servidor: base + 75% do investido em níveis)
+	local quote = SaleCore.quote(Formulas, item, EconomyConfig.UpgradeRefundPercent)
+	UIKit.setButtonText(detailButtons.Sell, Localization.t("inv.sell", { amount = NumberFormatter.money(quote.Total) }))
 end
 
 local function card(data: any, uid: string, order: number)
@@ -338,8 +342,21 @@ local function build()
 		if not item then
 			return
 		end
+		-- prévia AUTORITATIVA do servidor (a venda recebe exatamente este total)
+		local preview = request("PreviewSale", { uid })
+		local quote = preview.ok and preview.data.items[uid]
+		if not quote then
+			return
+		end
 		UIKit.confirm(
-			Localization.t("sell.confirm_one", { name = CharacterConfig.ById[item.Id].Name, amount = NumberFormatter.money(Formulas:sellValue(item.Id, item.Variant)) }),
+			Localization.t("sell.confirm_breakdown", {
+				name = CharacterConfig.ById[item.Id].Name,
+				base = NumberFormatter.money(quote.Base),
+				invested = NumberFormatter.money(quote.Invested),
+				percent = math.floor(quote.Percent * 100 + 0.5),
+				refund = NumberFormatter.money(quote.Refund),
+				total = NumberFormatter.money(quote.Total),
+			}),
 			Localization.t("sell.yes"),
 			Localization.t("sell.cancel"),
 			function()

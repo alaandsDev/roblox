@@ -39,7 +39,9 @@ describe("Economia (simulação com as configs reais)", function()
 	it("torres e renascimento: progressão longa (Vazio não é concluído em 2 h; renasce no máximo poucas vezes)", function()
 		for _, s in { ativo[3], hardcore[3] } do
 			expect(s.towerFloors < 120).toBeTruthy()
-			expect(s.rebirths >= 1 and s.rebirths <= 6).toBeTruthy()
+			-- 1º Rebirth custa 15M (balanceamento aplicado): pode ainda não ter vindo em 2 h;
+			-- o teste seguinte garante que vem entre 1 h e 3 h
+			expect(s.rebirths >= 0 and s.rebirths <= 6).toBeTruthy()
 		end
 		expect(hardcore[1].rebirths).toBe(0)
 	end)

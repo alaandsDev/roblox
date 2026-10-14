@@ -73,11 +73,16 @@ function MissionCore.apply(missions: any, event: string, params: { [string]: any
 	return changed
 end
 
-function MissionCore.stat(data: any, name: string): number
+-- characters (opcional) = CharacterConfig.ById: "Discovered" conta só o roster F2P (Premium fica
+-- fora do denominador de 112; ver MissionConfig.Achievements "index")
+function MissionCore.stat(data: any, name: string, characters: any?): number
 	if name == "Discovered" then
 		local n = 0
-		for _ in data.Index or {} do
-			n += 1
+		for id in data.Index or {} do
+			local c = characters and characters[id]
+			if not characters or (c and c.LaunchPool == "F2P") then
+				n += 1
+			end
 		end
 		return n
 	elseif name == "TowerFloors" then
@@ -91,11 +96,11 @@ function MissionCore.stat(data: any, name: string): number
 end
 
 -- Próximo nível de conquista que dá para resgatar (ou nil)
-function MissionCore.claimableTier(data: any, achievement: any): number?
+function MissionCore.claimableTier(data: any, achievement: any, characters: any?): number?
 	local claimed = (data.Missions and data.Missions.Achievements and data.Missions.Achievements[achievement.Id]) or 0
 	local nextTier = claimed + 1
 	local target = achievement.Tiers[nextTier]
-	if target and MissionCore.stat(data, achievement.Stat) >= target then
+	if target and MissionCore.stat(data, achievement.Stat, characters) >= target then
 		return nextTier
 	end
 	return nil

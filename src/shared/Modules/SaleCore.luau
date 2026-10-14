@@ -7,11 +7,14 @@
 	    Investido  = investimento ELEGÍVEL em níveis da unidade (ver abaixo)
 	    Reembolso  = floor(Investido * Percent),  Percent em [0, 1]
 
-	Investimento elegível:
-	    (B) item.UpgradeInvestment — gravado pelo SERVIDOR por instância, se for número finito >= 0;
-	    (A) senão, recalculado pela curva oficial: soma de characterUpgradeCost do nível 1 ao Level.
-	O jogo atual NÃO grava (B) e usa EconomyConfig.UpgradeRefundPercent = 0, então
-	Total == sellValue (venda idêntica à anterior). Ver ECONOMY_BALANCE_ANALYSIS.md.
+	Investimento elegível (POLÍTICA — ver DATA_SCHEMA.md "UpgradeInvestment"):
+	    (B) item.UpgradeInvestment — gravado SÓ pelo servidor, por instância:
+	          upgrade : += custo efetivamente cobrado (InventoryService.UpgradeCharacter)
+	          fusão   : unidade NOVA recebe a soma do investimento das consumidas (que somem)
+	          troca   : viaja com a instância (TradeCore copia o campo)
+	    (A) campo ausente/inválido (save antigo) -> soma exata da curva oficial do nível 1 ao Level
+	        (Migrations v4 grava (A) em todos os saves; o fallback fica só como rede de segurança).
+	EconomyConfig.UpgradeRefundPercent = 0.75.
 
 	Garantias (tests/SaleCore.spec.luau): nunca negativo; Percent fora de [0,1] / NaN / não
 	número é limitado; Reembolso <= Investido, logo comprar níveis e vender nunca dá lucro:
@@ -44,12 +47,28 @@ function SaleCore.curveInvestment(formulas: any, characterId: string, level: any
 	if not finite(level) then
 		return 0
 	end
-	local maxLevel = formulas.c.Levels.MaxLevel
+	-- saves antigos podem ter nível acima do cap atual (até LegacyMaxLevel): investimento real
+	local levels = formulas.c.Levels
+	local maxLevel = math.max(levels.MaxLevel, levels.LegacyMaxLevel or levels.MaxLevel)
 	local lvl = math.clamp(math.floor(level), 1, maxLevel)
 	if lvl <= 1 then
 		return 0
 	end
-	local total = formulas:characterUpgradeCost(characterId, 1, lvl - 1)
+	return SaleCore.curveCost(formulas, characterId, 1, lvl)
+end
+
+-- Custo da curva oficial para ir de `fromLevel` até `toLevel` (sem o limite do MaxLevel atual)
+function SaleCore.curveCost(formulas: any, characterId: string, fromLevel: number, toLevel: number): number
+	local character = formulas.c.Characters.ById[characterId]
+	if not character or toLevel <= fromLevel then
+		return 0
+	end
+	local levels = formulas.c.Levels
+	local baseCost = character.BaseUpgradeCost or character.BaseIncome * levels.BaseCostSeconds
+	local total = 0
+	for l = fromLevel, toLevel - 1 do
+		total += math.floor(baseCost * levels.CostGrowth ^ (l - 1))
+	end
 	return total
 end
 

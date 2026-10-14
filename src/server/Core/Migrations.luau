@@ -70,4 +70,44 @@ Migrations[3] = function(data)
 	return data
 end
 
+--[[
+	v4 (balanceamento aplicado): investimento em níveis POR INSTÂNCIA + cap de nível 30.
+	  - toda unidade com Level > 1 sem UpgradeInvestment válido recebe a soma EXATA da curva oficial
+	    do nível 1 até o nível SALVO (calculada antes de qualquer corte): é o que o jogador pagou;
+	  - unidade acima do novo cap (MaxLevel 30) passa a ter Level 30 — o investimento histórico fica
+	    gravado e continua valendo na venda (75%) e na fusão (soma). Nenhum dinheiro é concedido aqui.
+	A curva vem do contexto (PlayerDataService injeta SaleCore.curveInvestment com as configs do
+	jogo). Sem contexto (ferramentas/testes que não injetam) a migração NÃO corta nível nem grava:
+	o fallback (A) do SaleCore recalcula pela curva no nível salvo — nada se perde.
+]]
+local Context: { investmentOf: ((string, number) -> number)?, maxLevel: number? } = {}
+
+Migrations[4] = function(data)
+	local ctx = (Migrations :: any).Context or Context
+	if type(data.Inventory) ~= "table" or not ctx.investmentOf or not ctx.maxLevel then
+		return data
+	end
+	for _, item in data.Inventory do
+		if type(item) == "table" and type(item.Id) == "string" then
+			local level = if type(item.Level) == "number" and item.Level >= 1 then math.floor(item.Level) else 1
+			local stored = item.UpgradeInvestment
+			local valid = type(stored) == "number" and stored == stored and stored >= 0 and stored < math.huge
+			if not valid then
+				item.UpgradeInvestment = nil
+				if level > 1 then
+					item.UpgradeInvestment = ctx.investmentOf(item.Id, level)
+				end
+			end
+			if level > ctx.maxLevel then
+				level = ctx.maxLevel
+			end
+			item.Level = level
+		end
+	end
+	return data
+end
+
+-- Contexto da v4 (PlayerDataService injeta: Migrations.Context.investmentOf / .maxLevel)
+;(Migrations :: any).Context = Context
+
 return Migrations

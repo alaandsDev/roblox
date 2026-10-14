@@ -12,6 +12,8 @@ local FusionConfig = require(Shared.Config.FusionConfig)
 local VariantConfig = require(Shared.Config.VariantConfig)
 local CharacterConfig = require(Shared.Config.CharacterConfig)
 local Net = require(Shared.Modules.Net)
+local SaleCore = require(Shared.Modules.SaleCore)
+local Formulas = require(Shared.Modules.GameFormulas)
 
 local Core = script.Parent.Parent.Core
 local FusionCore = require(Core.FusionCore)
@@ -38,12 +40,17 @@ function FusionService.Fuse(player: Player, uids: { string })
 		Net.fail(err :: string)
 	end
 	assert(plan)
+	-- investimento em níveis das consumidas (lido ANTES de removê-las; cada uma conta uma vez)
+	local invested = FusionCore.investment(data, uids, function(item)
+		return SaleCore.invested(Formulas, item)
+	end)
 	if not EconomyService.TrySpend(player, plan.cost) then
 		Net.fail("not_enough_money")
 	end
 	InventoryService.Remove(player, uids)
 	local uid = InventoryService.Add(player, plan.characterId, plan.toVariant)
 	data.Inventory[uid].Level = plan.level
+	data.Inventory[uid].UpgradeInvestment = invested
 	InventoryService.SendDelta(player, { uid }, nil)
 	-- Índice: variante nova descoberta (não conta como novo personagem nem mexe nos marcos)
 	IndexService.RegisterVariant(player, plan.characterId, plan.toVariant)

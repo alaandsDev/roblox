@@ -300,6 +300,7 @@ section("smoke", function()
 	local okU = call("UpgradeCharacter", p1, firstUid, 5)
 	check(okU and d1.Inventory[firstUid].Level == 6, "smoke: personagem melhorado (nível 6)")
 	d1.Rolls = math.max(d1.Rolls, 50)
+	d1.DiceRolls = { Starter = math.max((d1.DiceRolls or {}).Starter or 0, 60) }
 	check((call("BuyDice", p1, "Lucky")) and (call("EquipDice", p1, "Lucky")) and d1.EquippedDice == "Lucky", "smoke: dado da Sorte comprado e equipado")
 	check((call("BuyUpgrade", p1, "Luck")) and d1.Upgrades.Luck == 1, "smoke: melhoria global de Sorte")
 
@@ -327,11 +328,25 @@ section("smoke", function()
 	for i = 1, 3 do
 		f[i] = S.InventoryService.Add(p1, "flame_rookie")
 	end
+	-- investimento gravado pelo servidor em cada cópia (como depois de UpgradeCharacter)
+	for i = 1, 3 do
+		d1.Inventory[f[i]].Level = 1 + i
+		d1.Inventory[f[i]].UpgradeInvestment = 1000 * i
+	end
 	local okF, fused = call("Fuse", p1, f)
 	check(okF and fused.variant == "Silver", "smoke: fusão 3 Normais -> Prata")
+	check(d1.Inventory[fused.uid].UpgradeInvestment == 6000 and d1.Inventory[fused.uid].Level == 4, "smoke: fusão soma o investimento (1000+2000+3000) e fica com o maior nível")
 
-	-- TROCA
-	local give = S.InventoryService.Add(p1, "crystal_mage")
+	-- TROCA: uma SEGUNDA unidade fundida vai para o outro jogador levando o investimento
+	local g = {}
+	for i = 1, 3 do
+		g[i] = S.InventoryService.Add(p1, "flame_rookie")
+		d1.Inventory[g[i]].Level = 1 + i
+		d1.Inventory[g[i]].UpgradeInvestment = 1000 * i
+	end
+	local okG, fusedToGive = call("Fuse", p1, g)
+	check(okG, "smoke: segunda fusão (para trocar)")
+	local give = fusedToGive.uid
 	local d2 = S.PlayerDataService.GetData(p2)
 	local take = S.InventoryService.Add(p2, "chrono_sage")
 	call("RequestTrade", p1, p2.UserId)
@@ -343,6 +358,22 @@ section("smoke", function()
 	call("ConfirmTrade", p1)
 	local okTr, tr = call("ConfirmTrade", p2)
 	check(okTr and tr == "completed" and d1.Inventory[give] == nil and d2.Inventory[take] == nil, "smoke: troca concluída")
+	do -- upgrade -> fusão -> troca -> venda: o investimento viaja e a venda paga base + 75%
+		local received
+		for uid, item in d2.Inventory do
+			if item.Id == "flame_rookie" and item.Variant == "Silver" then
+				received = uid
+			end
+		end
+		check(received ~= nil and d2.Inventory[received].UpgradeInvestment == 6000, "smoke: troca levou o investimento da instância")
+		local okPv, pv = call("PreviewSale", p2, { received })
+		local before = d2.Money
+		local okS, sold = call("SellCharacter", p2, { received })
+		check(
+			okPv and okS and pv.items[received].Refund == 4500 and sold.total == pv.total and d2.Money == before + pv.total,
+			"smoke: venda depois de fusão+troca = base + 75% do investido (prévia == recebido)"
+		)
+	end
 
 	-- DIÁRIO + MISSÃO
 	local okD = call("ClaimDaily", p1)

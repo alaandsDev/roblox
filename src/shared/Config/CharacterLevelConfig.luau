@@ -9,7 +9,12 @@
 ]]
 
 return {
-	MaxLevel = 50,
+	-- Cap oficial (ECONOMY_BALANCE_ANALYSIS.md: o 31–50 nunca se pagava). Saves antigos acima disso
+	-- são migrados (Migrations v4): nível vira 30 e o investimento histórico fica gravado em
+	-- item.UpgradeInvestment (venda/fusão continuam reconhecendo o que foi pago).
+	MaxLevel = 30,
+	-- Maior nível que já existiu (antes da v4): só para recalcular investimento de saves antigos
+	LegacyMaxLevel = 50,
 	IncomePerLevel = 0.25,
 	-- Gancho para as Torres (fase futura)
 	PowerPerLevel = 0.10,

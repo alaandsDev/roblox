@@ -15,6 +15,8 @@ local Shared = ReplicatedStorage.Shared
 local CharacterConfig = require(Shared.Config.CharacterConfig)
 local Definitions = require(Shared.Remotes.Definitions)
 local Formulas = require(Shared.Modules.GameFormulas)
+local SaleCore = require(Shared.Modules.SaleCore)
+local EconomyConfig = require(Shared.Config.EconomyConfig)
 local NumberFormatter = require(Shared.Modules.NumberFormatter)
 local Localization = require(Shared.Localization.Localization)
 local Net = require(Shared.Modules.Net)
@@ -70,7 +72,9 @@ local function refresh()
 	local uid = InventoryController.Selected()
 	local item = data and uid and data.Inventory[uid]
 	if item then
-		selectedLabel.Text = Localization.t("sell.selected", { name = CharacterConfig.ById[item.Id].Name, amount = NumberFormatter.money(Formulas:sellValue(item.Id, item.Variant)) })
+		-- só exibição (mesma conta do servidor); a venda usa a cotação do servidor (PreviewSale)
+		local quote = SaleCore.quote(Formulas, item, EconomyConfig.UpgradeRefundPercent)
+		selectedLabel.Text = Localization.t("sell.selected", { name = CharacterConfig.ById[item.Id].Name, amount = NumberFormatter.money(quote.Total) })
 	else
 		selectedLabel.Text = Localization.t("sell.none_selected")
 	end
@@ -94,8 +98,22 @@ function SellController.Init()
 			NotificationController.Show("sell.pick_first")
 			return
 		end
+		-- prévia AUTORITATIVA: o servidor cota a instância (base + 75% do investido em níveis)
+		local preview = Net.request("PreviewSale", { uid })
+		local quote = preview.ok and preview.data.items[uid]
+		if not quote then
+			NotificationController.Show("error." .. tostring(if preview.ok then "not_owned" else preview.code))
+			return
+		end
 		UIKit.confirm(
-			Localization.t("sell.confirm_one", { name = CharacterConfig.ById[item.Id].Name, amount = NumberFormatter.money(Formulas:sellValue(item.Id, item.Variant)) }),
+			Localization.t("sell.confirm_breakdown", {
+				name = CharacterConfig.ById[item.Id].Name,
+				base = NumberFormatter.money(quote.Base),
+				invested = NumberFormatter.money(quote.Invested),
+				percent = math.floor(quote.Percent * 100 + 0.5),
+				refund = NumberFormatter.money(quote.Refund),
+				total = NumberFormatter.money(quote.Total),
+			}),
 			Localization.t("sell.yes"),
 			Localization.t("sell.cancel"),
 			function()

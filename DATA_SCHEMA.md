@@ -20,11 +20,12 @@ O `SimuladorEscudo_v1` do protótipo **não é lido nem migrado**.
 
 | Campo | Tipo | Descrição |
 |---|---|---|
-| `Version` | number | Versão do schema (= `DataConfig.SchemaVersion` = 3) |
+| `Version` | number | Versão do schema (= `DataConfig.SchemaVersion` = 4) |
 | `Money`, `Gems`, `RebirthTokens` | number | Moedas |
 | `Rolls`, `Rebirths` | number | Contadores |
 | `EquippedDice` | string | Dice SELECIONADO para rolar (SelectedDiceId; padrão `"Starter"`). O servidor valida a cada roll (existe, sorteável, desbloqueado); inválido → Starter |
 | `OwnedDice` | map | `{ [diceId] = true }` — Dice desbloqueados (Starter sempre). Migração v3: `Normal` → `Starter` |
+| `DiceRolls` | map | `{ [diceId] = n }` — rolls NATURAIS feitos com cada Dice (Prisma/prêmios não contam). Libera o próximo Dice (`UnlockRequirement.RollsOnPrevious` = 60). Perfis antigos começam vazio (Template) |
 | `PrismCharges` | number | Usos guardados do Prisma da Coleção (padrão 0; vem do Diário, Dia 7). Campo novo sem migração: o Template completa perfis antigos |
 | `PrismLastUsedAt` | number | `os.time` do último uso do prisma (intervalo `PrismConfig.CooldownSeconds`) |
 | `Inventory` | map | `{ [uid] = CharacterInstance }` (abaixo) |
@@ -59,7 +60,8 @@ O `SimuladorEscudo_v1` do protótipo **não é lido nem migrado**.
 | Campo | Tipo | Descrição |
 |---|---|---|
 | `Id` | string | `CharacterConfig` id |
-| `Level` | number | Nível da estação (1..CharacterLevelConfig.MaxLevel) |
+| `Level` | number | Nível da estação (1..CharacterLevelConfig.MaxLevel = 30) |
+| `UpgradeInvestment` | number? | Dinheiro efetivamente pago em níveis por ESTA instância. Só o servidor escreve: upgrade soma o custo cobrado; fusão grava na unidade nova a soma das consumidas; troca copia. Venda = base + 75% disso (SaleCore). Ausente = save antigo → soma da curva oficial do nível |
 | `Variant` | string | `Normal` (Silver/Gold/Diamond/Emerald/Void/Celestial preparadas em VariantConfig) |
 | `Locked`, `Favorite` | boolean | Proteções contra venda |
 | `ObtainedAt` | number | os.time do servidor |
@@ -69,6 +71,24 @@ O `SimuladorEscudo_v1` do protótipo **não é lido nem migrado**.
 Unidades antigas ganham `Level = 1`, `Variant = "Normal"`, flags booleanas; itens inválidos são
 removidos; `NextUid` fica acima do maior uid existente; slots apontando para uids inexistentes
 são limpos. Os campos novos vêm do Template (reconcile). Teste: `tests/Migrations.spec.luau`.
+
+### Migração v3 → v4 (investimento por instância + cap de nível 30)
+
+Para cada unidade com `Level > 1` e sem `UpgradeInvestment` válido: grava a soma EXATA da curva
+oficial (`SaleCore.curveInvestment`) do nível 1 até o nível SALVO — o que o jogador pagou. Depois,
+nível acima de 30 vira 30 (o investimento histórico continua gravado: venda e fusão o reconhecem).
+Nenhum dinheiro é concedido na migração; rodar de novo não muda nada (valor já gravado é mantido).
+A curva vem de `Migrations.Context` (injetado pelo PlayerDataService); sem contexto a migração não
+corta nem grava, e o fallback do SaleCore recalcula pela curva no nível salvo.
+
+Política de investimento:
+
+| Fluxo | Instância que fica | Investimento | Nível |
+|---|---|---|---|
+| Upgrade | a mesma | + custo cobrado (`TrySpend`) | + níveis comprados |
+| Fusão | nenhuma das consumidas: nasce UMA nova (uid novo, variante seguinte) | soma das consumidas, uma vez cada (uid repetido é recusado; custo da fusão NÃO entra) | maior entre as consumidas |
+| Troca | a mesma unidade com uid novo no outro jogador | copiado | copiado |
+| Venda | removida na mesma operação | `floor(75% × investido)` volta junto da base | — |
 
 ### Migração v2 → v3 (16 Dice por pool)
 
