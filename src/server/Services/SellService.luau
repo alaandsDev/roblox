@@ -7,6 +7,15 @@
 	    PreviewSale({ uid })                -> só mostra: por unidade { Base, Invested, Percent,
 	                                           Refund, Total } + somas. Mesma conta da venda.
 	    SellService.ShouldAutoSell(player, raridade)
+	VENDA EM MASSA da Mochila (BulkSaleCore; o cliente só manda UIDs):
+	    PreviewBulkSale({ uid })            -> prévia autoritativa com motivo de cada uid recusado
+	    SellBulk({ uid }, totalEsperado, requestId)
+	        revalida TUDO no estado atual (dono, repetido, travado, favorito, equipado, time da
+	        Torre, em troca), recalcula o preço com o MESMO SaleCore.quote da venda individual
+	        (total = Σ cotações unitárias), recusa "price_changed" se o total mudou desde a prévia
+	        mostrada, nunca paga uid inválido e devolve { sold, count, total, skipped = {uid, reason} }.
+	        Replay do mesmo requestId devolve o resultado anterior SEM pagar de novo; requisições
+	        simultâneas do mesmo jogador são recusadas ("busy").
 	Preço sempre calculado no servidor (SaleCore.quote: valor base + reembolso do investimento em
 	níveis, EconomyConfig.UpgradeRefundPercent = 0 hoje). Travados, favoritos e equipados
 	nunca são vendidos (nem em massa).
@@ -21,6 +30,7 @@ local EconomyConfig = require(Shared.Config.EconomyConfig)
 local Formulas = require(Shared.Modules.GameFormulas)
 local TableUtil = require(Shared.Modules.TableUtil)
 local SaleCore = require(Shared.Modules.SaleCore)
+local BulkSaleCore = require(Shared.Modules.BulkSaleCore)
 local Net = require(Shared.Modules.Net)
 
 local InventoryCore = require(script.Parent.Parent.Core.InventoryCore)
@@ -135,6 +145,87 @@ function SellService.PreviewSale(player: Player, uids: { string })
 	}
 end
 
+------------------------------------------------------------------------------------
+-- Venda em massa (Mochila)
+
+local bulkBusy: { [Player]: boolean } = setmetatable({}, { __mode = "k" }) :: any
+-- últimos requestIds processados por jogador (sessão): replay não paga duas vezes
+local bulkDone: { [Player]: { ids: { string }, results: { [string]: any } } } = setmetatable({}, { __mode = "k" }) :: any
+local REPLAY_MEMORY = 16
+
+local function bulkPlan(data: any, uids: { string }): BulkSaleCore.Plan
+	return BulkSaleCore.plan(data, uids, InventoryCore.protection, function(uid: string)
+		return quoteOf(data, uid)
+	end)
+end
+
+function SellService.PreviewBulkSale(player: Player, uids: { string })
+	local data = dataOf(player)
+	local p = bulkPlan(data, uids)
+	return {
+		uids = p.uids,
+		count = #p.uids,
+		total = p.total,
+		base = p.base,
+		invested = p.invested,
+		refund = p.refund,
+		percent = SaleCore.percent(EconomyConfig.UpgradeRefundPercent),
+		skipped = p.skipped,
+	}
+end
+
+function SellService.SellBulk(player: Player, uids: { string }, expectedTotal: number?, requestId: string?)
+	local data = dataOf(player)
+	local memory = bulkDone[player]
+	if requestId and memory and memory.results[requestId] then
+		local previous: any = table.clone(memory.results[requestId])
+		previous.replay = true
+		return previous
+	end
+	if bulkBusy[player] then
+		Net.fail("busy")
+	end
+	bulkBusy[player] = true
+	local ok, result = pcall(function()
+		local p = bulkPlan(data, uids)
+		if #p.uids == 0 then
+			Net.fail("nothing_to_sell")
+		end
+		if expectedTotal ~= nil and expectedTotal ~= p.total then
+			Net.fail("price_changed") -- o cliente pede a prévia de novo e o jogador reconfirma
+		end
+		-- planejamento e execução sem yield entre eles: o estado não muda no meio
+		local total = execute(player, data, { uids = p.uids, total = p.total, skipped = #p.skipped })
+		return {
+			sold = p.uids,
+			count = #p.uids,
+			total = total,
+			base = p.base,
+			invested = p.invested,
+			refund = p.refund,
+			skipped = p.skipped,
+			requestId = requestId,
+		}
+	end)
+	bulkBusy[player] = nil
+	if not ok then
+		error(result, 0)
+	end
+	if requestId then
+		memory = memory or { ids = {}, results = {} }
+		bulkDone[player] = memory
+		table.insert(memory.ids, requestId)
+		memory.results[requestId] = result
+		if #memory.ids > REPLAY_MEMORY then
+			local oldest = table.remove(memory.ids, 1)
+			if oldest then
+				memory.results[oldest] = nil
+			end
+		end
+	end
+	return result :: any
+end
+
 function SellService.ShouldAutoSell(player: Player, rarity: string): boolean
 	if table.find(RollConfig.ProtectedFromAutoSell, rarity) then
 		return false
@@ -159,6 +250,8 @@ function SellService.Init()
 	Net.handle("SellBatch", SellService.SellBatch)
 	Net.handle("SetAutoSell", SellService.SetAutoSell)
 	Net.handle("PreviewSale", SellService.PreviewSale)
+	Net.handle("PreviewBulkSale", SellService.PreviewBulkSale)
+	Net.handle("SellBulk", SellService.SellBulk)
 	MapService.RegisterInteraction("Sell", function(player)
 		Net.fire("OpenMenu", player, "Sell")
 	end)

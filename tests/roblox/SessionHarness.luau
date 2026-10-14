@@ -56,6 +56,8 @@ local NetStub = {
 local overrides = { [env.shared.Modules.Net:GetFullName()] = NetStub }
 local req = env.newContext(overrides)
 local Services = env.server.Services
+local BulkCore = req(env.shared.Modules.BulkSaleCore)
+local InvCore = req(env.server.Core.InventoryCore)
 
 local ORDER = {
 	"PlayerDataService", "MonetizationService", "MapService", "BaseService", "AnalyticsService",
@@ -385,6 +387,13 @@ section("smoke", function()
 	local okM = missionId ~= nil and (call("ClaimMission", p1, "Daily", missionId))
 	check(okM, "smoke: missão diária resgatada")
 
+	-- VENDA EM MASSA antes do save: o que foi vendido não volta, o dinheiro fica
+	local bulkA = S.InventoryService.Add(p1, "wind_disciple")
+	local bulkB = S.InventoryService.Add(p1, "wind_disciple")
+	local okBulkPv, bulkPv = call("PreviewBulkSale", p1, { bulkA, bulkB })
+	local okBulk, bulkRes = call("SellBulk", p1, { bulkA, bulkB }, okBulkPv and bulkPv.total or nil, "smoke-bulk")
+	check(okBulk and bulkRes.count == 2 and d1.Inventory[bulkA] == nil and d1.Inventory[bulkB] == nil, "smoke: venda em massa (2) com a prévia do servidor")
+
 	-- SAIR (save) -> VOLTAR (load)
 	local snapshot = {
 		Money = d1.Money, Gems = d1.Gems, Rolls = d1.Rolls, Rebirths = d1.Rebirths,
@@ -408,6 +417,7 @@ section("smoke", function()
 		and r.Inventory[firstUid] and r.Inventory[firstUid].Level == snapshot.Level
 		and r.Inventory[fused.uid] and r.Inventory[fused.uid].Variant == snapshot.Fused
 	check(same, "smoke: tudo voltou igual depois do save/load")
+	check(r ~= nil and r.Inventory[bulkA] == nil and r.Inventory[bulkB] == nil, "smoke: vendidos em massa não voltam depois do save/load")
 	check(S.InventoryService.UnlockedSlots(back)[9] == true and r.EquippedCharacters["9"] == extra, "smoke: andar novo e personagem do slot 9 mantidos")
 	local problems = invariants({ back, p2 })
 	check(#problems == 0, "smoke: invariantes OK" .. (if #problems > 0 then " — " .. problems[1] else ""))
@@ -504,7 +514,19 @@ section("sessão longa", function()
 				if (call("RequestRoll", player)) then
 					stats.rolls += 1
 				elseif rand() < 0.5 then
-					call("SellBatch", player, pick({ "Duplicates", "Rarity:Common", "Rarity:Uncommon" }), true)
+					if rand() < 0.5 then
+						call("SellBatch", player, pick({ "Duplicates", "Rarity:Common", "Rarity:Uncommon" }), true)
+					else
+						-- Mochila: SELECIONAR DUPLICATAS (mesmo critério do cliente) + SellBulk com a prévia
+						local pd = S.PlayerDataService.GetData(player)
+						local sel = pd and BulkCore.selectDuplicates(pd, InvCore.protection) or {}
+						if #sel > 0 then
+							local okPv, pv = call("PreviewBulkSale", player, sel)
+							if okPv then
+								call("SellBulk", player, sel, pv.total, nil)
+							end
+						end
+					end
 				end
 			elseif r < 0.50 then
 				S.EconomyService.Collect(player)

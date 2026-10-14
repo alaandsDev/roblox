@@ -85,6 +85,16 @@ local Definitions: Definitions = {
 		},
 		-- Só cotação (base + reembolso do investimento em níveis); não vende nada
 		PreviewSale = { args = { { type = "array", maxItems = 500, of = UID } }, rate = { capacity = 5, refill = 2 } },
+		-- Venda em massa da Mochila: só UIDs; o servidor revalida e recalcula tudo (BulkSaleCore)
+		PreviewBulkSale = { args = { { type = "array", maxItems = 500, of = UID } }, rate = { capacity = 6, refill = 3 } },
+		SellBulk = {
+			args = {
+				{ type = "array", maxItems = 500, of = UID },
+				{ type = "number", min = 0, optional = true }, -- total que o jogador viu na prévia
+				{ type = "string", maxLength = 40, optional = true }, -- requestId (replay não paga 2x)
+			},
+			rate = { capacity = 3, refill = 1 },
+		},
 		SetAutoSell = {
 			args = { { type = "string", enum = AUTO_SELL_RARITIES }, { type = "boolean" } },
 			rate = { capacity = 10, refill = 4 },

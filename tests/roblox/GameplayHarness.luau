@@ -89,7 +89,7 @@ end
 
 local for_each_required = {
 	"RequestRoll", "EquipCharacter", "UnequipCharacter", "EquipBest", "SetCharacterFlag", "UpgradeCharacter",
-	"CollectMoney", "BuyDice", "EquipDice", "BuyUpgrade", "SellCharacter", "SellBatch", "SetAutoSell", "PreviewSale",
+	"CollectMoney", "BuyDice", "EquipDice", "BuyUpgrade", "SellCharacter", "SellBatch", "SetAutoSell", "PreviewSale", "PreviewBulkSale", "SellBulk",
 	"ClaimOfflineReward", "GetDailyStatus", "ClaimDaily",
 }
 local missing = {}
@@ -500,6 +500,80 @@ check(okPrev and prev.preview and prev.count >= 2 and unchanged, "SellBatch pré
 local okBatch, batch = call("SellBatch", p1, "Rarity:Common", true)
 check(okBatch and batch.count == prev.count and batch.total == prev.total, "SellBatch confirmado = prévia")
 check(d1.Inventory[v1] ~= nil and d1.Inventory[v2] ~= nil and d1.Inventory[b] ~= nil, "venda em massa nunca inclui travado/favorito/equipado")
+
+-- VENDA EM MASSA DA MOCHILA (SellBulk/PreviewBulkSale): só UIDs, servidor revalida tudo
+do
+	local SaleCoreB = req(env.shared.Modules.SaleCore)
+	local Bulk = req(env.shared.Modules.BulkSaleCore)
+	local function add(level, invested)
+		local uid = S.InventoryService.Add(p1, "wind_disciple")
+		d1.Inventory[uid].Level = level or 1
+		d1.Inventory[uid].UpgradeInvestment = invested
+		return uid
+	end
+	local free1, free2, upgraded = add(), add(), add(8, 4000)
+	local fav, locked, team = add(), add(), add()
+	d1.Inventory[fav].Favorite = true
+	d1.Inventory[locked].Locked = true
+	d1.TowerTeam = { team }
+	local equippedUid = nil
+	for _, uid in d1.EquippedCharacters do
+		equippedUid = uid
+		break
+	end
+	local theirs = next(d2.Inventory) or S.InventoryService.Add(p2, "wind_disciple")
+	local request = { free1, free2, upgraded, free1, fav, locked, team, theirs, "c99999" }
+	if equippedUid then
+		table.insert(request, equippedUid)
+	end
+	-- prévia autoritativa = Σ prévias individuais (mesma SaleCore)
+	local okPv, pv = call("PreviewBulkSale", p1, request)
+	local sumIndividual = 0
+	for _, uid in { free1, free2, upgraded } do
+		local _, one = call("PreviewSale", p1, { uid })
+		sumIndividual += one.total
+	end
+	local reasons = {}
+	for _, sk in (pv and pv.skipped) or {} do
+		reasons[sk.uid] = sk.reason
+	end
+	check(okPv and pv.count == 3 and pv.total == sumIndividual, "SellBulk: prévia = Σ prévias individuais (3 válidos)")
+	check(reasons[fav] == "favorite" and reasons[locked] == "locked" and reasons[team] == "tower_team" and reasons[theirs] == "not_owned"
+		and reasons.c99999 == "not_owned" and reasons[free1] == "duplicate_uid" and (equippedUid == nil or reasons[equippedUid] == "equipped"),
+		"SellBulk: favorito/travado/time da Torre/equipado/de outro jogador/inexistente/repetido recusados com motivo")
+	check(pv and pv.refund == math.floor(SaleCoreB.invested(Formulas, d1.Inventory[upgraded]) * 0.75), "SellBulk: upgradado reembolsa 75% do investimento")
+	-- total desatualizado: recusa sem vender nada
+	local money0 = d1.Money
+	local okStale, codeStale = call("SellBulk", p1, request, pv.total + 1, "req-stale")
+	check(not okStale and codeStale == "price_changed" and d1.Money == money0 and d1.Inventory[free1] ~= nil, "SellBulk: total diferente da prévia -> 'price_changed', nada vendido")
+	-- venda confirmada
+	local okSell, res = call("SellBulk", p1, request, pv.total, "req-1")
+	check(okSell and res.count == 3 and res.total == pv.total and d1.Money == money0 + pv.total, "SellBulk: paga exatamente a prévia (Σ individual), sem criar dinheiro")
+	check(d1.Inventory[free1] == nil and d1.Inventory[free2] == nil and d1.Inventory[upgraded] == nil
+		and d1.Inventory[fav] ~= nil and d1.Inventory[locked] ~= nil and d1.Inventory[team] ~= nil and d2.Inventory[theirs] ~= nil
+		and (equippedUid == nil or d1.Inventory[equippedUid] ~= nil), "SellBulk: só os válidos saem; protegidos e o item do outro jogador ficam")
+	local okReplay, replay = call("SellBulk", p1, request, pv.total, "req-1")
+	check(okReplay and replay.replay == true and d1.Money == money0 + pv.total, "SellBulk: replay do mesmo requestId não paga de novo")
+	local okSpam, codeSpam = call("SellBulk", p1, request, nil, "req-2")
+	check(not okSpam and codeSpam == "nothing_to_sell" and d1.Money == money0 + pv.total, "SellBulk: repetir o pedido (spam/race) depois da venda: nada a pagar")
+	local okEmpty, codeEmpty = call("SellBulk", p1, {}, nil, nil)
+	check(not okEmpty and codeEmpty == "nothing_to_sell", "SellBulk: pedido vazio recusado")
+	-- duplicatas com o MESMO critério do cliente
+	local dupA, dupB = add(), add()
+	local sel = Bulk.selectDuplicates(d1, req(env.server.Core.InventoryCore).protection)
+	check(table.find(sel, dupA) ~= nil or table.find(sel, dupB) ~= nil, "SELECIONAR DUPLICATAS acha as cópias excedentes")
+	for _, uid in sel do
+		check(d1.Inventory[uid].Favorite ~= true and d1.Inventory[uid].Locked ~= true and uid ~= team and uid ~= equippedUid, "SELECIONAR DUPLICATAS nunca pega protegido: " .. uid)
+	end
+	d1.TowerTeam = {}
+	for _, uid in { fav, locked, team, dupA, dupB } do
+		if d1.Inventory[uid] then
+			d1.Inventory[uid].Favorite = false
+			d1.Inventory[uid].Locked = false
+		end
+	end
+	S.InventoryService.Remove(p1, { fav, locked, team, dupA, dupB })
+end
 
 ------------------------------------------------------------------------------------
 -- INDEX
