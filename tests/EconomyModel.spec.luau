@@ -129,6 +129,16 @@ describe("EconomyModel: simulação", function()
 		expect(again.player.discovered).toBe(p.discovered)
 	end)
 
+	it("sementes vizinhas geram jogadores DIFERENTES (sem colisão 2k/2k+1)", function()
+		local seen = {}
+		for seed = 1, 64 do
+			local rand = M.rng(seed)
+			local key = string.format("%.12f|%.12f", rand(), rand())
+			expect(seen[key]).toBeNil()
+			seen[key] = true
+		end
+	end)
+
 	it("dinheiro conservado: saldo = ganhos − gastos (rebirth conta como gasto do saldo)", function()
 		local earned, spent = 0, 0
 		for _, v in p.earned do

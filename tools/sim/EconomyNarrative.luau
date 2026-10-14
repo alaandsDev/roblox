@@ -61,6 +61,19 @@ N.summary = function(A)
 	local casualOffline = A.sourceShares("Casual", 20 * H).Offline or 0
 	local ativoForbidden = diceTime(A, "Ativo", "Forbidden", 0.5)
 	local casualForbidden = diceTime(A, "Casual", "Forbidden", 0.5)
+	local function polIps(policy: string): number
+		return A.median(A.collect(A.select("rebirth", "Ativo", policy), function(r)
+			local s = A.snapAt(r, 20 * H)
+			return s and s.ips
+		end))
+	end
+	local rebirthRatio = polIps("medium") / math.max(1, polIps("never"))
+	local forbiddenWait = 0 / 0
+	for _, st in A.STATS.Ativo do
+		if st.dice.Id == "Forbidden" then
+			forbiddenWait = A.median(st.moneyWait)
+		end
+	end
 	local deadCel = 0
 	for _, st in A.STATS.Ativo do
 		if st.dice.Id == "Celestial" then
@@ -70,9 +83,9 @@ N.summary = function(A)
 	return table.concat({
 		"## Resumo executivo",
 		"",
-		`- **Progressão de Dice rápida demais no meio do jogo e um único muro no fim.** O Ativo F2P compra o Forbidden em ~{d(ativoForbidden)} de jogo ativo (P50) e o Casual em ~{d(casualForbidden)}; do Shinobi ao Celestial quem trava é quase sempre o requisito de **rolls**, não o dinheiro. O único muro de dinheiro é Celestial → Forbidden (75M → 750M, 10×).`,
-		`- **Os pools são pequenos (6–8 personagens por Dice) e completam em segundos/minutos**: depois disso o jogador rola o mesmo Dice sem nada novo até liberar o próximo (ex.: ~{string.format("%.0f", deadCel)} rolls sem novidade no Celestial, P50 Ativo). A coleção não segura a sessão no meio do jogo — quem segura é o requisito de rolls.`,
-		`- **Rebirth domina o fim:** a renda de 20 h vem ~90% dos multiplicadores de Rebirth (+25%/rebirth) e da Renda global; quem nunca renasce fica ~30× mais pobre.`,
+		`- **Ritmo de Dice regular, com um muro no fim.** O Ativo F2P compra o Forbidden em ~{d(ativoForbidden)} de jogo ativo (P50) e o Casual em ~{d(casualForbidden)}. Para o Casual o gargalo é o requisito de **rolls** (o offline paga os preços); para Ativo/Otimizador o requisito de rolls chega primeiro e o **dinheiro** atrasa cada Dice em ~10–15 min. O único muro grande é Celestial → Forbidden (75M → 750M, 10×; ~{d(forbiddenWait)} de espera por dinheiro no Ativo).`,
+		`- **Os pools são pequenos (6–8 personagens por Dice) e completam em segundos/minutos**: depois disso o jogador rola o mesmo Dice sem nada novo até liberar o próximo (ex.: ~{string.format("%.0f", deadCel)} rolls sem novidade no Celestial, P50 Ativo). A coleção não segura a sessão no meio do jogo — quem segura é a espera pelo próximo Dice.`,
+		`- **Rebirth é obrigatório:** com 20 h, quem renasce tem renda/s ~{string.format("%.0f", rebirthRatio)}× maior que quem nunca renasce (Ativo, política medium × never); ao renascer, ~90% do dinheiro acumulado some no reset.`,
 		`- **Offline é a maior fonte do Casual** ({A.pct(casualOffline)} do dinheiro em 20 h ativas): 8 h offline a 12% ≈ 1 h de renda ativa, e o Casual joga só 20 min/dia.`,
 		"- **Venda ignora o nível:** um Lendário nível 20 custou 557K em níveis e vende por 1,2K (0,2%). A troca de estação destrói o investimento — é o maior atrito de \"liberdade de troca\" da economia.",
 		"- **Duplicatas quase não pagam nada** fora dos primeiros minutos (venda = 12–40 s de renda da própria unidade).",
@@ -125,13 +138,13 @@ N.dice = function(A)
 			end
 		end
 	end
-	table.insert(lines, "- Os demais Dice são limitados pelos rolls (o dinheiro chega antes).")
+	table.insert(lines, "- Lucky: limitado pelos rolls. No Casual quase todos os Dice são limitados pelos rolls (espera por dinheiro < 1 min), porque o offline paga os preços entre as sessões.")
 	return table.concat(lines, "\n")
 end
 
 N.completion = function(A)
 	return table.concat({
-		"Pools por Dice: 6–8 personagens. Até o Awakened o 100% sai em segundos ou poucos minutos depois da compra; só Celestial (3 Divinos) e Forbidden (3 Divinos + 3 Secretos) têm caça longa. **\"Rolar sem nada novo\" é a regra no meio do jogo**: o tempo entre completar o Dice e liberar o próximo (coluna `Próximo liberado por rolls`) é gasto inteiro em rolls repetidos — a recompensa desse tempo é só a venda de duplicata (centavos) e o progresso para o requisito de rolls.",
+		"Pools por Dice: 6–8 personagens. Até o Awakened o 100% sai em segundos ou poucos minutos depois da compra; só Celestial (3 Divinos) e Forbidden (3 Divinos + 3 Secretos) têm caça longa. **\"Rolar sem nada novo\" é a regra no meio do jogo**: o tempo entre completar o Dice e comprar o próximo (coluna `Próximo comprado`, 5–30 min no meio do jogo) é gasto inteiro em rolls repetidos — a recompensa desse tempo é só a venda de duplicata (centavos) e o progresso para o requisito de rolls.",
 	}, "\n")
 end
 
@@ -259,7 +272,7 @@ end
 
 N.prismEnd = function(A)
 	return table.concat({
-		"Leitura: o teto só importa para quem acumula sem usar; com uso imediato, 3 × 21 nunca perde carga. O Prisma decide principalmente os **Secretos do Forbidden** (0,0045%): com 3 usos por recompensa o Casual fecha o Forbidden por Prisma; com 1 uso, demora várias semanas a mais. **Recomendação: manter 3 usos / teto 21** (atual) — 7 desperdiça cargas de quem joga pouco e 1 uso é fraco demais para o único item que mira o Secreto.",
+		"Leitura: o teto só importa para quem acumula; com 3 usos e teto 7 o Casual perde ~8 cargas em 60 dias, com teto 21 nenhuma. O Prisma decide principalmente os **Secretos do Forbidden** (0,0045%): no Ativo (1 recompensa em 20 h) 1 uso deixa ~15% dos jogadores sem o Forbidden completo em 20 h, 2 usos ~3%, 3 usos 0%. O Casual, com 8–9 recompensas, completa com qualquer combinação. **Recomendação: manter 3 usos / teto 21** (atual).",
 	}, "\n")
 end
 
@@ -271,13 +284,13 @@ end
 
 N.rebirthEnd = function(A)
 	return table.concat({
-		"Leitura: (1) o primeiro Rebirth (10M) chega **antes** do Colossus (12,5M) — como o Rebirth não tira Dice, renascer cedo é quase grátis e o jogador médio renasce enquanto ainda compra Dice; (2) em 20 h todas as políticas convergem para ~10–12 rebirths, porque o custo × 2,2 cresce mais devagar que a renda multiplicada (+25%/rebirth, +1 slot); (3) **never** fica ~30× mais pobre — o Rebirth é obrigatório, não opcional; (4) medium ganha mais dinheiro total que early (renascer cedo zera Luck/Renda compradas várias vezes).",
+		"Leitura: (1) o primeiro Rebirth (10M) chega **antes** do Colossus (12,5M) — como o Rebirth não tira Dice, renascer cedo é quase grátis e o jogador médio renasce enquanto ainda compra Dice; (2) em 20 h todas as políticas convergem para ~10–12 rebirths, porque o custo × 2,2 cresce mais devagar que a renda multiplicada (+25%/rebirth, +1 slot); (3) **never** ganha ~50× menos dinheiro em 20 h — o Rebirth é obrigatório, não opcional; (4) para Ativo/Otimizador, medium ganha um pouco mais que early (renascer cedo zera Luck/Renda compradas várias vezes); para o Casual, early ganha mais (o teto do offline sobe com o custo do próximo Rebirth).",
 	}, "\n")
 end
 
 N.retention = function(A)
 	return table.concat({
-		"Momentos de retenção medidos em 10.000 jogadores por perfil (primeira hora).",
+		"Momentos de retenção medidos em 10.000 jogadores por perfil (primeira hora). Leitura: Raro e Épico chegam em segundos, o 1º Dice novo em 1–3 min e o 1º Dice 100% em < 2 min — os primeiros 5 min estão cheios. O **buraco** fica entre ~2 e ~10 min (nenhum marco novo até o 1º Lendário, que só existe a partir do Flame, ~11–13 min) e entre ~15 e ~35 min (até o 1º Mítico, no Spirit). Missões/Diário ajudam, mas não há recompensa de coleção nesse intervalo.",
 	}, "\n")
 end
 
@@ -293,9 +306,9 @@ N.problems = function(A)
 		"",
 		"1. **Venda ignora o nível** — o investimento em níveis (até 773× o valor de venda no nível 20) é destruído na troca/venda. Pior atrito de liberdade de troca.",
 		"2. **Fusão destrói o investimento** das cópias consumidas (o resultado fica só com o maior nível).",
-		"3. **Pools de 6–8 personagens completam em segundos**; no meio do jogo a sessão é \"rolar sem nada novo\" esperando o requisito de rolls.",
+		"3. **Pools de 6–8 personagens completam em segundos**; no meio do jogo a sessão é \"rolar sem nada novo\" esperando o próximo Dice (rolls para o Casual, dinheiro para Ativo/Otimizador).",
 		"4. **Compra em cascata pula Dice:** quando o requisito de rolls de vários Dice é atingido junto e o dinheiro sobra, o jogador compra 2–3 Dice de uma vez e nunca rola os intermediários (Shinobi/Flame no Ativo) — esses personagens só entram no Índice se o jogador voltar ao Dice antigo.",
-		"5. **Muro único Celestial → Forbidden** (75M → 750M = 10×; os outros degraus são 1,8–2,5×).",
+		"5. **Muro único Celestial → Forbidden** (75M → 750M = 10×; os outros degraus são de 1,7× a 4×).",
 		"6. **Rebirth 1 (10M) antes do Colossus (12,5M)** e Rebirth sem perda de Dice: renascer cedo não custa progresso, só dinheiro em caixa.",
 		"7. **Offline > ativo para o Casual** (até ~2/3 do dinheiro). Coerente com a regra \"8 h ≈ 1 h ativa\", mas o teto de 50% do próximo Rebirth fica alto no fim.",
 		"8. **Duplicatas não pagam nada** depois dos primeiros minutos (12–40 s de renda).",
@@ -315,12 +328,12 @@ N.recommendations = function(A)
 		"| --- | --- | --- | --- | --- |",
 		"| Reembolso na venda | 0% | **75%** do investimento em níveis, gravado por instância (B) | troca de estação sem destruir o investimento; 25% continua sink; prova de não-lucro | liberdade de troca; impacto de progressão ≈ 0 |",
 		"| Fusão | resultado = maior nível | resultado soma `UpgradeInvestment` das cópias (refund futuro) — nível continua o maior | fusão deixa de punir quem upou a cópia errada | mais fusões; nenhum dinheiro novo |",
-		"| Preço Forbidden | 750M (10× Celestial) | manter o preço, **ou** inserir o degrau no requisito: 12.000 → 10.000 rolls e manter 750M | o muro é de dinheiro, o requisito de rolls (3,3 h) chega 50 min antes | mantém o Forbidden como objetivo de ~4 h sem 10× isolado; decisão de design |",
-		"| Requisito de rolls Shinobi→Blade | 300 / 425 / 550 | 300 / 450 / 650 | evitar a compra em cascata (3 Dice em 1 min) | cada Dice rolado ≥ 2 min; Índice completo sem voltar |",
-		"| Preços de Dice | 2,5K…75M | **manter** | o dinheiro raramente é o gargalo até o Celestial | — |",
+		"| Preço Forbidden | 750M (10× Celestial) | 750M → **400M** (≈5× Celestial), requisito 12.000 rolls mantido | único degrau de 10×; o requisito de rolls (3,3 h) chega ~1 h antes do dinheiro no Ativo | Forbidden ~30–40 min mais cedo para Ativo/Otimizador; Casual inalterado (já limitado por rolls) |",
+		"| Requisito de rolls Shinobi→Blade | 300 / 425 / 550 | 300 / 450 / 650 | no Ativo a missão dos 10 min paga Shinobi+Flame+Blade de uma vez (92% nunca rolam o Shinobi) | cada Dice rolado ≥ 2 min; Índice completo sem voltar |",
+		"| Preços de Dice (exceto Forbidden) | 2,5K…75M | **manter** | espera de 10–15 min por dinheiro por Dice (Ativo) é um ritmo saudável | — |",
 		"| Requisito de rolls Celestial | 8.000 | manter | — | — |",
 		"| Renda | BaseIncome provisório por raridade | manter | progressão em horas está no alvo | — |",
-		"| Duplicatas | 12–40 s de renda | C/U 20 · R 25 · E 30 · L 35 · M 45 · D 60 · S 90 s | dar valor ao \"rolar sem nada novo\" do meio do jogo | duplicatas ≈ 5–10% do dinheiro no meio do jogo (hoje ~1%) |",
+		"| Duplicatas | 12–40 s de renda | C/U 20 · R 25 · E 30 · L 35 · M 45 · D 60 · S 90 s | dar valor ao \"rolar sem nada novo\" do meio do jogo | duplicatas ≈ 3–5% do dinheiro em 5 h (hoje ~1%) |",
 		"| Custo de nível | 60 s × 1,2^(L−1) | manter a curva; **MaxLevel 50 → 30** (ou crescimento 1,2 → 1,15 depois do 20) | o 31–50 nunca é comprado | teto alcançável e visível |",
 		"| Rebirth | 10M × 2,2^n | 1º Rebirth 10M → **15M** (crescimento igual) | primeiro Rebirth depois do Colossus, não antes | 1º Rebirth ~15–20 min mais tarde para o Ativo |",
 		"| Prisma | 3 usos, teto 21 | **manter** | Casual não perde carga; 3 usos fecham os Secretos | — |",
@@ -337,7 +350,7 @@ N.method = function(A)
 		"## Método e limites",
 		"",
 		`- Simulador: \`tools/sim/EconomyModel.luau\` (puro). Roll **idêntico** ao \`DiceCore.roll\` (provado roll a roll em \`tests/EconomyModel.spec.luau\`): pesos de produção, Luck real (Dice × upgrade × boosts × Rebirth × gamepass, softcap {A.RollConfig.LuckSoftCap}), pity Lendário 50 / Mítico 250, Dice selecionado = o melhor comprado. Renda, níveis, venda (SaleCore), upgrades, Rebirth, torres (BattleCore), Jackpot, Diário, Missões, Offline, Fusão e Prisma (DiceCore:prismPick) vêm dos módulos e configs reais.`,
-		`- Monte Carlo: {A.counts.short} jogadores por perfil até 1 h (retenção) e {A.counts.long} por perfil até 20 h. Menos de 10.000 no horizonte de 20 h porque cada jogador de 20 h custa 0,2–0,7 s; com {A.counts.long} o erro do P50 fica < 2% (P10/P90 estáveis entre metades da amostra). Sensibilidades (refund, Prisma, Rebirth) com {A.counts.refund} jogadores por variante e as MESMAS sementes entre variantes.`,
+		`- Monte Carlo: {A.counts.short} jogadores por perfil até 1 h (retenção) e {A.counts.long} por perfil até 20 h. Menos de 10.000 no horizonte de 20 h porque cada jogador de 20 h custa 0,2–0,7 s (≈ 25 min para tudo em 4 núcleos). Convergência medida: diferença entre as duas metades da amostra (sementes pares × ímpares) no ganho total de 20 h — {A.halves()}. Sensibilidades (refund, Prisma, Rebirth) com {A.counts.refund} jogadores por variante e as MESMAS sementes entre variantes.`,
 		"- Tempo = jogo ATIVO. O offline é aplicado entre as sessões do perfil (relógio real).",
 		"- Limites: agente simples (não troca Dice para caçar personagem fora do Prisma, não usa a loja de gemas, não negocia); torres só pela 1ª vitória; sem amigos no servidor.",
 		"- Reproduzir: `python3 tools/sim/run_economy_analysis.py` (≈ 25 min em 4 núcleos; `--scale 0.01` ≈ 30 s).",

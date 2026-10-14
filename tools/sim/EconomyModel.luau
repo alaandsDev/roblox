@@ -914,6 +914,18 @@ local function snapshot(p: any, now: number): any
 	}
 end
 
+-- Gerador por jogador. tests/Rng faz bor(seed, 1) (sementes 2k e 2k+1 dariam o MESMO jogador)
+-- e sementes vizinhas começam correlacionadas: espalha a semente (hash multiplicativo) e
+-- descarta os primeiros valores.
+function EconomyModel.rng(seed: number): () -> number
+	local mixed = (math.floor(seed) * 2654435761 + 40503) % 4294967296
+	local rand = Rng.new(mixed)
+	for _ = 1, 16 do
+		rand()
+	end
+	return rand
+end
+
 -- Roda UM jogador por `activeSeconds` de jogo ATIVO (sessões por dia do perfil; o resto é offline)
 function EconomyModel.run(profile: Profile, activeSeconds: number, seed: number, options: Options?): any
 	local opts: Options = options or {}
@@ -921,7 +933,7 @@ function EconomyModel.run(profile: Profile, activeSeconds: number, seed: number,
 	local prismCfg = opts.prism or PrismConfig
 	local policy = opts.rebirth or profile.rebirth
 	local checkpoints = opts.checkpoints or EconomyModel.DefaultCheckpoints
-	local rand = Rng.new(seed)
+	local rand = EconomyModel.rng(seed)
 	local p = newPlayer(profile)
 	p.now = 0
 	p.refund = refund

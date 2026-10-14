@@ -337,6 +337,26 @@ local A = {
 	},
 }
 
+-- convergência: P10/P50/P90 do ganho de 20 h, metade par × metade ímpar das sementes
+A.halves = function(): string
+	local parts = {}
+	for _, profile in PROFILES do
+		local halves = { {}, {} }
+		for _, r in select("long", profile) do
+			local s = snapAt(r, 20 * 3600)
+			if s then
+				table.insert(halves[(r.seed % 2) + 1], s.earned)
+			end
+		end
+		local worst = 0
+		for _, q in { 0.1, 0.5, 0.9 } do
+			local a, b = quantile(halves[1], q), quantile(halves[2], q)
+			worst = math.max(worst, math.abs(a - b) / ((a + b) / 2))
+		end
+		table.insert(parts, `{PT_PROFILE[profile]} ≤ {string.format("%.1f", worst * 100)}%`)
+	end
+	return table.concat(parts, ", ")
+end
 A.narrative = require("./EconomyNarrative")
 require("./EconomyReport")(A)
 fs.writeFile("ECONOMY_BALANCE_ANALYSIS.md", table.concat(out, "\n") .. "\n")
