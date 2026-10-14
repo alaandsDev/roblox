@@ -204,3 +204,38 @@ personagem em cima precisa deste teste manual.
 
 **Passou tudo?** Então vale rodar os 108 testes do `TEST_PLAN.md`. **Falhou algo?** Mande o
 número do teste + a mensagem do Output.
+
+## FASE: ECONOMIA APLICADA + TORRE CONTÍNUA + ART PASS (roteiro objetivo)
+
+**Passo manual único (antes de testar):** no Studio, (1) Lighting > Sky do *Classic Roblox Sky*
+(339406852) > botão direito > *Save to File…* > `assets/ClassicRobloxSky.rbxm`; (2) o modelo
+*Auras Pack Not mine!* (15374038687) > *Save to File…* > `third_party/AurasPack.rbxm`. Depois:
+`python3 tools/build_place.py` e `python3 tools/audit_auras_pack.py`. Confirmação: o build imprime
+"Incluindo ClassicRobloxSky.rbxm em Lighting.ClassicRobloxSky" e aparece `AURAS_PACK_AUDIT.md`.
+
+| # | Área | Ação | Esperado | OK |
+|---|---|---|---|---|
+| W1 | WORLD | Play, olhar o céu | um único Sky (Classic Roblox Sky); em Lighting só 1 objeto Sky | [ ] |
+| W2 | WORLD | olhar grama/pisos/bordas de perto | studs visíveis na grama, pisos das bases, bordas e blocos; caminhos lisos | [ ] |
+| W3 | WORLD | girar a câmera no Hub | verde vivo, azul forte, sem imagem lavada nem Bloom estourado | [ ] |
+| W4 | WORLD | andar pelo miolo da ilha | árvores variadas (carvalho, redonda, pinheiro, cerejeira), clusters e isoladas; nenhuma no caminho/pedestal | [ ] |
+| W5 | WORLD | esteira | seta aponta para frente, ripas andam para frente, o personagem é levado para frente | [ ] |
+| B1 | BASE | base nova (RB0) e com RB5 | Floor 01 com borda de studs; Floor 02 com vigas, pilares e placa "2F" | [ ] |
+| B2 | BASE | placa do pedestal | `$preço` + `Nível X > Y` na frente, legível de longe e no mobile; no 30: renda/s + MÁX | [ ] |
+| B3 | BASE | 10 raros equipados (Lendário→Secreto) | auras Light com presença; FPS estável; de longe as partículas somem | [ ] |
+| K1 | MOCHILA | abrir com 100+ personagens | retrato 3D real em cada card visível; rolar a lista é fluido | [ ] |
+| K2 | MOCHILA | fechar | (DEV) nenhum modelo de retrato sobra; ícone só se o asset falhar | [ ] |
+| R1 | ROLL | faixa acima de AUTO/OCULTAR | rosto/cabelo/busto de quem saiu (não ícone de Dice) | [ ] |
+| R2 | ROLL | cronometrar 60 s de AUTO | Normal = 60 rolls; Roll Rápido = 120 rolls | [ ] |
+| A1 | AURAS | reveal de Lendário / Mítico / Divino / Secreto | escala clara: corpo vivo → 2ª camada+órbitas → pulsos+anel → assinatura excepcional | [ ] |
+| A2 | AURAS | Killuo Relâmpago | raios (Beam) correndo braços/torso, faíscas, não só brilho azul | [ ] |
+| A3 | AURAS | mesmo personagem na base (Light) × reveal (Full) | Light mais leve mas ainda bonito | [ ] |
+| T1 | TORRE | INICIAR (AUTO: ON) | andar 1, vitória, recompensa, andar 2 sozinho | [ ] |
+| T2 | TORRE | OCULTAR → MOSTRAR | painel compacto (Andar, HP do time, Ganhos) ↔ tela de batalha; nada muda no resultado | [ ] |
+| T3 | TORRE | PARAR / derrota / sair do jogo | sessão termina; nunca recomeça do andar 1 sozinha | [ ] |
+| H1 | HUD | PC e emulador de celular (retrato e paisagem) | ícones com chip compacto, ROLAR maior, nada cobrindo o centro, toques confortáveis | [ ] |
+| H2 | HUD | passar o mouse / clicar | hover cresce um pouco, clique encolhe; badges pequenos no canto | [ ] |
+| E1 | ECONOMIA | upgrade de estação, depois VENDER | prévia: valor base, investido, 75%, recuperado, total = valor recebido | [ ] |
+| E2 | ECONOMIA | fundir 3 upados, trocar e vender | o investimento soma na fusão e viaja na troca; nunca dinheiro extra | [ ] |
+| E3 | ECONOMIA | Rebirth / offline | 1º Rebirth custa 15M; offline até 25% do próximo Rebirth | [ ] |
+| E4 | ECONOMIA | loja de Dice | Flame 450 / Blade 650 rolls + 60 rolls com o Dice anterior; Forbidden $400M | [ ] |
