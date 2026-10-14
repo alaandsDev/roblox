@@ -31,7 +31,8 @@ describe("Dice: roster por Dice (fonte = catálogo de lançamento)", function()
 	it("exatamente 16 Dice sorteáveis, na ordem aprovada, com a quantidade aprovada", function()
 		local list = core:diceList()
 		expect(#list).toBe(16)
-		local order = { "Starter", "Lucky", "Rampart", "Flame", "Shinobi", "Blade", "Fighter", "Storm", "Spirit", "Arcane", "Shadow", "Void", "Awakened", "Colossus", "Celestial", "Forbidden" }
+		-- Ordem oficial (Variante B): Shinobi antes do Flame, Colossus antes do Awakened
+		local order = { "Starter", "Lucky", "Rampart", "Shinobi", "Flame", "Blade", "Fighter", "Storm", "Spirit", "Arcane", "Shadow", "Void", "Colossus", "Awakened", "Celestial", "Forbidden" }
 		for i, dice in list do
 			expect(dice.Id).toBe(order[i])
 			expect(dice.Order).toBe(i)
@@ -140,9 +141,36 @@ describe("Dice: pesos de raridade (base normalizada por Dice)", function()
 		end
 	end)
 
-	it("Forbidden (M/D/S) = 75 / 20 / 5 (base normalizada; balanceamento é outra fase)", function()
-		local w = core:rarityWeights("Forbidden")
-		expect(near(w.Mythic, 75, 1e-9) and near(w.Divine, 20, 1e-9) and near(w.Secret, 5, 1e-9)).toBeTruthy()
+	it("pesos APROVADOS (Variante B + Divino reduzido): explícitos, sem normalização", function()
+		local expected = {
+			Shinobi = { Common = 35, Uncommon = 33, Rare = 22, Epic = 10 },
+			Flame = { Uncommon = 60, Rare = 28, Epic = 11, Legendary = 1 },
+			Colossus = { Epic = 40, Legendary = 45, Mythic = 15 },
+			Awakened = { Legendary = 85, Mythic = 15 },
+			Celestial = { Legendary = 64, Mythic = 35.5, Divine = 0.5 },
+			Forbidden = { Mythic = 99.2455, Divine = 0.75, Secret = 0.0045 },
+		}
+		for id, weights in expected do
+			local w = core:rarityWeights(id)
+			for rarity, value in weights do
+				expect(near(w[rarity], value, 1e-9)).toBeTruthy()
+			end
+		end
+		for _, dice in core:diceList() do
+			expect(dice.RarityWeights ~= nil).toBeTruthy()
+		end
+	end)
+
+	it("sem fallback: Dice sorteável sem RarityWeights é erro (construção) e problema (auditoria)", function()
+		local DiceBalance = require("../tools/sim/DiceBalance")
+		local broken = DiceBalance.withWeights({})
+		expect((pcall(DiceCore.new, broken, CharacterConfig, RarityConfig, RollConfig))).toBe(false)
+		local problems = DiceCore.validate(broken, CharacterConfig, RarityConfig)
+		local found = false
+		for _, p in problems do
+			found = found or string.find(p, "sem RarityWeights explícitos", 1, true) ~= nil
+		end
+		expect(found).toBe(true)
 	end)
 end)
 
@@ -166,9 +194,9 @@ describe("Dice: probabilidade por personagem (GetCharacterProbability)", functio
 				end
 			end
 		end
-		-- Starter Épico (1 personagem): 5 / 97
+		-- Starter Épico (1 personagem): 3%
 		local epic = core:pool("Starter").byRarity.Epic[1]
-		expect(near(core:characterProbability("Starter", epic), 5 / 97, 1e-12)).toBeTruthy()
+		expect(near(core:characterProbability("Starter", epic), 0.03, 1e-12)).toBeTruthy()
 	end)
 
 	it("personagem fora do Dice / inexistente = 0%", function()

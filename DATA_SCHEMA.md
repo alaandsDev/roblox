@@ -25,6 +25,8 @@ O `SimuladorEscudo_v1` do protótipo **não é lido nem migrado**.
 | `Rolls`, `Rebirths` | number | Contadores |
 | `EquippedDice` | string | Dice SELECIONADO para rolar (SelectedDiceId; padrão `"Starter"`). O servidor valida a cada roll (existe, sorteável, desbloqueado); inválido → Starter |
 | `OwnedDice` | map | `{ [diceId] = true }` — Dice desbloqueados (Starter sempre). Migração v3: `Normal` → `Starter` |
+| `PrismCharges` | number | Usos guardados do Prisma da Coleção (padrão 0; vem do Diário, Dia 7). Campo novo sem migração: o Template completa perfis antigos |
+| `PrismLastUsedAt` | number | `os.time` do último uso do prisma (intervalo `PrismConfig.CooldownSeconds`) |
 | `Inventory` | map | `{ [uid] = CharacterInstance }` (abaixo) |
 | `NextUid` | number | Próximo uid (`"c" .. NextUid`); nunca diminui, nunca repete |
 | `EquippedCharacters` | map | `{ [tostring(slotId)] = uid }` (chave string: compatível com JSON) |

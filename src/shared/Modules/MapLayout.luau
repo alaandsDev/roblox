@@ -161,6 +161,25 @@ function MapLayout:conveyorPath(): Path
 	return { points = points, cumulative = cumulative, length = total }
 end
 
+--[[
+	Velocidade FÍSICA de um trecho da esteira (de `fromX,fromZ` para `toX,toZ`, na ordem do
+	caminho), em studs/s: AssemblyLinearVelocity da parte ancorada = o contato transporta o
+	personagem (mesmo sentido e velocidade da animação do cliente). Devolve (vx, vz).
+	CarryPlayers = false -> (0, 0). Config inválida -> erro (nada de esteira "meio configurada").
+]]
+function MapLayout.beltVelocity(conveyor: any, fromX: number, fromZ: number, toX: number, toZ: number): (number, number)
+	assert(type(conveyor.Speed) == "number" and conveyor.Speed > 0 and conveyor.Speed < 100, "Conveyor.Speed inválida (0 < Speed < 100)")
+	assert(conveyor.Direction == 1 or conveyor.Direction == -1, "Conveyor.Direction deve ser 1 ou -1")
+	if not conveyor.CarryPlayers then
+		return 0, 0
+	end
+	local dx, dz = toX - fromX, toZ - fromZ
+	local length = math.sqrt(dx * dx + dz * dz)
+	assert(length > 1e-6, "trecho de esteira com comprimento zero")
+	local k = conveyor.Speed * conveyor.Direction / length
+	return dx * k, dz * k
+end
+
 -- Posição e direção a uma distância ao longo da pista (com volta)
 function MapLayout.pointAt(path: Path, distance: number): (number, number, number, number)
 	local d = distance % path.length

@@ -550,6 +550,7 @@ d1.LastDailyClaim = dayNow
 dayNow += 86400
 local ok7, d7 = call("ClaimDaily", p1)
 check(ok7 and d7.day == 7 and d7.kind == "Dice" and d1.OwnedDice.Prism == true, "diário: Dia 7 = dado exclusivo Prism")
+check(d7.prismUses == 3 and d1.PrismCharges == 3, "diário: Dia 7 credita os usos do Prisma da Coleção (PrismConfig.UsesPerReward)")
 
 ------------------------------------------------------------------------------------
 do
@@ -928,13 +929,42 @@ S.LeaderboardService.Refresh()
 local top = S.LeaderboardService.LocalTop("Rolls")
 check(#top >= 1 and top[1].value >= top[#top].value, "ranking local ordenado")
 local panel = env.real.Workspace.Map:FindFirstChild("Panel3", true)
-local filled = false
-for _, d in panel.Sign:GetDescendants() do
-	if d:IsA("TextLabel") and string.find(d.Text, "1. ", 1, true) == 1 and d.Text ~= "1. —" then
-		filled = true
-	end
+local row1 = panel.Sign:FindFirstChild("Row1")
+check(row1 ~= nil and row1.Rank.Text == "1." and row1.PlayerName.Text == top[1].name and row1.Value.Text ~= "", "painel MAIS ROLLS do Hub preenchido (Rank | Nome | Valor em colunas)")
+-- Os 3 painéis lado a lado SEM sobreposição (antes: raio 4, centros a ~1,9 stud, um dentro do outro)
+local panels = {}
+for i = 1, 3 do
+	panels[i] = env.real.Workspace.Map:FindFirstChild("Panel" .. i, true)
 end
-check(filled, "painel MAIS ROLLS do Hub preenchido")
+local gap12 = (panels[1].CFrame.Position - panels[2].CFrame.Position).Magnitude
+local gap23 = (panels[2].CFrame.Position - panels[3].CFrame.Position).Magnitude
+check(gap12 >= panels[1].Size.X + 1 and gap23 >= panels[1].Size.X + 1, string.format("rankings: painéis separados (%.1f e %.1f studs entre centros, largura %.1f)", gap12, gap23, panels[1].Size.X))
+-- Linhas estruturadas: nome curto/longo, valor 0/pequeno/grande, ranking parcial
+local board = env.real.Workspace.Map:FindFirstChild("Panel1", true).Sign
+local before = #board:GetDescendants()
+local longName = "UmNomeDeJogadorMuitoLongoDoRoblox_123"
+S.LeaderboardService.Render("Panel1", {
+	{ name = "Ana", value = 125 },
+	{ name = longName, value = 98 },
+	{ name = "Player123", value = 0 },
+	{ name = "Bo", value = 7 },
+	{ name = "Zed", value = 1234567 },
+})
+local rowsOk = true
+for i = 1, 5 do
+	local row = board:FindFirstChild("Row" .. i)
+	rowsOk = rowsOk and row ~= nil and row.Rank.Text == i .. "." and row.Rank.TextScaled == false and row.PlayerName.TextTruncate == roblox.Enum.TextTruncate.AtEnd
+end
+check(rowsOk, "rankings: 5 linhas Row1..Row5 com Rank / PlayerName / Value (texto fixo, nome truncado)")
+check(board.Row2.PlayerName.Text == longName and board.Row3.Value.Text == "0" and board.Row1.Value.Text == "125" and board.Row5.Value.Text ~= "" and not string.find(board.Row5.Value.Text, "—", 1, true), "rankings: nome longo e valores 0 / pequeno / grande em colunas separadas")
+S.LeaderboardService.Render("Panel1", { { name = "Solo", value = 3 } })
+check(board.Row1.PlayerName.Text == "Solo" and board.Row2.PlayerName.Text == "—" and board.Row2.Value.Text == "" and board.Row5.PlayerName.Text == "—", "rankings: ranking parcial mostra '—' nas linhas vazias")
+check(#board:GetDescendants() == before, "rankings: atualizar não cria objetos (mesmas instâncias)")
+local cols = 0
+for _, w in { "Rank", "PlayerName", "Value" } do
+	cols += board.Row1[w].Size.X.Scale
+end
+check(cols <= 1, "rankings: colunas cabem na linha (sem sobrepor)")
 end
 
 ------------------------------------------------------------------------------------
@@ -1320,6 +1350,55 @@ local gave = Dev.Run("GiveCharacter", premium, 2)
 check(string.find(gave, "2x " .. premium, 1, true) ~= nil and d1.Index[premium] ~= nil, "DEV GiveCharacter (jogador opcional): inventário + Índice pelo servidor")
 local devBad = Dev.Run("SelectDice", p1, "Prism")
 check(string.find(tostring(devBad), "erro:", 1, true) ~= nil and d1.EquippedDice == "Void", "DEV SelectDice recusa Dice não sorteável")
+
+-- PRISMA DA COLEÇÃO (servidor): Dice selecionado, só NÃO descobertos; não gasta uso à toa
+d1.OwnedDice = { Starter = true }
+d1.EquippedDice = "Starter"
+d1.PrismCharges = 0
+d1.PrismLastUsedAt = 0
+local prismTime = 1000000
+S.RollService._time = function()
+	return prismTime
+end
+local okPL, codePL = call("RequestPrismRoll", p1)
+check(not okPL and codePL == "prism_locked", "prisma: sem o Dado Prisma -> recusado")
+S.DiceService.Grant(p1, "Prism")
+local okPN, codePN = call("RequestPrismRoll", p1)
+check(not okPN and codePN == "prism_no_charges", "prisma: sem usos -> recusado")
+check(S.DiceService.RewardDelivered(p1, "Prism") == 3 and d1.PrismCharges == 3, "prisma: entrega do Diário credita 3 usos")
+check(S.DiceService.RewardDelivered(p1, "Lucky") == 0, "prisma: outro Dice entregue não credita usos")
+-- Starter com só 1 personagem por descobrir: o prisma entrega exatamente ele
+local starterIds = core:charactersFor("Starter")
+local missing = starterIds[#starterIds]
+for _, id in starterIds do
+	if id ~= missing then
+		S.IndexService.Register(p1, id)
+	end
+end
+d1.Index[missing] = nil
+local pityBefore = table.clone(d1.Pity)
+local rollsBefore = d1.Rolls
+local okP1, rP1 = call("RequestPrismRoll", p1)
+check(okP1 and rP1.CharacterId == missing and rP1.Prism == true and rP1.IsNew == true and rP1.DiceId == "Starter", "prisma: faltando 1 -> entrega exatamente o não descoberto (NOVO)")
+check(d1.PrismCharges == 2 and d1.Rolls == rollsBefore and d1.Pity.Legendary == pityBefore.Legendary and d1.Pity.Mythic == pityBefore.Mythic, "prisma: gasta 1 uso, não conta roll e não mexe no pity")
+local okPC, codePC = call("RequestPrismRoll", p1)
+check(not okPC and codePC == "prism_cooldown" and d1.PrismCharges == 2, "prisma: intervalo mínimo entre usos (sem gastar)")
+prismTime += 3600
+local okPD, codePD = call("RequestPrismRoll", p1)
+check(not okPD and codePD == "prism_dice_complete" and d1.PrismCharges == 2, "prisma: Dice completo -> recusado SEM gastar o uso")
+-- Outro Dice com nada descoberto: sai do pool dele, nunca Premium
+S.DiceService.Grant(p1, "Void")
+check((call("EquipDice", p1, "Void")), "prisma: troca para o Void")
+local voidPool = {}
+for _, id in core:charactersFor("Void") do
+	voidPool[id] = true
+	d1.Index[id] = nil -- estado determinístico: os rolls anteriores podem ter descoberto o Void inteiro
+end
+local voidKnown = core:charactersFor("Void")[1]
+S.IndexService.Register(p1, voidKnown)
+local okPV, rPV = call("RequestPrismRoll", p1)
+check(okPV and voidPool[rPV.CharacterId] == true and rPV.CharacterId ~= voidKnown and rPV.DiceId == "Void" and d1.PrismCharges == 1, "prisma: sorteia no Dice selecionado, dentro do pool, nunca o já descoberto")
+S.RollService._time = os.time
 
 -- volta ao estado padrão
 d1.OwnedDice = { Starter = true }

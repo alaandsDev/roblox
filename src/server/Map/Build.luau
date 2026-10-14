@@ -145,6 +145,74 @@ function Build.sign(part: BasePart, face: Enum.NormalId, lines: { { any } }, bac
 	return gui
 end
 
+-- Painel de RANKING: título + `rows` linhas fixas Row1..RowN, cada uma com 3 colunas
+-- (Rank | PlayerName | Value). Tamanho de texto FIXO por coluna (não TextScaled: nome longo é
+-- truncado com "…" em vez de encolher a linha), valor alinhado à direita. O LeaderboardService
+-- só troca os textos (nenhum objeto é criado a cada atualização).
+Build.RankingRowColumns = { Rank = 0.14, PlayerName = 0.58, Value = 0.24 }
+function Build.rankingBoard(part: BasePart, face: Enum.NormalId, title: string, titleColor: Color3, rows: number): SurfaceGui
+	local gui = Instance.new("SurfaceGui")
+	gui.Name = "Sign"
+	gui.Face = face
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.PixelsPerStud = 30
+	gui.LightInfluence = 0
+	gui.MaxDistance = 260
+	gui.Parent = part
+
+	local layout = Instance.new("UIListLayout")
+	layout.VerticalAlignment = Enum.VerticalAlignment.Center
+	layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.Padding = UDim.new(0.02, 0)
+	layout.Parent = gui
+
+	local function label(parent: Instance, name: string, text: string, width: number, align: Enum.TextXAlignment, size: number, color: Color3?): TextLabel
+		local l = Instance.new("TextLabel")
+		l.Name = name
+		l.BackgroundTransparency = 1
+		l.Size = UDim2.fromScale(width, 1)
+		l.Font = Enum.Font.FredokaOne
+		l.TextScaled = false
+		l.TextSize = size
+		l.TextXAlignment = align
+		l.TextTruncate = Enum.TextTruncate.AtEnd
+		l.Text = text
+		l.TextColor3 = color or Color3.new(1, 1, 1)
+		local stroke = Instance.new("UIStroke")
+		stroke.Thickness = 2
+		stroke.Color = Color3.fromRGB(30, 25, 45)
+		stroke.Parent = l
+		l.Parent = parent
+		return l
+	end
+
+	local titleLabel = label(gui, "Title", title, 0.94, Enum.TextXAlignment.Center, 30, titleColor)
+	titleLabel.Size = UDim2.fromScale(0.94, 0.14)
+	titleLabel.LayoutOrder = 0
+	for i = 1, rows do
+		local row = Instance.new("Frame")
+		row.Name = "Row" .. i
+		row.LayoutOrder = i
+		row.BackgroundTransparency = if i % 2 == 0 then 1 else 0.82
+		row.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		row.BorderSizePixel = 0
+		row.Size = UDim2.fromScale(0.94, 0.12)
+		row.Parent = gui
+		local rowLayout = Instance.new("UIListLayout")
+		rowLayout.FillDirection = Enum.FillDirection.Horizontal
+		rowLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+		rowLayout.SortOrder = Enum.SortOrder.LayoutOrder
+		rowLayout.Padding = UDim.new(0.02, 0)
+		rowLayout.Parent = row
+		local columns = Build.RankingRowColumns
+		label(row, "Rank", i .. ".", columns.Rank, Enum.TextXAlignment.Right, 24).LayoutOrder = 1
+		label(row, "PlayerName", "—", columns.PlayerName, Enum.TextXAlignment.Left, 24).LayoutOrder = 2
+		label(row, "Value", "", columns.Value, Enum.TextXAlignment.Right, 24, Color3.fromRGB(255, 220, 80)).LayoutOrder = 3
+	end
+	return gui
+end
+
 -- Prompt "Abrir" para áreas que ainda não funcionam (o MapService responde "em breve")
 function Build.prompt(parent: Instance, interactId: string, objectText: string, actionText: string): ProximityPrompt
 	local prompt = Instance.new("ProximityPrompt")

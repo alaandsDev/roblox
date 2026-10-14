@@ -65,8 +65,12 @@ describe("Roster e configs de progressão", function()
 	end)
 
 	it("dados: Luck pedida, preço crescente e requisito do dado anterior", function()
-		-- Âncoras do sistema antigo mantêm a Luck; os Dice novos ficam entre os vizinhos
-		local luck = { Starter = 1, Lucky = 1.25, Flame = 1.6, Storm = 2, Void = 2.75, Celestial = 4 }
+		-- A Luck é do DICE (não da posição): âncoras do sistema antigo + interpolados aprovados.
+		-- Com a ordem da Variante B, Shinobi (#4) 1,7 > Flame (#5) 1,6 e Colossus (#13) 3,5 > Awakened (#14) 3,1.
+		local luck = {
+			Starter = 1, Lucky = 1.25, Rampart = 1.4, Shinobi = 1.7, Flame = 1.6, Blade = 1.8, Fighter = 1.9, Storm = 2,
+			Spirit = 2.2, Arcane = 2.35, Shadow = 2.55, Void = 2.75, Colossus = 3.5, Awakened = 3.1, Celestial = 4, Forbidden = 4,
+		}
 		local previous = nil
 		for _, d in DiceConfig.List do
 			if d.Exclusive then
@@ -76,7 +80,6 @@ describe("Roster e configs de progressão", function()
 				expect(d.LuckMultiplier).toBe(luck[d.Id])
 			end
 			if previous then
-				expect(d.LuckMultiplier >= previous.LuckMultiplier).toBeTruthy()
 				expect(d.Price > previous.Price).toBeTruthy()
 				expect(d.UnlockRequirement.Dice).toBe(previous.Id)
 			end

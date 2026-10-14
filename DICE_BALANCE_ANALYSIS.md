@@ -1,46 +1,49 @@
-# DICE BALANCE ANALYSIS — Roll Legends (PROPOSTA, não aplicada)
+# DICE BALANCE ANALYSIS — Roll Legends (FINAL, aplicado)
 
 Gerado por `lune run tools/sim/analyze_dice_balance.luau` com o **mesmo `DiceCore` do servidor**.
-Pesos propostos em `tools/sim/DiceBalanceProposal.luau`. **Produção inalterada**: `DiceConfig`,
-Luck, pity, preços e unlocks continuam como no commit 4a69c25 até a aprovação.
+**Pesos FINAIS de produção** (`DiceConfig.RarityWeights`, explícitos): proposta de e4b73ac aprovada
+com a **Variante B** (Shinobi antes do Flame, Colossus antes do Awakened) e o **Divino reduzido**
+(Celestial 0,5% / Forbidden 0,75%). Pity: Lendário 50 (mantido) · Mítico **250**. Luck: inalterada.
+Preço e rolls de desbloqueio seguem a POSIÇÃO; o LuckMultiplier é de cada Dice. "Antes" = normalização
+da tabela global (commit 4a69c25).
 
 - Pools (personagens por Dice) **não mudam**; só os `RarityWeights`.
 - Cadência: Normal = 1 s/roll (1 roll/s) · Roll Rápido = 0.5 s/roll (2 rolls/s). Tempos = expectativa matemática, não garantia.
 - **Expected Rarity Value (ERV)** = Σ P(raridade) × Score — ferramenta de análise, não é gameplay. Score: Comum 1 · Incomum 3 · Raro 10 · Épico 30 · Lendário 100 · Mítico 400 · Divino 2000 · Secreto 15000.
 - Luck nos cenários: 1,0x · Luck do próprio Dice (LuckMultiplier, sem upgrades) · máximo F2P (upgrades/renascimentos/perks no máximo + boost diário 2x) · máximo com monetização (+ VIP + Sorte x2). Fórmula atual: retornos decrescentes (LuckSoftCap 10) e `LuckExponent` por raridade.
 
-## 1. Tabela proposta dos 16 Dice
+## 1. Tabela final dos 16 Dice (ordem oficial)
 
-| # | Dice | Unlock (rolls · Dice anterior) | Preço | Pool | Pesos propostos (Luck 1) | Luck do Dice | ERV atual | ERV proposto |
+| # | Dice | Unlock (rolls · Dice anterior) | Preço | Pool | Pesos finais (Luck 1) | Luck do Dice | ERV antes | ERV final |
 |---:|---|---|---:|---|---|---:|---:|---:|
 | 1 | **Starter** | 0 · — | 0 | C4 U2 R1 E1 | C 62.00% · U 26.00% · R 9.00% · E 3.00% | 1.00x | 4.1 | **3.2** |
 | 2 | **Lucky** | 50 · Starter | 2.5k | C2 U2 R2 E1 | C 55.00% · U 28.00% · R 12.00% · E 5.00% | 1.25x | 4.1 | **4.1** |
 | 3 | **Rampart** | 125 · Lucky | 10k | C1 U2 R2 E2 | C 45.00% · U 32.00% · R 16.00% · E 7.00% | 1.40x | 4.1 | **5.1** |
-| 4 | **Flame** | 300 · Rampart | 40k | U2 R2 E1 L1 | U 60.00% · R 28.00% · E 11.00% · L 1.00% | 1.60x | 12.4 | **8.9** |
-| 5 | **Shinobi** | 425 · Flame | 75k | C2 U2 R2 E2 | C 20.00% · U 32.00% · R 30.00% · E 18.00% | 1.70x | 4.1 | **9.6** |
-| 6 | **Blade** | 550 · Shinobi | 125k | U2 R3 E2 L1 | U 50.00% · R 32.00% · E 16.00% · L 2.00% | 1.80x | 12.4 | **11.5** |
+| 4 | **Shinobi** | 300 · Rampart | 40k | C2 U2 R2 E2 | C 35.00% · U 33.00% · R 22.00% · E 10.00% | 1.70x | 4.1 | **6.5** |
+| 5 | **Flame** | 425 · Shinobi | 75k | U2 R2 E1 L1 | U 60.00% · R 28.00% · E 11.00% · L 1.00% | 1.60x | 12.4 | **8.9** |
+| 6 | **Blade** | 550 · Flame | 125k | U2 R3 E2 L1 | U 50.00% · R 32.00% · E 16.00% · L 2.00% | 1.80x | 12.4 | **11.5** |
 | 7 | **Fighter** | 775 · Blade | 225k | U3 R2 E1 L1 | U 45.00% · R 33.00% · E 19.00% · L 3.00% | 1.90x | 12.4 | **13.3** |
 | 8 | **Storm** | 1000 · Fighter | 400k | R3 E2 L2 | R 60.00% · E 32.00% · L 8.00% | 2.00x | 24.7 | **23.6** |
 | 9 | **Spirit** | 1500 · Storm | 750k | R1 E3 L2 M1 | R 50.00% · E 36.00% · L 13.00% · M 1.00% | 2.20x | 39.0 | **32.8** |
 | 10 | **Arcane** | 2000 · Spirit | 1.4M | R3 E3 L1 M1 | R 45.00% · E 37.00% · L 16.00% · M 2.00% | 2.35x | 39.0 | **39.6** |
 | 11 | **Shadow** | 2500 · Arcane | 2.6M | E3 L2 M2 | E 65.00% · L 30.00% · M 5.00% | 2.55x | 83.9 | **69.5** |
 | 12 | **Void** | 3000 · Shadow | 5M | E2 L2 M1 D1 | E 55.00% · L 36.00% · M 8.70% · D 0.3000% | 2.75x | 132.1 | **93.3** |
-| 13 | **Awakened** | 4500 · Void | 12.5M | L3 M3 | L 85.00% · M 15.00% | 3.10x | 181.8 | **145.0** |
-| 14 | **Colossus** | 6000 · Awakened | 30M | E2 L2 M2 | E 25.00% · L 48.00% · M 27.00% | 3.50x | 83.9 | **163.5** |
-| 15 | **Celestial** | 8000 · Colossus | 75M | L2 M2 D3 | L 63.50% · M 35.50% · D 1.00% | 4.00x | 305.1 | **225.5** |
-| 16 | **Forbidden** | 12000 · Celestial | 750M | M1 D3 S3 | M 98.50% · D 1.50% · S 0.00450% | 4.00x | 1450.0 | **424.7** |
+| 13 | **Colossus** | 4500 · Void | 12.5M | E2 L2 M2 | E 40.00% · L 45.00% · M 15.00% | 3.50x | 83.9 | **117.0** |
+| 14 | **Awakened** | 6000 · Colossus | 30M | L3 M3 | L 85.00% · M 15.00% | 3.10x | 181.8 | **145.0** |
+| 15 | **Celestial** | 8000 · Awakened | 75M | L2 M2 D3 | L 64.00% · M 35.50% · D 0.5000% | 4.00x | 305.1 | **216.0** |
+| 16 | **Forbidden** | 12000 · Celestial | 750M | M1 D3 S3 | M 99.25% · D 0.7500% · S 0.00450% | 4.00x | 1450.0 | **412.7** |
 
 Pool: quantidade de personagens por raridade (C/U/R/E/L/M/D/S). ERV com Luck 1.
 
-## 2. Comparação atual × proposta (Luck 1)
+## 2. Comparação antes × final (Luck 1)
 
-| Dice | Atual (normalização da tabela global) | Proposta |
+| Dice | Antes (normalização da tabela global) | Final |
 |---|---|---|
 | Starter | C 56.70% · U 25.77% · R 12.37% · E 5.15% | C 62.00% · U 26.00% · R 9.00% · E 3.00% |
 | Lucky | C 56.70% · U 25.77% · R 12.37% · E 5.15% | C 55.00% · U 28.00% · R 12.00% · E 5.00% |
 | Rampart | C 56.70% · U 25.77% · R 12.37% · E 5.15% | C 45.00% · U 32.00% · R 16.00% · E 7.00% |
+| Shinobi | C 56.70% · U 25.77% · R 12.37% · E 5.15% | C 35.00% · U 33.00% · R 22.00% · E 10.00% |
 | Flame | U 56.82% · R 27.27% · E 11.36% · L 4.55% | U 60.00% · R 28.00% · E 11.00% · L 1.00% |
-| Shinobi | C 56.70% · U 25.77% · R 12.37% · E 5.15% | C 20.00% · U 32.00% · R 30.00% · E 18.00% |
 | Blade | U 56.82% · R 27.27% · E 11.36% · L 4.55% | U 50.00% · R 32.00% · E 16.00% · L 2.00% |
 | Fighter | U 56.82% · R 27.27% · E 11.36% · L 4.55% | U 45.00% · R 33.00% · E 19.00% · L 3.00% |
 | Storm | R 63.16% · E 26.32% · L 10.53% | R 60.00% · E 32.00% · L 8.00% |
@@ -48,64 +51,53 @@ Pool: quantidade de personagens por raridade (C/U/R/E/L/M/D/S). ERV com Luck 1.
 | Arcane | R 60.76% · E 25.32% · L 10.13% · M 3.80% | R 45.00% · E 37.00% · L 16.00% · M 2.00% |
 | Shadow | E 64.52% · L 25.81% · M 9.68% | E 65.00% · L 30.00% · M 5.00% |
 | Void | E 62.89% · L 25.16% · M 9.43% · D 2.52% | E 55.00% · L 36.00% · M 8.70% · D 0.3000% |
+| Colossus | E 64.52% · L 25.81% · M 9.68% | E 40.00% · L 45.00% · M 15.00% |
 | Awakened | L 72.73% · M 27.27% | L 85.00% · M 15.00% |
-| Colossus | E 64.52% · L 25.81% · M 9.68% | E 25.00% · L 48.00% · M 27.00% |
-| Celestial | L 67.80% · M 25.42% · D 6.78% | L 63.50% · M 35.50% · D 1.00% |
-| Forbidden | M 75.00% · D 20.00% · S 5.00% | M 98.50% · D 1.50% · S 0.00450% |
+| Celestial | L 67.80% · M 25.42% · D 6.78% | L 64.00% · M 35.50% · D 0.5000% |
+| Forbidden | M 75.00% · D 20.00% · S 5.00% | M 99.25% · D 0.7500% · S 0.00450% |
 
 ## 3. Regressões
 
-**Atual (produção):**
+**Antes (normalização, ordem atual):**
 
 - Lucky (#2): ERV 4.1 ≤ anterior 4.1
 - Rampart (#3): ERV 4.1 ≤ anterior 4.1
-- Shinobi (#5): ERV 4.1 ≤ anterior 12.4
+- Shinobi (#4): ERV 4.1 ≤ anterior 4.1
+- Blade (#6): ERV 12.4 ≤ anterior 12.4
 - Fighter (#7): ERV 12.4 ≤ anterior 12.4
 - Arcane (#10): ERV 39.0 ≤ anterior 39.0
-- Colossus (#14): ERV 83.9 ≤ anterior 181.8
+- Colossus (#13): ERV 83.9 ≤ anterior 132.1
 
-**Proposta:** nenhuma — ERV estritamente crescente do #1 ao #16.
+**Final:** nenhuma — ERV estritamente crescente do #1 ao #16.
 
-**Limitações estruturais dos pools (sinalizadas, NÃO corrigidas — nenhum personagem foi movido):**
+**Ordem (Variante B aplicada):** Shinobi (#4, sem Lendário) agora vem ANTES do Flame (#5, primeiro
+Lendário) e Colossus (#13, E/L/M) antes do Awakened (#14, L/M): o jogador nunca "perde" uma raridade
+ao avançar. Pools inalterados. O LuckMultiplier é do Dice, então Shinobi (1,7x) > Flame (1,6x) e
+Colossus (3,5x) > Awakened (3,1x) — veja a coluna ERV com Luck do Dice abaixo.
 
-- **Shinobi (#5) não tem Lendário**, e vem depois do Flame (#4), que tem. Pesos não resolvem a
-  métrica "chance de Lendário" (0% no Shinobi). A proposta mantém o ERV crescente via Épico 18%,
-  mas o jogador perde o Lendário ao avançar. Sugestão (não aplicada): trocar a ordem Shinobi ↔ Flame.
-- **Colossus (#14) tem Épico e o Awakened (#13) não.** A proposta compensa com Mítico 27% no
-  Colossus (ERV 163,5 > 145). Sugestão (não aplicada): trocar a ordem Colossus ↔ Awakened.
-- **Forbidden tem 1 único Mítico**: com Mítico ~98,5%, esse personagem sai em quase todo roll do
-  Forbidden (vira o "comum" do endgame). Inevitável com esse pool; o valor do Dice são os 3 Divinos
-  e os 3 Secretos.
+| # | Dice | ERV Luck 1 | ERV Luck do Dice |
+|---:|---|---:|---:|
+| 1 | Starter | 3.2 | 3.2 |
+| 2 | Lucky | 4.1 | 4.4 |
+| 3 | Rampart | 5.1 | 5.6 |
+| 4 | Shinobi | 6.5 | 7.5 |
+| 5 | Flame | 8.9 | 9.7 |
+| 6 | Blade | 11.5 | 12.9 |
+| 7 | Fighter | 13.3 | 15.1 |
+| 8 | Storm | 23.6 | 25.2 |
+| 9 | Spirit | 32.8 | 35.7 |
+| 10 | Arcane | 39.6 | 43.5 |
+| 11 | Shadow | 69.5 | 72.1 |
+| 12 | Void | 93.3 | 99.0 |
+| 13 | Colossus | 117.0 | 123.8 |
+| 14 | Awakened | 145.0 | 149.0 |
+| 15 | Celestial | 216.0 | 226.9 |
+| 16 | Forbidden | 412.7 | 415.5 |
 
-### Variante B (alternativa recomendada para a fase de unlocks — NÃO aplicada)
+Limitação do pool (sinalizada): o Forbidden tem 1 único Mítico, que sai em ~99% dos rolls do
+Forbidden (é o "comum" do endgame); o valor do Dice são os 3 Divinos e os 3 Secretos.
 
-Mesmos pools; troca Shinobi ↔ Flame e Colossus ↔ Awakened. Nessa ordem o Shinobi e o Colossus
-podem ser mais modestos (Épico 10% e Mítico 15%, em vez de 18% e 27%), e o jogador não "perde" o
-Lendário (Shinobi) nem ganha Épico de volta no endgame (Colossus). Os outros 14 Dice iguais à proposta.
-
-| # | Dice | Pesos (Luck 1) | ERV |
-|---:|---|---|---:|
-| 1 | Starter | C 62.00% · U 26.00% · R 9.00% · E 3.00% | 3.2 |
-| 2 | Lucky | C 55.00% · U 28.00% · R 12.00% · E 5.00% | 4.1 |
-| 3 | Rampart | C 45.00% · U 32.00% · R 16.00% · E 7.00% | 5.1 |
-| 4 | Shinobi | C 35.00% · U 33.00% · R 22.00% · E 10.00% | 6.5 |
-| 5 | Flame | U 60.00% · R 28.00% · E 11.00% · L 1.00% | 8.9 |
-| 6 | Blade | U 50.00% · R 32.00% · E 16.00% · L 2.00% | 11.5 |
-| 7 | Fighter | U 45.00% · R 33.00% · E 19.00% · L 3.00% | 13.3 |
-| 8 | Storm | R 60.00% · E 32.00% · L 8.00% | 23.6 |
-| 9 | Spirit | R 50.00% · E 36.00% · L 13.00% · M 1.00% | 32.8 |
-| 10 | Arcane | R 45.00% · E 37.00% · L 16.00% · M 2.00% | 39.6 |
-| 11 | Shadow | E 65.00% · L 30.00% · M 5.00% | 69.5 |
-| 12 | Void | E 55.00% · L 36.00% · M 8.70% · D 0.3000% | 93.3 |
-| 13 | Colossus | E 40.00% · L 45.00% · M 15.00% | 117.0 |
-| 14 | Awakened | L 85.00% · M 15.00% | 145.0 |
-| 15 | Celestial | L 63.50% · M 35.50% · D 1.00% | 225.5 |
-| 16 | Forbidden | M 98.50% · D 1.50% · S 0.00450% | 424.7 |
-
-Regressões na Variante B: nenhuma (ERV estritamente crescente).
-A ordem de desbloqueio (Order/UnlockRequirement/preço por posição) só muda se você aprovar.
-
-## 4. Impacto da Luck (proposta)
+## 4. Impacto da Luck (final)
 
 Chance da raridade MAIS ALTA de cada Dice nos 4 cenários de Luck (e 1 em X).
 
@@ -114,8 +106,8 @@ Chance da raridade MAIS ALTA de cada Dice nos 4 cenários de Luck (e 1 em X).
 | Starter | Épico | 3.00% (1 em 33) @1.00x | 3.00% (1 em 33) @1.00x | 7.99% (1 em 13) @10.40x | 9.29% (1 em 11) @22.88x |
 | Lucky | Épico | 5.00% (1 em 20) @1.00x | 5.64% (1 em 18) @1.25x | 13.00% (1 em 8) @13.00x | 14.61% (1 em 7) @28.60x |
 | Rampart | Épico | 7.00% (1 em 14) @1.00x | 8.26% (1 em 12) @1.40x | 17.05% (1 em 6) @14.56x | 18.77% (1 em 5) @32.03x |
+| Shinobi | Épico | 10.00% (1 em 10) @1.00x | 12.55% (1 em 8) @1.70x | 22.52% (1 em 4) @17.68x | 24.18% (1 em 4) @38.90x |
 | Flame | Lendário | 1.00% (1 em 100) @1.00x | 1.20% (1 em 83) @1.60x | 2.13% (1 em 47) @16.64x | 2.29% (1 em 44) @36.61x |
-| Shinobi | Épico | 18.00% (1 em 6) @1.00x | 21.58% (1 em 5) @1.70x | 33.86% (1 em 3) @17.68x | 35.71% (1 em 3) @38.90x |
 | Blade | Lendário | 2.00% (1 em 50) @1.00x | 2.45% (1 em 41) @1.80x | 3.95% (1 em 25) @18.72x | 4.18% (1 em 24) @41.18x |
 | Fighter | Lendário | 3.00% (1 em 33) @1.00x | 3.69% (1 em 27) @1.90x | 5.66% (1 em 18) @19.76x | 5.95% (1 em 17) @43.47x |
 | Storm | Lendário | 8.00% (1 em 13) @1.00x | 9.05% (1 em 11) @2.00x | 11.51% (1 em 9) @20.80x | 11.85% (1 em 8) @45.76x |
@@ -123,17 +115,17 @@ Chance da raridade MAIS ALTA de cada Dice nos 4 cenários de Luck (e 1 em X).
 | Arcane | Mítico | 2.00% (1 em 50) @1.00x | 2.42% (1 em 41) @2.35x | 3.24% (1 em 31) @24.44x | 3.36% (1 em 30) @53.77x |
 | Shadow | Mítico | 5.00% (1 em 20) @1.00x | 5.57% (1 em 18) @2.55x | 6.52% (1 em 15) @26.52x | 6.64% (1 em 15) @58.34x |
 | Void | Divino | 0.3000% (1 em 333) @1.00x | 0.3827% (1 em 261) @2.75x | 0.5271% (1 em 190) @28.60x | 0.5471% (1 em 183) @62.92x |
+| Colossus | Mítico | 15.00% (1 em 7) @1.00x | 16.81% (1 em 6) @3.50x | 18.73% (1 em 5) @36.40x | 18.95% (1 em 5) @80.08x |
 | Awakened | Mítico | 15.00% (1 em 7) @1.00x | 16.33% (1 em 6) @3.10x | 17.95% (1 em 6) @32.24x | 18.14% (1 em 6) @70.93x |
-| Colossus | Mítico | 27.00% (1 em 4) @1.00x | 29.60% (1 em 3) @3.50x | 32.27% (1 em 3) @36.40x | 32.57% (1 em 3) @80.08x |
-| Celestial | Divino | 1.00% (1 em 100) @1.00x | 1.29% (1 em 78) @4.00x | 1.58% (1 em 63) @41.60x | 1.62% (1 em 62) @91.52x |
-| Forbidden | Secreto | 0.00450% (1 em 22.222) @1.00x | 0.00769% (1 em 13.010) @4.00x | 0.0120% (1 em 8.307) @41.60x | 0.0126% (1 em 7.932) @91.52x |
+| Celestial | Divino | 0.5000% (1 em 200) @1.00x | 0.6441% (1 em 155) @4.00x | 0.7943% (1 em 126) @41.60x | 0.8115% (1 em 123) @91.52x |
+| Forbidden | Secreto | 0.00450% (1 em 22.222) @1.00x | 0.00770% (1 em 12.991) @4.00x | 0.0121% (1 em 8.283) @41.60x | 0.0126% (1 em 7.908) @91.52x |
 
 Leitura: a Luck atual tem retornos decrescentes (Luck efetiva nunca passa de ~11) e, nos Dice
 endgame, o denominador é dominado por Lendário/Mítico (que também sobem com a Luck). Por isso a
 Luck máxima multiplica o Secreto do Forbidden por ~2,8x (não por 20–90x). **Não é preciso mudar
-a estrutura da Luck** com a proposta; ver §9 para o efeito por hora.
+a estrutura da Luck** com os pesos finais; ver §6 e §11 para o efeito por hora e por prêmio.
 
-## 5. Detalhe por Dice (proposta)
+## 5. Detalhe por Dice (final)
 
 ### 1. Starter — unlock 0 rolls + — · preço 0 · Luck do Dice 1.00x
 
@@ -199,7 +191,29 @@ Completar o pool (todos ao menos 1x, Luck do Dice): ~31 rolls (Normal 31s · Rá
 
 Completar o pool (todos ao menos 1x, Luck do Dice): ~40 rolls (Normal 40s · Rápido 20s).
 
-### 4. Flame — unlock 300 rolls + Rampart · preço 40k · Luck do Dice 1.60x
+### 4. Shinobi — unlock 300 rolls + Rampart · preço 40k · Luck do Dice 1.70x
+
+| Raridade | Pers. | P (Luck 1) | Rolls esperados | Normal | Rápido | P (Luck do Dice) | Rolls | Normal |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| Comum | 2 | 35.00% | 1 em 3 | 3s | 1s | 30.89% | 1 em 3 | 3s |
+| Incomum | 2 | 33.00% | 1 em 3 | 3s | 2s | 32.21% | 1 em 3 | 3s |
+| Raro | 2 | 22.00% | 1 em 5 | 5s | 2s | 24.35% | 1 em 4 | 4s |
+| Épico | 2 | 10.00% | 1 em 10 | 10s | 5s | 12.55% | 1 em 8 | 8s |
+
+| Personagem | Raridade | P (Luck 1) | Rolls esperados | Normal | Rápido |
+|---|---|---:|---:|---:|---:|
+| Narotu (`char_narotu_base`) | Épico | 5.00% | 1 em 20 | 20s | 10s |
+| Kakaxi (`char_kakaxi_base`) | Épico | 5.00% | 1 em 20 | 20s | 10s |
+| Gaaro (`char_gaaro_base`) | Raro | 11.00% | 1 em 9 | 9s | 5s |
+| Zabuzo (`char_zabuzo_base`) | Raro | 11.00% | 1 em 9 | 9s | 5s |
+| Roque Li (`char_roqueli_base`) | Incomum | 16.50% | 1 em 6 | 6s | 3s |
+| Nejo (`char_nejo_base`) | Incomum | 16.50% | 1 em 6 | 6s | 3s |
+| Sasuko (Jovem) (`char_sasuko_young`) | Comum | 17.50% | 1 em 6 | 6s | 3s |
+| Narotu (Jovem) (`char_narotu_young`) | Comum | 17.50% | 1 em 6 | 6s | 3s |
+
+Completar o pool (todos ao menos 1x, Luck do Dice): ~28 rolls (Normal 28s · Rápido 14s).
+
+### 5. Flame — unlock 425 rolls + Shinobi · preço 75k · Luck do Dice 1.60x
 
 | Raridade | Pers. | P (Luck 1) | Rolls esperados | Normal | Rápido | P (Luck do Dice) | Rolls | Normal |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
@@ -219,29 +233,7 @@ Completar o pool (todos ao menos 1x, Luck do Dice): ~40 rolls (Normal 40s · Rá
 
 Completar o pool (todos ao menos 1x, Luck do Dice): ~84 rolls (Normal 1m24s · Rápido 42s).
 
-### 5. Shinobi — unlock 425 rolls + Flame · preço 75k · Luck do Dice 1.70x
-
-| Raridade | Pers. | P (Luck 1) | Rolls esperados | Normal | Rápido | P (Luck do Dice) | Rolls | Normal |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| Comum | 2 | 20.00% | 1 em 5 | 5s | 3s | 16.86% | 1 em 6 | 6s |
-| Incomum | 2 | 32.00% | 1 em 3 | 3s | 2s | 29.83% | 1 em 3 | 3s |
-| Raro | 2 | 30.00% | 1 em 3 | 3s | 2s | 31.72% | 1 em 3 | 3s |
-| Épico | 2 | 18.00% | 1 em 6 | 6s | 3s | 21.58% | 1 em 5 | 5s |
-
-| Personagem | Raridade | P (Luck 1) | Rolls esperados | Normal | Rápido |
-|---|---|---:|---:|---:|---:|
-| Narotu (`char_narotu_base`) | Épico | 9.00% | 1 em 11 | 11s | 6s |
-| Kakaxi (`char_kakaxi_base`) | Épico | 9.00% | 1 em 11 | 11s | 6s |
-| Narotu (Jovem) (`char_narotu_young`) | Comum | 10.00% | 1 em 10 | 10s | 5s |
-| Sasuko (Jovem) (`char_sasuko_young`) | Comum | 10.00% | 1 em 10 | 10s | 5s |
-| Gaaro (`char_gaaro_base`) | Raro | 15.00% | 1 em 7 | 7s | 3s |
-| Zabuzo (`char_zabuzo_base`) | Raro | 15.00% | 1 em 7 | 7s | 3s |
-| Nejo (`char_nejo_base`) | Incomum | 16.00% | 1 em 6 | 6s | 3s |
-| Roque Li (`char_roqueli_base`) | Incomum | 16.00% | 1 em 6 | 6s | 3s |
-
-Completar o pool (todos ao menos 1x, Luck do Dice): ~24 rolls (Normal 24s · Rápido 12s).
-
-### 6. Blade — unlock 550 rolls + Shinobi · preço 125k · Luck do Dice 1.80x
+### 6. Blade — unlock 550 rolls + Flame · preço 125k · Luck do Dice 1.80x
 
 | Raridade | Pers. | P (Luck 1) | Rolls esperados | Normal | Rápido | P (Luck do Dice) | Rolls | Normal |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
@@ -387,7 +379,26 @@ Completar o pool (todos ao menos 1x, Luck do Dice): ~55 rolls (Normal 55s · Rá
 
 Completar o pool (todos ao menos 1x, Luck do Dice): ~262 rolls (Normal 4m22s · Rápido 2m11s).
 
-### 13. Awakened — unlock 4500 rolls + Void · preço 12.5M · Luck do Dice 3.10x
+### 13. Colossus — unlock 4500 rolls + Void · preço 12.5M · Luck do Dice 3.50x
+
+| Raridade | Pers. | P (Luck 1) | Rolls esperados | Normal | Rápido | P (Luck do Dice) | Rolls | Normal |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| Épico | 2 | 40.00% | 1 em 3 | 3s | 1s | 38.01% | 1 em 3 | 3s |
+| Lendário | 2 | 45.00% | 1 em 2 | 2s | 1s | 45.18% | 1 em 2 | 2s |
+| Mítico | 2 | 15.00% | 1 em 7 | 7s | 3s | 16.81% | 1 em 6 | 6s |
+
+| Personagem | Raridade | P (Luck 1) | Rolls esperados | Normal | Rápido |
+|---|---|---:|---:|---:|---:|
+| Mighto 5º Portão (`char_mighto_gate5`) | Mítico | 7.50% | 1 em 13 | 13s | 7s |
+| Lufy Serpente (`char_lufy_snake`) | Mítico | 7.50% | 1 em 13 | 13s | 7s |
+| Gohin (`char_gohin_base`) | Épico | 20.00% | 1 em 5 | 5s | 3s |
+| Mighto (`char_mighto_base`) | Épico | 20.00% | 1 em 5 | 5s | 3s |
+| Sasuko (`char_sasuko_base`) | Lendário | 22.50% | 1 em 4 | 4s | 2s |
+| Brolli (`char_brolli_base`) | Lendário | 22.50% | 1 em 4 | 4s | 2s |
+
+Completar o pool (todos ao menos 1x, Luck do Dice): ~20 rolls (Normal 20s · Rápido 10s).
+
+### 14. Awakened — unlock 6000 rolls + Colossus · preço 30M · Luck do Dice 3.10x
 
 | Raridade | Pers. | P (Luck 1) | Rolls esperados | Normal | Rápido | P (Luck do Dice) | Rolls | Normal |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
@@ -405,64 +416,45 @@ Completar o pool (todos ao menos 1x, Luck do Dice): ~262 rolls (Normal 4m22s · 
 
 Completar o pool (todos ao menos 1x, Luck do Dice): ~34 rolls (Normal 34s · Rápido 17s).
 
-### 14. Colossus — unlock 6000 rolls + Awakened · preço 30M · Luck do Dice 3.50x
+### 15. Celestial — unlock 8000 rolls + Awakened · preço 75M · Luck do Dice 4.00x
 
 | Raridade | Pers. | P (Luck 1) | Rolls esperados | Normal | Rápido | P (Luck do Dice) | Rolls | Normal |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| Épico | 2 | 25.00% | 1 em 4 | 4s | 2s | 23.25% | 1 em 4 | 4s |
-| Lendário | 2 | 48.00% | 1 em 2 | 2s | 1s | 47.15% | 1 em 2 | 2s |
-| Mítico | 2 | 27.00% | 1 em 4 | 4s | 2s | 29.60% | 1 em 3 | 3s |
+| Lendário | 2 | 64.00% | 1 em 2 | 2s | 1s | 61.14% | 1 em 2 | 2s |
+| Mítico | 2 | 35.50% | 1 em 3 | 3s | 1s | 38.22% | 1 em 3 | 3s |
+| Divino | 3 | 0.5000% | 1 em 200 | 3m20s | 1m40s | 0.6441% | 1 em 155 | 2m35s |
 
 | Personagem | Raridade | P (Luck 1) | Rolls esperados | Normal | Rápido |
 |---|---|---:|---:|---:|---:|
-| Gohin (`char_gohin_base`) | Épico | 12.50% | 1 em 8 | 8s | 4s |
-| Mighto (`char_mighto_base`) | Épico | 12.50% | 1 em 8 | 8s | 4s |
-| Lufy Serpente (`char_lufy_snake`) | Mítico | 13.50% | 1 em 7 | 7s | 4s |
-| Mighto 5º Portão (`char_mighto_gate5`) | Mítico | 13.50% | 1 em 7 | 7s | 4s |
-| Sasuko (`char_sasuko_base`) | Lendário | 24.00% | 1 em 4 | 4s | 2s |
-| Brolli (`char_brolli_base`) | Lendário | 24.00% | 1 em 4 | 4s | 2s |
-
-Completar o pool (todos ao menos 1x, Luck do Dice): ~17 rolls (Normal 17s · Rápido 8s).
-
-### 15. Celestial — unlock 8000 rolls + Colossus · preço 75M · Luck do Dice 4.00x
-
-| Raridade | Pers. | P (Luck 1) | Rolls esperados | Normal | Rápido | P (Luck do Dice) | Rolls | Normal |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| Lendário | 2 | 63.50% | 1 em 2 | 2s | 1s | 60.56% | 1 em 2 | 2s |
-| Mítico | 2 | 35.50% | 1 em 3 | 3s | 1s | 38.16% | 1 em 3 | 3s |
-| Divino | 3 | 1.00% | 1 em 100 | 1m40s | 50s | 1.29% | 1 em 78 | 1m18s |
-
-| Personagem | Raridade | P (Luck 1) | Rolls esperados | Normal | Rápido |
-|---|---|---:|---:|---:|---:|
-| Vegitto (`char_vegitto_base`) | Divino | 0.3333% | 1 em 300 | 5m00s | 2m30s |
-| Deko 100% (`char_deko_full`) | Divino | 0.3333% | 1 em 300 | 5m00s | 2m30s |
-| Goju (`char_goju_base`) | Divino | 0.3333% | 1 em 300 | 5m00s | 2m30s |
+| Vegitto (`char_vegitto_base`) | Divino | 0.1667% | 1 em 600 | 10m00s | 5m00s |
+| Deko 100% (`char_deko_full`) | Divino | 0.1667% | 1 em 600 | 10m00s | 5m00s |
+| Goju (`char_goju_base`) | Divino | 0.1667% | 1 em 600 | 10m00s | 5m00s |
 | Ol Maito Poder Total (`char_olmaito_mode`) | Mítico | 17.75% | 1 em 6 | 6s | 3s |
 | Narotu Sábio (`char_narotu_sage`) | Mítico | 17.75% | 1 em 6 | 6s | 3s |
-| Yujo (`char_yujo_base`) | Lendário | 31.75% | 1 em 3 | 3s | 2s |
-| Sanjo (`char_sanjo_base`) | Lendário | 31.75% | 1 em 3 | 3s | 2s |
+| Yujo (`char_yujo_base`) | Lendário | 32.00% | 1 em 3 | 3s | 2s |
+| Sanjo (`char_sanjo_base`) | Lendário | 32.00% | 1 em 3 | 3s | 2s |
 
-Completar o pool (todos ao menos 1x, Luck do Dice): ~428 rolls (Normal 7m08s · Rápido 3m34s).
+Completar o pool (todos ao menos 1x, Luck do Dice): ~854 rolls (Normal 14m14s · Rápido 7m07s).
 
 ### 16. Forbidden — unlock 12000 rolls + Celestial · preço 750M · Luck do Dice 4.00x
 
 | Raridade | Pers. | P (Luck 1) | Rolls esperados | Normal | Rápido | P (Luck do Dice) | Rolls | Normal |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| Mítico | 1 | 98.50% | 1 em 1 | 1s | 1s | 98.20% | 1 em 1 | 1s |
-| Divino | 3 | 1.50% | 1 em 67 | 1m07s | 33s | 1.79% | 1 em 56 | 56s |
-| Secreto | 3 | 0.00450% | 1 em 22.222 | 6h10m | 3h05m | 0.00769% | 1 em 13.010 | 3h36m |
+| Mítico | 1 | 99.25% | 1 em 1 | 1s | 1s | 99.10% | 1 em 1 | 1s |
+| Divino | 3 | 0.7500% | 1 em 133 | 2m13s | 1m07s | 0.8961% | 1 em 112 | 1m52s |
+| Secreto | 3 | 0.00450% | 1 em 22.222 | 6h10m | 3h05m | 0.00770% | 1 em 12.991 | 3h36m |
 
 | Personagem | Raridade | P (Luck 1) | Rolls esperados | Normal | Rápido |
 |---|---|---:|---:|---:|---:|
 | Vegitto Azul (`char_vegitto_blue`) | Secreto | 0.00150% | 1 em 66.667 | 18h31m | 9h15m |
 | Ichiro Mugetsu (`char_ichiro_mugetsu`) | Secreto | 0.00150% | 1 em 66.667 | 18h31m | 9h15m |
 | Mighto 8º Portão (`char_mighto_gate8`) | Secreto | 0.00150% | 1 em 66.667 | 18h31m | 9h15m |
-| Madaro (`char_madaro_base`) | Divino | 0.5000% | 1 em 200 | 3m20s | 1m40s |
-| Aizo (`char_aizo_base`) | Divino | 0.5000% | 1 em 200 | 3m20s | 1m40s |
-| Brolli Lendário (`char_brolli_legend`) | Divino | 0.5000% | 1 em 200 | 3m20s | 1m40s |
-| Barbalva (`char_barbalva_base`) | Mítico | 98.50% | 1 em 1 | 1s | 1s |
+| Madaro (`char_madaro_base`) | Divino | 0.2500% | 1 em 400 | 6m40s | 3m20s |
+| Aizo (`char_aizo_base`) | Divino | 0.2500% | 1 em 400 | 6m40s | 3m20s |
+| Brolli Lendário (`char_brolli_legend`) | Divino | 0.2500% | 1 em 400 | 6m40s | 3m20s |
+| Barbalva (`char_barbalva_base`) | Mítico | 99.25% | 1 em 1 | 1s | 1s |
 
-Completar o pool (todos ao menos 1x, Luck do Dice): ~71.558 rolls (Normal 19h52m · Rápido 9h56m).
+Completar o pool (todos ao menos 1x, Luck do Dice): ~71.453 rolls (Normal 19h50m · Rápido 9h55m).
 
 ## 6. Celestial e Forbidden (endgame) — análise detalhada
 
@@ -470,64 +462,56 @@ Completar o pool (todos ao menos 1x, Luck do Dice): ~71.558 rolls (Normal 19h52m
 
 | Cenário | Lendário | Mítico | Divino | ERV |
 |---|---|---|---|---:|
-| Luck 1,0x | 63.50% (1 em 2) | 35.50% (1 em 3) | 1.00% (1 em 100) | 225.5 |
-| Luck do Dice (4.00x) | 60.56% (1 em 2) | 38.16% (1 em 3) | 1.29% (1 em 78) | 238.9 |
-| Máx. F2P (41.6x) | 58.01% (1 em 2) | 40.41% (1 em 2) | 1.58% (1 em 63) | 251.3 |
-| Máx. com monetização (91.5x) | 57.74% (1 em 2) | 40.64% (1 em 2) | 1.62% (1 em 62) | 252.7 |
+| Luck 1,0x | 64.00% (1 em 2) | 35.50% (1 em 3) | 0.5000% (1 em 200) | 216.0 |
+| Luck do Dice (4.00x) | 61.14% (1 em 2) | 38.22% (1 em 3) | 0.6441% (1 em 155) | 226.9 |
+| Máx. F2P (41.6x) | 58.66% (1 em 2) | 40.54% (1 em 2) | 0.7943% (1 em 126) | 236.7 |
+| Máx. com monetização (91.5x) | 58.40% (1 em 2) | 40.79% (1 em 2) | 0.8115% (1 em 123) | 237.8 |
 
 Por hora (expectativa), raridades top:
 
 | Cenário | Cadência | Mítico/h | Divino/h | 1 Divino a cada |
 |---|---|---:|---:|---:|
-| Luck 1,0x | Normal | 1278.0 | 36.00 | 1m40s |
-| Luck 1,0x | Rápido | 2556.0 | 72.00 | 50s |
-| Luck do Dice (4.00x) | Normal | 1373.6 | 46.30 | 1m18s |
-| Luck do Dice (4.00x) | Rápido | 2747.3 | 92.60 | 39s |
-| Máx. F2P (41.6x) | Normal | 1454.7 | 57.00 | 1m03s |
-| Máx. F2P (41.6x) | Rápido | 2909.5 | 114.00 | 32s |
-| Máx. com monetização (91.5x) | Normal | 1463.1 | 58.22 | 1m02s |
-| Máx. com monetização (91.5x) | Rápido | 2926.2 | 116.44 | 31s |
+| Luck 1,0x | Normal | 1278.0 | 18.00 | 3m20s |
+| Luck 1,0x | Rápido | 2556.0 | 36.00 | 1m40s |
+| Luck do Dice (4.00x) | Normal | 1375.9 | 23.19 | 2m35s |
+| Luck do Dice (4.00x) | Rápido | 2751.9 | 46.38 | 1m18s |
+| Máx. F2P (41.6x) | Normal | 1459.6 | 28.59 | 2m06s |
+| Máx. F2P (41.6x) | Rápido | 2919.2 | 57.19 | 1m03s |
+| Máx. com monetização (91.5x) | Normal | 1468.3 | 29.21 | 2m03s |
+| Máx. com monetização (91.5x) | Rápido | 2936.6 | 58.43 | 1m02s |
 
 ### Forbidden
 
 | Cenário | Mítico | Divino | Secreto | ERV |
 |---|---|---|---|---:|
-| Luck 1,0x | 98.50% (1 em 1) | 1.50% (1 em 67) | 0.00450% (1 em 22.222) | 424.7 |
-| Luck do Dice (4.00x) | 98.20% (1 em 1) | 1.79% (1 em 56) | 0.00769% (1 em 13.010) | 429.8 |
-| Máx. F2P (41.6x) | 97.91% (1 em 1) | 2.07% (1 em 48) | 0.0120% (1 em 8.307) | 434.9 |
-| Máx. com monetização (91.5x) | 97.88% (1 em 1) | 2.11% (1 em 47) | 0.0126% (1 em 7.932) | 435.5 |
+| Luck 1,0x | 99.25% (1 em 1) | 0.7500% (1 em 133) | 0.00450% (1 em 22.222) | 412.7 |
+| Luck do Dice (4.00x) | 99.10% (1 em 1) | 0.8961% (1 em 112) | 0.00770% (1 em 12.991) | 415.5 |
+| Máx. F2P (41.6x) | 98.95% (1 em 1) | 1.04% (1 em 96) | 0.0121% (1 em 8.283) | 418.4 |
+| Máx. com monetização (91.5x) | 98.93% (1 em 1) | 1.06% (1 em 95) | 0.0126% (1 em 7.908) | 418.7 |
 
 Por hora (expectativa), raridades top:
 
 | Cenário | Cadência | Divino/h | Secreto/h | 1 Secreto a cada |
 |---|---|---:|---:|---:|
-| Luck 1,0x | Normal | 54.0 | 0.16 | 6h10m |
-| Luck 1,0x | Rápido | 108.0 | 0.32 | 3h05m |
-| Luck do Dice (4.00x) | Normal | 64.4 | 0.28 | 3h36m |
-| Luck do Dice (4.00x) | Rápido | 128.8 | 0.55 | 1h48m |
-| Máx. F2P (41.6x) | Normal | 74.7 | 0.43 | 2h18m |
-| Máx. F2P (41.6x) | Rápido | 149.3 | 0.87 | 1h09m |
-| Máx. com monetização (91.5x) | Normal | 75.8 | 0.45 | 2h12m |
-| Máx. com monetização (91.5x) | Rápido | 151.6 | 0.91 | 1h06m |
+| Luck 1,0x | Normal | 27.0 | 0.16 | 6h10m |
+| Luck 1,0x | Rápido | 54.0 | 0.32 | 3h05m |
+| Luck do Dice (4.00x) | Normal | 32.3 | 0.28 | 3h36m |
+| Luck do Dice (4.00x) | Rápido | 64.5 | 0.55 | 1h48m |
+| Máx. F2P (41.6x) | Normal | 37.4 | 0.43 | 2h18m |
+| Máx. F2P (41.6x) | Rápido | 74.9 | 0.87 | 1h09m |
+| Máx. com monetização (91.5x) | Normal | 38.0 | 0.46 | 2h11m |
+| Máx. com monetização (91.5x) | Rápido | 76.0 | 0.91 | 1h05m |
 
-**Forbidden:** com a proposta (Mítico 98,4955% · Divino 1,5% · Secreto 0,0045%), o Secreto é 1 em
-~22.200 com Luck 1 (cada um dos 3 Secretos: 1 em ~66.700) e fica **abaixo de 1 por hora mesmo no
-máximo absoluto** (Luck máxima com monetização + Roll Rápido) — a mesma meta da auditoria de RNG
-anterior (com 0,005% dava 1,01/h). A normalização atual (75/20/5) dava 1 Secreto a cada 20 rolls.
+**Forbidden (final):** Mítico 99,2455% · Divino 0,75% · Secreto 0,0045%. Secreto 1 em ~22.200 com
+Luck 1 (cada um dos 3: 1 em ~66.700), **abaixo de 1 por hora mesmo no máximo absoluto** (Luck máxima com
+monetização + Roll Rápido) — meta da auditoria de RNG. Antes (75/20/5) era 1 Secreto a cada 20 rolls.
 
-**Tensão a decidir — Divino no endgame:** a meta da auditoria antiga ("Divino < 3/h") era para o
-sorteio GLOBAL. Nos Dice endgame, que existem para entregar Divinos, a proposta dá ~36–150
-Divinos/h no Celestial/Forbidden (1 Divino a cada 30 s–1m40s), mas cada Divino específico continua
-1 em 200–300 rolls. Se você quiser o Divino mais raro mesmo no endgame, a alternativa é metade:
-Celestial L 64 / M 35,5 / D 0,5 e Forbidden M 99,2455 / D 0,75 / S 0,0045 (ERV continua crescente: 216,0 e 412,7).
+**Celestial (final):** Lendário 64% · Mítico 35,5% · Divino 0,5% (cada um dos 3 Divinos: 1 em 600).
 
-**Celestial:** Divino 1% (cada um dos 3: 1 em 300). Mítico 35,5% continua frequente, mas é o
-Dice que antecede o Forbidden e tem 2 Míticos e 2 Lendários: o valor está nos Divinos.
+## 7. Pity com os pesos finais
 
-## 7. Pity com os pesos propostos
-
-Atual: Lendário 50 · Mítico 800. Um pity só vale em Dice que tem a raridade do piso.
-Tempo para 50 rolls: Normal 50s · Rápido 25s. Para 800 rolls: Normal 13m20s · Rápido 6m40s.
+Final: Lendário 50 (mantido) · Mítico 250 (era 800). Um pity só vale em Dice que tem a raridade do piso.
+Tempo para 50 rolls: Normal 50s · Rápido 25s. Para 250 rolls: Normal 4m10s · Rápido 2m05s.
 
 ### Pity Legendary (piso: Lendário ou melhor)
 
@@ -541,8 +525,8 @@ Tempo para 50 rolls: Normal 50s · Rápido 25s. Para 800 rolls: Normal 13m20s ·
 | Arcane | 18.00% | 1 em 6 | 0.00598% | 5.6 | 0.00000% | 5.6 | 0.00000% | 5.6 | 0.00000% | 5.6 |
 | Shadow | 35.00% | 1 em 3 | 0.00000% | 2.9 | 0.00000% | 2.9 | 0.00000% | 2.9 | 0.00000% | 2.9 |
 | Void | 45.00% | 1 em 2 | 0.00000% | 2.2 | 0.00000% | 2.2 | 0.00000% | 2.2 | 0.00000% | 2.2 |
+| Colossus | 60.00% | 1 em 2 | 0.00000% | 1.7 | 0.00000% | 1.7 | 0.00000% | 1.7 | 0.00000% | 1.7 |
 | Awakened | 100.00% | 1 em 1 | 0.00000% | 1.0 | 0.00000% | 1.0 | 0.00000% | 1.0 | 0.00000% | 1.0 |
-| Colossus | 75.00% | 1 em 1 | 0.00000% | 1.3 | 0.00000% | 1.3 | 0.00000% | 1.3 | 0.00000% | 1.3 |
 | Celestial | 100.00% | 1 em 1 | 0.00000% | 1.0 | 0.00000% | 1.0 | 0.00000% | 1.0 | 0.00000% | 1.0 |
 
 Dice SEM a raridade (pity congelado): Starter, Lucky, Rampart, Shinobi, Forbidden.
@@ -555,62 +539,48 @@ Dice SEM a raridade (pity congelado): Starter, Lucky, Rampart, Shinobi, Forbidde
 | Arcane | 2.00% | 1 em 50 | 0.6536% | 49.7 | 0.0316% | 50.0 | 0.00001% | 50.0 |
 | Shadow | 5.00% | 1 em 20 | 0.00028% | 20.0 | 0.00000% | 20.0 | 0.00000% | 20.0 |
 | Void | 9.00% | 1 em 11 | 0.00000% | 11.1 | 0.00000% | 11.1 | 0.00000% | 11.1 |
+| Colossus | 15.00% | 1 em 7 | 0.00000% | 6.7 | 0.00000% | 6.7 | 0.00000% | 6.7 |
 | Awakened | 15.00% | 1 em 7 | 0.00000% | 6.7 | 0.00000% | 6.7 | 0.00000% | 6.7 |
-| Colossus | 27.00% | 1 em 4 | 0.00000% | 3.7 | 0.00000% | 3.7 | 0.00000% | 3.7 |
-| Celestial | 36.50% | 1 em 3 | 0.00000% | 2.7 | 0.00000% | 2.7 | 0.00000% | 2.7 |
+| Celestial | 36.00% | 1 em 3 | 0.00000% | 2.8 | 0.00000% | 2.8 | 0.00000% | 2.8 |
 | Forbidden | 100.00% | 1 em 1 | 0.00000% | 1.0 | 0.00000% | 1.0 | 0.00000% | 1.0 |
 
-Dice SEM a raridade (pity congelado): Starter, Lucky, Rampart, Flame, Shinobi, Blade, Fighter, Storm.
+Dice SEM a raridade (pity congelado): Starter, Lucky, Rampart, Shinobi, Flame, Blade, Fighter, Storm.
 
 "Chega ao pity" = fração dos ciclos que só terminam pelo pity ((1−p)^(N−1)); "rolls efetivos" =
 rolls médios entre acertos COM pity ((1−(1−p)^N)/p). Sem pity seria 1/p.
 
-**Leitura — Lendário 50:** no Flame (Lendário 1%) 61% dos Lendários viriam do pity e o Lendário
-sairia a cada ~40 rolls (não 100): o pity, e não o RNG, passa a definir a raridade da primeira
-vitrine. No Blade (2%) 37%; no Fighter (3%) 22%; do Storm em diante (≥8%) o pity quase não age.
-**Recomendação:** subir para **150** (Flame: 22% pelo pity, Lendário a cada ~78 rolls; ≥ Blade quase
-irrelevante) — continua sendo uma rede de segurança, sem esvaziar a raridade. Manter 50 só se a
-intenção for um Lendário bem mais frequente no início.
+**Lendário 50 (mantido por decisão de design):** no Flame (Lendário 1%) ~61% dos Lendários vêm do
+pity (1 Lendário a cada ~40 rolls em vez de 100), no Blade ~37%, no Fighter ~22%; do Storm em diante o
+pity quase não age. Intencional: início/meio de jogo mais generoso, com momentos fortes para iniciantes.
 
-**Leitura — Mítico 800:** o Mítico só existe do Spirit em diante; no Spirit (1%) a chance de
-chegar a 800 rolls sem Mítico é ~0,03%, e do Arcane em diante é ~0. **O pity Mítico 800 é
-praticamente decorativo.** Com **250**: Spirit ~8% dos Míticos pelo pity (Mítico a cada ~92 rolls
-em vez de 100), Arcane ~0,6%, Shadow+ ~0 — uma rede de segurança real só onde o Mítico é raro.
-**Recomendação: voltar o Mítico para 250.** (400 fica no meio: Spirit ~1,8%.)
+**Mítico 250 (aplicado):** só onde o Mítico é raro — Spirit ~8% dos Míticos pelo pity (~92 rolls entre
+Míticos em vez de 100), Arcane ~0,6%, Shadow em diante ~0. Com 800 era decorativo (~0,03% no Spirit).
 
-## 8. Preços e unlocks (avaliação; nada alterado)
+## 8. Preços e unlocks (por posição; economia ainda pendente)
 
 | # | Dice | Preço | × anterior | Rolls p/ desbloquear | Δ rolls | ~tempo de roll (Normal) | Completar pool anterior (Luck do Dice) |
 |---:|---|---:|---:|---:|---:|---:|---:|
 | 1 | Starter | 0 | — | 0 | — | 0s | — |
 | 2 | Lucky | 2.5k | — | 50 | 50 | 50s | 39 rolls |
 | 3 | Rampart | 10k | 4.0x | 125 | 75 | 2m05s | 31 rolls |
-| 4 | Flame | 40k | 4.0x | 300 | 175 | 5m00s | 40 rolls |
-| 5 | Shinobi | 75k | 1.9x | 425 | 125 | 7m05s | 84 rolls |
-| 6 | Blade | 125k | 1.7x | 550 | 125 | 9m10s | 24 rolls |
+| 4 | Shinobi | 40k | 4.0x | 300 | 175 | 5m00s | 40 rolls |
+| 5 | Flame | 75k | 1.9x | 425 | 125 | 7m05s | 28 rolls |
+| 6 | Blade | 125k | 1.7x | 550 | 125 | 9m10s | 84 rolls |
 | 7 | Fighter | 225k | 1.8x | 775 | 225 | 12m55s | 47 rolls |
 | 8 | Storm | 400k | 1.8x | 1000 | 225 | 16m40s | 32 rolls |
 | 9 | Spirit | 750k | 1.9x | 1500 | 500 | 25m00s | 35 rolls |
 | 10 | Arcane | 1.4M | 1.9x | 2000 | 500 | 33m20s | 87 rolls |
 | 11 | Shadow | 2.6M | 1.9x | 2500 | 500 | 41m40s | 46 rolls |
 | 12 | Void | 5M | 1.9x | 3000 | 500 | 50m00s | 55 rolls |
-| 13 | Awakened | 12.5M | 2.5x | 4500 | 1500 | 1h15m | 262 rolls |
-| 14 | Colossus | 30M | 2.4x | 6000 | 1500 | 1h40m | 34 rolls |
-| 15 | Celestial | 75M | 2.5x | 8000 | 2000 | 2h13m | 17 rolls |
-| 16 | Forbidden | 750M | 10.0x | 12000 | 4000 | 3h20m | 428 rolls |
+| 13 | Colossus | 12.5M | 2.5x | 4500 | 1500 | 1h15m | 262 rolls |
+| 14 | Awakened | 30M | 2.4x | 6000 | 1500 | 1h40m | 20 rolls |
+| 15 | Celestial | 75M | 2.5x | 8000 | 2000 | 2h13m | 34 rolls |
+| 16 | Forbidden | 750M | 10.0x | 12000 | 4000 | 3h20m | 854 rolls |
 
-Leitura:
-
-- Preço: ~×2–4 por Dice até o Celestial e **×10 no Forbidden (750M)** — o salto final é o maior
-  da curva. Faz sentido como endgame, mas precisa ser validado com a renda real (fase de economia).
-- **Completar cada pool é rápido** com os pesos propostos (Luck do próprio Dice): dezenas de rolls
-  do Starter ao Shadow, ~260 no Void, ~430 no Celestial; só o **Forbidden é longo (~71.600 rolls,
-  ~20 h em Normal / ~10 h com Roll Rápido)** por causa dos 3 Secretos. Os rolls exigidos entre Dice
-  (+50 a +4.000) são MAIORES que isso: o requisito de rolls e, principalmente, o **preço** é que
-  seguram a progressão, não o RNG. Consequência: o Índice F2P (exceto Forbidden) pode ser completado
-  rápido quando o dinheiro chega — a longevidade vem da economia, dos níveis/variantes e do Forbidden.
-  Sugestão separada (fase de economia): validar o tempo até cada preço com a renda real e decidir
-  se algum pool deve ficar mais longo (ex.: Divino/Mítico um pouco mais raros nos Dice 9–15).
+Preço e rolls pertencem à POSIÇÃO (#4 = 40k / 300 rolls, #5 = 75k / 425, #13 = 12,5M / 4.500,
+#14 = 30M / 6.000): com a Variante B, Shinobi e Colossus ficaram mais baratos e Flame e Awakened mais caros.
+Completar cada pool custa dezenas de rolls (Void/Celestial: centenas; Forbidden: dezenas de milhares por
+causa dos Secretos): o freio da progressão é o PREÇO. Validar com a renda real na fase de economia.
 
 ## 9. Simulação: 1.000.000 rolls por Dice (Luck 1, sem pity)
 
@@ -628,14 +598,14 @@ Leitura:
 |  | Incomum | 32.00% | 32.03% | +0.67 |  |
 |  | Raro | 16.00% | 16.00% | -0.08 |  |
 |  | Épico | 7.00% | 6.95% | -1.91 |  |
-| Flame | Incomum | 60.00% | 59.98% | -0.39 | 1.72 |
-|  | Raro | 28.00% | 28.00% | +0.05 |  |
-|  | Épico | 11.00% | 11.00% | +0.15 |  |
-|  | Lendário | 1.00% | 1.01% | +1.24 |  |
-| Shinobi | Comum | 20.00% | 20.06% | +1.58 | 2.28 |
-|  | Incomum | 32.00% | 31.95% | -1.10 |  |
-|  | Raro | 30.00% | 29.95% | -1.16 |  |
-|  | Épico | 18.00% | 18.04% | +1.07 |  |
+| Shinobi | Comum | 35.00% | 34.92% | -1.66 | 2.28 |
+|  | Incomum | 33.00% | 33.04% | +0.89 |  |
+|  | Raro | 22.00% | 22.04% | +1.05 |  |
+|  | Épico | 10.00% | 9.99% | -0.21 |  |
+| Flame | Incomum | 60.00% | 60.04% | +0.72 | 1.60 |
+|  | Raro | 28.00% | 27.95% | -1.03 |  |
+|  | Épico | 11.00% | 11.01% | +0.41 |  |
+|  | Lendário | 1.00% | 0.9986% | -0.14 |  |
 | Blade | Incomum | 50.00% | 49.99% | -0.15 | 1.56 |
 |  | Raro | 32.00% | 31.99% | -0.26 |  |
 |  | Épico | 16.00% | 16.03% | +0.70 |  |
@@ -662,63 +632,76 @@ Leitura:
 |  | Lendário | 36.00% | 35.92% | -1.65 |  |
 |  | Mítico | 8.70% | 8.71% | +0.19 |  |
 |  | Divino | 0.3000% | 0.3037% | +0.68 |  |
-| Awakened | Lendário | 85.00% | 85.03% | +0.85 | 1.73 |
+| Colossus | Épico | 40.00% | 40.09% | +1.80 | 1.68 |
+|  | Lendário | 45.00% | 44.94% | -1.16 |  |
 |  | Mítico | 15.00% | 14.97% | -0.85 |  |
-| Colossus | Épico | 25.00% | 25.01% | +0.18 | 2.17 |
-|  | Lendário | 48.00% | 48.06% | +1.23 |  |
-|  | Mítico | 27.00% | 26.93% | -1.56 |  |
-| Celestial | Lendário | 63.50% | 63.50% | +0.04 | 1.69 |
-|  | Mítico | 35.50% | 35.49% | -0.13 |  |
-|  | Divino | 1.00% | 1.00% | +0.43 |  |
-| Forbidden | Mítico | 98.50% | 98.51% | +1.14 | 1.14 |
-|  | Divino | 1.50% | 1.49% | -1.10 |  |
+| Awakened | Lendário | 85.00% | 85.05% | +1.36 | 2.70 |
+|  | Mítico | 15.00% | 14.95% | -1.36 |  |
+| Celestial | Lendário | 64.00% | 64.01% | +0.16 | 1.77 |
+|  | Mítico | 35.50% | 35.49% | -0.11 |  |
+|  | Divino | 0.5000% | 0.4977% | -0.33 |  |
+| Forbidden | Mítico | 99.25% | 99.25% | +0.96 | 1.32 |
+|  | Divino | 0.7500% | 0.7422% | -0.90 |  |
 |  | Secreto | 0.00450% | 0.00400% | -0.75 |  |
 
-Maior desvio entre TODOS os personagens dos 16 Dice: |z| = 2.58 (esperado < ~4 com 112 comparações).
+Maior desvio entre TODOS os personagens dos 16 Dice: |z| = 2.70 (esperado < ~4 com 112 comparações).
 
-## 10. Sessões endgame (Luck do Dice, pity atual 50/800, sementes fixas)
+## 10. Sessões endgame (Luck do Dice, pity 50/250, sementes fixas)
 
 | Dice | Sessão | Sessões simuladas | Míticos (média) | Divinos (média) | Secretos (média) | P(≥1 Divino) | P(≥1 Secreto) |
 |---|---:|---:|---:|---:|---:|---:|---:|
 | Awakened | 100 rolls | 5000 | 16.33 | 0.000 | 0.0000 | 0.0% | 0.00% |
 |  | 1000 rolls | 1000 | 163.44 | 0.000 | 0.0000 | 0.0% | 0.00% |
 |  | 10000 rolls | 200 | 1636.94 | 0.000 | 0.0000 | 0.0% | 0.00% |
-| Colossus | 100 rolls | 5000 | 29.62 | 0.000 | 0.0000 | 0.0% | 0.00% |
-|  | 1000 rolls | 1000 | 295.88 | 0.000 | 0.0000 | 0.0% | 0.00% |
-|  | 10000 rolls | 200 | 2957.56 | 0.000 | 0.0000 | 0.0% | 0.00% |
-| Celestial | 100 rolls | 5000 | 38.23 | 1.260 | 0.0000 | 71.8% | 0.00% |
-|  | 1000 rolls | 1000 | 381.47 | 12.931 | 0.0000 | 100.0% | 0.00% |
-|  | 10000 rolls | 200 | 3815.93 | 129.885 | 0.0000 | 100.0% | 0.00% |
-| Forbidden | 100 rolls | 5000 | 98.22 | 1.767 | 0.0078 | 83.4% | 0.78% |
-|  | 1000 rolls | 1000 | 981.95 | 17.966 | 0.0830 | 100.0% | 8.10% |
-|  | 10000 rolls | 200 | 9820.91 | 178.365 | 0.7300 | 100.0% | 50.00% |
+| Colossus | 100 rolls | 5000 | 16.87 | 0.000 | 0.0000 | 0.0% | 0.00% |
+|  | 1000 rolls | 1000 | 167.97 | 0.000 | 0.0000 | 0.0% | 0.00% |
+|  | 10000 rolls | 200 | 1680.54 | 0.000 | 0.0000 | 0.0% | 0.00% |
+| Celestial | 100 rolls | 5000 | 38.29 | 0.640 | 0.0000 | 47.5% | 0.00% |
+|  | 1000 rolls | 1000 | 382.12 | 6.442 | 0.0000 | 100.0% | 0.00% |
+|  | 10000 rolls | 200 | 3822.86 | 64.695 | 0.0000 | 100.0% | 0.00% |
+| Forbidden | 100 rolls | 5000 | 99.10 | 0.889 | 0.0078 | 59.3% | 0.78% |
+|  | 1000 rolls | 1000 | 991.02 | 8.901 | 0.0830 | 100.0% | 8.10% |
+|  | 10000 rolls | 200 | 9909.83 | 89.435 | 0.7300 | 100.0% | 50.00% |
 
 Sessão de 100 rolls ≈ 1m40s (Normal); 1.000 ≈ 16m40s; 10.000 ≈ 2h47m.
 
-## 11. Prism (Dia 7 do Diário) — 3 propostas (nada implementado)
+## 11. Endgame: rolls e tempo esperados (final)
 
-1. **Prisma da Coleção** (recomendada): 1 "roll de prisma" por dia, gasto na Loja de Dados. Sorteia
-   com as chances normais do Dice selecionado, mas **só entre os personagens que o jogador ainda
-   NÃO descobriu** naquele Dice (se já descobriu todos, vira um roll normal). Não aumenta raridade,
-   não acelera rolls e não se compra: ajuda a completar o Índice e dá um motivo para trocar de Dice.
-2. **Prisma de Variante**: os próximos 25 rolls com o Prism equipado (1x por dia) têm chance de
-   sair como variante visual (Silver/Gold) — mesmo personagem, mesmo RNG de raridade. Aproveita a
-   Fusão/variantes, mas mexe na economia das variantes (renda maior) e exige balanceamento próprio.
-3. **Prisma Espelho**: o Prism "copia" o Dice desbloqueado mais alto e dá um bônus de Luck pequeno
-   (+10%) por 10 minutos 1x/dia. Simples, mas é mais Luck (pouco interessante e encosta em P2W de tempo).
+| Prêmio | Cenário | Chance | Rolls esperados | Normal (1/s) | Roll Rápido (2/s) |
+|---|---|---:|---:|---:|---:|
+| Divino (Celestial) | Luck 1,0x | 0.5000% | 1 em 200 | 3m20s | 1m40s |
+| Divino (Celestial) | Luck do Dice (4.00x) | 0.6441% | 1 em 155 | 2m35s | 1m18s |
+| Divino (Celestial) | Máx. F2P (41.6x) | 0.7943% | 1 em 126 | 2m06s | 1m03s |
+| Divino (Celestial) | Máx. com monetização (91.5x) | 0.8115% | 1 em 123 | 2m03s | 1m02s |
+| Divino (Forbidden) | Luck 1,0x | 0.7500% | 1 em 133 | 2m13s | 1m07s |
+| Divino (Forbidden) | Luck do Dice (4.00x) | 0.8961% | 1 em 112 | 1m52s | 56s |
+| Divino (Forbidden) | Máx. F2P (41.6x) | 1.04% | 1 em 96 | 1m36s | 48s |
+| Divino (Forbidden) | Máx. com monetização (91.5x) | 1.06% | 1 em 95 | 1m35s | 47s |
+| Secreto (Forbidden, qualquer) | Luck 1,0x | 0.00450% | 1 em 22.222 | 6h10m | 3h05m |
+| Secreto (Forbidden, qualquer) | Luck do Dice (4.00x) | 0.00770% | 1 em 12.991 | 3h36m | 1h48m |
+| Secreto (Forbidden, qualquer) | Máx. F2P (41.6x) | 0.0121% | 1 em 8.283 | 2h18m | 1h09m |
+| Secreto (Forbidden, qualquer) | Máx. com monetização (91.5x) | 0.0126% | 1 em 7.908 | 2h11m | 1h05m |
+| Secreto Ichiro Mugetsu (`char_ichiro_mugetsu`) | Luck 1,0x | 0.00150% | 1 em 66.667 | 18h31m | 9h15m |
+| Secreto Ichiro Mugetsu (`char_ichiro_mugetsu`) | Luck do Dice (4.00x) | 0.00257% | 1 em 38.974 | 10h49m | 5h24m |
+| Secreto Ichiro Mugetsu (`char_ichiro_mugetsu`) | Máx. F2P (41.6x) | 0.00402% | 1 em 24.848 | 6h54m | 3h27m |
+| Secreto Ichiro Mugetsu (`char_ichiro_mugetsu`) | Máx. com monetização (91.5x) | 0.00422% | 1 em 23.724 | 6h35m | 3h17m |
+| Secreto Mighto 8º Portão (`char_mighto_gate8`) | Luck 1,0x | 0.00150% | 1 em 66.667 | 18h31m | 9h15m |
+| Secreto Mighto 8º Portão (`char_mighto_gate8`) | Luck do Dice (4.00x) | 0.00257% | 1 em 38.974 | 10h49m | 5h24m |
+| Secreto Mighto 8º Portão (`char_mighto_gate8`) | Máx. F2P (41.6x) | 0.00402% | 1 em 24.848 | 6h54m | 3h27m |
+| Secreto Mighto 8º Portão (`char_mighto_gate8`) | Máx. com monetização (91.5x) | 0.00422% | 1 em 23.724 | 6h35m | 3h17m |
+| Secreto Vegitto Azul (`char_vegitto_blue`) | Luck 1,0x | 0.00150% | 1 em 66.667 | 18h31m | 9h15m |
+| Secreto Vegitto Azul (`char_vegitto_blue`) | Luck do Dice (4.00x) | 0.00257% | 1 em 38.974 | 10h49m | 5h24m |
+| Secreto Vegitto Azul (`char_vegitto_blue`) | Máx. F2P (41.6x) | 0.00402% | 1 em 24.848 | 6h54m | 3h27m |
+| Secreto Vegitto Azul (`char_vegitto_blue`) | Máx. com monetização (91.5x) | 0.00422% | 1 em 23.724 | 6h35m | 3h17m |
 
-**Recomendação: Prisma da Coleção** — usa a mecânica de coleção/RNG, é limitado por dia, é F2P
-(vem do Diário) e não substitui nenhum dos 16 Dice; a probabilidade exibida continua sendo a do
-Dice (filtrada), então a API de probabilidade atual serve com um filtro de "não descobertos".
+## 12. Prisma da Coleção (implementado)
 
-## 12. Recomendações (para aprovação; nada aplicado)
+Prism (Dia 7 do Diário) = **Prisma da Coleção**: cada uso sorteia no Dice SELECIONADO, mas só entre os
+personagens ainda NÃO descobertos, com as probabilidades relativas do Dice (P(c)/Σ elegíveis). Não muda
+pesos, Luck, pity (`PrismConfig.AffectsPity = false`) nem a contagem de rolls; Dice completo = recusado
+sem gastar o uso; não é vendido. Usos: `PrismConfig.UsesPerReward` por entrega do Diário (teto
+`MaxCharges`), intervalo mínimo `CooldownSeconds`.
 
-1. Aplicar os `RarityWeights` propostos (§1) como `RarityWeights` explícitos no `DiceConfig`.
-2. Pity Mítico **800 → 250**; pity Lendário **50 → 150** (ou manter 50 se o início deve ser generoso).
-3. Luck: **sem mudança estrutural** — com os pesos propostos o Secreto fica < 1/h no máximo absoluto.
-4. Ordem dos Dice: preferir a **Variante B** (Shinobi ↔ Flame e Colossus ↔ Awakened, com Épico 10% no
-   Shinobi e Mítico 15% no Colossus) — mesmos pools, curva mais natural; exige mudar a ordem de unlock.
-5. Preços/unlocks: manter por ora; validar com a renda real na fase de economia (o preço é o freio
-   real da progressão; ×10 no Forbidden).
-6. Divino no endgame: manter (1% Celestial / 1,5% Forbidden) ou usar a alternativa com metade (§6).
-7. Prism: Prisma da Coleção.
+Exemplo (Forbidden, só faltando os 3 Secretos): o prisma entrega um Secreto com 100% de chance — é o
+efeito desejado de "completar a coleção", limitado pelos usos que só o Diário dá.
+

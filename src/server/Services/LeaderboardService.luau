@@ -88,31 +88,32 @@ local function globalTop(board: any): { { name: string, value: number } }?
 	return top
 end
 
-local function render(board: any, top: { { name: string, value: number } })
+-- Preenche as linhas fixas do painel (Row1..RowN: Rank | PlayerName | Value). Só troca textos.
+function LeaderboardService.Render(panelName: string, top: { { name: string, value: number } })
 	local map = workspace:FindFirstChild("Map")
-	local panel = map and map:FindFirstChild(board.panel, true)
+	local panel = map and map:FindFirstChild(panelName, true)
 	local sign = panel and panel:FindFirstChild("Sign")
 	if not sign then
 		return
 	end
-	local labels = {}
-	for _, d in sign:GetDescendants() do
-		if d:IsA("TextLabel") then
-			table.insert(labels, d)
+	for i = 1, TOP do
+		local row = sign:FindFirstChild("Row" .. i)
+		if row then
+			local entry = top[i]
+			local name, value = row:FindFirstChild("PlayerName"), row:FindFirstChild("Value")
+			if name and name:IsA("TextLabel") then
+				name.Text = if entry then entry.name else "—"
+			end
+			if value and value:IsA("TextLabel") then
+				value.Text = if entry then NumberFormatter.abbreviate(math.floor(entry.value)) else ""
+			end
 		end
-	end
-	table.sort(labels, function(a, b)
-		return a.LayoutOrder < b.LayoutOrder
-	end)
-	for i = 2, #labels do
-		local entry = top[i - 1]
-		labels[i].Text = if entry then string.format("%d. %s — %s", i - 1, entry.name, NumberFormatter.abbreviate(entry.value)) else string.format("%d. —", i - 1)
 	end
 end
 
 function LeaderboardService.Refresh()
 	for _, board in BOARDS do
-		render(board, globalTop(board) or LeaderboardService.LocalTop(board.stat))
+		LeaderboardService.Render(board.panel, globalTop(board) or LeaderboardService.LocalTop(board.stat))
 	end
 end
 

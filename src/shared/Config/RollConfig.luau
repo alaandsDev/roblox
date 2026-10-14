@@ -26,7 +26,7 @@ return {
 	-- O contador zera ao tirar a raridade (ou melhor).
 	Pity = {
 		{ Id = "Legendary", MinRarity = "Legendary", Threshold = 50 },
-		{ Id = "Mythic", MinRarity = "Mythic", Threshold = 800 },
+		{ Id = "Mythic", MinRarity = "Mythic", Threshold = 250 },
 	},
 
 	-- Retornos decrescentes da Luck: LuckEfetiva = 1 + (L-1) / (1 + (L-1)/LuckSoftCap)

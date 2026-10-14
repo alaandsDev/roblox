@@ -1,7 +1,9 @@
 --!strict
 --[[
 	Análise de balanceamento dos 16 Dice (puro). Usa o MESMO DiceCore do servidor e as mesmas
-	fórmulas de Luck (Formulas/Odds): só troca os RarityWeights pelos da proposta.
+	fórmulas de Luck (Formulas/Odds).
+	    DiceBalance.final    = produção (DiceConfig: Variante B aprovada, pesos explícitos)
+	    DiceBalance.baseline = normalização da tabela global antiga (commit 4a69c25), só comparação
 	Usado por tools/sim/analyze_dice_balance.luau e tests/DiceBalance.spec.luau.
 ]]
 
@@ -11,10 +13,10 @@ local CharacterConfig = require("../../src/shared/Config/CharacterConfig")
 local RarityConfig = require("../../src/shared/Config/RarityConfig")
 local RollConfig = require("../../src/shared/Config/RollConfig")
 local Odds = require("./Odds")
-local Proposal = require("./DiceBalanceProposal")
+local Params = require("./DiceBalanceParams")
 
 local DiceBalance = {}
-DiceBalance.Proposal = Proposal
+DiceBalance.Params = Params
 
 -- Cópia do DiceConfig com RarityWeights explícitos (a produção não é tocada)
 function DiceBalance.withWeights(weights: { [string]: { [string]: number } }): any
@@ -33,16 +35,18 @@ function DiceBalance.withWeights(weights: { [string]: { [string]: number } }): a
 	return config
 end
 
-DiceBalance.current = DiceCore.new(DiceConfig, CharacterConfig, RarityConfig, RollConfig)
-DiceBalance.proposedConfig = DiceBalance.withWeights(Proposal.RarityWeights)
-DiceBalance.proposed = DiceCore.new(DiceBalance.proposedConfig, CharacterConfig, RarityConfig, RollConfig)
+DiceBalance.final = DiceCore.new(DiceConfig, CharacterConfig, RarityConfig, RollConfig)
 
--- Variante B: pesos da proposta + overrides de Shinobi/Colossus (a ordem é avaliada à parte)
-local variantWeights = table.clone(Proposal.RarityWeights)
-for id, weights in Proposal.VariantB.RarityWeights do
-	variantWeights[id] = weights
+-- Pesos de antes (normalização da tabela global sobre as raridades de cada pool)
+local baselineWeights = {}
+for _, dice in DiceBalance.final:diceList() do
+	local supported = {}
+	for _, rarity in DiceBalance.final:pool(dice.Id).rarities do
+		supported[rarity] = true
+	end
+	baselineWeights[dice.Id] = DiceCore.normalize(DiceConfig.BaseRarityPercent, supported)
 end
-DiceBalance.variantB = DiceCore.new(DiceBalance.withWeights(variantWeights), CharacterConfig, RarityConfig, RollConfig)
+DiceBalance.baseline = DiceCore.new(DiceBalance.withWeights(baselineWeights), CharacterConfig, RarityConfig, RollConfig)
 
 -- Luck por cenário para um Dice: 1.0 · Luck do próprio Dice · máximo F2P · máximo com monetização
 local function scenario(id: string): any
@@ -73,7 +77,7 @@ end
 function DiceBalance.erv(core: any, diceId: string, luck: number?): number
 	local total = 0
 	for rarity, p in core:rarityChances(diceId, luck) do
-		total += p * Proposal.Score[rarity]
+		total += p * Params.Score[rarity]
 	end
 	return total
 end

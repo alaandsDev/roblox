@@ -84,7 +84,8 @@ local function startConveyor()
 	local elapsed = 0
 	RunService.RenderStepped:Connect(function(dt)
 		elapsed += dt
-		local travelled = elapsed * c.Speed
+		-- Mesmo sentido/velocidade do transporte físico (MapConfig.Conveyor; MapLayout.beltVelocity)
+		local travelled = elapsed * c.Speed * c.Direction
 		for i, offset in offsets do
 			local x, z, dx, dz = MapLayout.pointAt(path, offset + travelled)
 			local position = Vector3.new(x, heights[i], z)

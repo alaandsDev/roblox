@@ -10,6 +10,16 @@ local Formulas = require("../../src/shared/Modules/Formulas")
 local RarityConfig = require("../../src/shared/Config/RarityConfig")
 local CharacterConfig = require("../../src/shared/Config/CharacterConfig")
 local RollConfig = require("../../src/shared/Config/RollConfig")
+-- MODELO GLOBAL LEGADO: esta ferramenta ainda simula o sorteio GLOBAL antigo (RollCore), que não
+-- decide mais o roll (o jogo sorteia por Dice: DiceCore). O pity desse modelo fica congelado nos
+-- valores com que ele foi auditado (Lendário 50 / Mítico 800); o pity de PRODUÇÃO (RollConfig.Pity,
+-- Mítico 250) vale por Dice e é testado em tests/Dice.spec.luau. Reescrever para o modelo por Dice
+-- é a primeira tarefa da fase de economia.
+local LegacyRollConfig = table.clone(RollConfig)
+LegacyRollConfig.Pity = {
+	{ Id = "Legendary", MinRarity = "Legendary", Threshold = 50 },
+	{ Id = "Mythic", MinRarity = "Mythic", Threshold = 800 },
+}
 local DiceConfig = require("../../src/shared/Config/DiceConfig")
 local UpgradeConfig = require("../../src/shared/Config/UpgradeConfig")
 local RebirthConfig = require("../../src/shared/Config/RebirthConfig")
@@ -17,7 +27,7 @@ local MonetizationConfig = require("../../src/shared/Config/MonetizationConfig")
 
 local Odds = {}
 
-Odds.core = RollCore.new(RarityConfig, CharacterConfig, RollConfig)
+Odds.core = RollCore.new(RarityConfig, CharacterConfig, LegacyRollConfig)
 Odds.formulas = Formulas.new({
 	Dice = DiceConfig,
 	Upgrades = UpgradeConfig,
@@ -89,7 +99,7 @@ function Odds.evaluate(data: any): any
 		atLeast[id] = acc
 	end
 	local pity = {}
-	for _, rule in RollConfig.Pity do
+	for _, rule in LegacyRollConfig.Pity do
 		pity[rule.MinRarity] = rule.Threshold
 	end
 	local out = { luck = luck, effectiveLuck = Odds.core:effectiveLuck(luck), perMinute = perMinute, rarity = {} }

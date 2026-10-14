@@ -402,6 +402,40 @@ for _, child in map:GetChildren() do
 	collect(child, "Map/" .. child.Name)
 end
 collect(bases, "Bases")
+-- ESTEIRA: transporte físico (AssemblyLinearVelocity nas partes Belt) = mesmo sentido e velocidade
+-- da animação do cliente (MapConfig.Conveyor, ordem do caminho). A física do personagem em cima só
+-- é confirmável no Studio (STUDIO_SMOKE_TEST.md, seção da esteira).
+do
+	local conveyorConfig = requireModule(shared.Config.MapConfig).Conveyor
+	local conveyorFolder = map:FindFirstChild("Conveyor", true)
+	local belts, aligned, joints, jointsInert = 0, 0, 0, 0
+	-- Lune: propriedade nunca definida não tem valor padrão -> zero
+	local function velocityOf(part)
+		local ok, v = pcall(function()
+			return part.AssemblyLinearVelocity
+		end)
+		return if ok then v else roblox.Vector3.new(0, 0, 0)
+	end
+	for _, obj in (conveyorFolder or map):GetDescendants() do
+		if obj:IsA("BasePart") and obj.Name == "Belt" then
+			belts += 1
+			local v = velocityOf(obj)
+			local forward = obj.CFrame.LookVector
+			local expected = forward * conveyorConfig.Speed * conveyorConfig.Direction
+			if (v - roblox.Vector3.new(expected.X, 0, expected.Z)).Magnitude < 1e-3 and math.abs(v.Y) < 1e-6 and obj.Anchored and obj.CanCollide then
+				aligned += 1
+			end
+		elseif obj:IsA("BasePart") and obj.Name == "Joint" then
+			joints += 1
+			if not obj.CanCollide and velocityOf(obj).Magnitude < 1e-6 then
+				jointsInert += 1
+			end
+		end
+	end
+	check(belts > 0 and aligned == belts, string.format("esteira: %d/%d trechos com velocidade física = %d studs/s no sentido visual (horizontal, ancorados, pisáveis)", aligned, belts, conveyorConfig.Speed))
+	check(joints > 0 and jointsInert == joints, "esteira: emendas decorativas (sem colisão, sem velocidade)")
+end
+
 print(string.format("\n[Harness] %d peças no total", partCount))
 for label, count in byFolder do
 	print(string.format("    %-18s %d", label, count))

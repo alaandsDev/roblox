@@ -260,4 +260,50 @@ describe("MapLayout: decoração blocky (vegetação e borda)", function()
 	end)
 end)
 
+describe("Esteira: velocidade física (MapLayout.beltVelocity)", function()
+	local base = { Speed = 12, Direction = 1, CarryPlayers = true }
+	local function near(a: number, b: number): boolean
+		return math.abs(a - b) < 1e-9
+	end
+
+	it("sentido do trecho (ordem do caminho) e velocidade = Speed", function()
+		local vx, vz = MapLayout.beltVelocity(base, 0, 0, 10, 0)
+		expect(near(vx, 12) and near(vz, 0)).toBeTruthy()
+		vx, vz = MapLayout.beltVelocity(base, 5, 5, 5, -15)
+		expect(near(vx, 0) and near(vz, -12)).toBeTruthy()
+		vx, vz = MapLayout.beltVelocity(base, 0, 0, 3, 4)
+		expect(near(math.sqrt(vx * vx + vz * vz), 12)).toBeTruthy()
+	end)
+
+	it("Direction = -1 inverte (visual usa o mesmo sinal)", function()
+		local vx = MapLayout.beltVelocity({ Speed = 12, Direction = -1, CarryPlayers = true }, 0, 0, 10, 0)
+		expect(near(vx, -12)).toBeTruthy()
+	end)
+
+	it("desativado (CarryPlayers = false) -> velocidade zero", function()
+		local vx, vz = MapLayout.beltVelocity({ Speed = 12, Direction = 1, CarryPlayers = false }, 0, 0, 10, 0)
+		expect(vx == 0 and vz == 0).toBeTruthy()
+	end)
+
+	it("config inválida -> erro (Speed <= 0, Speed absurda, Direction fora de ±1, trecho de comprimento zero)", function()
+		expect((pcall(MapLayout.beltVelocity, { Speed = 0, Direction = 1, CarryPlayers = true }, 0, 0, 1, 0))).toBe(false)
+		expect((pcall(MapLayout.beltVelocity, { Speed = 500, Direction = 1, CarryPlayers = true }, 0, 0, 1, 0))).toBe(false)
+		expect((pcall(MapLayout.beltVelocity, { Speed = 12, Direction = 2, CarryPlayers = true }, 0, 0, 1, 0))).toBe(false)
+		expect((pcall(MapLayout.beltVelocity, base, 3, 3, 3, 3))).toBe(false)
+	end)
+
+	it("config real: velocidade e sentido válidos; a pista inteira tem velocidade em cada trecho", function()
+		local c = MapConfig.Conveyor
+		local path = MapLayout.new(MapConfig, BaseConfig):conveyorPath()
+		for i, a in path.points do
+			local b = path.points[i % #path.points + 1]
+			local vx, vz = MapLayout.beltVelocity(c, a.x, a.z, b.x, b.z)
+			expect(near(math.sqrt(vx * vx + vz * vz), c.Speed)).toBeTruthy()
+			-- mesmo sentido da animação (pointAt avança na ordem do caminho)
+			local dx, dz = b.x - a.x, b.z - a.z
+			expect((vx * dx + vz * dz) * c.Direction > 0).toBeTruthy()
+		end
+	end)
+end)
+
 return true

@@ -1,47 +1,54 @@
--- Proposta de balanceamento dos 16 Dice (tools/sim/DiceBalanceProposal.luau): validade, curva e
--- metas de raridade. A proposta NÃO está aplicada em produção (DiceConfig sem RarityWeights).
+-- Balanceamento APROVADO dos 16 Dice (Variante B + Divino reduzido, em DiceConfig): validade,
+-- curva (ERV), metas de raridade e pity. Análise completa: DICE_BALANCE_ANALYSIS.md.
 local T = require("./TestLib")
 local B = require("../tools/sim/DiceBalance")
 local DiceConfig = require("../src/shared/Config/DiceConfig")
 local RollConfig = require("../src/shared/Config/RollConfig")
 local describe, it, expect = T.describe, T.it, T.expect
 
-local P = B.Proposal
+local final = B.final
 
-describe("Balanceamento dos Dice (proposta, não aplicada)", function()
-	it("produção inalterada: nenhum Dice com RarityWeights explícito; pity 50/800", function()
-		for _, dice in DiceConfig.List do
-			expect(dice.RarityWeights).toBeNil()
+describe("Balanceamento dos Dice (aprovado, em produção)", function()
+	it("ordem oficial da Variante B, com preço/rolls por POSIÇÃO e Luck por Dice", function()
+		local order = { "Starter", "Lucky", "Rampart", "Shinobi", "Flame", "Blade", "Fighter", "Storm", "Spirit", "Arcane", "Shadow", "Void", "Colossus", "Awakened", "Celestial", "Forbidden" }
+		local prices = { 0, 2500, 10000, 40000, 75000, 125000, 225000, 400000, 750000, 1400000, 2600000, 5000000, 12500000, 30000000, 75000000, 750000000 }
+		local rolls = { 0, 50, 125, 300, 425, 550, 775, 1000, 1500, 2000, 2500, 3000, 4500, 6000, 8000, 12000 }
+		for i, dice in final:diceList() do
+			expect(dice.Id).toBe(order[i])
+			expect(dice.Price).toBe(prices[i])
+			expect(dice.UnlockRequirement.Rolls or 0).toBe(rolls[i])
+			expect(dice.UnlockRequirement.Dice).toBe(order[i - 1])
 		end
-		expect(RollConfig.Pity[1].Threshold).toBe(50)
-		expect(RollConfig.Pity[2].Threshold).toBe(800)
+		expect(DiceConfig.ById.Shinobi.LuckMultiplier).toBe(1.7)
+		expect(DiceConfig.ById.Flame.LuckMultiplier).toBe(1.6)
+		expect(DiceConfig.ById.Colossus.LuckMultiplier).toBe(3.5)
+		expect(DiceConfig.ById.Awakened.LuckMultiplier).toBe(3.1)
 	end)
 
-	it("pesos propostos: os 16 Dice, soma 100%, só raridades que o pool possui (todas com peso)", function()
+	it("pesos explícitos: os 16 Dice, soma 100%, só raridades que o pool possui (todas com peso)", function()
 		local n = 0
-		for _, dice in B.current:diceList() do
+		for _, dice in final:diceList() do
 			n += 1
-			local weights = P.RarityWeights[dice.Id]
+			local weights = dice.RarityWeights
 			expect(weights ~= nil).toBeTruthy()
 			local sum = 0
 			for rarity, value in weights do
 				expect(value > 0).toBeTruthy()
-				expect(B.current:supports(dice.Id, rarity)).toBe(true)
+				expect(final:supports(dice.Id, rarity)).toBe(true)
 				sum += value
 			end
-			for _, rarity in B.current:pool(dice.Id).rarities do
+			for _, rarity in final:pool(dice.Id).rarities do
 				expect(weights[rarity] ~= nil).toBeTruthy()
 			end
 			expect(math.abs(sum - 100) < 1e-9).toBeTruthy()
 		end
 		expect(n).toBe(16)
-		expect(#B.proposed:diceList()).toBe(16)
 	end)
 
-	it("Expected Rarity Value estritamente crescente do #1 ao #16 (ordem atual)", function()
+	it("Expected Rarity Value estritamente crescente do #1 ao #16 (Luck 1)", function()
 		local prev = -1
-		for _, dice in B.current:diceList() do
-			local erv = B.erv(B.proposed, dice.Id, 1)
+		for _, dice in final:diceList() do
+			local erv = B.erv(final, dice.Id, 1)
 			if erv <= prev then
 				error(`{dice.Id}: ERV {erv} <= {prev}`)
 			end
@@ -49,32 +56,21 @@ describe("Balanceamento dos Dice (proposta, não aplicada)", function()
 		end
 	end)
 
-	it("Variante B também sem regressão na ordem dela", function()
-		local prev = -1
-		for _, id in P.VariantB.Order do
-			local erv = B.erv(B.variantB, id, 1)
-			if erv <= prev then
-				error(`Variante B, {id}: ERV {erv} <= {prev}`)
-			end
-			prev = erv
-		end
-		expect(#P.VariantB.Order).toBe(16)
-	end)
-
-	it("Forbidden: Secreto bem abaixo de 1% e < 1/hora no máximo absoluto (Luck + monetização + Roll Rápido)", function()
-		expect(P.RarityWeights.Forbidden.Secret < 0.1).toBeTruthy()
+	it("Forbidden: Secreto 0,0045% e < 1/hora no máximo absoluto (Luck + monetização + Roll Rápido)", function()
+		expect(DiceConfig.ById.Forbidden.RarityWeights.Secret).toBe(0.0045)
 		local scenarios = B.luckScenarios("Forbidden")
 		local maxLuck = scenarios[#scenarios].luck
-		local secret = B.proposed:rarityChances("Forbidden", maxLuck).Secret
-		local perHour = secret * 3600 / RollConfig.RollSpeed.FastRollInterval
-		expect(perHour < 1).toBeTruthy()
+		local secret = final:rarityChances("Forbidden", maxLuck).Secret
+		expect(secret * 3600 / RollConfig.RollSpeed.FastRollInterval < 1).toBeTruthy()
 	end)
 
-	it("Divino raro e Secreto só no Forbidden", function()
-		for _, dice in B.current:diceList() do
-			local w = P.RarityWeights[dice.Id]
+	it("Divino reduzido (Celestial 0,5% / Forbidden 0,75%) e Secreto só no Forbidden", function()
+		expect(DiceConfig.ById.Celestial.RarityWeights.Divine).toBe(0.5)
+		expect(DiceConfig.ById.Forbidden.RarityWeights.Divine).toBe(0.75)
+		for _, dice in final:diceList() do
+			local w = dice.RarityWeights
 			if w.Divine then
-				expect(w.Divine <= 2).toBeTruthy()
+				expect(w.Divine <= 0.75).toBeTruthy()
 			end
 			if w.Secret then
 				expect(dice.Id).toBe("Forbidden")
@@ -82,17 +78,29 @@ describe("Balanceamento dos Dice (proposta, não aplicada)", function()
 		end
 	end)
 
-	it("Luck nunca cria raridade ausente nem passa de 100% (proposta, Luck máxima)", function()
-		for _, dice in B.current:diceList() do
+	it("Luck nunca cria raridade ausente nem passa de 100% (Luck máxima)", function()
+		for _, dice in final:diceList() do
 			local scenarios = B.luckScenarios(dice.Id)
-			local chances = B.proposed:rarityChances(dice.Id, scenarios[#scenarios].luck)
+			local chances = final:rarityChances(dice.Id, scenarios[#scenarios].luck)
 			local sum = 0
 			for rarity, p in chances do
-				expect(B.proposed:supports(dice.Id, rarity)).toBe(true)
+				expect(final:supports(dice.Id, rarity)).toBe(true)
 				sum += p
 			end
 			expect(math.abs(sum - 1) < 1e-9).toBeTruthy()
 		end
+	end)
+
+	it("pity aprovado: Lendário 50 · Mítico 250", function()
+		expect(RollConfig.Pity[1].Id).toBe("Legendary")
+		expect(RollConfig.Pity[1].Threshold).toBe(50)
+		expect(RollConfig.Pity[2].Id).toBe("Mythic")
+		expect(RollConfig.Pity[2].Threshold).toBe(250)
+		-- Mítico 250 no Spirit (Mítico 1%): ~8% dos Míticos pelo pity, ~92 rolls entre Míticos
+		local p = B.atLeast(final, "Spirit", "Mythic", 1)
+		local s = B.pity(p, 250)
+		expect(s.reach > 0.07 and s.reach < 0.09).toBeTruthy()
+		expect(s.effectiveRolls > 90 and s.effectiveRolls < 93).toBeTruthy()
 	end)
 
 	it("fórmulas de pity da análise", function()

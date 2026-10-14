@@ -168,6 +168,36 @@ Barra de comandos, aba **SERVER**, com o jogo em Play.
 | D5 | LOJA DE DADOS | 16 Dice com rolagem; nº de personagens e chances por raridade; USAR / EM USO / BLOQUEADO | [ ] |
 | D6 | ÍNDICE | `x / 112 DESCOBERTOS` + `💎 Premium x / 9`; abas por Dice com `x/n`; aba Premium | [ ] |
 | D7 | `game.ServerStorage.RollLegendsDev:Invoke("GiveCharacter", "char_iskander_base")` | Entra no inventário; Índice: Premium sobe, /112 não muda | [ ] |
+| D8 | LOJA DE DADOS: ordem | Starter, Lucky, Rampart, **Shinobi, Flame**, Blade, Fighter, Storm, Spirit, Arcane, Shadow, Void, **Colossus, Awakened**, Celestial, Forbidden; Shinobi 40k/300 rolls, Flame 75k/425 | [ ] |
+| D9 | Diário Dia 7 (`SetDaily` para o dia 6 e resgatar) e LOJA → linha do Prisma | Botão `🌈 PRISMA (3)`; usar: reveal de um personagem AINDA NÃO descoberto do Dice em uso; contador cai para 2 | [ ] |
+| D10 | Com o Dice em uso todo descoberto, usar o Prisma | Aviso "já descobriu todos"; o contador NÃO cai | [ ] |
+
+## RANKINGS DO HUB (extra)
+
+| # | Ação | Esperado | OK |
+|---|---|---|---|
+| R1 | Ir até os 3 painéis de ranking do Hub | 3 painéis lado a lado em arco, SEM sobreposição (antes ficavam um dentro do outro) | [ ] |
+| R2 | Ler "MAIS REBIRTHS" de perto e de longe | 5 linhas: `1.` · nome · valor alinhado à direita; nada encavalado | [ ] |
+| R3 | Entrar com um jogador de nome longo | Nome cortado com "…", sem invadir a coluna do valor | [ ] |
+| R4 | Servidor com 1 jogador | Linha 1 preenchida, linhas 2–5 com "—" | [ ] |
+
+## ESTEIRA DO HUB (extra) — física só é confirmável aqui
+
+A esteira transporta pela velocidade das partes `Belt` (`AssemblyLinearVelocity`, 12 studs/s no
+sentido das setas). Os testes automáticos verificam velocidade/sentido/config; o comportamento do
+personagem em cima precisa deste teste manual.
+
+| # | Ação | Esperado | OK |
+|---|---|---|---|
+| E-A | Subir na esteira e ficar parado | O personagem é levado no sentido das setas/ripas | [ ] |
+| E-B | Observar a direção | Mesma direção da animação (ripas e dados andando) | [ ] |
+| E-C | Andar CONTRA a esteira | Avança mais devagar (sente a esteira) | [ ] |
+| E-D | Andar A FAVOR | Mais rápido que andando no chão, sem tranco | [ ] |
+| E-E | Pular em cima | No ar não é empurrado; ao cair continua sendo levado; não é lançado | [ ] |
+| E-F | Sair pela lateral | Para de ser levado imediatamente; nenhum deslize residual | [ ] |
+| E-G | Morrer/respawnar e voltar à esteira | Mesmo comportamento | [ ] |
+| E-H | 2 jogadores ao mesmo tempo (Play com 2 clientes) | Os dois são levados, sem jitter forte | [ ] |
+| E-I | Mobile (emulador do Studio) | Mesmo comportamento | [ ] |
 
 ---
 

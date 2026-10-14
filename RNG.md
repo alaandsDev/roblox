@@ -17,14 +17,36 @@ PASSO 2  personagem daquela raridade no Dice: P(c | r, Dice) = peso(c) / Σ peso
 P(personagem) = P(raridade | Dice, Luck, pity) × P(personagem | raridade, Dice)
 ```
 
-- **Pesos base** (`DiceConfig.BaseRarityPercent`): 55 / 25 / 12 / 5 / 2 / 0,75 / 0,20 / 0,05 (= 100).
-  Cada Dice usa só as raridades que POSSUI, renormalizadas para 100% (`DiceCore.normalize`).
-  Raridade ausente = 0% (sem reroll, sem conversão, sem fallback). É a base matemática
-  inicial, **BALANCE_PENDING** (ex.: Forbidden fica 75/20/5 só por normalização).
+- **Pesos FINAIS** (`DiceConfig.RarityWeights`, explícitos e aprovados — `DICE_BALANCE_ANALYSIS.md`):
+
+  | # | Dice | Pesos (%) |
+  |---:|---|---|
+  | 1 | Starter | C 62 · U 26 · R 9 · E 3 |
+  | 2 | Lucky | C 55 · U 28 · R 12 · E 5 |
+  | 3 | Rampart | C 45 · U 32 · R 16 · E 7 |
+  | 4 | Shinobi | C 35 · U 33 · R 22 · E 10 |
+  | 5 | Flame | U 60 · R 28 · E 11 · L 1 |
+  | 6 | Blade | U 50 · R 32 · E 16 · L 2 |
+  | 7 | Fighter | U 45 · R 33 · E 19 · L 3 |
+  | 8 | Storm | R 60 · E 32 · L 8 |
+  | 9 | Spirit | R 50 · E 36 · L 13 · M 1 |
+  | 10 | Arcane | R 45 · E 37 · L 16 · M 2 |
+  | 11 | Shadow | E 65 · L 30 · M 5 |
+  | 12 | Void | E 55 · L 36 · M 8,7 · D 0,3 |
+  | 13 | Colossus | E 40 · L 45 · M 15 |
+  | 14 | Awakened | L 85 · M 15 |
+  | 15 | Celestial | L 64 · M 35,5 · D 0,5 |
+  | 16 | Forbidden | M 99,2455 · D 0,75 · S 0,0045 |
+
+  Ordem oficial = Variante B (Shinobi antes do Flame, Colossus antes do Awakened). Preço e rolls de
+  desbloqueio são da POSIÇÃO; o LuckMultiplier é do Dice. Raridade ausente = 0% (sem reroll, sem
+  conversão, **sem fallback**: Dice sorteável sem `RarityWeights` é erro). A tabela global antiga
+  (`BaseRarityPercent`) é só referência da análise.
 - **Luck** (mesma filosofia): `peso(r) = RarityWeights_Dice(r) × LuckEfetiva ^ LuckExponent(r)`,
   renormalizado entre as raridades do Dice. Sobe as altas, dilui as baixas, soma 100%, nunca
   cria raridade ausente. A Luck continua `LuckDoDado × upgrades × boost × renascimento × passes`;
-  as âncoras mantêm o multiplicador antigo e os Dice novos foram interpolados (BALANCE_PENDING).
+  as âncoras mantêm o multiplicador antigo e os Dice novos foram interpolados. No máximo absoluto
+  (Luck máxima + monetização + Roll Rápido) o Forbidden dá 0,91 Secreto/hora (meta < 1).
 - **Pity** (contadores salvos em `Pity`, mesmo formato): uma regra é **compatível** com o Dice se
   o Dice possui a raridade do piso.
   - incrementa: roll num Dice compatível que saiu abaixo do piso;
@@ -37,8 +59,12 @@ P(personagem) = P(raridade | Dice, Luck, pity) × P(personagem | raridade, Dice)
   primeiro Dice F2P (por ordem) que tem X. Não mexe no pity.
 - **Odds exibidas** (`1 EM X`): chance base do personagem no Dice dele (`DiceCore:odds`).
 - **Premium (9)**: fora dos Dice F2P; nunca sorteados nesta fase.
-- **Prism** (exclusivo do Diário): continua sendo dado do jogador, mas não é sorteável
-  (sem pool próprio — decisão pendente para a fase de balanceamento).
+- **Prisma da Coleção** (Prism, Dia 7 do Diário; `PrismConfig`): `RequestPrismRoll` sorteia no Dice
+  selecionado só entre os NÃO descobertos, com as probabilidades relativas do Dice
+  (`P(c)/Σ elegíveis`, `DiceCore:prismPick`). Não mexe em pesos, Luck, pity (`AffectsPity = false`)
+  nem conta roll (`CountsAsRoll = false`). Dice completo, sem usos, intervalo ou inventário cheio =
+  recusado SEM gastar o uso. Usos: `UsesPerReward` a cada entrega do Prism pelo Diário (teto
+  `MaxCharges`); intervalo `CooldownSeconds`. Não é vendido.
 - Auditoria: `RollLegendsDev:Invoke("DiceProbabilityReport")` (todos os Dice) e `DiceReport`.
   Testes: `tests/Dice.spec.luau` (inclui 100.000 rolls por Dice, ±5σ por personagem).
 
@@ -88,7 +114,7 @@ Prism 2,25 (exclusivo do Diário).
 | Regra | Garante | Limite |
 |---|---|---:|
 | Legendary | Lendário ou melhor | 50 |
-| Mythic | Mítico ou melhor | 800 |
+| Mythic | Mítico ou melhor | 250 (era 800; aprovado com os pesos finais) |
 
 - Contador = rolls seguidos **sem** tirar `MinRarity` ou melhor. No roll de número `limite`
   o servidor sorteia normalmente; se o resultado ficar abaixo do piso, entrega **exatamente
@@ -117,6 +143,12 @@ consistente entre jogadores; a Luck usada aparece ao lado no Divino/Secreto.
 8. Resposta: `{ CharacterId, Rarity, Variant, Uid, IsNew, AutoSold, SoldFor, PityTriggered, Luck, TimesSeen, Odds }`.
 
 ## Simulação
+
+> **Modelo global legado:** `tools/sim/Odds.luau`, `tools/sim/EconomySim.luau`, `RNG_SIMULATION.md` e
+> os testes `Odds.spec`/`Economy.spec` ainda simulam o sorteio GLOBAL antigo, com o pity congelado
+> nos valores em que foi auditado (Lendário 50 / Mítico 800). O jogo sorteia por Dice
+> (`DiceCore`, pity de produção 50/250, `tests/Dice.spec.luau` e `DICE_BALANCE_ANALYSIS.md`).
+> Reescrever essas ferramentas para o modelo por Dice abre a fase de economia.
 
 `RNG_SIMULATION.md`: 1 000 000 rolls por cenário (sem Luck, Luck média, Luck alta, com pity),
 gerado por `tools/sim/simulate_rng.luau`. O teste `RollCore.spec` também roda 1 000 000 rolls

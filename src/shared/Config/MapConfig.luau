@@ -93,7 +93,11 @@ MapConfig.Conveyor = {
 	RailHeight = 0.5, -- bordas laterais baixas (acima do topo da esteira)
 	CrossingMargin = 1.5, -- folga das bordas em volta de cada caminho cruzado
 	BeltWidth = 8,
-	Speed = 12, -- studs por segundo (animação no cliente)
+	-- Velocidade (studs/s) e sentido ÚNICOS da esteira: a animação do cliente (ripas/objetos) e o
+	-- transporte FÍSICO (AssemblyLinearVelocity das partes Belt/Joint) usam os mesmos valores.
+	Speed = 12,
+	Direction = 1, -- 1 = ordem do caminho (MapLayout:conveyorPath); -1 = sentido contrário
+	CarryPlayers = true, -- a esteira transporta quem está em cima (false = só visual)
 	SlatCount = 72, -- ripas que andam sobre a esteira (efeito de movimento)
 	ItemCount = 16, -- dados/cristais transportados
 }

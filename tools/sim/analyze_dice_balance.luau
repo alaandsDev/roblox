@@ -1,7 +1,7 @@
 --[[
 	Análise de balanceamento dos 16 Dice (Lune): lune run tools/sim/analyze_dice_balance.luau
-	Escreve DICE_BALANCE_ANALYSIS.md. Usa o MESMO DiceCore do servidor com os pesos PROPOSTOS
-	(tools/sim/DiceBalanceProposal.luau); a produção (DiceConfig) não é alterada.
+	Escreve DICE_BALANCE_ANALYSIS.md com os pesos FINAIS de produção (DiceConfig: Variante B +
+	Divino reduzido, aprovados), comparados com a normalização antiga (commit 4a69c25).
 	Simulação determinística (xorshift32, sementes fixas): 1.000.000 rolls por Dice + sessões
 	de 100 / 1.000 / 10.000 rolls nos Dice endgame.
 ]]
@@ -14,9 +14,9 @@ local RollConfig = require("../../src/shared/Config/RollConfig")
 local DiceConfig = require("../../src/shared/Config/DiceConfig")
 local CharacterConfig = require("../../src/shared/Config/CharacterConfig")
 
-local P = B.Proposal
-local current, proposed = B.current, B.proposed
-local diceList = current:diceList()
+local P = B.Params
+local current, proposed = B.baseline, B.final -- "current" = antes (normalização); "proposed" = FINAL
+local diceList = proposed:diceList()
 local N_SIM = 1000000
 local SHORT = { Common = "C", Uncommon = "U", Rare = "R", Epic = "E", Legendary = "L", Mythic = "M", Divine = "D", Secret = "S" }
 local PT = { Common = "Comum", Uncommon = "Incomum", Rare = "Raro", Epic = "Épico", Legendary = "Lendário", Mythic = "Mítico", Divine = "Divino", Secret = "Secreto" }
@@ -67,11 +67,14 @@ local function money(n: number): string
 end
 
 ------------------------------------------------------------------------------------
-line("# DICE BALANCE ANALYSIS — Roll Legends (PROPOSTA, não aplicada)")
+line("# DICE BALANCE ANALYSIS — Roll Legends (FINAL, aplicado)")
 line()
 line("Gerado por `lune run tools/sim/analyze_dice_balance.luau` com o **mesmo `DiceCore` do servidor**.")
-line("Pesos propostos em `tools/sim/DiceBalanceProposal.luau`. **Produção inalterada**: `DiceConfig`,")
-line("Luck, pity, preços e unlocks continuam como no commit 4a69c25 até a aprovação.")
+line("**Pesos FINAIS de produção** (`DiceConfig.RarityWeights`, explícitos): proposta de e4b73ac aprovada")
+line("com a **Variante B** (Shinobi antes do Flame, Colossus antes do Awakened) e o **Divino reduzido**")
+line("(Celestial 0,5% / Forbidden 0,75%). Pity: Lendário 50 (mantido) · Mítico **250**. Luck: inalterada.")
+line("Preço e rolls de desbloqueio seguem a POSIÇÃO; o LuckMultiplier é de cada Dice. \"Antes\" = normalização")
+line("da tabela global (commit 4a69c25).")
 line()
 line("- Pools (personagens por Dice) **não mudam**; só os `RarityWeights`.")
 line(string.format("- Cadência: Normal = %g s/roll (1 roll/s) · Roll Rápido = %g s/roll (2 rolls/s). Tempos = expectativa matemática, não garantia.", RollConfig.RollSpeed.BaseInterval, RollConfig.RollSpeed.FastRollInterval))
@@ -86,9 +89,9 @@ line("- Luck nos cenários: 1,0x · Luck do próprio Dice (LuckMultiplier, sem u
 line()
 
 ------------------------------------------------------------------------------------
-line("## 1. Tabela proposta dos 16 Dice")
+line("## 1. Tabela final dos 16 Dice (ordem oficial)")
 line()
-line("| # | Dice | Unlock (rolls · Dice anterior) | Preço | Pool | Pesos propostos (Luck 1) | Luck do Dice | ERV atual | ERV proposto |")
+line("| # | Dice | Unlock (rolls · Dice anterior) | Preço | Pool | Pesos finais (Luck 1) | Luck do Dice | ERV antes | ERV final |")
 line("|---:|---|---|---:|---|---|---:|---:|---:|")
 local prevProposed, prevCurrent = 0, 0
 local regressions = { current = {}, proposed = {} }
@@ -109,9 +112,9 @@ line("Pool: quantidade de personagens por raridade (C/U/R/E/L/M/D/S). ERV com Lu
 line()
 
 ------------------------------------------------------------------------------------
-line("## 2. Comparação atual × proposta (Luck 1)")
+line("## 2. Comparação antes × final (Luck 1)")
 line()
-line("| Dice | Atual (normalização da tabela global) | Proposta |")
+line("| Dice | Antes (normalização da tabela global) | Final |")
 line("|---|---|---|")
 for _, dice in diceList do
 	line(string.format("| %s | %s | %s |", dice.Id, weightsText(current, dice.Id), weightsText(proposed, dice.Id)))
@@ -121,50 +124,31 @@ line()
 ------------------------------------------------------------------------------------
 line("## 3. Regressões")
 line()
-line("**Atual (produção):**")
+line("**Antes (normalização, ordem atual):**")
 line()
 for _, r in regressions.current do
 	line("- " .. r)
 end
 line()
-line("**Proposta:** " .. (if #regressions.proposed == 0 then "nenhuma — ERV estritamente crescente do #1 ao #16." else table.concat(regressions.proposed, "; ")))
+line("**Final:** " .. (if #regressions.proposed == 0 then "nenhuma — ERV estritamente crescente do #1 ao #16." else table.concat(regressions.proposed, "; ")))
 line()
-line("**Limitações estruturais dos pools (sinalizadas, NÃO corrigidas — nenhum personagem foi movido):**")
+line("**Ordem (Variante B aplicada):** Shinobi (#4, sem Lendário) agora vem ANTES do Flame (#5, primeiro")
+line("Lendário) e Colossus (#13, E/L/M) antes do Awakened (#14, L/M): o jogador nunca \"perde\" uma raridade")
+line("ao avançar. Pools inalterados. O LuckMultiplier é do Dice, então Shinobi (1,7x) > Flame (1,6x) e")
+line("Colossus (3,5x) > Awakened (3,1x) — veja a coluna ERV com Luck do Dice abaixo.")
 line()
-line("- **Shinobi (#5) não tem Lendário**, e vem depois do Flame (#4), que tem. Pesos não resolvem a")
-line("  métrica \"chance de Lendário\" (0% no Shinobi). A proposta mantém o ERV crescente via Épico 18%,")
-line("  mas o jogador perde o Lendário ao avançar. Sugestão (não aplicada): trocar a ordem Shinobi ↔ Flame.")
-line("- **Colossus (#14) tem Épico e o Awakened (#13) não.** A proposta compensa com Mítico 27% no")
-line("  Colossus (ERV 163,5 > 145). Sugestão (não aplicada): trocar a ordem Colossus ↔ Awakened.")
-line("- **Forbidden tem 1 único Mítico**: com Mítico ~98,5%, esse personagem sai em quase todo roll do")
-line("  Forbidden (vira o \"comum\" do endgame). Inevitável com esse pool; o valor do Dice são os 3 Divinos")
-line("  e os 3 Secretos.")
-line()
-line("### Variante B (alternativa recomendada para a fase de unlocks — NÃO aplicada)")
-line()
-line("Mesmos pools; troca Shinobi ↔ Flame e Colossus ↔ Awakened. Nessa ordem o Shinobi e o Colossus")
-line("podem ser mais modestos (Épico 10% e Mítico 15%, em vez de 18% e 27%), e o jogador não \"perde\" o")
-line("Lendário (Shinobi) nem ganha Épico de volta no endgame (Colossus). Os outros 14 Dice iguais à proposta.")
-line()
-line("| # | Dice | Pesos (Luck 1) | ERV |")
-line("|---:|---|---|---:|")
-local prevB = 0
-local regressionsB = {}
-for i, id in P.VariantB.Order do
-	local erv = B.erv(B.variantB, id, 1)
-	if erv <= prevB then
-		table.insert(regressionsB, id)
-	end
-	prevB = erv
-	line(string.format("| %d | %s | %s | %.1f |", i, id, weightsText(B.variantB, id), erv))
+line("| # | Dice | ERV Luck 1 | ERV Luck do Dice |")
+line("|---:|---|---:|---:|")
+for _, dice in diceList do
+	line(string.format("| %d | %s | %.1f | %.1f |", dice.Order, dice.Id, B.erv(proposed, dice.Id, 1), B.erv(proposed, dice.Id, dice.LuckMultiplier)))
 end
 line()
-line("Regressões na Variante B: " .. (if #regressionsB == 0 then "nenhuma (ERV estritamente crescente)." else table.concat(regressionsB, ", ")))
-line("A ordem de desbloqueio (Order/UnlockRequirement/preço por posição) só muda se você aprovar.")
+line("Limitação do pool (sinalizada): o Forbidden tem 1 único Mítico, que sai em ~99% dos rolls do")
+line("Forbidden (é o \"comum\" do endgame); o valor do Dice são os 3 Divinos e os 3 Secretos.")
 line()
 
 ------------------------------------------------------------------------------------
-line("## 4. Impacto da Luck (proposta)")
+line("## 4. Impacto da Luck (final)")
 line()
 line("Chance da raridade MAIS ALTA de cada Dice nos 4 cenários de Luck (e 1 em X).")
 line()
@@ -184,11 +168,11 @@ line()
 line("Leitura: a Luck atual tem retornos decrescentes (Luck efetiva nunca passa de ~11) e, nos Dice")
 line("endgame, o denominador é dominado por Lendário/Mítico (que também sobem com a Luck). Por isso a")
 line("Luck máxima multiplica o Secreto do Forbidden por ~2,8x (não por 20–90x). **Não é preciso mudar")
-line("a estrutura da Luck** com a proposta; ver §9 para o efeito por hora.")
+line("a estrutura da Luck** com os pesos finais; ver §6 e §11 para o efeito por hora e por prêmio.")
 line()
 
 ------------------------------------------------------------------------------------
-line("## 5. Detalhe por Dice (proposta)")
+line("## 5. Detalhe por Dice (final)")
 for _, dice in diceList do
 	local scenarios = B.luckScenarios(dice.Id)
 	local own = scenarios[2].luck
@@ -255,29 +239,21 @@ for _, id in { "Celestial", "Forbidden" } do
 	end
 end
 line()
-line("**Forbidden:** com a proposta (Mítico 98,4955% · Divino 1,5% · Secreto 0,0045%), o Secreto é 1 em")
-line("~22.200 com Luck 1 (cada um dos 3 Secretos: 1 em ~66.700) e fica **abaixo de 1 por hora mesmo no")
-line("máximo absoluto** (Luck máxima com monetização + Roll Rápido) — a mesma meta da auditoria de RNG")
-line("anterior (com 0,005% dava 1,01/h). A normalização atual (75/20/5) dava 1 Secreto a cada 20 rolls.")
+line("**Forbidden (final):** Mítico 99,2455% · Divino 0,75% · Secreto 0,0045%. Secreto 1 em ~22.200 com")
+line("Luck 1 (cada um dos 3: 1 em ~66.700), **abaixo de 1 por hora mesmo no máximo absoluto** (Luck máxima com")
+line("monetização + Roll Rápido) — meta da auditoria de RNG. Antes (75/20/5) era 1 Secreto a cada 20 rolls.")
 line()
-line("**Tensão a decidir — Divino no endgame:** a meta da auditoria antiga (\"Divino < 3/h\") era para o")
-line("sorteio GLOBAL. Nos Dice endgame, que existem para entregar Divinos, a proposta dá ~36–150")
-line("Divinos/h no Celestial/Forbidden (1 Divino a cada 30 s–1m40s), mas cada Divino específico continua")
-line("1 em 200–300 rolls. Se você quiser o Divino mais raro mesmo no endgame, a alternativa é metade:")
-line("Celestial L 64 / M 35,5 / D 0,5 e Forbidden M 99,2455 / D 0,75 / S 0,0045 (ERV continua crescente: 216,0 e 412,7).")
-line()
-line("**Celestial:** Divino 1% (cada um dos 3: 1 em 300). Mítico 35,5% continua frequente, mas é o")
-line("Dice que antecede o Forbidden e tem 2 Míticos e 2 Lendários: o valor está nos Divinos.")
+line("**Celestial (final):** Lendário 64% · Mítico 35,5% · Divino 0,5% (cada um dos 3 Divinos: 1 em 600).")
 line()
 
 ------------------------------------------------------------------------------------
-line("## 7. Pity com os pesos propostos")
+line("## 7. Pity com os pesos finais")
 line()
 local thresholds = {}
 for _, rule in RollConfig.Pity do
 	thresholds[rule.Id] = rule.Threshold
 end
-line(string.format("Atual: Lendário %d · Mítico %d. Um pity só vale em Dice que tem a raridade do piso.", thresholds.Legendary, thresholds.Mythic))
+line(string.format("Final: Lendário %d (mantido) · Mítico %d (era 800). Um pity só vale em Dice que tem a raridade do piso.", thresholds.Legendary, thresholds.Mythic))
 line(string.format("Tempo para %d rolls: Normal %s · Rápido %s. Para %d rolls: Normal %s · Rápido %s.", thresholds.Legendary, (B.timing(thresholds.Legendary)), select(2, B.timing(thresholds.Legendary)), thresholds.Mythic, (B.timing(thresholds.Mythic)), select(2, B.timing(thresholds.Mythic))))
 line()
 for _, rule in RollConfig.Pity do
@@ -315,22 +291,16 @@ end
 line("\"Chega ao pity\" = fração dos ciclos que só terminam pelo pity ((1−p)^(N−1)); \"rolls efetivos\" =")
 line("rolls médios entre acertos COM pity ((1−(1−p)^N)/p). Sem pity seria 1/p.")
 line()
-line("**Leitura — Lendário 50:** no Flame (Lendário 1%) 61% dos Lendários viriam do pity e o Lendário")
-line("sairia a cada ~40 rolls (não 100): o pity, e não o RNG, passa a definir a raridade da primeira")
-line("vitrine. No Blade (2%) 37%; no Fighter (3%) 22%; do Storm em diante (≥8%) o pity quase não age.")
-line("**Recomendação:** subir para **150** (Flame: 22% pelo pity, Lendário a cada ~78 rolls; ≥ Blade quase")
-line("irrelevante) — continua sendo uma rede de segurança, sem esvaziar a raridade. Manter 50 só se a")
-line("intenção for um Lendário bem mais frequente no início.")
+line("**Lendário 50 (mantido por decisão de design):** no Flame (Lendário 1%) ~61% dos Lendários vêm do")
+line("pity (1 Lendário a cada ~40 rolls em vez de 100), no Blade ~37%, no Fighter ~22%; do Storm em diante o")
+line("pity quase não age. Intencional: início/meio de jogo mais generoso, com momentos fortes para iniciantes.")
 line()
-line("**Leitura — Mítico 800:** o Mítico só existe do Spirit em diante; no Spirit (1%) a chance de")
-line("chegar a 800 rolls sem Mítico é ~0,03%, e do Arcane em diante é ~0. **O pity Mítico 800 é")
-line("praticamente decorativo.** Com **250**: Spirit ~8% dos Míticos pelo pity (Mítico a cada ~92 rolls")
-line("em vez de 100), Arcane ~0,6%, Shadow+ ~0 — uma rede de segurança real só onde o Mítico é raro.")
-line("**Recomendação: voltar o Mítico para 250.** (400 fica no meio: Spirit ~1,8%.)")
+line("**Mítico 250 (aplicado):** só onde o Mítico é raro — Spirit ~8% dos Míticos pelo pity (~92 rolls entre")
+line("Míticos em vez de 100), Arcane ~0,6%, Shadow em diante ~0. Com 800 era decorativo (~0,03% no Spirit).")
 line()
 
 ------------------------------------------------------------------------------------
-line("## 8. Preços e unlocks (avaliação; nada alterado)")
+line("## 8. Preços e unlocks (por posição; economia ainda pendente)")
 line()
 line("| # | Dice | Preço | × anterior | Rolls p/ desbloquear | Δ rolls | ~tempo de roll (Normal) | Completar pool anterior (Luck do Dice) |")
 line("|---:|---|---:|---:|---:|---:|---:|---:|")
@@ -342,18 +312,10 @@ for _, dice in diceList do
 	prev = dice
 end
 line()
-line("Leitura:")
-line()
-line("- Preço: ~×2–4 por Dice até o Celestial e **×10 no Forbidden (750M)** — o salto final é o maior")
-line("  da curva. Faz sentido como endgame, mas precisa ser validado com a renda real (fase de economia).")
-line("- **Completar cada pool é rápido** com os pesos propostos (Luck do próprio Dice): dezenas de rolls")
-line("  do Starter ao Shadow, ~260 no Void, ~430 no Celestial; só o **Forbidden é longo (~71.600 rolls,")
-line("  ~20 h em Normal / ~10 h com Roll Rápido)** por causa dos 3 Secretos. Os rolls exigidos entre Dice")
-line("  (+50 a +4.000) são MAIORES que isso: o requisito de rolls e, principalmente, o **preço** é que")
-line("  seguram a progressão, não o RNG. Consequência: o Índice F2P (exceto Forbidden) pode ser completado")
-line("  rápido quando o dinheiro chega — a longevidade vem da economia, dos níveis/variantes e do Forbidden.")
-line("  Sugestão separada (fase de economia): validar o tempo até cada preço com a renda real e decidir")
-line("  se algum pool deve ficar mais longo (ex.: Divino/Mítico um pouco mais raros nos Dice 9–15).")
+line("Preço e rolls pertencem à POSIÇÃO (#4 = 40k / 300 rolls, #5 = 75k / 425, #13 = 12,5M / 4.500,")
+line("#14 = 30M / 6.000): com a Variante B, Shinobi e Colossus ficaram mais baratos e Flame e Awakened mais caros.")
+line("Completar cada pool custa dezenas de rolls (Void/Celestial: centenas; Forbidden: dezenas de milhares por")
+line("causa dos Secretos): o freio da progressão é o PREÇO. Validar com a renda real na fase de economia.")
 line()
 
 ------------------------------------------------------------------------------------
@@ -389,7 +351,7 @@ line(string.format("Maior desvio entre TODOS os personagens dos 16 Dice: |z| = %
 line()
 
 ------------------------------------------------------------------------------------
-line("## 10. Sessões endgame (Luck do Dice, pity atual 50/800, sementes fixas)")
+line(string.format("## 10. Sessões endgame (Luck do Dice, pity %d/%d, sementes fixas)", thresholds.Legendary, thresholds.Mythic))
 line()
 line("| Dice | Sessão | Sessões simuladas | Míticos (média) | Divinos (média) | Secretos (média) | P(≥1 Divino) | P(≥1 Secreto) |")
 line("|---|---:|---:|---:|---:|---:|---:|---:|")
@@ -428,35 +390,53 @@ line("Sessão de 100 rolls ≈ 1m40s (Normal); 1.000 ≈ 16m40s; 10.000 ≈ 2h47
 line()
 
 ------------------------------------------------------------------------------------
-line("## 11. Prism (Dia 7 do Diário) — 3 propostas (nada implementado)")
+line("## 11. Endgame: rolls e tempo esperados (final)")
 line()
-line("1. **Prisma da Coleção** (recomendada): 1 \"roll de prisma\" por dia, gasto na Loja de Dados. Sorteia")
-line("   com as chances normais do Dice selecionado, mas **só entre os personagens que o jogador ainda")
-line("   NÃO descobriu** naquele Dice (se já descobriu todos, vira um roll normal). Não aumenta raridade,")
-line("   não acelera rolls e não se compra: ajuda a completar o Índice e dá um motivo para trocar de Dice.")
-line("2. **Prisma de Variante**: os próximos 25 rolls com o Prism equipado (1x por dia) têm chance de")
-line("   sair como variante visual (Silver/Gold) — mesmo personagem, mesmo RNG de raridade. Aproveita a")
-line("   Fusão/variantes, mas mexe na economia das variantes (renda maior) e exige balanceamento próprio.")
-line("3. **Prisma Espelho**: o Prism \"copia\" o Dice desbloqueado mais alto e dá um bônus de Luck pequeno")
-line("   (+10%) por 10 minutos 1x/dia. Simples, mas é mais Luck (pouco interessante e encosta em P2W de tempo).")
-line()
-line("**Recomendação: Prisma da Coleção** — usa a mecânica de coleção/RNG, é limitado por dia, é F2P")
-line("(vem do Diário) e não substitui nenhum dos 16 Dice; a probabilidade exibida continua sendo a do")
-line("Dice (filtrada), então a API de probabilidade atual serve com um filtro de \"não descobertos\".")
+line("| Prêmio | Cenário | Chance | Rolls esperados | Normal (1/s) | Roll Rápido (2/s) |")
+line("|---|---|---:|---:|---:|---:|")
+local function prize(label: string, diceId: string, filter: (string) -> boolean, perCharacter: string?)
+	for _, s in B.luckScenarios(diceId) do
+		local p = 0
+		if perCharacter then
+			p = proposed:characterProbability(diceId, perCharacter, s.luck)
+		else
+			for rarity, chance in proposed:rarityChances(diceId, s.luck) do
+				if filter(rarity) then
+					p += chance
+				end
+			end
+		end
+		local normal, fast = B.timing(1 / p)
+		line(string.format("| %s | %s | %s | %s | %s | %s |", label, s.name, pct(p), oneIn(1 / p), normal, fast))
+	end
+end
+prize("Divino (Celestial)", "Celestial", function(r)
+	return r == "Divine"
+end)
+prize("Divino (Forbidden)", "Forbidden", function(r)
+	return r == "Divine"
+end)
+prize("Secreto (Forbidden, qualquer)", "Forbidden", function(r)
+	return r == "Secret"
+end)
+for _, id in proposed:pool("Forbidden").byRarity.Secret do
+	prize(string.format("Secreto %s (`%s`)", CharacterConfig.ById[id].Name, id), "Forbidden", function()
+		return false
+	end, id)
+end
 line()
 
-------------------------------------------------------------------------------------
-line("## 12. Recomendações (para aprovação; nada aplicado)")
+line("## 12. Prisma da Coleção (implementado)")
 line()
-line("1. Aplicar os `RarityWeights` propostos (§1) como `RarityWeights` explícitos no `DiceConfig`.")
-line("2. Pity Mítico **800 → 250**; pity Lendário **50 → 150** (ou manter 50 se o início deve ser generoso).")
-line("3. Luck: **sem mudança estrutural** — com os pesos propostos o Secreto fica < 1/h no máximo absoluto.")
-line("4. Ordem dos Dice: preferir a **Variante B** (Shinobi ↔ Flame e Colossus ↔ Awakened, com Épico 10% no")
-line("   Shinobi e Mítico 15% no Colossus) — mesmos pools, curva mais natural; exige mudar a ordem de unlock.")
-line("5. Preços/unlocks: manter por ora; validar com a renda real na fase de economia (o preço é o freio")
-line("   real da progressão; ×10 no Forbidden).")
-line("6. Divino no endgame: manter (1% Celestial / 1,5% Forbidden) ou usar a alternativa com metade (§6).")
-line("7. Prism: Prisma da Coleção.")
+line("Prism (Dia 7 do Diário) = **Prisma da Coleção**: cada uso sorteia no Dice SELECIONADO, mas só entre os")
+line("personagens ainda NÃO descobertos, com as probabilidades relativas do Dice (P(c)/Σ elegíveis). Não muda")
+line("pesos, Luck, pity (`PrismConfig.AffectsPity = false`) nem a contagem de rolls; Dice completo = recusado")
+line("sem gastar o uso; não é vendido. Usos: `PrismConfig.UsesPerReward` por entrega do Diário (teto")
+line("`MaxCharges`), intervalo mínimo `CooldownSeconds`.")
+line()
+line("Exemplo (Forbidden, só faltando os 3 Secretos): o prisma entrega um Secreto com 100% de chance — é o")
+line("efeito desejado de \"completar a coleção\", limitado pelos usos que só o Diário dá.")
+line()
 
 fs.writeFile("DICE_BALANCE_ANALYSIS.md", table.concat(out, "\n") .. "\n")
 print("DICE_BALANCE_ANALYSIS.md escrito (" .. #out .. " linhas)")

@@ -924,9 +924,14 @@ local function buildSocial(parent: Folder)
 	-- Rankings: pódio (ouro/prata/bronze) na frente de 3 painéis
 	local boards = Build.model("Leaderboards", parent)
 	local lo = facingHub(s.Leaderboards)
+	-- Arco côncavo virado para o Hub. ANTES: raio 4 com ±28° => centros a ~1,9 stud e painéis de
+	-- 9 studs uns DENTRO dos outros (os textos das mesmas linhas apareciam lado a lado). Agora o
+	-- pivô fica BOARD_RADIUS à frente e a corda entre painéis vizinhos = BOARD_SPACING (> largura).
+	local BOARD_RADIUS = 24
+	local BOARD_SPACING = 11 -- moldura 9,8 + folga
+	local step = 2 * math.asin(BOARD_SPACING / (2 * BOARD_RADIUS))
 	for i, key in { "map.lb_rebirths", "map.lb_tower", "map.lb_rolls" } do
-		local angle = math.rad((i - 2) * 28)
-		local panelCf = lo * CFrame.Angles(0, angle, 0) * CFrame.new(0, 0, 4)
+		local panelCf = lo * CFrame.new(0, 0, 4 - BOARD_RADIUS) * CFrame.Angles(0, (i - 2) * step, 0) * CFrame.new(0, 0, BOARD_RADIUS)
 		for _, x in { -3.5, 3.5 } do
 			Build.decor(Build.part(Vector3.new(1, 3, 1), panelCf * CFrame.new(x, 1.5, 0), {
 				Color = rgb(70, 65, 85),
@@ -938,14 +943,7 @@ local function buildSocial(parent: Folder)
 			Color = rgb(40, 35, 60),
 			Parent = boards,
 		})
-		Build.sign(panel, Enum.NormalId.Front, {
-			{ Localization.t(key), 0.14, rgb(255, 220, 80) },
-			{ "1. —", 0.1 },
-			{ "2. —", 0.1 },
-			{ "3. —", 0.1 },
-			{ "4. —", 0.1 },
-			{ "5. —", 0.1 },
-		})
+		Build.rankingBoard(panel, Enum.NormalId.Front, Localization.t(key), rgb(255, 220, 80), 5)
 		Build.decor(Build.part(Vector3.new(9.8, 11.8, 0.4), panelCf * CFrame.new(0, 8.5, 0.6), { Name = "PanelFrame", Color = rgb(60, 140, 230), Parent = boards }))
 	end
 	local podiums: { { x: number, h: number, color: Color3 } } = {
@@ -1016,17 +1014,22 @@ local function buildConveyor(parent: Folder)
 		flush(length)
 	end
 
+	-- TRANSPORTE: a parte ancorada com AssemblyLinearVelocity carrega pela física de contato quem
+	-- está em cima (simulado no dono do personagem: o cliente). Sem script, sem loop, sem CFrame
+	-- no personagem; ao sair da esteira não há mais contato, logo nenhuma força.
 	for i, a in path.points do
 		local b = path.points[i % count + 1]
 		local from = Vector3.new(a.x, y, a.z)
 		local to = Vector3.new(b.x, y, b.z)
 		local length = (to - from).Magnitude
 		local cf = CFrame.lookAt((from + to) / 2, to)
-		Build.part(Vector3.new(c.BeltWidth, c.BeltThickness, length), cf, { Name = "Belt", Color = beltColor, Parent = parent })
+		local belt = Build.part(Vector3.new(c.BeltWidth, c.BeltThickness, length), cf, { Name = "Belt", Color = beltColor, Parent = parent })
+		local vx, vz = MapLayout.beltVelocity(c, a.x, a.z, b.x, b.z)
+		belt.AssemblyLinearVelocity = Vector3.new(vx, 0, vz)
 		for _, side in { -1, 1 } do
 			rails(from, to, side)
 		end
-		-- Disco na emenda das curvas (mesma altura da esteira: não vira degrau)
+		-- Disco na emenda das curvas (mesma altura da esteira: não vira degrau; decorativo)
 		Build.decor(Build.cylinder(c.BeltWidth, c.BeltThickness, CFrame.new(a.x, y - c.BeltThickness / 2, a.z), {
 			Name = "Joint",
 			Color = beltColor,

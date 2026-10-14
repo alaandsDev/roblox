@@ -11,7 +11,7 @@
 
 	Probabilidade em DUAS etapas (nada de raridade global + reroll):
 	    P(personagem) = P(raridade | Dice, Luck, pity) × P(personagem | raridade, Dice)
-	    P(raridade | Dice) sem Luck = RarityWeights do Dice (soma 100%) — só raridades que o Dice POSSUI
+	    P(raridade | Dice) sem Luck = RarityWeights EXPLÍCITOS do Dice (soma 100%) — só raridades que ele POSSUI
 	    P(personagem | raridade)   = peso / Σ pesos da raridade no Dice (hoje: 1 / quantidade)
 
 	Luck (mesma filosofia do RollCore, aplicada sobre o Dice):
@@ -137,7 +137,12 @@ function DiceCore.validate(diceConfig: any, characterConfig: any, rarityConfig: 
 				end
 			end
 		end
-		local percent = (weights and weights[dice.Id]) or dice.RarityWeights or DiceCore.normalize(diceConfig.BaseRarityPercent, supported)
+		-- Sem fallback: Dice sorteável precisa de RarityWeights explícitos
+		local percent = (weights and weights[dice.Id]) or dice.RarityWeights
+		if not percent then
+			table.insert(problems, `{dice.Id}: sem RarityWeights explícitos (a normalização não define pesos de produção)`)
+			percent = {}
+		end
 		local sum = 0
 		for rarity, value in percent do
 			sum += value
@@ -191,12 +196,10 @@ function DiceCore.new(diceConfig: any, characterConfig: any, rarityConfig: any, 
 		if not pool then
 			continue
 		end
-		local supported: { [string]: boolean } = {}
 		local rarities, characters = {}, {}
 		for _, rarity in rarityConfig.Order do
 			local ids = pool[rarity]
 			if ids and #ids > 0 then
-				supported[rarity] = true
 				table.insert(rarities, rarity)
 				for _, id in ids do
 					table.insert(characters, id)
@@ -210,7 +213,8 @@ function DiceCore.new(diceConfig: any, characterConfig: any, rarityConfig: any, 
 			characters = characters,
 			byRarity = pool,
 			rarities = rarities,
-			percent = dice.RarityWeights or DiceCore.normalize(diceConfig.BaseRarityPercent, supported),
+			-- Pesos explícitos obrigatórios (nenhum fallback para a normalização da tabela global)
+			percent = assert(dice.RarityWeights, `{dice.Id}: Dice sorteável sem RarityWeights explícitos`),
 		}
 	end
 	return setmetatable({
@@ -429,6 +433,57 @@ function DiceCore:roll(diceId: string, luck: number?, pity: { [string]: number }
 		pity = self:nextPity(diceId, pity, rarity),
 		pityTriggered = if natural then nil else pityId,
 	}
+end
+
+--[[
+	PRISMA DA COLEÇÃO: sorteio no Dice só entre personagens AINDA NÃO descobertos.
+	    P(c | prisma) = P(c | Dice, Luck) / Σ P(elegíveis | Dice, Luck)
+	`discovered` = { [characterId] = qualquer valor } (data.Index). Premium/legado/outro Dice nunca
+	são elegíveis (só o pool do Dice). Nada a descobrir -> {} (o servidor recusa sem gastar o uso).
+]]
+function DiceCore:prismEligible(diceId: string, discovered: { [string]: any }?): { string }
+	local list = {}
+	for _, id in self:charactersFor(diceId) do
+		if not (discovered and discovered[id]) then
+			table.insert(list, id)
+		end
+	end
+	return list
+end
+
+function DiceCore:prismChances(diceId: string, discovered: { [string]: any }?, luck: number?): { [string]: number }
+	local chances: { [string]: number } = {}
+	local total = 0
+	for _, id in self:prismEligible(diceId, discovered) do
+		local p = self:characterProbability(diceId, id, luck)
+		chances[id] = p
+		total += p
+	end
+	if total <= 0 then
+		return {}
+	end
+	for id, p in chances do
+		chances[id] = p / total
+	end
+	return chances
+end
+
+-- Sorteio do prisma (ordem estável do pool); nil se não há elegível
+function DiceCore:prismPick(diceId: string, discovered: { [string]: any }?, luck: number?, rand: () -> number): string?
+	local chances = self:prismChances(diceId, discovered, luck)
+	local last = nil
+	local target = rand()
+	for _, id in self:charactersFor(diceId) do
+		local p = chances[id]
+		if p then
+			last = id
+			if target < p then
+				return id
+			end
+			target -= p
+		end
+	end
+	return last
 end
 
 --[[

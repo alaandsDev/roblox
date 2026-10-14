@@ -12,6 +12,16 @@ local InventoryCore = require("../../src/server/Core/InventoryCore")
 local RarityConfig = require("../../src/shared/Config/RarityConfig")
 local CharacterConfig = require("../../src/shared/Config/CharacterConfig")
 local RollConfig = require("../../src/shared/Config/RollConfig")
+-- MODELO GLOBAL LEGADO: esta ferramenta ainda simula o sorteio GLOBAL antigo (RollCore), que não
+-- decide mais o roll (o jogo sorteia por Dice: DiceCore). O pity desse modelo fica congelado nos
+-- valores com que ele foi auditado (Lendário 50 / Mítico 800); o pity de PRODUÇÃO (RollConfig.Pity,
+-- Mítico 250) vale por Dice e é testado em tests/Dice.spec.luau. Reescrever para o modelo por Dice
+-- é a primeira tarefa da fase de economia.
+local LegacyRollConfig = table.clone(RollConfig)
+LegacyRollConfig.Pity = {
+	{ Id = "Legendary", MinRarity = "Legendary", Threshold = 50 },
+	{ Id = "Mythic", MinRarity = "Mythic", Threshold = 800 },
+}
 local DiceConfig = require("../../src/shared/Config/DiceConfig")
 local UpgradeConfig = require("../../src/shared/Config/UpgradeConfig")
 local EconomyConfig = require("../../src/shared/Config/EconomyConfig")
@@ -37,7 +47,7 @@ local formulas = Formulas.new({
 	Rebirth = RebirthConfig,
 })
 local battle = BattleCore.new(TowerConfig, CharacterConfig, RarityConfig)
-local core = RollCore.new(RarityConfig, CharacterConfig, RollConfig)
+local core = RollCore.new(RarityConfig, CharacterConfig, LegacyRollConfig)
 EconomySim.Formulas = formulas
 
 -- Slots liberados pela progressão (cada Rebirth = +1 slot)

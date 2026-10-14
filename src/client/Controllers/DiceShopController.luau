@@ -23,6 +23,8 @@ local UIKit = require(UI.UIKit)
 local Theme = require(UI.UITheme)
 local DataController = require(script.Parent.DataController)
 local NotificationController = require(script.Parent.NotificationController)
+local RevealController = require(script.Parent.RevealController)
+local PrismConfig = require(Shared.Config.PrismConfig)
 
 local DiceShopController = {}
 
@@ -94,6 +96,12 @@ function DiceShopController.Refresh()
 		local text, color, action
 		if data.EquippedDice == dice.Id then
 			text, color = Localization.t("dice.equipped"), Color3.fromRGB(70, 70, 92)
+		elseif owned and dice.Id == PrismConfig.DiceId and PrismConfig.Enabled then
+			-- Prisma da Coleção: usa o Dice SELECIONADO, só entre os não descobertos
+			local uses = data.PrismCharges or 0
+			text = Localization.t("dice.prism_use", { uses = uses })
+			color = if uses > 0 then Color3.fromRGB(240, 90, 200) else Color3.fromRGB(70, 70, 92)
+			action = if uses > 0 then "RequestPrismRoll" else nil
 		elseif owned and not rollable then
 			text, color = Localization.t("dice.not_rollable"), Color3.fromRGB(70, 70, 92)
 		elseif owned then
@@ -115,6 +123,16 @@ function DiceShopController.Refresh()
 			anchor = Vector2.new(1, 0.5),
 			onClick = function()
 				if not action then
+					return
+				end
+				if action == "RequestPrismRoll" then
+					local prism = Net.request("RequestPrismRoll")
+					if prism.ok then
+						UIKit.Windows.close("DiceShop")
+						RevealController.Play(prism.data)
+					else
+						NotificationController.Show("error." .. tostring(prism.code))
+					end
 					return
 				end
 				local result = Net.request(action, dice.Id)
@@ -146,7 +164,7 @@ end
 
 function DiceShopController.Start()
 	DataController.Changed:Connect(function(key)
-		if key == "OwnedDice" or key == "EquippedDice" or key == "Money" or key == "Rolls" then
+		if key == "OwnedDice" or key == "EquippedDice" or key == "Money" or key == "Rolls" or key == "PrismCharges" then
 			DiceShopController.Refresh()
 		end
 	end)

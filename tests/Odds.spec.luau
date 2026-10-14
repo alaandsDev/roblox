@@ -83,7 +83,7 @@ describe("Pity não infla raridades acima do piso", function()
 		end)
 		expect(result.rarity).toBe("Legendary")
 		expect(result.pityTriggered).toBe("Legendary")
-		local mythic = Odds.core:roll(1, { Legendary = 0, Mythic = RollConfig.Pity[2].Threshold - 1 }, function()
+		local mythic = Odds.core:roll(1, { Legendary = 0, Mythic = Odds.core.rollConfig.Pity[2].Threshold - 1 }, function()
 			return 0
 		end)
 		expect(mythic.rarity).toBe("Mythic")

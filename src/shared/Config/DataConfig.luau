@@ -46,6 +46,10 @@ DataConfig.Template = {
 	EquippedDice = "Starter",
 	-- Dice desbloqueados ({ [diceId] = true })
 	OwnedDice = { Starter = true },
+	-- Prisma da Coleção: usos guardados e último uso (os.time). Campos novos com padrão seguro:
+	-- perfis antigos recebem 0 pelo Template (sem migração). Ver PrismConfig.
+	PrismCharges = 0,
+	PrismLastUsedAt = 0,
 
 	-- Inventário: { [uid] = { Id, Level, Variant, Locked, Favorite, ObtainedAt } } (ver DATA_SCHEMA.md)
 	Inventory = {},

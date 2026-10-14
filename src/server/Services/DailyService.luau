@@ -69,11 +69,14 @@ local function deliver(player: Player, data: any, reward: any, now: number): { [
 		PlayerDataService.Set(player, "Boosts", boosts)
 		return { kind = "LuckBoost", multiplier = reward.Multiplier, duration = reward.Duration }
 	elseif reward.Kind == "Dice" then
+		-- Prisma da Coleção: a cada entrega do Prism (1ª vez ou fallback) os usos são creditados
 		if data.OwnedDice[reward.DiceId] then
-			return deliver(player, data, reward.Fallback, now)
+			local result = deliver(player, data, reward.Fallback, now)
+			result.prismUses = DiceService.RewardDelivered(player, reward.DiceId)
+			return result
 		end
 		DiceService.Grant(player, reward.DiceId)
-		return { kind = "Dice", id = reward.DiceId }
+		return { kind = "Dice", id = reward.DiceId, prismUses = DiceService.RewardDelivered(player, reward.DiceId) }
 	end
 	return { kind = "None" }
 end

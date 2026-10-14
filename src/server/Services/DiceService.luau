@@ -15,6 +15,7 @@ local CharacterConfig = require(Shared.Config.CharacterConfig)
 local RarityConfig = require(Shared.Config.RarityConfig)
 local RollConfig = require(Shared.Config.RollConfig)
 local DiceCore = require(Shared.Modules.DiceCore)
+local PrismConfig = require(Shared.Config.PrismConfig)
 local TableUtil = require(Shared.Modules.TableUtil)
 local Net = require(Shared.Modules.Net)
 
@@ -93,6 +94,19 @@ function DiceService.Grant(player: Player, diceId: string)
 		owned[diceId] = true
 		PlayerDataService.Set(player, "OwnedDice", owned)
 	end
+end
+
+-- O Diário entregou um Dice (ou o fallback dele por já ter): credita os usos do Prisma da Coleção.
+-- Devolve quantos usos foram creditados (0 se não for o Prism ou se estiver desligado).
+function DiceService.RewardDelivered(player: Player, diceId: string): number
+	local data = PlayerDataService.GetData(player)
+	if not data or not PrismConfig.Enabled or diceId ~= PrismConfig.DiceId then
+		return 0
+	end
+	local before = data.PrismCharges or 0
+	local after = math.min(PrismConfig.MaxCharges, before + PrismConfig.UsesPerReward)
+	PlayerDataService.Set(player, "PrismCharges", after)
+	return after - before
 end
 
 function DiceService.Buy(player: Player, diceId: string)

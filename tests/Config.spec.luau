@@ -149,7 +149,7 @@ describe("Localization", function()
 		local codes = {
 			"cooldown", "inventory_full", "not_owned", "no_free_slot", "slot_locked", "slot_occupied", "not_equipped",
 			"invalid_flag", "max_level", "not_enough_money", "locked", "favorite", "equipped", "nothing_to_sell",
-			"protected", "invalid_dice", "dice_locked", "dice_not_rollable", "exclusive", "already_owned", "requires_previous", "requires_rolls",
+			"protected", "invalid_dice", "dice_locked", "dice_not_rollable", "prism_disabled", "prism_locked", "prism_no_charges", "prism_cooldown", "prism_dice_complete", "exclusive", "already_owned", "requires_previous", "requires_rolls",
 			"invalid_upgrade", "already_claimed", "invalid_time", "nothing_to_claim", "too_far", "no_base", "no_character",
 		}
 		for _, code in codes do

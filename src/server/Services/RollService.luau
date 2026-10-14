@@ -7,6 +7,9 @@
 	inventário cheio? (bloqueia ANTES de sortear) -> Luck (upgrades + boost + ...) ->
 	DiceCore no pool do Dice (raridade pelos pesos DO Dice, depois personagem; Random do servidor
 	+ pity por Dice) -> Index -> auto-sell ou inventário (uid) -> resposta.
+	PRISMA DA COLEÇÃO (RequestPrismRoll, sem argumentos): mesmo Dice selecionado, só entre os não
+	descobertos (DiceCore:prismPick); usos/intervalo/pity/contagem de rolls em PrismConfig. Nada a
+	descobrir, sem usos, intervalo ou inventário cheio -> recusa SEM gastar o uso.
 	Não grava no DataStore a cada roll (autosave); drops Míticos+ pedem um save em breve.
 	Histórico de sessão (últimos RollConfig.HistorySize) só em memória.
 ]]
@@ -32,6 +35,7 @@ local SellService = require(script.Parent.SellService)
 local EconomyService = require(script.Parent.EconomyService)
 local AnalyticsService = require(script.Parent.AnalyticsService)
 local DiceService = require(script.Parent.DiceService)
+local PrismConfig = require(Shared.Config.PrismConfig)
 
 local log = Logger.new("Roll")
 
@@ -42,6 +46,7 @@ RollService.Rolled = Signal.new()
 
 -- Relógio e gerador (substituíveis nos testes)
 RollService._clock = os.clock
+RollService._time = os.time
 local random = Random.new()
 RollService._rand = function(): number
 	return random:NextNumber()
@@ -70,6 +75,7 @@ export type RollResult = {
 	TimesSeen: number,
 	Odds: number,
 	DiceId: string,
+	Prism: boolean,
 }
 
 local function announce(player: Player, result: RollResult)
@@ -92,7 +98,7 @@ local function announce(player: Player, result: RollResult)
 	end
 end
 
-export type RollOptions = { granted: boolean?, minRarity: string? }
+export type RollOptions = { granted: boolean?, minRarity: string?, prism: boolean? }
 
 local function doRoll(player: Player, options: RollOptions?): RollResult
 	local opts: RollOptions = options or {}
@@ -105,7 +111,32 @@ local function doRoll(player: Player, options: RollOptions?): RollResult
 	local now = RollService._clock()
 	-- Dice do roll: o selecionado, validado pelo servidor a cada roll (inválido/bloqueado -> recusa)
 	local selected = DiceService.SelectedDice(data)
-	if not opts.granted then
+	local prismPick: string? = nil
+	if opts.prism then
+		-- Prisma da Coleção: não usa a cadência do roll (tem o próprio intervalo); valida TUDO antes
+		-- de gastar o uso
+		if not PrismConfig.Enabled then
+			Net.fail("prism_disabled")
+		end
+		if not data.OwnedDice[PrismConfig.DiceId] then
+			Net.fail("prism_locked")
+		end
+		if (data.PrismCharges or 0) < 1 then
+			Net.fail("prism_no_charges")
+		end
+		if RollService._time() - (data.PrismLastUsedAt or 0) < PrismConfig.CooldownSeconds then
+			Net.fail("prism_cooldown")
+		end
+		if InventoryService.IsFull(player) then
+			Net.fail("inventory_full")
+		end
+		prismPick = core:prismPick(selected, data.Index, Formulas:luck(data, os.time()), RollService._rand)
+		if not prismPick then
+			Net.fail("prism_dice_complete") -- nada a descobrir neste Dice: o uso NÃO é gasto
+		end
+		PlayerDataService.Set(player, "PrismCharges", data.PrismCharges - 1)
+		PlayerDataService.Set(player, "PrismLastUsedAt", RollService._time())
+	elseif not opts.granted then
 		if now < (nextRollAt[player] or -math.huge) then
 			Net.fail("cooldown")
 		end
@@ -123,7 +154,15 @@ local function doRoll(player: Player, options: RollOptions?): RollResult
 	local luck = Formulas:luck(data, os.time())
 	local rolled
 	local diceId = selected
-	if opts.minRarity then
+	if prismPick then
+		local rarity = CharacterConfig.ById[prismPick].Rarity
+		rolled = {
+			rarity = rarity,
+			characterId = prismPick,
+			pity = if PrismConfig.AffectsPity then core:nextPity(diceId, data.Pity, rarity) else data.Pity,
+			pityTriggered = nil,
+		}
+	elseif opts.minRarity then
 		-- Prêmio (Jackpot): Dice selecionado se ele tem MinRarity; senão o primeiro Dice F2P que
 		-- tem (DiceCore:grantDice). Sorteio natural nesse Dice; abaixo do piso vira EXATAMENTE
 		-- MinRarity (nunca aumenta Divino/Secreto); não mexe no pity
@@ -135,7 +174,8 @@ local function doRoll(player: Player, options: RollOptions?): RollResult
 	end
 	local rarity, characterId = rolled.rarity, rolled.characterId
 	PlayerDataService.Set(player, "Pity", rolled.pity)
-	local rolls = PlayerDataService.Increment(player, "Rolls", 1)
+	local countsAsRoll = not opts.prism or PrismConfig.CountsAsRoll
+	local rolls = if countsAsRoll then PlayerDataService.Increment(player, "Rolls", 1) else data.Rolls
 
 	local isNew = IndexService.Register(player, characterId, "Normal")
 	local views = TableUtil.deepCopy(data.RevealViews)
@@ -157,6 +197,7 @@ local function doRoll(player: Player, options: RollOptions?): RollResult
 		TimesSeen = timesSeen,
 		Odds = core:odds(characterId),
 		DiceId = diceId,
+		Prism = opts.prism == true,
 	}
 	-- Auto-sell: nunca vende uma descoberta nova (primeiro do Index) nem raridade protegida
 	if not opts.granted and not isNew and SellService.ShouldAutoSell(player, rarity) then
@@ -206,6 +247,11 @@ function RollService.GrantRoll(player: Player, minRarity: string): RollResult
 	return doRoll(player, { granted = true, minRarity = minRarity })
 end
 
+-- Prisma da Coleção (sem argumentos: o Dice é o selecionado)
+function RollService.PrismRoll(player: Player): RollResult
+	return doRoll(player, { granted = true, prism = true })
+end
+
 function RollService.History(player: Player): { any }
 	return table.clone(history[player] or {})
 end
@@ -217,6 +263,7 @@ end
 
 function RollService.Init()
 	Net.handle("RequestRoll", RollService.Roll)
+	Net.handle("RequestPrismRoll", RollService.PrismRoll)
 end
 
 function RollService.Start()
