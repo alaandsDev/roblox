@@ -121,12 +121,21 @@ local Definitions: Definitions = {
 
 		-- Torres (FASE 7): o servidor simula a batalha e devolve o registro para o cliente animar
 		RequestEnterTower = { args = { CONFIG_ID }, rate = { capacity = 3, refill = 1 } },
+		-- Sessão contínua: o servidor escolhe o andar (progresso salvo) e resolve cada estágio
+		StartTowerSession = { args = { CONFIG_ID, { type = "boolean" } }, rate = { capacity = 3, refill = 0.5 } },
+		TowerNext = { args = {}, rate = { capacity = 3, refill = 1 } },
+		SetTowerAuto = { args = { { type = "boolean" } }, rate = { capacity = 4, refill = 1 } },
+		StopTowerSession = { args = {}, rate = { capacity = 3, refill = 1 } },
 		SetTowerTeam = { args = { { type = "array", maxItems = 5, of = UID } }, rate = { capacity = 5, refill = 2 } },
 	},
 
 	Events = {
 		-- Notificação com chave de texto (Localization) + parâmetros
 		Notify = {},
+		-- Torre contínua: resultado de cada estágio (log para animar + resumo da sessão)
+		TowerStage = {},
+		-- Torre contínua: mudança de estado/fim da sessão (resumo)
+		TowerSessionUpdate = {},
 		-- Uma chave de primeiro nível dos dados mudou: (chave, novoValor)
 		DataChanged = {},
 		-- Mudança parcial do inventário (sem reenviar tudo): ({ set = { [uid] = item }, removed = { uid } })

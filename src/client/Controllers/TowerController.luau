@@ -105,7 +105,132 @@ local function floatText(parent: Frame, text: string, color: Color3)
 	task.delay(0.6, label.Destroy, label)
 end
 
+--[[
+	Sessão contínua (servidor = TowerService/TowerSessionCore). O cliente só:
+	    pede START / PRÓXIMO / AUTO / PARAR e anima cada estágio que chega (TowerStage).
+	OCULTAR: esconde a tela de batalha e mostra o painel compacto. NÃO muda nada no servidor
+	(mesmos estágios, mesmo intervalo, mesma recompensa) — só não anima.
+]]
+local session: any = nil -- último resumo recebido
+local hidden = false
+local autoWanted = true
+local animToken = 0
+local compact: Frame? = nil
+
+local function endReasonText(reason: string?): string
+	return Localization.t("tower.end_" .. tostring(reason or "stopped"))
+end
+
+local function updateCompact()
+	if not compact then
+		return
+	end
+	local active = session ~= nil and session.status ~= "ended"
+	compact.Visible = hidden and session ~= nil
+	if not compact.Visible then
+		return
+	end
+	local title = compact:FindFirstChild("Title") :: TextLabel
+	local info = compact:FindFirstChild("Info") :: TextLabel
+	title.Text = if active then Localization.t("tower.running") else endReasonText(session.endReason)
+	info.Text = Localization.t("tower.compact_info", {
+		floor = session.floor,
+		hp = math.floor((session.teamHp or 0) * 100 + 0.5),
+		money = NumberFormatter.money(session.money or 0),
+		gems = session.gems or 0,
+	})
+	local stop = compact:FindFirstChild("CompactStop")
+	if stop then
+		UIKit.setButtonText(stop, Localization.t(if active then "tower.stop" else "tower.close"))
+	end
+end
+
+local function closeBattle()
+	animToken += 1
+	battleGui.Enabled = false
+	for _, child in battleGui:GetChildren() do
+		child:Destroy()
+	end
+end
+
+local function stopSession()
+	if session and session.status ~= "ended" then
+		Net.request("StopTowerSession")
+	end
+end
+
+local function setHidden(value: boolean)
+	hidden = value
+	if hidden then
+		closeBattle()
+	end
+	updateCompact()
+end
+
+-- Barra de controles da tela de batalha (AUTO, OCULTAR, PRÓXIMO, PARAR/FECHAR)
+local function controls(root: Frame, payload: any)
+	local bar = UIKit.new("Frame", { Name = "Controls", BackgroundTransparency = 1, Size = UDim2.fromOffset(900, 64), Position = UDim2.new(0.5, 0, 1, -16), AnchorPoint = Vector2.new(0.5, 1), ZIndex = 9 }, root)
+	UIKit.list(bar, true, 12, "center")
+	local sum = payload.session or session or {}
+	local active = sum.status ~= "ended"
+	if active then
+		UIKit.button(bar, {
+			name = "AutoToggle",
+			text = Localization.t(if sum.auto then "tower.auto_on" else "tower.auto_off"),
+			color = if sum.auto then Theme.Colors.Success else Color3.fromRGB(70, 70, 92),
+			size = UDim2.fromOffset(170, 56),
+			order = 1,
+			onClick = function()
+				autoWanted = not sum.auto
+				Net.request("SetTowerAuto", autoWanted)
+			end,
+		})
+		if sum.status == "paused" then
+			UIKit.button(bar, {
+				name = "NextFloor",
+				text = Localization.t("tower.next"),
+				color = Theme.Colors.Primary,
+				size = UDim2.fromOffset(170, 56),
+				order = 2,
+				onClick = function()
+					local result = Net.request("TowerNext")
+					if not result.ok then
+						NotificationController.Show("error." .. tostring(result.code))
+					end
+				end,
+			})
+		end
+		UIKit.button(bar, {
+			name = "HideBattle",
+			text = Localization.t("tower.hide"),
+			color = Color3.fromRGB(70, 70, 92),
+			size = UDim2.fromOffset(170, 56),
+			order = 3,
+			onClick = function()
+				setHidden(true)
+			end,
+		})
+	end
+	UIKit.button(bar, {
+		name = "CloseBattle",
+		text = Localization.t(if active then "tower.stop" else "tower.close"),
+		color = if active then Theme.Colors.Danger else Theme.Colors.Success,
+		size = UDim2.fromOffset(170, 56),
+		order = 4,
+		onClick = function()
+			stopSession()
+			closeBattle()
+			session = nil
+			updateCompact()
+			window:Open()
+		end,
+	})
+end
+
+-- Anima UM estágio (o servidor já resolveu tudo). Um estágio novo interrompe a animação anterior.
 function TowerController.PlayBattle(result: any)
+	animToken += 1
+	local token = animToken
 	for _, child in battleGui:GetChildren() do
 		child:Destroy()
 	end
@@ -120,12 +245,22 @@ function TowerController.PlayBattle(result: any)
 		anchor = Vector2.new(0.5, 0),
 		color = rgb(tower.Theme),
 	})
+	if result.session then
+		UIKit.text(root, {
+			name = "SessionInfo",
+			text = Localization.t("tower.session_info", { money = NumberFormatter.money(result.session.money or 0), gems = result.session.gems or 0, floors = result.session.floors or 0 }),
+			size = UDim2.fromOffset(800, 30),
+			position = UDim2.new(0.5, 0, 0, 70),
+			anchor = Vector2.new(0.5, 0),
+			color = Theme.Colors.Money,
+		})
+	end
 	local function row(y: number): Frame
 		local frame = UIKit.new("Frame", { BackgroundTransparency = 1, Size = UDim2.fromOffset(820, 200), Position = UDim2.new(0.5, 0, y, 0), AnchorPoint = Vector2.new(0.5, 0.5) }, root)
 		UIKit.list(frame, true, 12, "center")
 		return frame
 	end
-	local enemyRow, teamRowFrame = row(0.3), row(0.66)
+	local enemyRow, teamRowFrame = row(0.3), row(0.64)
 	local sides = { enemy = {}, team = {} }
 	for i, info in result.enemies do
 		local frame, fill = cardFrame(enemyRow, info, i)
@@ -135,7 +270,7 @@ function TowerController.PlayBattle(result: any)
 		local frame, fill = cardFrame(teamRowFrame, info, i)
 		sides.team[i] = { frame = frame, fill = fill, hp = info.maxHp, maxHp = info.maxHp }
 	end
-	UIKit.text(root, { text = "VS", size = UDim2.fromOffset(120, 50), position = UDim2.fromScale(0.5, 0.48), anchor = Vector2.new(0.5, 0.5), color = Theme.Colors.Danger })
+	UIKit.text(root, { text = "VS", size = UDim2.fromOffset(120, 50), position = UDim2.fromScale(0.5, 0.47), anchor = Vector2.new(0.5, 0.5), color = Theme.Colors.Danger })
 
 	local skipping = false
 	local skip = UIKit.button(root, {
@@ -149,8 +284,13 @@ function TowerController.PlayBattle(result: any)
 			skipping = true
 		end,
 	})
+	-- no AUTO a animação cabe no intervalo entre estágios (mais rápida)
+	local step = if result.session and result.session.auto then 0.12 else 0.22
 
 	for _, action in result.log do
+		if token ~= animToken then
+			return
+		end
 		local attackerSide = sides[action.side]
 		local defenderSide = sides[if action.side == "team" then "enemy" else "team"]
 		local attacker = attackerSide[action.slot]
@@ -164,7 +304,7 @@ function TowerController.PlayBattle(result: any)
 				TweenService:Create(s, TweenInfo.new(0.15), { Scale = 1 }):Play()
 				floatText(defender.frame, (if action.crit then "💥 " else "-") .. NumberFormatter.abbreviate(action.damage), if action.crit then Theme.Colors.Warning else Theme.Colors.Danger)
 				UIKit.sound(if action.crit then "Impact" else "Click", if action.crit then 0.5 else 0.15)
-				task.wait(0.22)
+				task.wait(step)
 			end
 			if action.ko then
 				defender.frame.BackgroundTransparency = 0.6
@@ -172,13 +312,16 @@ function TowerController.PlayBattle(result: any)
 			end
 		end
 	end
+	if token ~= animToken then
+		return
+	end
 	skip.Visible = false
 
 	local banner = UIKit.text(root, {
 		name = "Outcome",
 		text = Localization.t(if result.won then "tower.victory" else "tower.defeat"),
 		size = UDim2.fromOffset(700, 90),
-		position = UDim2.fromScale(0.5, 0.48),
+		position = UDim2.fromScale(0.5, 0.47),
 		anchor = Vector2.new(0.5, 0.5),
 		color = if result.won then Theme.Colors.Success else Theme.Colors.Danger,
 		stroke = 5,
@@ -195,23 +338,80 @@ function TowerController.PlayBattle(result: any)
 		if result.rewards.completed then
 			table.insert(parts, Localization.t("tower.completed"))
 		end
-		UIKit.text(root, { name = "Rewards", text = table.concat(parts, "   "), size = UDim2.fromOffset(700, 44), position = UDim2.fromScale(0.5, 0.88), anchor = Vector2.new(0.5, 0.5), color = Theme.Colors.Money, z = 8 })
+		UIKit.text(root, { name = "Rewards", text = table.concat(parts, "   "), size = UDim2.fromOffset(700, 44), position = UDim2.fromScale(0.5, 0.79), anchor = Vector2.new(0.5, 0.5), color = Theme.Colors.Money, z = 8 })
 	end
-	UIKit.button(root, {
-		name = "CloseBattle",
-		text = Localization.t("reveal.continue"),
-		color = Theme.Colors.Success,
-		size = UDim2.fromOffset(220, 60),
-		position = UDim2.new(0.5, 0, 1, -20),
-		anchor = Vector2.new(0.5, 1),
+	controls(root, result)
+end
+
+-- Estágio resolvido pelo servidor
+local function onStage(payload: any)
+	session = payload.session
+	if hidden then
+		updateCompact()
+	else
+		task.spawn(TowerController.PlayBattle, payload)
+	end
+end
+
+local function onSessionUpdate(summary: any)
+	session = summary
+	updateCompact()
+	if not hidden and summary.status == "ended" and battleGui.Enabled then
+		-- redesenha só a barra (fim: FECHAR)
+		local root = battleGui:FindFirstChild("Root", true)
+		local bar = root and root:FindFirstChild("Controls")
+		if bar and root then
+			bar:Destroy()
+			controls(root :: Frame, { session = summary })
+		end
+	end
+end
+
+local function buildCompact()
+	local gui = UIKit.screen("TowerCompact", 60)
+	local root = UIKit.scaledRoot(gui)
+	local panel = UIKit.new("Frame", { Name = "TowerCompactPanel", Size = UDim2.fromOffset(320, 150), Position = UDim2.new(1, -16, 0.42, 0), AnchorPoint = Vector2.new(1, 0.5), BackgroundColor3 = Theme.Colors.Card, Visible = false }, root)
+	UIKit.corner(panel, Theme.CornerRadiusSmall)
+	UIKit.stroke(panel, 3, Color3.fromRGB(150, 90, 255), true)
+	UIKit.text(panel, { name = "Title", text = "", size = UDim2.new(1, -16, 0, 28), position = UDim2.fromOffset(8, 6), color = Color3.fromRGB(200, 160, 255) })
+	UIKit.text(panel, { name = "Info", text = "", size = UDim2.new(1, -16, 0, 56), position = UDim2.fromOffset(8, 36), color = Theme.Colors.Text })
+	UIKit.button(panel, {
+		name = "CompactShow",
+		text = Localization.t("tower.show"),
+		color = Theme.Colors.Primary,
+		size = UDim2.fromOffset(140, 44),
+		position = UDim2.new(0, 10, 1, -8),
+		anchor = Vector2.new(0, 1),
 		onClick = function()
-			battleGui.Enabled = false
-			for _, child in battleGui:GetChildren() do
-				child:Destroy()
+			hidden = false
+			updateCompact()
+			if session then
+				closeBattle()
+				battleGui.Enabled = true
+				local root2 = UIKit.scaledRoot(battleGui)
+				UIKit.text(root2, { name = "Waiting", text = Localization.t("tower.waiting_stage"), size = UDim2.fromOffset(700, 60), position = UDim2.fromScale(0.5, 0.45), anchor = Vector2.new(0.5, 0.5) })
+				controls(root2, { session = session })
 			end
-			window:Open()
 		end,
 	})
+	UIKit.button(panel, {
+		name = "CompactStop",
+		text = Localization.t("tower.stop"),
+		color = Theme.Colors.Danger,
+		size = UDim2.fromOffset(140, 44),
+		position = UDim2.new(1, -10, 1, -8),
+		anchor = Vector2.new(1, 1),
+		onClick = function()
+			if session and session.status ~= "ended" then
+				stopSession()
+			else
+				session = nil
+				hidden = false
+				updateCompact()
+			end
+		end,
+	})
+	compact = panel
 end
 
 ------------------------------------------------------------------------------------
@@ -261,7 +461,7 @@ function TowerController.Refresh()
 		elseif done then
 			text, color = "✔ " .. Localization.t("tower.done"), Theme.Colors.Warning
 		else
-			text, color = "⚔️ " .. Localization.t("tower.fight"), Theme.Colors.Danger
+			text, color = "▶ " .. Localization.t("tower.start"), Theme.Colors.Danger
 		end
 		UIKit.button(row, {
 			name = "Fight_" .. tower.Id,
@@ -275,10 +475,11 @@ function TowerController.Refresh()
 					return
 				end
 				fighting = true
-				local result = Net.request("RequestEnterTower", tower.Id)
+				-- sessão contínua: o servidor luta o andar 1 agora e manda o estágio (TowerStage)
+				hidden = false
+				local result = Net.request("StartTowerSession", tower.Id, autoWanted)
 				if result.ok then
 					window:Close()
-					TowerController.PlayBattle(result.data)
 				else
 					NotificationController.Show("error." .. tostring(result.code))
 				end
@@ -311,9 +512,27 @@ function TowerController.Init()
 	battleGui = UIKit.screen("Battle", 120)
 	battleGui.IgnoreGuiInset = true
 	battleGui.Enabled = false
+	buildCompact()
+	-- AUTO (preferência deste cliente; o servidor decide o resto)
+	local autoButton: TextButton
+	autoButton = UIKit.button(top, {
+		name = "AutoPreference",
+		text = Localization.t(if autoWanted then "tower.auto_on" else "tower.auto_off"),
+		color = if autoWanted then Theme.Colors.Success else Color3.fromRGB(70, 70, 92),
+		size = UDim2.fromOffset(130, 48),
+		position = UDim2.new(1, -160, 0.5, 0),
+		anchor = Vector2.new(1, 0.5),
+		onClick = function()
+			autoWanted = not autoWanted
+			UIKit.setButtonText(autoButton, Localization.t(if autoWanted then "tower.auto_on" else "tower.auto_off"))
+			UIKit.setButtonColor(autoButton, if autoWanted then Theme.Colors.Success else Color3.fromRGB(70, 70, 92))
+		end,
+	})
 end
 
 function TowerController.Start()
+	Net.on("TowerStage", onStage)
+	Net.on("TowerSessionUpdate", onSessionUpdate)
 	DataController.Changed:Connect(function(key)
 		if key == "TowerProgress" or key == "TowerTeam" or key == "Inventory" then
 			TowerController.Refresh()

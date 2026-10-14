@@ -53,4 +53,12 @@ return {
 	GemsEvery = 5,
 	GemsPerMilestone = 5,
 	BattleCooldown = 1.5,
+	-- Sessão contínua (TowerService/TowerSessionCore). Recompensa só existe na 1ª vitória de cada
+	-- andar (progresso salvo), então o AUTO não repete andares: o total por torre é fixo.
+	Session = {
+		-- segundos entre um estágio e o próximo no AUTO (>= BattleCooldown; o cliente anima nesse tempo)
+		StageInterval = 3,
+		-- teto de estágios por sessão: depois disso o jogador aperta START de novo (sem AFK infinito)
+		MaxStagesPerSession = 50,
+	},
 }

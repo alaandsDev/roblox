@@ -189,6 +189,58 @@ describe("Balanceamento aplicado: venda com refund 75% por instância", function
 		expect(got.Total < spentTotal + baseOfInputs).toBeTruthy()
 		expect(got.Total - got.Base <= paidLevels).toBeTruthy()
 	end)
+
+	it("fusão repetida (Normal -> Prata -> Ouro): soma acumula sem duplicar", function()
+		local data = newData()
+		local silvers, paid = {}, 0
+		for _ = 1, 3 do
+			local trio = {}
+			for _ = 1, 3 do
+				local uid = InventoryCore.add(data, ID, 0, "Normal")
+				paid += upgrade(data.Inventory[uid], 4)
+				table.insert(trio, uid)
+			end
+			table.insert(silvers, (fuse(data, trio)))
+		end
+		local gold = fuse(data, silvers)
+		assert(gold)
+		expect(data.Inventory[gold].Variant).toBe("Gold")
+		expect(data.Inventory[gold].UpgradeInvestment).toBe(paid)
+		local total = 0
+		for _, item in data.Inventory do
+			total += SaleCore.invested(f, item)
+		end
+		expect(total).toBe(paid) -- o investimento existe em UM lugar só
+	end)
+
+	it("troca repetida (A -> B -> A) e save/load JSON: investimento intacto, uma cópia só", function()
+		local a, b = newData(), newData()
+		local uid = InventoryCore.add(a, ID, 0, "Normal")
+		local paid = upgrade(a.Inventory[uid], 12)
+		local current, owner, other = uid, a, b
+		for _ = 1, 4 do
+			local filler = InventoryCore.add(other, "flame_rookie", 0, "Normal")
+			local ok, _, forOwner, forOther = TradeCore.execute(owner, other, { current }, { filler }, 100, 100, 0, InventoryCore)
+			expect(ok).toBe(true)
+			expect(#forOwner).toBe(1)
+			current = forOther[1]
+			owner, other = other, owner
+		end
+		local item = owner.Inventory[current]
+		expect(item.UpgradeInvestment).toBe(paid)
+		local copies = 0
+		for _, data in { a, b } do
+			for _, it2 in data.Inventory do
+				if it2.Id == ID then
+					copies += 1
+				end
+			end
+		end
+		expect(copies).toBe(1)
+		-- save/load: o campo é número simples e sobrevive ao JSON do DataStore
+		local roundTrip = { Id = item.Id, Level = item.Level, Variant = item.Variant, UpgradeInvestment = tonumber(tostring(item.UpgradeInvestment)) }
+		expect(sell(roundTrip).Total).toBe(sell(item).Total)
+	end)
 end)
 
 describe("Balanceamento aplicado: migração v4 (investimento + cap 30)", function()

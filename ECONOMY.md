@@ -177,3 +177,25 @@ Ativos nunca rolavam o Shinobi). A recompensa em si é proporcional e foi mantid
 Menor correção: cada Dice exige **60 rolls feitos com o Dice anterior** (`DiceConfig.RollsOnPrevious`,
 `data.DiceRolls`, regra única em `DiceCore.unlockBlocker` para servidor e loja). Resultado no
 simulador (400 Ativos, 6 h): Shinobi nunca rolado 92% → **0%**; Forbidden P50 ≈ 4,6 h.
+
+## Torre contínua (AUTO / OCULTAR) — auditoria de throughput
+
+A sessão contínua (`TowerService.StartSession`, `TowerSessionCore`) **não cria recompensa nova**:
+cada andar paga `max(poder dos inimigos × 1, renda/s × 8)` **só na 1ª vitória** (o andar lutado é
+sempre `TowerProgress + 1`, lido do save; o mesmo andar nunca paga duas vezes). O AUTO apenas
+encadeia os andares que o jogador já poderia lutar manualmente.
+
+| Torre | Andares | Dinheiro total (parte fixa, Σ poder) | Gemas totais |
+|---|---|---|---|
+| Brasas | 30 | ~591K | 205 |
+| Tempestade | 40 | ~92M | 430 |
+| Vazio | 50 | ~3,8B | 875 |
+
+Teto absoluto por torre = parte fixa + `andares × 8 s` de renda (Brasas: 240 s; Tempestade:
+320 s; Vazio: 400 s de renda) — **uma vez na vida do save**, igual ao fluxo manual. Ritmo: AUTO
+luta um estágio a cada `Session.StageInterval = 3 s`; o manual já permitia 1 a cada 1,5 s
+(`BattleCooldown`), então o AUTO é até MAIS LENTO por estágio. Sessão termina em derrota (não
+recomeça do andar 1), PARAR, torre completa, 50 estágios, desconexão ou morte do personagem.
+Conclusão: throughput econômico inalterado (o limite é o poder do time, não o tempo); nenhuma
+proteção extra (cap/rendimento decrescente) foi necessária. Testes: `tests/TowerSession.spec.luau`
+(+ GameplayHarness: idempotência, PARAR, derrota, desconexão, sessão duplicada).

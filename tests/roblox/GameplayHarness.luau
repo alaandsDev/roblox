@@ -626,6 +626,79 @@ local _ = weakData
 
 ------------------------------------------------------------------------------------
 end
+do -- TORRE CONTÍNUA (sessão, AUTO, idempotência, PARAR, derrota, desconexão)
+	local clock = 90000
+	S.TowerService._clock = function()
+		return clock
+	end
+	local queue = {}
+	S.TowerService._schedule = function(_, fn)
+		table.insert(queue, fn)
+	end
+	local function runQueued(): number
+		local jobs = queue
+		queue = {}
+		for _, fn in jobs do
+			fn()
+		end
+		return #jobs
+	end
+	local probe = {}
+	d1.TowerProgress.Ember = 0
+	probe.money0 = d1.Money
+	probe.ok, probe.sum = call("StartTowerSession", p1, "Ember", true)
+	check(probe.ok and d1.TowerProgress.Ember == 1 and d1.Money > probe.money0, "START: 1º estágio lutado e pago no servidor")
+	check(lastEvent("TowerStage", p1) ~= nil and lastEvent("TowerStage", p1).args[1].session.floor == 2, "TowerStage enviado com o resumo da sessão")
+	probe.okDup, probe.codeDup = call("StartTowerSession", p1, "Ember", true)
+	check(not probe.okDup and probe.codeDup == "session_active", "segunda sessão simultânea recusada")
+	probe.okLeg, probe.codeLeg = call("RequestEnterTower", p1, "Ember")
+	check(not probe.okLeg and probe.codeLeg == "session_active", "luta avulsa recusada durante a sessão")
+	check(#queue == 1, "AUTO agendou o próximo estágio")
+	-- dois disparos do mesmo agendamento antes do intervalo: nenhum estágio extra
+	local job = queue[1]
+	queue = {}
+	job()
+	job()
+	check(d1.TowerProgress.Ember == 1, "estágio antes do intervalo não luta (spam/agendamento duplo)")
+	clock += 3
+	runQueued()
+	check(d1.TowerProgress.Ember == 2, "AUTO: vitória -> próximo andar sozinho")
+	probe.moneyBefore = d1.Money
+	job() -- agendamento velho de novo, depois de já ter lutado
+	check(d1.TowerProgress.Ember == 2, "recompensa exatamente uma vez por estágio (idempotente)")
+	clock += 3
+	runQueued()
+	check(d1.TowerProgress.Ember == 3 and d1.Money > probe.moneyBefore, "AUTO segue para o andar 3")
+	probe.okStop = call("StopTowerSession", p1)
+	check(probe.okStop and S.TowerService.SessionOf(p1) == nil, "PARAR encerra a sessão")
+	clock += 3
+	runQueued()
+	check(d1.TowerProgress.Ember == 3, "depois de PARAR nada mais é lutado")
+	-- manual: vitória pausa; PRÓXIMO continua
+	clock += 3
+	probe.okMan = call("StartTowerSession", p1, "Ember", false)
+	check(probe.okMan and d1.TowerProgress.Ember == 4 and S.TowerService.SessionOf(p1).status == "paused", "manual: vitória pausa a sessão")
+	clock += 3
+	probe.okNext = call("TowerNext", p1)
+	check(probe.okNext and d1.TowerProgress.Ember == 5, "PRÓXIMO luta o andar seguinte")
+	clock += 3
+	probe.okAuto = call("SetTowerAuto", p1, true)
+	check(probe.okAuto and d1.TowerProgress.Ember == 6 and #queue >= 1, "ligar AUTO na pausa continua sozinho")
+	-- desconexão: sessão some e o agendamento pendente não faz nada
+	S.TowerService.EndFor(p1, "disconnect")
+	clock += 3
+	runQueued()
+	check(S.TowerService.SessionOf(p1) == nil and d1.TowerProgress.Ember == 6, "desconexão encerra com segurança")
+	-- derrota: time fraco perde, sessão acaba e não volta ao andar 1
+	d2.TowerProgress.Ember = 19
+	clock += 3
+	probe.okD, probe.sumD = call("StartTowerSession", p2, "Ember", true)
+	check(probe.okD and probe.sumD.status == "ended" and probe.sumD.endReason == "defeat" and d2.TowerProgress.Ember == 19 and #queue == 0, "derrota encerra sem reiniciar")
+	S.TowerService._schedule = function(delay, fn)
+		task.delay(delay, fn)
+	end
+	d1.TowerProgress.Ember = 30 -- volta ao estado anterior (Tempestade liberada)
+end
 do
 -- RENASCIMENTO (Fase 8)
 local RebirthCfg = req(env.shared.Config.RebirthConfig)

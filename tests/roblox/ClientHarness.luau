@@ -515,6 +515,24 @@ check(Env.waitFor(function()
 	return battle ~= nil and battle.Enabled and find(battle, "Outcome") ~= nil
 end, 15), "batalha animada até VITÓRIA/DERROTA")
 check(data.TowerProgress.Ember == 1, "andar 1 vencido")
+do -- OCULTAR: painel compacto (andar, HP, ganhos) com MOSTRAR e PARAR; só apresentação
+	local hide = gui("Battle") and find(gui("Battle"), "HideBattle")
+	check(hide ~= nil, "TORRE: botão OCULTAR na batalha")
+	if hide then
+		click(hide)
+	end
+	check(Env.waitFor(function()
+		local panel = gui("TowerCompact") and find(gui("TowerCompact"), "TowerCompactPanel")
+		return panel ~= nil and panel.Visible and not gui("Battle").Enabled and string.find(find(panel, "Info").Text, "Andar") ~= nil
+	end, 3), "TORRE: OCULTAR mostra o painel compacto (Andar / HP / Ganhos)")
+	local show = find(gui("TowerCompact"), "CompactShow")
+	if show then
+		click(show)
+	end
+	check(Env.waitFor(function()
+		return gui("Battle").Enabled and find(gui("Battle"), "CloseBattle") ~= nil
+	end, 3), "TORRE: MOSTRAR volta para a tela da batalha")
+end
 local closeBattle = gui("Battle") and find(gui("Battle"), "CloseBattle")
 if closeBattle then
 	click(closeBattle)
