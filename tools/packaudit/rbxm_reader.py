@@ -38,9 +38,16 @@ CONTENT_PROPS = {
     "PantsTemplate": "PantsTemplate",
     "Graphic": "Graphic",
     "AnimationId": "AnimationId",
+    "SoundId": "SoundId",
+    "AudioContent": "SoundId",
 }
 BOOL_PROPS = {"Disabled", "Enabled", "Anchored"}
 ENUM_PROPS = {"RigType", "AccessoryType"}
+
+
+# Diagnóstico da última leitura binária (auditorias leem isto em vez de só imprimir)
+LAST_SKIPPED: dict[str, int] = {}
+LAST_ERRORS: list[str] = []
 
 
 class Node:
@@ -208,6 +215,10 @@ def read_binary(data: bytes) -> list[Node]:
     parents: list[tuple[int, int]] = []
     shared: list[bytes] = []
     skipped: dict[str, int] = {}
+    errors: list[str] = []
+    LAST_SKIPPED.clear()
+    LAST_ERRORS.clear()
+    seen_end = seen_prnt = False
     while r.i < len(data):
         name = r.raw(4).rstrip(b"\x00").decode("ascii", errors="replace")
         compressed = r.u32()
@@ -219,6 +230,7 @@ def read_binary(data: bytes) -> list[Node]:
         else:
             body = r.raw(size)
         if name == "END":
+            seen_end = True
             break
         c = Reader(body)
         try:
@@ -271,6 +283,7 @@ def read_binary(data: bytes) -> list[Node]:
                     elif prop in ENUM_PROPS and isinstance(value, int):
                         node.props[prop] = value
             elif name == "PRNT":
+                seen_prnt = True
                 c.u8()
                 count = c.u32()
                 children = c.referents(count)
@@ -278,10 +291,17 @@ def read_binary(data: bytes) -> list[Node]:
                 parents = list(zip(children, owners))
         except (ValueError, IndexError, struct.error) as err:
             skipped[f"chunk {name} ilegível ({err})"] = skipped.get(f"chunk {name} ilegível ({err})", 0) + 1
+            if name in ("INST", "PRNT", "SSTR"):
+                errors.append(f"chunk estrutural {name} ilegível ({err})")
+    if not seen_end:
+        errors.append("arquivo termina sem o chunk END (truncado?)")
+    if nodes and not seen_prnt:
+        errors.append("sem chunk PRNT: hierarquia ausente")
     roots = []
     for child, owner in parents:
         node = nodes.get(child)
         if node is None:
+            errors.append(f"PRNT referencia instância inexistente ({child})")
             continue
         parent = nodes.get(owner)
         if parent is None:
@@ -289,6 +309,8 @@ def read_binary(data: bytes) -> list[Node]:
         else:
             node.parent = parent
             parent.children.append(node)
+    LAST_SKIPPED.update(skipped)
+    LAST_ERRORS.extend(errors)
     if skipped:
         print(f"(ignoradas {len(skipped)} propriedades sem importância para a auditoria)")
     return roots
