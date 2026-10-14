@@ -1041,11 +1041,13 @@ local function buildConveyor(parent: Folder)
 	-- Setas ">" emissivas a cada 22 studs (fora dos cruzamentos), no sentido do movimento
 	local d = 6
 	while d < path.length do
-		local x, z, dx, dz = MapLayout.pointAt(path, d)
+		local x, z, pdx, pdz = MapLayout.pointAt(path, d)
+		local dx, dz = MapLayout.conveyorFlow(c, pdx, pdz) -- mesmo sentido da física e da animação
 		if not layout:onPath(x, z, c.CrossingMargin + 2) then
 			local forward = CFrame.lookAt(Vector3.new(x, top + 0.03, z), Vector3.new(x + dx, top + 0.03, z + dz))
 			for _, sign in { -1, 1 } do
-				Build.decor(Build.part(Vector3.new(0.45, 0.06, 2.6), forward * CFrame.new(sign * 0.75, 0, 0) * CFrame.Angles(0, math.rad(-35 * sign), 0), {
+				local offsetX, yaw = MapLayout.conveyorChevron(sign)
+				Build.decor(Build.part(Vector3.new(0.45, 0.06, 2.6), forward * CFrame.new(offsetX, 0, 0) * CFrame.Angles(0, yaw, 0), {
 					Name = "Arrow",
 					Color = rgb(255, 214, 90),
 					Material = Enum.Material.Neon,

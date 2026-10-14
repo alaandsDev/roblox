@@ -434,6 +434,56 @@ do
 	end
 	check(belts > 0 and aligned == belts, string.format("esteira: %d/%d trechos com velocidade física = %d studs/s no sentido visual (horizontal, ancorados, pisáveis)", aligned, belts, conveyorConfig.Speed))
 	check(joints > 0 and jointsInert == joints, "esteira: emendas decorativas (sem colisão, sem velocidade)")
+	-- Setas: a PONTA de cada chevron (encontro das 2 barras) aponta no sentido da velocidade do trecho
+	-- mais próximo — com CFrame real e trechos em todas as orientações da pista oval
+	local beltList, arrows = {}, {}
+	for _, obj in (conveyorFolder or map):GetDescendants() do
+		if obj:IsA("BasePart") and obj.Name == "Belt" then
+			table.insert(beltList, obj)
+		elseif obj:IsA("BasePart") and obj.Name == "Arrow" then
+			table.insert(arrows, obj)
+		end
+	end
+	local arrowsOk, pairsChecked = 0, 0
+	for i, bar in arrows do
+		-- a outra barra do mesmo chevron é a mais próxima
+		local mate, best = nil, math.huge
+		for j, other in arrows do
+			local dist = (other.CFrame.Position - bar.CFrame.Position).Magnitude
+			if j ~= i and dist < best then
+				mate, best = other, dist
+			end
+		end
+		if mate and best < 3 then
+			pairsChecked += 1
+			local center = (bar.CFrame.Position + mate.CFrame.Position) / 2
+			local tip = nil
+			local tipDist = math.huge
+			for _, b in { bar, mate } do
+				for _, sz in { -1.3, 1.3 } do
+					local p = (b.CFrame * roblox.CFrame.new(0, 0, sz)).Position
+					local dd = (p - center).Magnitude
+					if dd < tipDist then
+						tip, tipDist = p, dd
+					end
+				end
+			end
+			-- trecho mais próximo
+			local nearest, nd = nil, math.huge
+			for _, belt in beltList do
+				local dd = (belt.CFrame.Position - center).Magnitude
+				if dd < nd then
+					nearest, nd = belt, dd
+				end
+			end
+			local flow = velocityOf(nearest)
+			local pointing = (tip - center) - roblox.Vector3.new(0, (tip - center).Y, 0)
+			if pointing:Dot(flow) > 0 then
+				arrowsOk += 1
+			end
+		end
+	end
+	check(pairsChecked > 0 and arrowsOk == pairsChecked, string.format("esteira: %d/%d barras de seta com a ponta no sentido da velocidade física (= animação)", arrowsOk, pairsChecked))
 end
 
 print(string.format("\n[Harness] %d peças no total", partCount))

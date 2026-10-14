@@ -89,7 +89,8 @@ local function startConveyor()
 		for i, offset in offsets do
 			local x, z, dx, dz = MapLayout.pointAt(path, offset + travelled)
 			local position = Vector3.new(x, heights[i], z)
-			local cf = CFrame.lookAt(position, position + Vector3.new(dx, 0, dz))
+			local fx, fz = MapLayout.conveyorFlow(c, dx, dz)
+			local cf = CFrame.lookAt(position, position + Vector3.new(fx, 0, fz))
 			if spins[i] > 0 then
 				cf *= CFrame.Angles(0, elapsed * spins[i], 0)
 			end

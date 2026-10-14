@@ -306,4 +306,41 @@ describe("Esteira: velocidade física (MapLayout.beltVelocity)", function()
 	end)
 end)
 
+describe("Esteira: seta, animação e física no MESMO sentido", function()
+	-- Rotação do Roblox em Y: CFrame.Angles(0, θ, 0) leva o eixo +Z local para (sin θ, cos θ) em (x, z)
+	local function chevronTipLocalZ(side: number): number
+		local x, yaw = MapLayout.conveyorChevron(side)
+		local half = 1.3 -- metade do comprimento da barra (2,6)
+		local ax, az = x + math.sin(yaw) * half, math.cos(yaw) * half
+		local bx, bz = x - math.sin(yaw) * half, -math.cos(yaw) * half
+		-- a ponta é a extremidade mais perto do eixo central (x = 0)
+		return if math.abs(ax) < math.abs(bx) then az else bz
+	end
+
+	it("chevron: as duas barras se encontram na FRENTE (−Z local = sentido do fluxo)", function()
+		for _, side in { -1, 1 } do
+			expect(chevronTipLocalZ(side) < 0).toBeTruthy()
+		end
+	end)
+
+	it("trechos em qualquer orientação: fluxo, física e animação concordam (Direction 1 e −1)", function()
+		for _, direction in { 1, -1 } do
+			local conveyor = { Speed = 12, Direction = direction, CarryPlayers = true }
+			for deg = 0, 345, 15 do
+				local dx, dz = math.cos(math.rad(deg)), math.sin(math.rad(deg))
+				local fx, fz = MapLayout.conveyorFlow(conveyor, dx, dz)
+				-- fluxo = direção do trecho × Direction
+				expect((fx * dx + fz * dz) * direction > 0.999).toBeTruthy()
+				-- física
+				local vx, vz = MapLayout.beltVelocity(conveyor, 0, 0, dx * 10, dz * 10)
+				expect((vx * fx + vz * fz) > 11.99).toBeTruthy()
+				-- animação: a distância percorrida aumenta com Speed × Direction ao longo do caminho;
+				-- deslocamento de um item num trecho = (dx, dz) × Speed × Direction × dt
+				local ax, az = dx * conveyor.Speed * direction, dz * conveyor.Speed * direction
+				expect((ax * fx + az * fz) > 11.99).toBeTruthy()
+			end
+		end
+	end)
+end)
+
 return true
