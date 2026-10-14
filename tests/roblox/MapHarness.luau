@@ -524,6 +524,48 @@ do -- World Art Pass: linguagem blocky aplicada por papel, sem tocar na esteira
 	check(trees >= 30 and nSpecies == 4, string.format("art pass: %d árvores, %d espécies", trees, nSpecies))
 end
 
+-- SKY: exatamente 1 Sky efetivo em Lighting (ClassicRobloxSky tem prioridade, nada é clonado)
+do
+	local MapBuilder = requireModule(server.Map.MapBuilder)
+	local MapCfg = requireModule(shared.Config.MapConfig)
+	local lighting = realServices.Lighting
+	local function skies()
+		local list = {}
+		for _, c in lighting:GetChildren() do
+			if c.ClassName == "Sky" then
+				table.insert(list, c)
+			end
+		end
+		return list
+	end
+	for _, c in skies() do
+		c:Destroy()
+	end
+	local classic = Instance.new("Sky")
+	classic.Name = MapCfg.Lighting.SkyName
+	classic.Parent = lighting
+	local old = Instance.new("Sky")
+	old.Name = "Sky"
+	old.Parent = lighting
+	MapBuilder._chooseSky()
+	local list = skies()
+	check(#list == 1 and list[1] == classic, "Sky: com ClassicRobloxSky + Sky antigo sobra exatamente 1 (o ClassicRobloxSky, mesma instância)")
+	MapBuilder._chooseSky()
+	check(#skies() == 1 and skies()[1] == classic, "Sky: chamar de novo não duplica nem clona")
+	-- contêiner (Model com o Sky dentro): o Sky é MOVIDO para Lighting, o contêiner sai
+	classic:Destroy()
+	local box = Instance.new("Model")
+	box.Name = MapCfg.Lighting.SkyName
+	local inner = Instance.new("Sky")
+	inner.Parent = box
+	box.Parent = lighting
+	MapBuilder._chooseSky()
+	list = skies()
+	check(#list == 1 and list[1] == inner and inner.Name == MapCfg.Lighting.SkyName and box.Parent == nil, "Sky: ClassicRobloxSky salvo dentro de um contêiner vira o único Sky efetivo (movido, sem clonar)")
+	check(MapCfg.Lighting.SkyAssetId == 339406852 and MapCfg.Lighting.SkyName == "ClassicRobloxSky", "Sky: céu oficial = Classic Roblox Sky (339406852)")
+	inner:Destroy()
+end
+
 print(string.format("\n[Harness] %d peças no total", partCount))
 for label, count in byFolder do
 	print(string.format("    %-18s %d", label, count))

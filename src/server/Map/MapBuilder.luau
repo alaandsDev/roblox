@@ -105,6 +105,18 @@ end
 	  - sem nenhum Sky, usa o de ReplicatedStorage.Assets (AssetLoader) se existir; nada é baixado.
 ]]
 local function chooseSky()
+	-- assets/ClassicRobloxSky.rbxm salvo como contêiner (Model/Folder com o Sky dentro): o Sky
+	-- só vale como filho DIRETO de Lighting, então ele é MOVIDO para lá (sem clonar) e o
+	-- contêiner sai — sobra exatamente 1 Sky efetivo
+	local named = Lighting:FindFirstChild(MapConfig.Lighting.SkyName)
+	if named and not named:IsA("Sky") then
+		local inner = named:FindFirstChildWhichIsA("Sky", true)
+		if inner then
+			inner.Name = MapConfig.Lighting.SkyName
+			inner.Parent = Lighting
+		end
+		named:Destroy()
+	end
 	local skies = {}
 	for _, child in Lighting:GetChildren() do
 		if child:IsA("Sky") then
@@ -1161,5 +1173,8 @@ function MapBuilder.build(): Refs
 
 	return { map = map, hubSpawn = hubSpawn, shopSpawn = shopSpawn, towerEntrance = towerEntrance, dice = dice }
 end
+
+-- (testes) escolha do céu isolada
+MapBuilder._chooseSky = chooseSky
 
 return MapBuilder
