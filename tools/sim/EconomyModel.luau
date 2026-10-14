@@ -293,6 +293,19 @@ export type Options = {
 	prism: { UsesPerReward: number, MaxCharges: number, CooldownSeconds: number }?,
 	rebirth: string?, -- sobrepõe o perfil
 	checkpoints: { number }?,
+	-- HIPÓTESE (só simulação; NÃO existe no jogo): Player Auras = compra permanente que
+	-- multiplica a renda das estações (o que deriva da renda/s acompanha). Ver
+	-- tools/sim/analyze_player_auras.luau e PLAYER_AURA_ECONOMY_AUDIT.md.
+	playerAuras: PlayerAuraOptions?,
+}
+
+export type PlayerAuraTier = { name: string, price: number, money: number }
+export type PlayerAuraOptions = {
+	tiers: { PlayerAuraTier },
+	-- poupa para a próxima aura (adiando o Rebirth) se preço <= saveRatio × custo do Rebirth
+	saveRatio: number,
+	-- false = só registra quando PODERIA pagar (nunca compra): linha de base
+	buy: boolean,
 }
 
 ------------------------------------------------------------------------------------
@@ -363,6 +376,11 @@ local function newPlayer(profile: Profile): any
 		stationLevelsBought = 0,
 		ipsCache = 0,
 		lastIps = 0,
+		auraTier = 0, -- Player Aura (hipótese) comprada; 0 = nenhuma
+		auraMult = 1,
+		auraBoughtAt = {} :: { number },
+		auraAffordableAt = {} :: { number }, -- 1ª vez com saldo >= preço (mesmo sem comprar)
+		auraBuyState = {} :: { any }, -- renda/s, rebirths e Dice no momento da compra
 	}
 end
 
@@ -407,7 +425,7 @@ local function recomputeIncome(p: any)
 	for _, slot in p.slots do
 		total += formulas:unitIncome(itemOf(slot))
 	end
-	p.ipsCache = total * formulas:incomeMultiplier(p.data)
+	p.ipsCache = total * formulas:incomeMultiplier(p.data) * p.auraMult
 end
 
 local function capacity(p: any): number
@@ -612,6 +630,42 @@ local function rebirthDesired(p: any, policy: string): boolean
 	return p.diceOwned >= 15 or p.money >= 4 * cost
 end
 
+-- Player Aura (hipótese de simulação)
+local function nextAura(p: any, auras: PlayerAuraOptions?): PlayerAuraTier?
+	return auras and auras.tiers[p.auraTier + 1]
+end
+
+local function trackAuraAffordable(p: any, auras: PlayerAuraOptions?)
+	if not auras then
+		return
+	end
+	for i, tier in auras.tiers do
+		if not p.auraAffordableAt[i] and p.money >= tier.price then
+			p.auraAffordableAt[i] = p.now
+		end
+	end
+end
+
+-- poupando para a próxima aura: adia o Rebirth (o Rebirth zeraria o dinheiro)
+local function savingForAura(p: any, auras: PlayerAuraOptions?): boolean
+	local tier = nextAura(p, auras)
+	return tier ~= nil and (auras :: any).buy and tier.price <= (auras :: any).saveRatio * nextRebirthCost(p)
+end
+
+local function buyAura(p: any, auras: PlayerAuraOptions?)
+	local tier = nextAura(p, auras)
+	if not tier or not (auras :: any).buy or p.money < tier.price then
+		return
+	end
+	local state = { ips = p.ipsCache, rebirths = p.data.Rebirths, dice = p.diceOwned, money = p.money }
+	spend(p, "PlayerAura", tier.price)
+	p.auraTier += 1
+	p.auraMult = tier.money
+	p.auraBoughtAt[p.auraTier] = p.now
+	p.auraBuyState[p.auraTier] = state
+	recomputeIncome(p)
+end
+
 local function wantsRebirth(p: any, policy: string): boolean
 	return p.money >= nextRebirthCost(p) and rebirthDesired(p, policy)
 end
@@ -676,7 +730,7 @@ end
 
 local function levelStations(p: any, profile: Profile)
 	local budget = p.money * profile.levelBudget
-	local mult = formulas:incomeMultiplier(p.data)
+	local mult = formulas:incomeMultiplier(p.data) * p.auraMult
 	for _ = 1, 400 do
 		local best, bestCost, bestPayback = nil, 0, math.huge
 		for _, slot in p.slots do
@@ -937,6 +991,7 @@ function EconomyModel.run(profile: Profile, activeSeconds: number, seed: number,
 	local prismCfg = opts.prism or PrismConfig
 	local policy = opts.rebirth or profile.rebirth
 	local checkpoints = opts.checkpoints or EconomyModel.DefaultCheckpoints
+	local auras = opts.playerAuras
 	local rand = EconomyModel.rng(seed)
 	local p = newPlayer(profile)
 	p.now = 0
@@ -1004,14 +1059,24 @@ function EconomyModel.run(profile: Profile, activeSeconds: number, seed: number,
 					p.uncollected = 0
 				end
 				if p.now % profile.thinkEvery == 0 then
-					if wantsRebirth(p, policy) then
+					trackAuraAffordable(p, auras)
+					local auraSaving = auras ~= nil and savingForAura(p, auras)
+					if wantsRebirth(p, policy) and not auraSaving then
 						doRebirth(p, p.now)
 					end
 					equipBest(p, refund)
 					while buyDice(p) do
 					end
+					if auras then
+						buyAura(p, auras)
+						auraSaving = savingForAura(p, auras)
+					end
 					-- guardando para o rebirth (já tem metade): não gasta em melhorias/níveis/fusão
 					local saving = policy ~= "late" and rebirthDesired(p, policy) and p.money >= nextRebirthCost(p) * 0.5
+					local aura = nextAura(p, auras)
+					if auraSaving and aura and p.money >= aura.price * 0.5 then
+						saving = true
+					end
 					if not saving then
 						fuse(p, profile)
 						buyUpgrades(p, profile)

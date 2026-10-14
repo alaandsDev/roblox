@@ -210,4 +210,40 @@ describe("EconomyModel: simulação", function()
 	end)
 end)
 
+describe("EconomyModel: Player Auras (HIPÓTESE de simulação, não existe no jogo)", function()
+	local tiers = { { name = "A", price = 50_000, money = 1.5 }, { name = "B", price = 2_000_000, money = 2 } }
+	local prof = short({ sessionsPerDay = { 3600 } })
+
+	it("opção desligada (buy = false) não muda NADA da simulação atual", function()
+		local plain = M.run(prof, 2 * 3600, 7, {}).player
+		local tracked = M.run(prof, 2 * 3600, 7, { playerAuras = { tiers = tiers, saveRatio = 2, buy = false } }).player
+		expect(tracked.money).toBe(plain.money)
+		expect(tracked.rolls).toBe(plain.rolls)
+		expect(tracked.ipsCache).toBe(plain.ipsCache)
+		expect(tracked.auraTier).toBe(0)
+		-- mas registra quando o saldo PODERIA pagar
+		expect(tracked.auraAffordableAt[1] ~= nil).toBeTruthy()
+	end)
+
+	it("compra em ordem, pelo preço exato, sem saldo negativo; renda × multiplicador da maior aura", function()
+		local q = M.run(prof, 2 * 3600, 7, { playerAuras = { tiers = tiers, saveRatio = 2, buy = true } }).player
+		expect(q.auraTier >= 1).toBeTruthy()
+		local spent = 0
+		for i = 1, q.auraTier do
+			spent += tiers[i].price
+			if i > 1 then
+				expect(q.auraBoughtAt[i] >= q.auraBoughtAt[i - 1]).toBeTruthy()
+			end
+		end
+		expect(q.spent.PlayerAura).toBe(spent)
+		expect(q.money >= 0).toBeTruthy()
+		expect(q.auraMult).toBe(tiers[q.auraTier].money)
+		local total = 0
+		for _, slot in q.slots do
+			total += formulas:unitIncome({ Id = slot.id, Level = slot.level, Variant = VariantConfig.List[slot.variant].Id })
+		end
+		expect(math.abs(q.ipsCache - total * formulas:incomeMultiplier(q.data) * q.auraMult) < 1e-6).toBeTruthy()
+	end)
+end)
+
 return true
