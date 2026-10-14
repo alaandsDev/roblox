@@ -526,7 +526,22 @@ local light = Factory.build("char_killuo_godspeed", { vfx = "Light", aura = fals
 local full = Factory.build("char_killuo_godspeed", { vfx = "Full", aura = false })
 check(effects(none) == 0 and effects(light) == Config.VFXLimits.MaxLight and effects(full) == Config.VFXLimits.MaxFull, `VFXMode None/Light/Full = {effects(none)}/{effects(light)}/{effects(full)}`)
 local based = Factory.build("char_killuo_godspeed", { vfx = "Light" })
-check(based:FindFirstChild("Aura", true) ~= nil and effects(based) <= Config.VFXLimits.MaxLight + 2, "Base (Light): raios leves + aura da raridade, nada além disso")
+do -- aura de raridade agora é o sistema AuraConfig/AuraBuilder (fora do limite de VFX PRÓPRIO do asset)
+	local own, auraRate = 0, 0
+	for _, obj in based:GetDescendants() do
+		local inAura = obj:FindFirstAncestor("AuraCore") ~= nil or obj:FindFirstAncestor("AuraGround") ~= nil
+		if table.find(Config.VFXClasses, obj.ClassName) and not inAura then
+			own += 1
+		elseif inAura and obj:IsA("ParticleEmitter") then
+			auraRate += obj.Rate
+		end
+	end
+	local AuraCfg = requireModule(env.shared.Config.AuraConfig)
+	check(
+		based:FindFirstChild("AuraCore") ~= nil and own <= Config.VFXLimits.MaxLight and auraRate > 0 and auraRate <= AuraCfg.Budget.MaxRatePerAura * AuraCfg.LightScale.Rate,
+		"Base (Light): raios leves próprios (<= MaxLight) + aura da raridade dentro do orçamento Light"
+	)
+end
 for _, m in { none, light, full, based } do
 	m:Destroy()
 end
