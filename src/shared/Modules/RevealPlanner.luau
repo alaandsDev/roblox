@@ -23,6 +23,7 @@ export type Input = {
 export type Plan = {
 	mode: string, -- "Compact" | "Normal" | "Enhanced" | "HeroLanding"
 	cinematic: string?,
+	stage: string?, -- "Viewport" (HeroLanding) | "World" (JackpotReveal: Divino/Secreto)
 	compactStyle: string,
 	pauseAutoRoll: boolean,
 	canSkip: boolean,
@@ -54,7 +55,8 @@ function RevealPlanner:plan(input: Input): Plan
 	local tier = self.rarities.ById[input.rarity] and self.rarities.ById[input.rarity].Tier or 1
 	local mode = preset.Mode
 	if input.hide then
-		local force = preset.Mode == "HeroLanding" and input.rarity == "Secret" and self.c.ForceCinematicForSecret
+		local force = preset.Mode == "HeroLanding"
+			and ((input.rarity == "Secret" and self.c.ForceCinematicForSecret) or (input.rarity == "Divine" and self.c.ForceCinematicForDivine))
 		if not force then
 			mode = "Compact"
 		end
@@ -77,6 +79,7 @@ function RevealPlanner:plan(input: Input): Plan
 	return {
 		mode = mode,
 		cinematic = cinematic,
+		stage = if cinematicPreset then (cinematicPreset.Stage or "Viewport") else nil,
 		compactStyle = preset.CompactStyle,
 		-- Só pausa o AUTO se de fato tocar algo demorado
 		pauseAutoRoll = input.autoRoll == true and preset.AutoRoll == "Pause" and mode ~= "Compact",

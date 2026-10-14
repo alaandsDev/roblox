@@ -406,11 +406,17 @@ for _, case in { { "Legendary", "dragon_knight" }, { "Mythic", "void_emperor" },
 		return gui("HeroLanding") ~= nil
 	end, 2), case[1] .. ": cinemática começou")
 	local stage = gui("HeroLanding")
-	check(stage ~= nil and find(stage, "Stage") ~= nil and find(stage, case[2]) ~= nil, case[1] .. ": palco local com o personagem")
+	if stage and stage:GetAttribute("Stage") == "World" then
+		-- Divino/Secreto: palco NO MUNDO (local), para a Aura Full renderizar (viewport não renderiza partículas)
+		local world = env.real.Workspace:FindFirstChild("JackpotStage")
+		check(world ~= nil and find(world, case[2]) ~= nil, case[1] .. ": palco local no mundo com o personagem")
+	else
+		check(stage ~= nil and find(stage, "Stage") ~= nil and find(stage, case[2]) ~= nil, case[1] .. ": palco local com o personagem")
+	end
 	local continue = stage and find(stage, "Continue")
 	check(Env.waitFor(function()
 		return continue ~= nil and continue.Visible
-	end, 6), case[1] .. ": botão CONTINUAR aparece")
+	end, 9), case[1] .. ": botão CONTINUAR aparece")
 	local rarityLabel = stage and find(stage, "Rarity")
 	check(rarityLabel ~= nil and rarityLabel.Text ~= "", case[1] .. ": raridade/nome/odds na tela")
 	if continue then
@@ -431,6 +437,129 @@ player.CharacterRemoving:Fire()
 check(Env.waitFor(function()
 	return gui("HeroLanding") == nil
 end, 2), "morrer no meio da cinemática limpa tudo")
+
+do
+	-- JACKPOT REVEAL (Divino/Secreto): câmera real, Aura Full no impacto, HUD some e volta,
+	-- tudo restaurado no fim; OCULTAR não esconde Divino/Secreto
+	local RevealCfg = clientRequire(env.shared.Config.RevealConfig)
+	local CharCfg = clientRequire(env.shared.Config.CharacterConfig)
+	local function firstOf(rarity: string): string
+		for _, c in CharCfg.List do
+			if c.Rarity == rarity then
+				return c.Id
+			end
+		end
+		error("sem " .. rarity)
+	end
+	local divineId, secretId = firstOf("Divine"), firstOf("Secret")
+	local function hudEnabled(): number
+		local n = 0
+		for _, g in playerGui:GetChildren() do
+			if g:IsA("ScreenGui") and g.Enabled and g.Name ~= "HeroLanding" then
+				n += 1
+			end
+		end
+		return n
+	end
+	for _, case in { { "Divine", divineId }, { "Secret", secretId } } do
+		local rarity, id = case[1], case[2]
+		local preset = RevealCfg.Cinematics[rarity]
+		local hudBefore = hudEnabled()
+		local typeBefore = camera.CameraType
+		local fovBefore = camera.FieldOfView
+		local posBefore = camera.CFrame.Position
+		playDev(rarity, id)
+		check(Env.waitFor(function()
+			return gui("HeroLanding") ~= nil
+		end, 2), rarity .. " (jackpot): começou")
+		local stage = gui("HeroLanding")
+		local world = env.real.Workspace:FindFirstChild("JackpotStage")
+		local model = world and find(world, id)
+		check(camera.CameraType == roblox.Enum.CameraType.Scriptable and hudEnabled() == 0, rarity .. " (jackpot): câmera real em Scriptable e HUD escondido durante a apresentação")
+		-- queda VISÍVEL: o personagem começa bem alto e desce
+		local startY = model and model:GetPivot().Position.Y
+		task.wait(preset.FallStart + 0.25)
+		local midY = model and model:GetPivot().Position.Y
+		local groundY = RevealCfg.JackpotStage.Position[2]
+		check(startY ~= nil and midY ~= nil and midY > groundY + 5 and midY < startY, string.format("%s (jackpot): queda visível (%.0f -> %.0f, chão %d)", rarity, startY or -1, midY or -1, groundY))
+		-- impacto: Aura FULL no próprio personagem do palco (no mundo, partículas renderizam)
+		check(Env.waitFor(function()
+			return model ~= nil and model:GetAttribute("AuraMode") == "Full"
+		end, preset.Impact + 2), rarity .. " (jackpot): Aura " .. rarity .. " Full entra no impacto")
+		local onAt, total = 0, 0
+		for _, d in (model :: any):GetDescendants() do
+			-- rajadas (AuraRole Burst) são disparadas por :Emit, nunca ficam ligadas
+			if d:IsA("ParticleEmitter") and string.sub(d.Name, 1, 4) == "Aura" and d:GetAttribute("AuraRole") ~= "Burst" then
+				total += 1
+				if d.Enabled then
+					onAt += 1
+				end
+			end
+		end
+		if preset.AuraEntry == "Layers" then
+			check(total > 0 and onAt < total, string.format("Secret (jackpot): aura entra em CAMADAS (%d/%d emissores ligados logo após o impacto)", onAt, total))
+			check(Env.waitFor(function()
+				local on = 0
+				for _, d in (model :: any):GetDescendants() do
+					if d:IsA("ParticleEmitter") and string.sub(d.Name, 1, 4) == "Aura" and d:GetAttribute("AuraRole") ~= "Burst" and d.Enabled then
+						on += 1
+					end
+				end
+				return on == total
+			end, 3), "Secret (jackpot): todas as camadas da aura ligadas em seguida")
+		else
+			check(total > 0 and onAt == total, string.format("Divine (jackpot): Aura Full inteira no impacto (%d/%d)", onAt, total))
+		end
+		check(find(world, "GroundRing") ~= nil and find(world, "ImpactSparks") ~= nil, rarity .. " (jackpot): anel no chão + faíscas do impacto")
+		local continue = stage and find(stage, "Continue")
+		check(Env.waitFor(function()
+			return continue ~= nil and continue.Visible
+		end, 9), rarity .. " (jackpot): CONTINUAR aparece")
+		local rarityLabel = stage and find(stage, "Rarity")
+		local nameLabel = stage and find(stage, "Name")
+		check(rarityLabel ~= nil and rarityLabel.Text ~= "" and nameLabel ~= nil and nameLabel.Text ~= "", rarity .. " (jackpot): nome + raridade dentro da apresentação")
+		if continue then
+			click(continue)
+		end
+		check(Env.waitFor(function()
+			return gui("HeroLanding") == nil and not C.RevealController.Busy()
+		end, 2), rarity .. " (jackpot): termina")
+		check(env.real.Workspace:FindFirstChild("JackpotStage") == nil and camera:FindFirstChild("JackpotGrade") == nil, rarity .. " (jackpot): palco e pós-efeito destruídos")
+		check(camera.CameraType == typeBefore and camera.FieldOfView == fovBefore and (camera.CFrame.Position - posBefore).Magnitude < 0.01 and hudEnabled() == hudBefore, rarity .. " (jackpot): câmera (tipo, FOV, enquadramento) e HUD restaurados exatamente")
+	end
+	-- morrer no meio do Secreto: limpa tudo e devolve a câmera
+	local typeBefore = camera.CameraType
+	playDev("Secret", secretId)
+	check(Env.waitFor(function()
+		return gui("HeroLanding") ~= nil
+	end, 2), "Secret (jackpot): para teste de morte")
+	task.wait(0.4)
+	player.CharacterRemoving:Fire()
+	check(Env.waitFor(function()
+		return gui("HeroLanding") == nil and env.real.Workspace:FindFirstChild("JackpotStage") == nil
+	end, 2) and camera.CameraType == typeBefore, "morrer no meio do Secreto: palco destruído e câmera devolvida")
+	Env.waitFor(function()
+		return not C.RevealController.Busy()
+	end, 2)
+	-- OCULTAR ligado: Divino ainda toca a apresentação completa (evento excepcional)
+	task.spawn(DataController.SetSetting, "HideRollAnimation", true)
+	Env.waitFor(function()
+		return (DataController.Get("Settings") or {}).HideRollAnimation == true
+	end, 2)
+	playDev("Divine", divineId)
+	check(Env.waitFor(function()
+		local g = gui("HeroLanding")
+		return g ~= nil and g:GetAttribute("Stage") == "World"
+	end, 2), "OCULTAR ligado: Divino ainda toca o Jackpot Reveal")
+	C.RevealController.Cancel()
+	Env.waitFor(function()
+		return not C.RevealController.Busy() and gui("HeroLanding") == nil
+	end, 2)
+	task.spawn(DataController.SetSetting, "HideRollAnimation", false)
+	Env.waitFor(function()
+		return (DataController.Get("Settings") or {}).HideRollAnimation == false
+	end, 2)
+end
 
 ------------------------------------------------------------------------------------
 -- Janelas
@@ -1236,6 +1365,50 @@ do
 	Env.waitFor(function()
 		return not C.RevealController.Busy()
 	end, 3)
+	-- Jackpot Reveal (Divino) com AUTO + ROLL RÁPIDO + OCULTAR: AUTO pausa (nenhum roll perdido,
+	-- duplicado ou em rajada depois) e volta na cadência normal do servidor
+	S.PlayerDataService.Set(player, "EquippedDice", "Starter")
+	local rt = table.clone(d.Runtime or {})
+	rt.FastRoll = true
+	S.PlayerDataService.Set(player, "Runtime", rt)
+	task.spawn(DataController.SetSetting, "HideRollAnimation", true)
+	Env.waitFor(function()
+		return (DataController.Get("Settings") or {}).HideRollAnimation == true and (DataController.Get("Runtime") or {}).FastRoll == true
+	end, 2)
+	RC.SetAuto(true)
+	task.wait(1.2)
+	local divineAuto
+	for _, c in clientRequire(env.shared.Config.CharacterConfig).List do
+		if c.Rarity == "Divine" then
+			divineAuto = c.Id
+			break
+		end
+	end
+	Net.fire("DevReveal", player, { CharacterId = divineAuto, Rarity = "Divine", IsNew = true })
+	check(Env.waitFor(function()
+		local g = gui("HeroLanding")
+		return g ~= nil and g:GetAttribute("Stage") == "World"
+	end, 2), "AUTO + ROLL RÁPIDO + OCULTAR: Divino toca o Jackpot Reveal")
+	local atStart = d.Rolls
+	local peak = atStart
+	while gui("HeroLanding") ~= nil do
+		peak = math.max(peak, d.Rolls)
+		task.wait(0.05)
+	end
+	-- no máximo o roll que já estava em voo quando a apresentação começou
+	check(peak <= atStart + 1, string.format("AUTO pausado durante o Jackpot Reveal (%d -> %d)", atStart, peak))
+	local resumeFrom = d.Rolls
+	task.wait(1.6)
+	local after = d.Rolls - resumeFrom
+	check(after >= 1 and after <= 4, string.format("depois do Jackpot Reveal o AUTO volta na cadência (0,5 s), sem rajada de atrasados (%d rolls em 1,6 s)", after))
+	RC.SetAuto(false)
+	rt = table.clone(d.Runtime)
+	rt.FastRoll = false
+	S.PlayerDataService.Set(player, "Runtime", rt)
+	task.spawn(DataController.SetSetting, "HideRollAnimation", false)
+	Env.waitFor(function()
+		return not C.RevealController.Busy() and (DataController.Get("Settings") or {}).HideRollAnimation == false
+	end, 3)
 end
 
 do
@@ -1307,7 +1480,9 @@ do
 		return gui("HeroLanding") ~= nil
 	end, 2), "Hero Landing: cinemática do piloto Divino começou")
 	local stage = gui("HeroLanding")
-	local heroModel = stage and find(stage, "char_goju_base")
+	-- Divino agora é Jackpot Reveal: o modelo fica no palco do MUNDO (local), não no viewport
+	local worldStage = env.real.Workspace:FindFirstChild("JackpotStage")
+	local heroModel = stage and (find(stage, "char_goju_base") or (worldStage and find(worldStage, "char_goju_base")))
 	check(heroModel ~= nil and heroModel:GetAttribute("AssetRig") == true and heroModel:GetAttribute("VFXMode") == "Full", "Hero Landing: piloto do asset sanitizado (VFX Full)")
 	local continue = stage and find(stage, "Continue")
 	check(Env.waitFor(function()

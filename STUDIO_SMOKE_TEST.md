@@ -272,6 +272,11 @@ Testar no PC e no emulador (celular paisagem 844×390 e retrato 390×844, tablet
 | AV2 | AURAS V2 | repetir com "Electric", "Flame", "Void" e com "Full" | cada estilo tem assinatura clara; aura visível sobre grama, chão amarelo, céu e roxo | [ ] |
 | AV3 | AURAS V2 | `AuraStress` 4 Divine, depois 10 mixed | personagens legíveis, sem parede branca, sem cobrir HUD, FPS estável | [ ] |
 | P2 | AURAS PACK | conferir o jogo | NADA do pack no place (Explorer: sem AurasPack); auras continuam só nos personagens colecionáveis, nunca no avatar | [ ] |
+| J1 | JACKPOT | `game.ServerStorage.RollLegendsDev:Invoke("DivineLanding", game.Players:GetPlayers()[1])` (repetir: `..., nil, 5)`) | Divino: ALTO → QUEDA → IMPACTO → HERO LANDING; Aura Divine Full no impacto; DIVINO + nome; câmera e HUD voltam | [ ] |
+| J2 | JACKPOT | `game.ServerStorage.RollLegendsDev:Invoke("SecretLanding", game.Players:GetPlayers()[1])` | Secreto com timing próprio (suspense, fenda, mergulho, corte, câmera lenta, impacto forte, aura em camadas) — não é "Divino com mais partículas" | [ ] |
+| J3 | JACKPOT | personagem alto e pequeno: `..."DivineLanding", player, "<id>")` | enquadra o corpo inteiro + anel no chão; câmera não atravessa o personagem | [ ] |
+| J4 | JACKPOT | AUTO (e Roll Rápido) ligado + OCULTAR, depois `DivineLanding` | AUTO pausa durante a apresentação e volta sem rajada de rolls atrasados; OCULTAR não esconde Divino/Secreto | [ ] |
+| J5 | JACKPOT | emulador mobile (vertical e horizontal) | textos dentro da safe area, tremida confortável, FPS ok | [ ] |
 | MF1 | ANDARES | `Dev:Invoke("PreviewFloors", player, 5)` e andar pelo Floor01..04 | o andar coberto não fica escuro; luz quente suave (sem branco estourado); exterior/céu iguais | [ ] |
 | MF2 | ANDARES | no Floor01 olhar para cima (Floor02/03 com personagens) | Floor02 só mostra `$X/s`; Floor03+ sem letreiro; nada de parede de MÁX/nomes; subindo a rampa o Floor02 volta completo | [ ] |
 | MF3 | MOVIMENTO | andar Hub ↔ base ↔ rampas (PC e emulador mobile) | velocidade 22 confortável; rampas, esteira e colisões normais | [ ] |

@@ -4,11 +4,14 @@
 	O TIPO de apresentação vem do RevealPlanner (RevealConfig), nunca de ifs por raridade:
 	  Normal/Enhanced -> dado gira e quica, flash, personagem, raridade, nome, NOVO (1.2–1.8 s)
 	  Compact         -> nada na tela (OCULTAR/AUTO): só a faixa de rolls recentes
-	  HeroLanding     -> cinemática (Effects/HeroLanding)
+	  HeroLanding     -> cinemática (Effects/HeroLanding, palco no viewport: Lendário/Mítico)
+	                     Divino/Secreto (stage "World") -> Effects/JackpotReveal: palco no MUNDO,
+	                     câmera real, Aura Full no impacto. OCULTAR não esconde Divino/Secreto.
 	    RevealController.Play(resultado, { autoRoll = true }) -> plano (bloqueia até terminar,
 	                                                              exceto o compacto)
 	    RevealController.Busy()
-	DEV (Studio): DevService "PlayReveal"/"PlayAllReveals" -> evento DevReveal -> toca sem RNG.
+	DEV (Studio): DevService "PlayReveal"/"PlayAllReveals"/"DivineLanding"/"SecretLanding" ->
+	evento DevReveal -> toca SÓ a apresentação (sem RNG, inventário ou economia).
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -32,6 +35,7 @@ local UI = script.Parent.Parent.UI
 local UIKit = require(UI.UIKit)
 local Theme = require(UI.UITheme)
 local HeroLanding = require(script.Parent.Parent.Effects.HeroLanding)
+local JackpotReveal = require(script.Parent.Parent.Effects.JackpotReveal)
 local DataController = require(script.Parent.DataController)
 
 local RevealController = {}
@@ -209,7 +213,8 @@ function RevealController.Play(result: any, context: { autoRoll: boolean? }?): R
 	busy = true
 	local ok, err = pcall(function()
 		if plan.mode == "HeroLanding" and plan.cinematic then
-			local handle = HeroLanding.play({
+			local playFn = if plan.stage == "World" then JackpotReveal.play else HeroLanding.play
+			local handle = (playFn :: any)({
 				characterId = result.CharacterId,
 				rarity = result.Rarity,
 				variant = result.Variant,
@@ -221,6 +226,7 @@ function RevealController.Play(result: any, context: { autoRoll: boolean? }?): R
 				luck = result.Luck,
 				canSkip = plan.canSkip,
 				autoClose = plan.autoClose,
+				mobile = UIKit.isMobile(),
 			})
 			current = handle
 			-- Segurança: nunca espera mais que o dobro da duração + tempo do botão
@@ -263,7 +269,7 @@ local function devPlay(payload: any)
 		RevealController.Play({
 			CharacterId = id,
 			Rarity = character.Rarity,
-			Variant = "Normal",
+			Variant = payload.Variant or "Normal",
 			IsNew = isNew,
 			TimesSeen = 0,
 			Odds = diceCore:odds(id),
@@ -280,7 +286,10 @@ local function devPlay(payload: any)
 			end
 		end
 	elseif payload.CharacterId and CharacterConfig.ById[payload.CharacterId] then
-		one(payload.CharacterId, payload.IsNew ~= false)
+		-- Repeat: toca N vezes seguidas (testar timing/câmera no Studio)
+		for _ = 1, math.clamp(tonumber(payload.Repeat) or 1, 1, 10) do
+			one(payload.CharacterId, payload.IsNew ~= false)
+		end
 	end
 end
 

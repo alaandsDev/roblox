@@ -31,7 +31,9 @@ describe("Reveal: qual apresentação tocar", function()
 	end)
 
 	it("durações nas faixas pedidas e cada raridade supera a anterior", function()
-		local ranges = { Legendary = { 2.0, 2.8 }, Mythic = { 2.5, 3.2 }, Divine = { 2.5, 3.5 }, Secret = { 3.5, 4.5 } }
+		-- Divino/Secreto viraram JACKPOT REVEAL (fase 15: queda visível + aura Full + leitura):
+		-- faixas ampliadas pelo design aprovado (antes Divine 2,5–3,5 e Secret 3,5–4,5)
+		local ranges = { Legendary = { 2.0, 2.8 }, Mythic = { 2.5, 3.2 }, Divine = { 4.0, 5.5 }, Secret = { 5.5, 7.0 } }
 		local last = 0
 		for _, id in { "Legendary", "Mythic", "Divine", "Secret" } do
 			local c = RevealConfig.Cinematics[id]
@@ -41,14 +43,21 @@ describe("Reveal: qual apresentação tocar", function()
 		end
 	end)
 
-	it("OCULTAR: tudo compacto (estilo por raridade), exceto Secreto", function()
+	it("OCULTAR: tudo compacto (estilo por raridade), exceto Divino e Secreto", function()
 		expect(planner:plan({ rarity = "Common", hide = true }).mode).toBe("Compact")
 		local legendary = planner:plan({ rarity = "Legendary", hide = true })
 		expect(legendary.mode).toBe("Compact")
 		expect(legendary.compactStyle).toBe("Special")
 		expect(planner:plan({ rarity = "Mythic", hide = true }).compactStyle).toBe("Highlight")
 		expect(planner:plan({ rarity = "Divine", hide = true }).compactStyle).toBe("Premium")
+		expect(planner:plan({ rarity = "Divine", hide = true }).mode).toBe("HeroLanding")
 		expect(planner:plan({ rarity = "Secret", hide = true }).mode).toBe("HeroLanding")
+	end)
+
+	it("Divino respeita OCULTAR se ForceCinematicForDivine = false", function()
+		RevealConfig.ForceCinematicForDivine = false
+		expect(planner:plan({ rarity = "Divine", hide = true }).mode).toBe("Compact")
+		RevealConfig.ForceCinematicForDivine = true
 	end)
 
 	it("Secreto respeita OCULTAR se ForceCinematicForSecret = false", function()
@@ -116,6 +125,41 @@ describe("Reveal: qual apresentação tocar", function()
 		expect(planner:plan({ rarity = "Mythic" }).social).toBe("Discreet")
 		expect(planner:plan({ rarity = "Divine" }).social).toBe("Global")
 		expect(planner:plan({ rarity = "Secret" }).social).toBe("Highlight")
+	end)
+end)
+
+describe("Jackpot Reveal (Divino/Secreto): palco no mundo, timing próprio", function()
+	it("Divino/Secreto vão para o palco no MUNDO (aura Full visível); Lendário/Mítico seguem no viewport", function()
+		expect(planner:plan({ rarity = "Divine" }).stage).toBe("World")
+		expect(planner:plan({ rarity = "Secret" }).stage).toBe("World")
+		expect(planner:plan({ rarity = "Legendary" }).stage).toBe("Viewport")
+		expect(planner:plan({ rarity = "Mythic" }).stage).toBe("Viewport")
+		expect(planner:plan({ rarity = "Epic" }).stage).toBeNil()
+	end)
+
+	it("linha do tempo em ordem: surge ALTO -> queda -> impacto -> levanta -> pose -> CONTINUAR", function()
+		for _, id in { "Divine", "Secret" } do
+			local c = RevealConfig.Cinematics[id]
+			expect(c.Appear < c.FallStart and c.FallStart < c.Impact and c.Impact < c.Rise and c.Rise < c.Pose).toBeTruthy()
+			expect(c.Impact < c.Title and c.Title < c.Continue and c.Continue < c.Duration).toBeTruthy()
+			-- queda perceptível: pelo menos 0,7 s no ar e dezenas de studs
+			expect(c.Impact - c.FallStart >= 0.7 and c.MinDrop >= 40).toBeTruthy()
+		end
+	end)
+
+	it("Secreto NÃO é o Divino com partículas maiores: suspense, câmera, aceleração e entrada da aura próprios", function()
+		local d, s = RevealConfig.Cinematics.Divine, RevealConfig.Cinematics.Secret
+		expect(s.Suspense ~= nil and d.Suspense == nil).toBeTruthy()
+		expect(s.SlowMo ~= nil and d.SlowMo == nil).toBeTruthy()
+		expect(s.Camera ~= d.Camera).toBeTruthy()
+		expect(s.AuraEntry ~= d.AuraEntry).toBeTruthy()
+		expect(s.FallPower > d.FallPower and s.MinDrop > d.MinDrop).toBeTruthy()
+		expect(s.Shake > d.Shake and s.ShakeTime > d.ShakeTime and s.RingSize > d.RingSize).toBeTruthy()
+	end)
+
+	it("AUTO + OCULTAR: Divino/Secreto ainda pausam o AUTO (cinemática toca)", function()
+		expect(planner:plan({ rarity = "Divine", autoRoll = true, hide = true }).pauseAutoRoll).toBe(true)
+		expect(planner:plan({ rarity = "Secret", autoRoll = true, hide = true }).pauseAutoRoll).toBe(true)
 	end)
 end)
 

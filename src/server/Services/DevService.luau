@@ -273,6 +273,25 @@ DevService.Register("PlayReveal", "(player, raridade, personagemId?, novo?) toca
 	Net.fire("DevReveal", player, { CharacterId = chosen, Rarity = CharacterConfig.ById[chosen].Rarity, IsNew = isNew ~= false })
 	return chosen
 end)
+-- Jackpot Reveal (Divino/Secreto): SÓ a apresentação — não mexe em inventário, economia nem RNG
+local function jackpot(rarity: string)
+	return function(player, id, times, variant)
+		local chosen = id
+		if not chosen then
+			for _, c in CharacterConfig.List do
+				if c.Rarity == rarity then
+					chosen = c.Id
+					break
+				end
+			end
+		end
+		assert(chosen and CharacterConfig.ById[chosen] and CharacterConfig.ById[chosen].Rarity == rarity, "personagem " .. rarity .. " inválido")
+		Net.fire("DevReveal", player, { CharacterId = chosen, Rarity = rarity, IsNew = true, Repeat = times or 1, Variant = variant })
+		return chosen
+	end
+end
+DevService.Register("DivineLanding", "(player, personagemId?, vezes?, variante?) Hero Landing do Divino (só apresentação)", jackpot("Divine"))
+DevService.Register("SecretLanding", "(player, personagemId?, vezes?, variante?) Jackpot Reveal do Secreto (só apresentação)", jackpot("Secret"))
 DevService.Register("PlayAllReveals", "(player) Lendário, Mítico, Divino e Secreto em sequência", function(player)
 	Net.fire("DevReveal", player, { All = true })
 	return "ok"

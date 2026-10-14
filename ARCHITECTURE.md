@@ -34,7 +34,7 @@ StarterPlayer.StarterPlayerScripts
 └── Client
     ├── Bootstrap.client.luau   inicia os Controllers
     ├── UI/                     UITheme (design system) + UIKit (botões, janelas, confirmação, sons)
-    ├── Effects/                HeroLanding (cinemática), CameraShake, Pool
+    ├── Effects/                HeroLanding (cinemática), JackpotReveal (Divino/Secreto), CameraShake, Pool
     └── Controllers/            Notification, Data, Hud, Navigation, Ambient, Reveal, Roll,
                                 Inventory, DiceShop, Upgrades, Sell, Index, Daily, Offline,
                                 Settings, Feedback, Lod
@@ -210,6 +210,14 @@ baixo esquerda dinheiro/Luck/impulso de amigos, direita reservada (monetização
 do `RevealConfig`. A cinemática roda num **ViewportFrame local** com câmera própria: a câmera
 e os controles do jogador nunca são tocados; tudo é limpo em `Stop()` (pular, continuar,
 morrer, erro). Peças de impacto vêm de `Pool`.
+**Jackpot Reveal (Divino/Secreto)**: `Effects/JackpotReveal` (presets com `Stage = "World"`). O
+ViewportFrame não renderiza partículas/Beams/Highlight, então Divino e Secreto usam um palco NO
+MUNDO, só no cliente, bem acima do mapa (`RevealConfig.JackpotStage`), com a câmera real em
+Scriptable: queda visível → hero landing → Aura Full (AuraBuilder + AuraController) → nome e
+raridade. Câmera, controles e HUD são guardados e restaurados exatamente em `Stop()`; o
+resultado já veio do servidor (nenhum RNG na apresentação). OCULTAR não esconde Divino/Secreto;
+o AUTO (normal ou Roll Rápido) fica parado enquanto a apresentação toca e retoma na cadência do
+servidor. DEV: `DivineLanding` / `SecretLanding`.
 
 **Desempenho**: estações sem colisão/toque/consulta; um loop central por serviço (renda 1 s,
 placas 2 s, pads 0,4 s, coletor 0,25 s); textos só mudam quando o valor muda; billboards com
