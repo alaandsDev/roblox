@@ -117,8 +117,17 @@ local autoWanted = true
 local animToken = 0
 local compact: Frame? = nil
 
+local END_KEYS = {
+	defeat = "tower.end_defeat",
+	stopped = "tower.end_stopped",
+	tower_complete = "tower.end_tower_complete",
+	session_limit = "tower.end_session_limit",
+	disconnect = "tower.end_disconnect",
+	died = "tower.end_died",
+	invalid = "tower.end_invalid",
+}
 local function endReasonText(reason: string?): string
-	return Localization.t("tower.end_" .. tostring(reason or "stopped"))
+	return Localization.t(END_KEYS[reason or "stopped"] or "tower.end_ended")
 end
 
 local function updateCompact()
