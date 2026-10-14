@@ -44,7 +44,7 @@ local log = Logger.new("Station")
 
 local StationService = {}
 
-local BILLBOARD_DISTANCE = 90
+local BILLBOARD_DISTANCE = 70
 local PLATE_DISTANCE = 55
 local PAD_COLOR = Color3.fromRGB(60, 230, 90)
 local PAD_FRAME_COLOR = Color3.fromRGB(30, 120, 55)
@@ -146,30 +146,45 @@ local function build(player: Player, base: Model, slotId: number, uid: string): 
 	figure:PivotTo(point.CFrame)
 	figure.Parent = model
 
-	-- Billboard acima do personagem (Variante / Nome / Raridade / Nível / Renda)
+	--[[
+		Letreiro COMPACTO acima do personagem (3 linhas, prioridade renda > personagem >
+		raridade/nível):
+		    NOME
+		    [Ouro ·] LENDÁRIO • Nv. 5      (Detail: só de perto, LodController)
+		    $25/s                          (maior; visível até BILLBOARD_DISTANCE)
+		Tamanho em STUDS (diminui com a distância, sem poluir a base de longe), sem loop por
+		personagem: só muda quando nível/renda/variante mudam (setText).
+	]]
 	local height = CharacterModelFactory.height(item.Id)
 	local anchor = decorPart("InfoAnchor", Vector3.new(0.2, 0.2, 0.2), point.CFrame * CFrame.new(0, height + 1.2, 0), Color3.new(), model)
 	anchor.Transparency = 1
 	local gui = Instance.new("BillboardGui")
 	gui.Name = "Info"
-	gui.Size = UDim2.fromOffset(200, 120)
-	gui.StudsOffsetWorldSpace = Vector3.new(0, 2.2, 0)
+	gui.Size = UDim2.new(5, 0, 2.2, 0)
+	gui.StudsOffsetWorldSpace = Vector3.new(0, 1.4, 0)
 	gui.MaxDistance = BILLBOARD_DISTANCE
 	gui.LightInfluence = 0
 	gui.Parent = anchor
 	local detail = Instance.new("Frame")
 	detail.Name = "Detail"
 	detail.BackgroundTransparency = 1
-	detail.Size = UDim2.fromScale(1, 1)
+	detail.Size = UDim2.fromScale(1, 0.56)
 	detail.Parent = gui
 	local labels = {
-		Variant = textLabel(detail, "Variant", 0, 0.16, Color3.new(1, 1, 1)),
-		Title = textLabel(detail, "Title", 0.16, 0.22, Color3.new(1, 1, 1), 2.5),
-		Rarity = textLabel(detail, "Rarity", 0.38, 0.18, rgb(rarity.Color)),
-		Level = textLabel(detail, "Level", 0.56, 0.18, Color3.fromRGB(150, 230, 255)),
+		Title = textLabel(detail, "Title", 0, 0.5, Color3.new(1, 1, 1), 2),
+		Variant = textLabel(detail, "Variant", 0.52, 0.46, Color3.new(1, 1, 1)),
+		Rarity = textLabel(detail, "Rarity", 0.52, 0.46, rgb(rarity.Color)),
+		Level = textLabel(detail, "Level", 0.52, 0.46, Color3.fromRGB(150, 230, 255)),
 		-- Renda fica fora do "Detail": continua visível no LOD médio
-		Income = textLabel(gui, "Income", 0.74, 0.26, Color3.fromRGB(110, 255, 110), 2.5),
+		Income = textLabel(gui, "Income", 0.56, 0.44, Color3.fromRGB(110, 255, 110), 2.5),
 	}
+	-- linha 2 dividida: [variante][raridade][• Nv. X] (posições em refresh conforme a variante)
+	labels.Variant.Size = UDim2.fromScale(0.3, 0.46)
+	labels.Rarity.Size = UDim2.fromScale(0.6, 0.46)
+	labels.Rarity.TextXAlignment = Enum.TextXAlignment.Right
+	labels.Level.Position = UDim2.fromScale(0.62, 0.52)
+	labels.Level.Size = UDim2.fromScale(0.38, 0.46)
+	labels.Level.TextXAlignment = Enum.TextXAlignment.Left
 
 	--[[
 		Placa na FRENTE do pedestal, no estilo dos anime simulators:
@@ -250,11 +265,16 @@ local function refresh(player: Player, station: Station)
 	local character = CharacterConfig.ById[item.Id]
 	local variant = VariantConfig.ById[item.Variant] or VariantConfig.ById.Normal
 	local level = item.Level or 1
-	setText(station, "Variant", if variant.Id == "Normal" then "" else Localization.t("variant." .. variant.Id))
+	local hasVariant = variant.Id ~= "Normal"
+	setText(station, "Variant", if hasVariant then Localization.t("variant." .. variant.Id) .. " ·" else "")
 	station.labels.Variant.TextColor3 = rgb(variant.Color)
+	station.labels.Variant.Visible = hasVariant
+	-- com variante: [Ouro ·][LENDÁRIO][• Nv. 5]; sem: [LENDÁRIO][• Nv. 5]
+	station.labels.Rarity.Position = UDim2.fromScale(if hasVariant then 0.3 else 0, 0.52)
+	station.labels.Rarity.Size = UDim2.fromScale(if hasVariant then 0.3 else 0.6, 0.46)
 	setText(station, "Title", character.Name)
 	setText(station, "Rarity", Localization.t("rarity." .. character.Rarity))
-	setText(station, "Level", Localization.t("station.level", { level = level }))
+	setText(station, "Level", Localization.t("station.level_short", { level = level }))
 	setText(station, "Income", NumberFormatter.money(Formulas:stationIncome(data, item)) .. "/s")
 	local cost, levels = Formulas:characterUpgradeCost(item.Id, level, 1)
 	if levels > 0 then

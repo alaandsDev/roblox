@@ -78,6 +78,7 @@ return {
 	-- Estações (pedestais)
 	["station.upgrade"] = "Melhorar",
 	["station.level"] = "Nível {level}",
+	["station.level_short"] = " • Nv. {level}",
 	["station.level_next"] = "Nível {level} > {next}",
 	["station.level_max"] = "NÍVEL MÁX",
 	["station.level_max_plate"] = "Nível {level} · MÁX",

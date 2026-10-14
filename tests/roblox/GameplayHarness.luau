@@ -298,6 +298,9 @@ local station = runtime:FindFirstChild("Station_1")
 local info = station and station:FindFirstChild("InfoAnchor") and station.InfoAnchor:FindFirstChild("Info")
 check(info ~= nil and info.Detail.Title.Text == "Dragon Knight", "billboard: nome")
 check(info ~= nil and info.Detail.Rarity.Text ~= "" and info.Detail.Level.Text ~= "" and string.find(info.Income.Text, "/s") ~= nil, "billboard: raridade, nível e renda/s")
+check(info ~= nil and info.Size.X.Offset == 0 and info.Size.X.Scale <= 5.5 and info.Size.Y.Scale <= 2.5 and info.MaxDistance <= 70
+	and string.find(info.Detail.Level.Text, "Nv.", 1, true) ~= nil and info.Income.Size.Y.Scale > info.Detail.Title.Size.Y.Scale * info.Detail.Size.Y.Scale,
+	"billboard compacto: NOME / RARIDADE • Nv. X / $/s (renda maior), em studs, some além de 70 studs")
 check(station and station:FindFirstChild("UpgradePad") ~= nil and station.UpgradePad.Cost.Cost.Text ~= "", "pad de upgrade com custo")
 check(
 	station and station:FindFirstChild("Plate") ~= nil and station.Plate.PlateGui.PlateValue.Text == station.UpgradePad.Cost.Cost.Text
