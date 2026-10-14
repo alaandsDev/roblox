@@ -35,7 +35,7 @@ ESPERADO = {"total": 121, "F2P": 112, "Premium": 9}
 PREMIUM_ESPERADO = {  # PREMIUM_DICE_PROPOSAL.md (nome no pack)
     "Iskandar", "Hellflame", "Lancer Mode", "Afro Samurai", "Kizaru", "Shunko Yoruichi", "SSJR", "SALTER", "Bankai Toshiro",
 }
-# Stats provisórios por raridade (iguais aos pilotos; o balanceamento vem na fase dos Dice)
+# Poder por raridade; a RENDA dos F2P vem de CharacterConfig.IncomeCurve (Dice × Raridade). Premium usa a renda daqui.
 STATS = {
     "Common": (12, 1), "Uncommon": (50, 4), "Rare": (155, 9), "Epic": (600, 25),
     "Legendary": (2450, 60), "Mythic": (12500, 160), "Divine": (60000, 425), "Secret": (320000, 1200),
@@ -92,7 +92,7 @@ def pilotos_existentes() -> set[str]:
 
 def bloco_char_config(launch: list[dict], pilotos: set[str]) -> str:
     linhas = [INICIO, "-- Personagens de LANÇAMENTO (121 = 112 F2P + 9 Premium). F2P = roster do roll (por Dice,",
-              "-- campo DefaultDice) e da coleção do Índice; Premium fora dos Dice. Stats provisórios por raridade.",
+              "-- campo DefaultDice) e da coleção do Índice; Premium fora dos Dice. Poder por raridade; renda F2P = IncomeCurve (0 aqui).",
               "local launchGenerated: { Character } = {"]
     for i, c in enumerate(launch):
         cid = character_id(c)
@@ -100,6 +100,8 @@ def bloco_char_config(launch: list[dict], pilotos: set[str]) -> str:
             continue
         power, income = STATS[c["rarity"]]
         pool = "Premium" if c["dest"] == "premium" else "F2P"
+        if pool == "F2P":
+            income = 0  # renda F2P = CharacterConfig.IncomeCurve (Dice × Raridade), fonte única
         linhas.append(
             f"\tlaunch({1000 + i}, {lua(cid)}, {lua(c['display'])}, {lua(c['source'].strip())}, {lua(c['rarity'])}, "
             f"{lua(c['family'])}, {int(c['tier'])}, {lua(c['category'])}, {lua(c['dest'])}, {lua(pool)}, {lua(c['status'])}, {power}, {income}),"

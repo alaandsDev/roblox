@@ -53,14 +53,35 @@ describe("Roster e configs de progressão", function()
 		end
 	end)
 
-	it("raridade maior => renda maior (o menor da raridade supera o maior da anterior)", function()
+	-- Design aprovado (economia por Dice): a raridade NÃO é a única fonte da renda; um Lendário de
+	-- Dice bem mais avançado pode passar um Mítico antigo. A garantia de raridade vale DENTRO do
+	-- mesmo Dice (e nas âncoras de cada raridade): ver tests/DiceIncome.spec.luau.
+	it("raridade maior => renda maior DENTRO do mesmo Dice (o menor da raridade supera o maior da anterior)", function()
 		local maxOf, minOf = {}, {}
 		for _, c in CharacterConfig.List do
-			maxOf[c.Rarity] = math.max(maxOf[c.Rarity] or 0, c.BaseIncome)
-			minOf[c.Rarity] = math.min(minOf[c.Rarity] or math.huge, c.BaseIncome)
+			local key = tostring(c.DefaultDice)
+			maxOf[key] = maxOf[key] or {}
+			minOf[key] = minOf[key] or {}
+			maxOf[key][c.Rarity] = math.max(maxOf[key][c.Rarity] or 0, c.BaseIncome)
+			minOf[key][c.Rarity] = math.min(minOf[key][c.Rarity] or math.huge, c.BaseIncome)
 		end
+		local checked = 0
+		for dice in maxOf do
+			local previous = nil
+			for _, rarity in RarityConfig.Order do
+				if minOf[dice][rarity] then
+					if previous then
+						expect(minOf[dice][rarity] > maxOf[dice][previous]).toBeTruthy()
+						checked += 1
+					end
+					previous = rarity
+				end
+			end
+		end
+		expect(checked >= 40).toBeTruthy()
+		local anchor = CharacterConfig.IncomeCurve.Anchor
 		for i = 2, #RarityConfig.Order do
-			expect(minOf[RarityConfig.Order[i]] > maxOf[RarityConfig.Order[i - 1]]).toBeTruthy()
+			expect(anchor[RarityConfig.Order[i]] > anchor[RarityConfig.Order[i - 1]]).toBeTruthy()
 		end
 	end)
 

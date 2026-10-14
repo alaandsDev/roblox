@@ -244,110 +244,110 @@ end
 
 -- BEGIN LAUNCH CATALOG (gerado por tools/characters/gen_launch_catalog.py — não editar à mão)
 -- Personagens de LANÇAMENTO (121 = 112 F2P + 9 Premium). F2P = roster do roll (por Dice,
--- campo DefaultDice) e da coleção do Índice; Premium fora dos Dice. Stats provisórios por raridade.
+-- campo DefaultDice) e da coleção do Índice; Premium fora dos Dice. Poder por raridade; renda F2P = IncomeCurve (0 aqui).
 local launchGenerated: { Character } = {
-	launch(1000, "char_anny_school", "Anny (Colegial)", "Annie (Junior High)", "Common", "anny", 1, "AOT", "starter", "F2P", "APPROVED", 12, 1),
-	launch(1001, "char_mikaza_formal", "Mikaza (Formal)", "Mikasa (Formal)", "Common", "mikaza", 1, "AOT", "starter", "F2P", "APPROVED", 12, 1),
-	launch(1003, "char_sacha_suit", "Sacha (Terno)", "Sasha (Suit)", "Common", "sacha", 1, "AOT", "starter", "F2P", "APPROVED", 12, 1),
-	launch(1004, "char_chiko_base", "Chiko", "Chika", "Uncommon", "chiko", 1, "OTHER", "starter", "F2P", "APPROVED", 50, 4),
-	launch(1005, "char_erwyn_gala", "Erwyn (Gala)", "Erwin (Alt)", "Uncommon", "erwyn", 1, "AOT", "starter", "F2P", "APPROVED", 50, 4),
-	launch(1006, "char_kurilo_base", "Kurilo", "Krillin", "Rare", "kurilo", 1, "DBZ", "starter", "F2P", "APPROVED", 155, 9),
-	launch(1007, "char_saitano_base", "Saitano", "Saitama", "Epic", "saitano", 1, "OTHER", "starter", "F2P", "APPROVED", 600, 25),
-	launch(1008, "char_gom_base", "Gom", "Gon", "Common", "gom", 1, "HXH", "lucky", "F2P", "APPROVED", 12, 1),
-	launch(1009, "char_sanjo_young", "Sanjo (Jovem)", "ptsSanji", "Common", "sanjo", 1, "One Piece Pack", "lucky", "F2P", "APPROVED", 12, 1),
-	launch(1010, "char_kazumo_base", "Kazumo", "Kazuma", "Uncommon", "kazumo", 1, "OTHER", "lucky", "F2P", "APPROVED", 50, 4),
-	launch(1011, "char_rinn_base", "Rinn", "Rin", "Uncommon", "rinn", 1, "FATE", "lucky", "F2P", "APPROVED", 50, 4),
-	launch(1012, "char_grei_base", "Grei", "Gray", "Rare", "grei", 1, "Fairy Tail", "lucky", "F2P", "APPROVED", 155, 9),
-	launch(1013, "char_rukya_base", "Rukya", "Rukia", "Rare", "rukya", 1, "Bleach Pack", "lucky", "F2P", "APPROVED", 155, 9),
-	launch(1014, "char_hizoka_base", "Hizoka", "Hisoka", "Epic", "hizoka", 1, "HXH", "lucky", "F2P", "APPROVED", 600, 25),
-	launch(1015, "char_erem_base", "Erem", "Eren", "Common", "erem", 1, "AOT", "rampart", "F2P", "APPROVED", 12, 1),
-	launch(1016, "char_anny_base", "Anny", "Annie", "Uncommon", "anny", 1, "AOT", "rampart", "F2P", "APPROVED", 50, 4),
-	launch(1017, "char_mikaza_base", "Mikaza", "Mikasa", "Uncommon", "mikaza", 1, "AOT", "rampart", "F2P", "APPROVED", 50, 4),
-	launch(1018, "char_erem_veteran", "Erem (Veterano)", "Eren Post-time skip", "Rare", "erem", 2, "AOT", "rampart", "F2P", "APPROVED", 155, 9),
-	launch(1019, "char_erwyn_base", "Erwyn", "Erwin", "Rare", "erwyn", 1, "AOT", "rampart", "F2P", "APPROVED", 155, 9),
-	launch(1020, "char_anny_titan", "Titã Feminina", "Female Titan", "Epic", "anny", 2, "AOT", "rampart", "F2P", "APPROVED", 600, 25),
-	launch(1021, "char_erem_titan", "Titã de Ataque", "Attack Titan", "Epic", "erem", 3, "AOT", "rampart", "F2P", "APPROVED", 600, 25),
-	launch(1022, "char_natzu_base", "Natzu", "Natsu", "Uncommon", "natzu", 1, "Fairy Tail", "flame", "F2P", "APPROVED", 50, 4),
-	launch(1023, "char_todoruki_base", "Todoruki", "Todoroki", "Uncommon", "todoruki", 1, "My Hero Academia Pack", "flame", "F2P", "APPROVED", 50, 4),
-	launch(1024, "char_ase_base", "Ase", "Ace", "Rare", "ase", 1, "One Piece Pack", "flame", "F2P", "APPROVED", 155, 9),
-	launch(1025, "char_bakugu_base", "Bakugu", "Bakugo", "Rare", "bakugu", 1, "My Hero Academia Pack", "flame", "F2P", "APPROVED", 155, 9),
-	launch(1027, "char_akaino_base", "Akaino", "Akainu", "Legendary", "akaino", 1, "One Piece Pack", "flame", "F2P", "APPROVED", 2450, 60),
-	launch(1028, "char_narotu_young", "Narotu (Jovem)", "ptsNaruto", "Common", "narotu", 1, "NARUTO", "shinobi", "F2P", "APPROVED", 12, 1),
-	launch(1029, "char_sasuko_young", "Sasuko (Jovem)", "ptsSasuke", "Common", "sasuko", 1, "NARUTO", "shinobi", "F2P", "APPROVED", 12, 1),
-	launch(1030, "char_nejo_base", "Nejo", "Neji", "Uncommon", "nejo", 1, "NARUTO", "shinobi", "F2P", "APPROVED", 50, 4),
-	launch(1031, "char_roqueli_base", "Roque Li", "Rock Lee", "Uncommon", "roqueli", 1, "NARUTO", "shinobi", "F2P", "APPROVED", 50, 4),
-	launch(1032, "char_gaaro_base", "Gaaro", "Gaara", "Rare", "gaaro", 1, "NARUTO", "shinobi", "F2P", "APPROVED", 155, 9),
-	launch(1034, "char_kakaxi_base", "Kakaxi", "Kakashi", "Epic", "kakaxi", 1, "NARUTO", "shinobi", "F2P", "APPROVED", 600, 25),
-	launch(1035, "char_narotu_base", "Narotu", "tsNaruto", "Epic", "narotu", 2, "NARUTO", "shinobi", "F2P", "APPROVED", 600, 25),
-	launch(1037, "char_zoru_young", "Zoru (Jovem)", "ptsZoro", "Uncommon", "zoru", 1, "One Piece Pack", "blade", "F2P", "APPROVED", 50, 4),
-	launch(1038, "char_ginn_base", "Ginn", "Gin", "Rare", "ginn", 1, "Bleach Pack", "blade", "F2P", "APPROVED", 155, 9),
-	launch(1039, "char_kisuko_base", "Kisuko", "Kisuke", "Rare", "kisuko", 1, "Bleach Pack", "blade", "F2P", "APPROVED", 155, 9),
-	launch(1040, "char_trunkz_base", "Trunkz", "Trunks", "Rare", "trunkz", 1, "DBZ", "blade", "F2P", "APPROVED", 155, 9),
-	launch(1041, "char_tanjiru_base", "Tanjiru", "Tanjiro", "Epic", "tanjiru", 1, "OTHER", "blade", "F2P", "APPROVED", 600, 25),
-	launch(1042, "char_zoru_base", "Zoru", "tsZoro", "Epic", "zoru", 2, "One Piece Pack", "blade", "F2P", "APPROVED", 600, 25),
-	launch(1043, "char_shankz_base", "Shankz", "Shanks", "Legendary", "shankz", 1, "One Piece Pack", "blade", "F2P", "APPROVED", 2450, 60),
-	launch(1044, "char_deko_base", "Deko", "Deku", "Uncommon", "deko", 1, "My Hero Academia Pack", "fighter", "F2P", "APPROVED", 50, 4),
-	launch(1046, "char_yuzuke_base", "Yuzuke", "Yusuke", "Uncommon", "yuzuke", 1, "YYH", "fighter", "F2P", "APPROVED", 50, 4),
-	launch(1047, "char_lemilio_base", "Lemilio", "Lemillion", "Rare", "lemilio", 1, "My Hero Academia Pack", "fighter", "F2P", "APPROVED", 155, 9),
-	launch(1048, "char_lufy_base", "Lufy", "tsLuffy", "Rare", "lufy", 2, "One Piece Pack", "fighter", "F2P", "APPROVED", 155, 9),
-	launch(1049, "char_pikkolo_base", "Pikkolo", "Piccolo", "Epic", "pikkolo", 1, "DBZ", "fighter", "F2P", "APPROVED", 600, 25),
-	launch(1050, "char_olmaito_base", "Ol Maito", "All Might", "Legendary", "olmaito", 1, "My Hero Academia Pack", "fighter", "F2P", "APPROVED", 2450, 60),
-	launch(1052, "char_lanseiro_base", "Lanseiro", "Lancer", "Rare", "lanseiro", 1, "FATE", "storm", "F2P", "APPROVED", 155, 9),
-	launch(1053, "char_minatu_base", "Minatu", "Minato", "Rare", "minatu", 1, "NARUTO", "storm", "F2P", "APPROVED", 155, 9),
-	launch(1054, "char_goko_majin_saga", "Goko (Saga Majin)", "Buu Saga Goku", "Epic", "goko", 2, "DBZ", "storm", "F2P", "APPROVED", 600, 25),
-	launch(1055, "char_kaulifa_base", "Kaulifa", "Caulifa", "Epic", "kaulifa", 1, "DBZ", "storm", "F2P", "APPROVED", 600, 25),
-	launch(1056, "char_deko_awakened", "Deko Desperto", "Deku Awakened", "Legendary", "deko", 2, "My Hero Academia Pack", "storm", "F2P", "APPROVED", 2450, 60),
-	launch(1058, "char_toshiru_base", "Toshiru", "Toshiro", "Rare", "toshiru", 1, "Bleach Pack", "spirit", "F2P", "APPROVED", 155, 9),
-	launch(1059, "char_byakuto_base", "Byakuto", "Byakuya", "Epic", "byakuto", 1, "Bleach Pack", "spirit", "F2P", "APPROVED", 600, 25),
-	launch(1060, "char_shunzo_base", "Shunzo", "Shunsui", "Epic", "shunzo", 1, "Bleach Pack", "spirit", "F2P", "APPROVED", 600, 25),
-	launch(1061, "char_starko_base", "Starko", "Starrk", "Epic", "starko", 1, "Bleach Pack", "spirit", "F2P", "APPROVED", 600, 25),
-	launch(1062, "char_hiey_base", "Hiey", "Hiei", "Legendary", "hiey", 1, "YYH", "spirit", "F2P", "APPROVED", 2450, 60),
-	launch(1063, "char_yoruka_base", "Yoruka", "Yoruichi", "Legendary", "yoruka", 1, "Bleach Pack", "spirit", "F2P", "APPROVED", 2450, 60),
-	launch(1064, "char_yuzuke_demon", "Yuzuke Demônio", "Yusuke Mode", "Mythic", "yuzuke", 2, "YYH", "spirit", "F2P", "APPROVED", 12500, 160),
-	launch(1065, "char_kiritsugo_base", "Kiritsugo", "Kiritsugu", "Rare", "kiritsugo", 1, "FATE", "arcane", "F2P", "APPROVED", 155, 9),
-	launch(1066, "char_seiba_base", "Seiba", "Saber", "Rare", "seiba", 1, "FATE", "arcane", "F2P", "APPROVED", 155, 9),
-	launch(1067, "char_shiro_base", "Shiro", "Shirou", "Rare", "shiro", 1, "FATE", "arcane", "F2P", "APPROVED", 155, 9),
-	launch(1068, "char_akcel_base", "Akcel", "Accel", "Epic", "akcel", 1, "OTHER", "arcane", "F2P", "APPROVED", 600, 25),
-	launch(1069, "char_lau_base", "Lau", "ptsLaw", "Epic", "lau", 1, "One Piece Pack", "arcane", "F2P", "APPROVED", 600, 25),
-	launch(1070, "char_rika_base", "Rika", "Rikka", "Epic", "rika", 1, "OTHER", "arcane", "F2P", "APPROVED", 600, 25),
-	launch(1071, "char_gilgamex_base", "Gilgamex", "Gilgamesh", "Legendary", "gilgamex", 1, "FATE", "arcane", "F2P", "APPROVED", 2450, 60),
-	launch(1072, "char_shiro_archer", "Emyia Arqueiro", "Archer (EMIYA)", "Mythic", "shiro", 2, "FATE", "arcane", "F2P", "APPROVED", 12500, 160),
-	launch(1073, "char_grimjau_base", "Grimjau", "Grimmjow", "Epic", "grimjau", 1, "Bleach Pack", "shadow", "F2P", "APPROVED", 600, 25),
-	launch(1074, "char_shinjo_base", "Shinjo", "Shinji", "Epic", "shinjo", 1, "Bleach Pack", "shadow", "F2P", "APPROVED", 600, 25),
-	launch(1075, "char_ulkiorra_base", "Ulkiorra", "Ulq", "Epic", "ulkiorra", 1, "Bleach Pack", "shadow", "F2P", "APPROVED", 600, 25),
-	launch(1076, "char_itaxi_base", "Itaxi", "Itachi", "Legendary", "itaxi", 1, "NARUTO", "shadow", "F2P", "APPROVED", 2450, 60),
-	launch(1077, "char_peinn_base", "Peinn", "Pain", "Legendary", "peinn", 1, "NARUTO", "shadow", "F2P", "APPROVED", 2450, 60),
-	launch(1078, "char_goko_dark_base", "Goko Sombrio", "Goku Black [NEW]", "Mythic", "goko_dark", 1, "DBZ", "shadow", "F2P", "APPROVED", 12500, 160),
-	launch(1080, "char_ilumi_base", "Ilumi", "Illumi", "Epic", "ilumi", 1, "HXH", "void", "F2P", "APPROVED", 600, 25),
-	launch(1081, "char_vejita_base", "Vejita", "Vegeta", "Epic", "vejita", 1, "DBZ", "void", "F2P", "NEEDS_OPTIMIZATION", 600, 25),
-	launch(1082, "char_ilumi_awakened", "Ilumi Desperto", "Illumi Awakened", "Legendary", "ilumi", 2, "HXH", "void", "F2P", "APPROVED", 2450, 60),
-	launch(1083, "char_vejita_majin", "Vejita Majin", "Majin Vegeta", "Legendary", "vejita", 2, "DBZ", "void", "F2P", "APPROVED", 2450, 60),
-	launch(1084, "char_ulkiorra_release", "Ulkiorra Liberado", "R1", "Mythic", "ulkiorra", 2, "Bleach Pack", "void", "F2P", "APPROVED", 12500, 160),
-	launch(1085, "char_ichiro_vasto", "Ichiro Vasto", "Vasto", "Divine", "ichiro", 3, "Bleach Pack", "void", "F2P", "APPROVED", 60000, 425),
-	launch(1086, "char_bakugu_awakened", "Bakugu Desperto", "Awakened Bakugo", "Legendary", "bakugu", 2, "My Hero Academia Pack", "awakened", "F2P", "APPROVED", 2450, 60),
-	launch(1087, "char_grei_awakened", "Grei Desperto", "Grey Awakening", "Legendary", "grei", 2, "Fairy Tail", "awakened", "F2P", "APPROVED", 2450, 60),
-	launch(1088, "char_rika_awakened", "Rika Desperta", "Rikka Awakened", "Legendary", "rika", 2, "OTHER", "awakened", "F2P", "APPROVED", 2450, 60),
-	launch(1089, "char_gom_adult", "Gom Adulto", "Adult Gon", "Mythic", "gom", 2, "HXH", "awakened", "F2P", "APPROVED", 12500, 160),
-	launch(1090, "char_natzu_awakened", "Natzu Desperto", "Natsu Awakened", "Mythic", "natzu", 2, "Fairy Tail", "awakened", "F2P", "APPROVED", 12500, 160),
-	launch(1091, "char_roqueli_gates", "Roque Li dos Portões", "ROCK LEE GATES", "Mythic", "roqueli", 2, "NARUTO", "awakened", "F2P", "APPROVED", 12500, 160),
-	launch(1092, "char_gohin_base", "Gohin", "Gohan", "Epic", "gohin", 1, "DBZ", "colossus", "F2P", "APPROVED", 600, 25),
-	launch(1093, "char_mighto_base", "Mighto", "Might Guy", "Epic", "mighto", 1, "NARUTO", "colossus", "F2P", "APPROVED", 600, 25),
-	launch(1094, "char_brolli_base", "Brolli", "Broly", "Legendary", "brolli", 1, "DBZ", "colossus", "F2P", "APPROVED", 2450, 60),
-	launch(1095, "char_sasuko_base", "Sasuko", "tsSasuke", "Legendary", "sasuko", 2, "NARUTO", "colossus", "F2P", "APPROVED", 2450, 60),
-	launch(1096, "char_lufy_snake", "Lufy Serpente", "Snakeman", "Mythic", "lufy", 3, "One Piece Pack", "colossus", "F2P", "APPROVED", 12500, 160),
-	launch(1097, "char_mighto_gate5", "Mighto 5º Portão", "5TH GATE", "Mythic", "mighto", 2, "NARUTO", "colossus", "F2P", "NEEDS_OPTIMIZATION", 12500, 160),
-	launch(1098, "char_sanjo_base", "Sanjo", "TS SANJI", "Legendary", "sanjo", 2, "One Piece Pack", "celestial", "F2P", "APPROVED", 2450, 60),
-	launch(1099, "char_yujo_base", "Yujo", "Yuji", "Legendary", "yujo", 1, "JJK", "celestial", "F2P", "APPROVED", 2450, 60),
-	launch(1100, "char_narotu_sage", "Narotu Sábio", "Sage Mode", "Mythic", "narotu", 3, "NARUTO", "celestial", "F2P", "APPROVED", 12500, 160),
-	launch(1101, "char_olmaito_mode", "Ol Maito Poder Total", "All Might (MODE)", "Mythic", "olmaito", 2, "My Hero Academia Pack", "celestial", "F2P", "APPROVED", 12500, 160),
-	launch(1102, "char_deko_full", "Deko 100%", "100% Deku", "Divine", "deko", 3, "My Hero Academia Pack", "celestial", "F2P", "APPROVED", 60000, 425),
-	launch(1104, "char_vegitto_base", "Vegitto", "VEGITO", "Divine", "vegitto", 1, "DBZ", "celestial", "F2P", "APPROVED", 60000, 425),
-	launch(1106, "char_aizo_base", "Aizo", "Aizen", "Divine", "aizo", 1, "Bleach Pack", "forbidden", "F2P", "APPROVED", 60000, 425),
-	launch(1107, "char_brolli_legend", "Brolli Lendário", "LSSJ BROLY", "Divine", "brolli", 2, "DBZ", "forbidden", "F2P", "APPROVED", 60000, 425),
-	launch(1108, "char_madaro_base", "Madaro", "Madara", "Divine", "madaro", 1, "NARUTO", "forbidden", "F2P", "APPROVED", 60000, 425),
-	launch(1109, "char_ichiro_mugetsu", "Ichiro Mugetsu", "Mugetsu", "Secret", "ichiro", 4, "Bleach Pack", "forbidden", "F2P", "APPROVED", 320000, 1200),
-	launch(1110, "char_mighto_gate8", "Mighto 8º Portão", "8TH GATE", "Secret", "mighto", 3, "NARUTO", "forbidden", "F2P", "NEEDS_OPTIMIZATION", 320000, 1200),
-	launch(1111, "char_vegitto_blue", "Vegitto Azul", "VEGITO BLUE", "Secret", "vegitto", 2, "DBZ", "forbidden", "F2P", "APPROVED", 320000, 1200),
+	launch(1000, "char_anny_school", "Anny (Colegial)", "Annie (Junior High)", "Common", "anny", 1, "AOT", "starter", "F2P", "APPROVED", 12, 0),
+	launch(1001, "char_mikaza_formal", "Mikaza (Formal)", "Mikasa (Formal)", "Common", "mikaza", 1, "AOT", "starter", "F2P", "APPROVED", 12, 0),
+	launch(1003, "char_sacha_suit", "Sacha (Terno)", "Sasha (Suit)", "Common", "sacha", 1, "AOT", "starter", "F2P", "APPROVED", 12, 0),
+	launch(1004, "char_chiko_base", "Chiko", "Chika", "Uncommon", "chiko", 1, "OTHER", "starter", "F2P", "APPROVED", 50, 0),
+	launch(1005, "char_erwyn_gala", "Erwyn (Gala)", "Erwin (Alt)", "Uncommon", "erwyn", 1, "AOT", "starter", "F2P", "APPROVED", 50, 0),
+	launch(1006, "char_kurilo_base", "Kurilo", "Krillin", "Rare", "kurilo", 1, "DBZ", "starter", "F2P", "APPROVED", 155, 0),
+	launch(1007, "char_saitano_base", "Saitano", "Saitama", "Epic", "saitano", 1, "OTHER", "starter", "F2P", "APPROVED", 600, 0),
+	launch(1008, "char_gom_base", "Gom", "Gon", "Common", "gom", 1, "HXH", "lucky", "F2P", "APPROVED", 12, 0),
+	launch(1009, "char_sanjo_young", "Sanjo (Jovem)", "ptsSanji", "Common", "sanjo", 1, "One Piece Pack", "lucky", "F2P", "APPROVED", 12, 0),
+	launch(1010, "char_kazumo_base", "Kazumo", "Kazuma", "Uncommon", "kazumo", 1, "OTHER", "lucky", "F2P", "APPROVED", 50, 0),
+	launch(1011, "char_rinn_base", "Rinn", "Rin", "Uncommon", "rinn", 1, "FATE", "lucky", "F2P", "APPROVED", 50, 0),
+	launch(1012, "char_grei_base", "Grei", "Gray", "Rare", "grei", 1, "Fairy Tail", "lucky", "F2P", "APPROVED", 155, 0),
+	launch(1013, "char_rukya_base", "Rukya", "Rukia", "Rare", "rukya", 1, "Bleach Pack", "lucky", "F2P", "APPROVED", 155, 0),
+	launch(1014, "char_hizoka_base", "Hizoka", "Hisoka", "Epic", "hizoka", 1, "HXH", "lucky", "F2P", "APPROVED", 600, 0),
+	launch(1015, "char_erem_base", "Erem", "Eren", "Common", "erem", 1, "AOT", "rampart", "F2P", "APPROVED", 12, 0),
+	launch(1016, "char_anny_base", "Anny", "Annie", "Uncommon", "anny", 1, "AOT", "rampart", "F2P", "APPROVED", 50, 0),
+	launch(1017, "char_mikaza_base", "Mikaza", "Mikasa", "Uncommon", "mikaza", 1, "AOT", "rampart", "F2P", "APPROVED", 50, 0),
+	launch(1018, "char_erem_veteran", "Erem (Veterano)", "Eren Post-time skip", "Rare", "erem", 2, "AOT", "rampart", "F2P", "APPROVED", 155, 0),
+	launch(1019, "char_erwyn_base", "Erwyn", "Erwin", "Rare", "erwyn", 1, "AOT", "rampart", "F2P", "APPROVED", 155, 0),
+	launch(1020, "char_anny_titan", "Titã Feminina", "Female Titan", "Epic", "anny", 2, "AOT", "rampart", "F2P", "APPROVED", 600, 0),
+	launch(1021, "char_erem_titan", "Titã de Ataque", "Attack Titan", "Epic", "erem", 3, "AOT", "rampart", "F2P", "APPROVED", 600, 0),
+	launch(1022, "char_natzu_base", "Natzu", "Natsu", "Uncommon", "natzu", 1, "Fairy Tail", "flame", "F2P", "APPROVED", 50, 0),
+	launch(1023, "char_todoruki_base", "Todoruki", "Todoroki", "Uncommon", "todoruki", 1, "My Hero Academia Pack", "flame", "F2P", "APPROVED", 50, 0),
+	launch(1024, "char_ase_base", "Ase", "Ace", "Rare", "ase", 1, "One Piece Pack", "flame", "F2P", "APPROVED", 155, 0),
+	launch(1025, "char_bakugu_base", "Bakugu", "Bakugo", "Rare", "bakugu", 1, "My Hero Academia Pack", "flame", "F2P", "APPROVED", 155, 0),
+	launch(1027, "char_akaino_base", "Akaino", "Akainu", "Legendary", "akaino", 1, "One Piece Pack", "flame", "F2P", "APPROVED", 2450, 0),
+	launch(1028, "char_narotu_young", "Narotu (Jovem)", "ptsNaruto", "Common", "narotu", 1, "NARUTO", "shinobi", "F2P", "APPROVED", 12, 0),
+	launch(1029, "char_sasuko_young", "Sasuko (Jovem)", "ptsSasuke", "Common", "sasuko", 1, "NARUTO", "shinobi", "F2P", "APPROVED", 12, 0),
+	launch(1030, "char_nejo_base", "Nejo", "Neji", "Uncommon", "nejo", 1, "NARUTO", "shinobi", "F2P", "APPROVED", 50, 0),
+	launch(1031, "char_roqueli_base", "Roque Li", "Rock Lee", "Uncommon", "roqueli", 1, "NARUTO", "shinobi", "F2P", "APPROVED", 50, 0),
+	launch(1032, "char_gaaro_base", "Gaaro", "Gaara", "Rare", "gaaro", 1, "NARUTO", "shinobi", "F2P", "APPROVED", 155, 0),
+	launch(1034, "char_kakaxi_base", "Kakaxi", "Kakashi", "Epic", "kakaxi", 1, "NARUTO", "shinobi", "F2P", "APPROVED", 600, 0),
+	launch(1035, "char_narotu_base", "Narotu", "tsNaruto", "Epic", "narotu", 2, "NARUTO", "shinobi", "F2P", "APPROVED", 600, 0),
+	launch(1037, "char_zoru_young", "Zoru (Jovem)", "ptsZoro", "Uncommon", "zoru", 1, "One Piece Pack", "blade", "F2P", "APPROVED", 50, 0),
+	launch(1038, "char_ginn_base", "Ginn", "Gin", "Rare", "ginn", 1, "Bleach Pack", "blade", "F2P", "APPROVED", 155, 0),
+	launch(1039, "char_kisuko_base", "Kisuko", "Kisuke", "Rare", "kisuko", 1, "Bleach Pack", "blade", "F2P", "APPROVED", 155, 0),
+	launch(1040, "char_trunkz_base", "Trunkz", "Trunks", "Rare", "trunkz", 1, "DBZ", "blade", "F2P", "APPROVED", 155, 0),
+	launch(1041, "char_tanjiru_base", "Tanjiru", "Tanjiro", "Epic", "tanjiru", 1, "OTHER", "blade", "F2P", "APPROVED", 600, 0),
+	launch(1042, "char_zoru_base", "Zoru", "tsZoro", "Epic", "zoru", 2, "One Piece Pack", "blade", "F2P", "APPROVED", 600, 0),
+	launch(1043, "char_shankz_base", "Shankz", "Shanks", "Legendary", "shankz", 1, "One Piece Pack", "blade", "F2P", "APPROVED", 2450, 0),
+	launch(1044, "char_deko_base", "Deko", "Deku", "Uncommon", "deko", 1, "My Hero Academia Pack", "fighter", "F2P", "APPROVED", 50, 0),
+	launch(1046, "char_yuzuke_base", "Yuzuke", "Yusuke", "Uncommon", "yuzuke", 1, "YYH", "fighter", "F2P", "APPROVED", 50, 0),
+	launch(1047, "char_lemilio_base", "Lemilio", "Lemillion", "Rare", "lemilio", 1, "My Hero Academia Pack", "fighter", "F2P", "APPROVED", 155, 0),
+	launch(1048, "char_lufy_base", "Lufy", "tsLuffy", "Rare", "lufy", 2, "One Piece Pack", "fighter", "F2P", "APPROVED", 155, 0),
+	launch(1049, "char_pikkolo_base", "Pikkolo", "Piccolo", "Epic", "pikkolo", 1, "DBZ", "fighter", "F2P", "APPROVED", 600, 0),
+	launch(1050, "char_olmaito_base", "Ol Maito", "All Might", "Legendary", "olmaito", 1, "My Hero Academia Pack", "fighter", "F2P", "APPROVED", 2450, 0),
+	launch(1052, "char_lanseiro_base", "Lanseiro", "Lancer", "Rare", "lanseiro", 1, "FATE", "storm", "F2P", "APPROVED", 155, 0),
+	launch(1053, "char_minatu_base", "Minatu", "Minato", "Rare", "minatu", 1, "NARUTO", "storm", "F2P", "APPROVED", 155, 0),
+	launch(1054, "char_goko_majin_saga", "Goko (Saga Majin)", "Buu Saga Goku", "Epic", "goko", 2, "DBZ", "storm", "F2P", "APPROVED", 600, 0),
+	launch(1055, "char_kaulifa_base", "Kaulifa", "Caulifa", "Epic", "kaulifa", 1, "DBZ", "storm", "F2P", "APPROVED", 600, 0),
+	launch(1056, "char_deko_awakened", "Deko Desperto", "Deku Awakened", "Legendary", "deko", 2, "My Hero Academia Pack", "storm", "F2P", "APPROVED", 2450, 0),
+	launch(1058, "char_toshiru_base", "Toshiru", "Toshiro", "Rare", "toshiru", 1, "Bleach Pack", "spirit", "F2P", "APPROVED", 155, 0),
+	launch(1059, "char_byakuto_base", "Byakuto", "Byakuya", "Epic", "byakuto", 1, "Bleach Pack", "spirit", "F2P", "APPROVED", 600, 0),
+	launch(1060, "char_shunzo_base", "Shunzo", "Shunsui", "Epic", "shunzo", 1, "Bleach Pack", "spirit", "F2P", "APPROVED", 600, 0),
+	launch(1061, "char_starko_base", "Starko", "Starrk", "Epic", "starko", 1, "Bleach Pack", "spirit", "F2P", "APPROVED", 600, 0),
+	launch(1062, "char_hiey_base", "Hiey", "Hiei", "Legendary", "hiey", 1, "YYH", "spirit", "F2P", "APPROVED", 2450, 0),
+	launch(1063, "char_yoruka_base", "Yoruka", "Yoruichi", "Legendary", "yoruka", 1, "Bleach Pack", "spirit", "F2P", "APPROVED", 2450, 0),
+	launch(1064, "char_yuzuke_demon", "Yuzuke Demônio", "Yusuke Mode", "Mythic", "yuzuke", 2, "YYH", "spirit", "F2P", "APPROVED", 12500, 0),
+	launch(1065, "char_kiritsugo_base", "Kiritsugo", "Kiritsugu", "Rare", "kiritsugo", 1, "FATE", "arcane", "F2P", "APPROVED", 155, 0),
+	launch(1066, "char_seiba_base", "Seiba", "Saber", "Rare", "seiba", 1, "FATE", "arcane", "F2P", "APPROVED", 155, 0),
+	launch(1067, "char_shiro_base", "Shiro", "Shirou", "Rare", "shiro", 1, "FATE", "arcane", "F2P", "APPROVED", 155, 0),
+	launch(1068, "char_akcel_base", "Akcel", "Accel", "Epic", "akcel", 1, "OTHER", "arcane", "F2P", "APPROVED", 600, 0),
+	launch(1069, "char_lau_base", "Lau", "ptsLaw", "Epic", "lau", 1, "One Piece Pack", "arcane", "F2P", "APPROVED", 600, 0),
+	launch(1070, "char_rika_base", "Rika", "Rikka", "Epic", "rika", 1, "OTHER", "arcane", "F2P", "APPROVED", 600, 0),
+	launch(1071, "char_gilgamex_base", "Gilgamex", "Gilgamesh", "Legendary", "gilgamex", 1, "FATE", "arcane", "F2P", "APPROVED", 2450, 0),
+	launch(1072, "char_shiro_archer", "Emyia Arqueiro", "Archer (EMIYA)", "Mythic", "shiro", 2, "FATE", "arcane", "F2P", "APPROVED", 12500, 0),
+	launch(1073, "char_grimjau_base", "Grimjau", "Grimmjow", "Epic", "grimjau", 1, "Bleach Pack", "shadow", "F2P", "APPROVED", 600, 0),
+	launch(1074, "char_shinjo_base", "Shinjo", "Shinji", "Epic", "shinjo", 1, "Bleach Pack", "shadow", "F2P", "APPROVED", 600, 0),
+	launch(1075, "char_ulkiorra_base", "Ulkiorra", "Ulq", "Epic", "ulkiorra", 1, "Bleach Pack", "shadow", "F2P", "APPROVED", 600, 0),
+	launch(1076, "char_itaxi_base", "Itaxi", "Itachi", "Legendary", "itaxi", 1, "NARUTO", "shadow", "F2P", "APPROVED", 2450, 0),
+	launch(1077, "char_peinn_base", "Peinn", "Pain", "Legendary", "peinn", 1, "NARUTO", "shadow", "F2P", "APPROVED", 2450, 0),
+	launch(1078, "char_goko_dark_base", "Goko Sombrio", "Goku Black [NEW]", "Mythic", "goko_dark", 1, "DBZ", "shadow", "F2P", "APPROVED", 12500, 0),
+	launch(1080, "char_ilumi_base", "Ilumi", "Illumi", "Epic", "ilumi", 1, "HXH", "void", "F2P", "APPROVED", 600, 0),
+	launch(1081, "char_vejita_base", "Vejita", "Vegeta", "Epic", "vejita", 1, "DBZ", "void", "F2P", "NEEDS_OPTIMIZATION", 600, 0),
+	launch(1082, "char_ilumi_awakened", "Ilumi Desperto", "Illumi Awakened", "Legendary", "ilumi", 2, "HXH", "void", "F2P", "APPROVED", 2450, 0),
+	launch(1083, "char_vejita_majin", "Vejita Majin", "Majin Vegeta", "Legendary", "vejita", 2, "DBZ", "void", "F2P", "APPROVED", 2450, 0),
+	launch(1084, "char_ulkiorra_release", "Ulkiorra Liberado", "R1", "Mythic", "ulkiorra", 2, "Bleach Pack", "void", "F2P", "APPROVED", 12500, 0),
+	launch(1085, "char_ichiro_vasto", "Ichiro Vasto", "Vasto", "Divine", "ichiro", 3, "Bleach Pack", "void", "F2P", "APPROVED", 60000, 0),
+	launch(1086, "char_bakugu_awakened", "Bakugu Desperto", "Awakened Bakugo", "Legendary", "bakugu", 2, "My Hero Academia Pack", "awakened", "F2P", "APPROVED", 2450, 0),
+	launch(1087, "char_grei_awakened", "Grei Desperto", "Grey Awakening", "Legendary", "grei", 2, "Fairy Tail", "awakened", "F2P", "APPROVED", 2450, 0),
+	launch(1088, "char_rika_awakened", "Rika Desperta", "Rikka Awakened", "Legendary", "rika", 2, "OTHER", "awakened", "F2P", "APPROVED", 2450, 0),
+	launch(1089, "char_gom_adult", "Gom Adulto", "Adult Gon", "Mythic", "gom", 2, "HXH", "awakened", "F2P", "APPROVED", 12500, 0),
+	launch(1090, "char_natzu_awakened", "Natzu Desperto", "Natsu Awakened", "Mythic", "natzu", 2, "Fairy Tail", "awakened", "F2P", "APPROVED", 12500, 0),
+	launch(1091, "char_roqueli_gates", "Roque Li dos Portões", "ROCK LEE GATES", "Mythic", "roqueli", 2, "NARUTO", "awakened", "F2P", "APPROVED", 12500, 0),
+	launch(1092, "char_gohin_base", "Gohin", "Gohan", "Epic", "gohin", 1, "DBZ", "colossus", "F2P", "APPROVED", 600, 0),
+	launch(1093, "char_mighto_base", "Mighto", "Might Guy", "Epic", "mighto", 1, "NARUTO", "colossus", "F2P", "APPROVED", 600, 0),
+	launch(1094, "char_brolli_base", "Brolli", "Broly", "Legendary", "brolli", 1, "DBZ", "colossus", "F2P", "APPROVED", 2450, 0),
+	launch(1095, "char_sasuko_base", "Sasuko", "tsSasuke", "Legendary", "sasuko", 2, "NARUTO", "colossus", "F2P", "APPROVED", 2450, 0),
+	launch(1096, "char_lufy_snake", "Lufy Serpente", "Snakeman", "Mythic", "lufy", 3, "One Piece Pack", "colossus", "F2P", "APPROVED", 12500, 0),
+	launch(1097, "char_mighto_gate5", "Mighto 5º Portão", "5TH GATE", "Mythic", "mighto", 2, "NARUTO", "colossus", "F2P", "NEEDS_OPTIMIZATION", 12500, 0),
+	launch(1098, "char_sanjo_base", "Sanjo", "TS SANJI", "Legendary", "sanjo", 2, "One Piece Pack", "celestial", "F2P", "APPROVED", 2450, 0),
+	launch(1099, "char_yujo_base", "Yujo", "Yuji", "Legendary", "yujo", 1, "JJK", "celestial", "F2P", "APPROVED", 2450, 0),
+	launch(1100, "char_narotu_sage", "Narotu Sábio", "Sage Mode", "Mythic", "narotu", 3, "NARUTO", "celestial", "F2P", "APPROVED", 12500, 0),
+	launch(1101, "char_olmaito_mode", "Ol Maito Poder Total", "All Might (MODE)", "Mythic", "olmaito", 2, "My Hero Academia Pack", "celestial", "F2P", "APPROVED", 12500, 0),
+	launch(1102, "char_deko_full", "Deko 100%", "100% Deku", "Divine", "deko", 3, "My Hero Academia Pack", "celestial", "F2P", "APPROVED", 60000, 0),
+	launch(1104, "char_vegitto_base", "Vegitto", "VEGITO", "Divine", "vegitto", 1, "DBZ", "celestial", "F2P", "APPROVED", 60000, 0),
+	launch(1106, "char_aizo_base", "Aizo", "Aizen", "Divine", "aizo", 1, "Bleach Pack", "forbidden", "F2P", "APPROVED", 60000, 0),
+	launch(1107, "char_brolli_legend", "Brolli Lendário", "LSSJ BROLY", "Divine", "brolli", 2, "DBZ", "forbidden", "F2P", "APPROVED", 60000, 0),
+	launch(1108, "char_madaro_base", "Madaro", "Madara", "Divine", "madaro", 1, "NARUTO", "forbidden", "F2P", "APPROVED", 60000, 0),
+	launch(1109, "char_ichiro_mugetsu", "Ichiro Mugetsu", "Mugetsu", "Secret", "ichiro", 4, "Bleach Pack", "forbidden", "F2P", "APPROVED", 320000, 0),
+	launch(1110, "char_mighto_gate8", "Mighto 8º Portão", "8TH GATE", "Secret", "mighto", 3, "NARUTO", "forbidden", "F2P", "NEEDS_OPTIMIZATION", 320000, 0),
+	launch(1111, "char_vegitto_blue", "Vegitto Azul", "VEGITO BLUE", "Secret", "vegitto", 2, "DBZ", "forbidden", "F2P", "APPROVED", 320000, 0),
 	launch(1112, "char_infernus_base", "Infernus", "Hellflame", "Epic", "infernus", 1, "My Hero Academia Pack", "premium", "Premium", "APPROVED", 600, 25),
 	launch(1113, "char_iskander_base", "Iskander", "Iskandar", "Epic", "iskander", 1, "FATE", "premium", "Premium", "APPROVED", 600, 25),
 	launch(1114, "char_kizaro_base", "Kizaro", "Kizaru", "Legendary", "kizaro", 1, "One Piece Pack", "premium", "Premium", "APPROVED", 2450, 60),
@@ -507,8 +507,108 @@ for _, character in launchList do
 	end
 end
 
+--[[
+	RENDA BASE por Dice × Raridade — FONTE ÚNICA do BaseIncome de TODO personagem F2P (o
+	catálogo gerado e os pilotos não trazem renda própria). O servidor (Formulas), a venda
+	(SaleCore), o custo de nível, a fusão e o simulador leem o BaseIncome resultante.
+	Auditoria e calibração: DICE_INCOME_AUDIT.md (python3 tools/sim/run_dice_income_audit.py).
+
+	    BaseIncome = Anchor[raridade] × Growth ^ (ordem do Dice − pivô da raridade)
+	    pivô = 1ª ordem + Pivot × (última ordem − 1ª ordem)   (faixa de Dice da raridade)
+
+	• Anchor = renda aprovada da raridade (Comum 1 … Secreto 1200), valendo perto do 1º Dice em
+	  que ela existe (Pivot = 0,10: o 1º Mítico do Spirit fica em 149 em vez de 160, o 1º
+	  Lendário do Flame em 54) — o começo do jogo fica praticamente igual.
+	• Growth = valor econômico de UM passo na progressão de Dice — a mesma taxa para todos os
+	  Dice e raridades (nenhum multiplicador escolhido à mão por Dice). Mítico Spirit < Arcane <
+	  Shadow < ... < Forbidden; um Lendário de Dice bem mais avançado passa um Mítico antigo.
+	• "1ª ordem" vem do próprio roster (o Dice de menor ordem com personagem daquela raridade).
+	• Arredondamento: 1 casa abaixo de 10, inteiro abaixo de 1000, 2 algarismos acima; sempre
+	  estritamente crescente dentro da raridade.
+	Personagens Premium e legados mantêm a renda própria (fora dos Dice F2P).
+	Variante e Nível continuam multiplicando depois (Formulas:unitIncome).
+	NÃO mexe em pesos, pity, Luck nem em quais personagens estão em cada Dice.
+]]
+local IncomeCurve = {
+	Anchor = {
+		Common = 1,
+		Uncommon = 4,
+		Rare = 9,
+		Epic = 25,
+		Legendary = 60,
+		Mythic = 160,
+		Divine = 425,
+		Secret = 1200,
+	} :: { [string]: number },
+	Growth = 1.11,
+	-- Ponto da faixa de Dice da raridade onde a renda = Anchor (0 = no 1º Dice; 0,5 = no meio).
+	-- Calibração (DICE_INCOME_AUDIT.md): 1,11 / 0,10 deixa o Casual idêntico (±3%), os Dice
+	-- iniciais e o 1º Rebirth em ±6% e é o mínimo para um Lendário tardio passar o Mítico antigo.
+	Pivot = 0.1,
+	-- Ordem oficial dos 16 Dice F2P (CatalogKey = DefaultDice). Conferida contra o DiceConfig
+	-- em tests/DiceIncome.spec.luau (os configs não importam uns aos outros).
+	DiceOrder = {
+		"starter", "lucky", "rampart", "shinobi", "flame", "blade", "fighter", "storm",
+		"spirit", "arcane", "shadow", "void", "colossus", "awakened", "celestial", "forbidden",
+	},
+	OrderOf = {} :: { [string]: number },
+	FirstOrder = {} :: { [string]: number },
+	Table = {} :: { [string]: { [number]: number } },
+}
+for order, key in IncomeCurve.DiceOrder do
+	IncomeCurve.OrderOf[key] = order
+end
+for _, character in f2pList do
+	local order = IncomeCurve.OrderOf[character.DefaultDice or ""]
+	assert(order, "F2P sem Dice conhecido: " .. character.Id)
+	local first = IncomeCurve.FirstOrder[character.Rarity]
+	if first == nil or order < first then
+		IncomeCurve.FirstOrder[character.Rarity] = order
+	end
+end
+local function nice(x: number): number
+	if x < 10 then
+		return math.floor(x * 10 + 0.5) / 10
+	elseif x < 1000 then
+		return math.floor(x + 0.5)
+	end
+	local magnitude = 10 ^ (math.floor(math.log10(x)) - 1)
+	return math.floor(x / magnitude + 0.5) * magnitude
+end
+IncomeCurve.LastOrder = {} :: { [string]: number }
+for _, character in f2pList do
+	local order = IncomeCurve.OrderOf[character.DefaultDice or ""]
+	IncomeCurve.LastOrder[character.Rarity] = math.max(IncomeCurve.LastOrder[character.Rarity] or 0, order)
+end
+for rarity, first in IncomeCurve.FirstOrder do
+	local row, last = {}, 0
+	local pivot = first + IncomeCurve.Pivot * (IncomeCurve.LastOrder[rarity] - first)
+	for order = first, #IncomeCurve.DiceOrder do
+		local v = nice(IncomeCurve.Anchor[rarity] * IncomeCurve.Growth ^ (order - pivot))
+		if v <= last then
+			v = nice(last * 1.02 + 0.1)
+		end
+		row[order] = v
+		last = v
+	end
+	IncomeCurve.Table[rarity] = row
+end
+-- BaseIncome de (raridade, Dice) — Dice pelo CatalogKey ("spirit"); nil fora dos Dice
+local function baseIncomeFor(rarity: string, dice: string?): number?
+	local order = IncomeCurve.OrderOf[dice or ""]
+	local row = IncomeCurve.Table[rarity]
+	return if order and row then row[order] else nil
+end
+;(IncomeCurve :: any).baseIncome = baseIncomeFor
+for _, character in f2pList do
+	local income = baseIncomeFor(character.Rarity, character.DefaultDice)
+	assert(income and income > 0, "renda Dice×Raridade ausente: " .. character.Id)
+	character.BaseIncome = income
+end
+
 return {
 	List = f2pList, -- coleção principal (112 F2P): roll por Dice e progresso do Índice
+	IncomeCurve = IncomeCurve, -- renda base Dice × Raridade (fonte única do BaseIncome F2P)
 	ById = byId, -- todos (lançamento + legados)
 	Count = #f2pList,
 	Premium = premiumList, -- 9 Premium (progresso separado; fora dos Dice F2P)
