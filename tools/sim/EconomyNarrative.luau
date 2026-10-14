@@ -272,7 +272,7 @@ end
 
 N.prismEnd = function(A)
 	return table.concat({
-		"Leitura: o teto só importa para quem acumula; com 3 usos e teto 7 o Casual perde ~8 cargas em 60 dias, com teto 21 nenhuma. O Prisma decide principalmente os **Secretos do Forbidden** (0,0045%): no Ativo (1 recompensa em 20 h) 1 uso deixa ~15% dos jogadores sem o Forbidden completo em 20 h, 2 usos ~3%, 3 usos 0%. O Casual, com 8–9 recompensas, completa com qualquer combinação. **Recomendação: manter 3 usos / teto 21** (atual).",
+		"Leitura: o teto só importa para quem acumula; com 3 usos e teto 7 o Casual perde ~8 cargas em 60 dias, com teto 21 nenhuma. O Prisma decide principalmente os **Secretos do Forbidden** (0,0045%): no Ativo (1 recompensa em 20 h) 1 uso deixa ~14% dos jogadores sem o Forbidden completo em 20 h, 2 usos ~1%, 3 usos 0%. O Casual, com 8–9 recompensas, completa com qualquer combinação. **Recomendação: manter 3 usos / teto 21** (atual).",
 	}, "\n")
 end
 
