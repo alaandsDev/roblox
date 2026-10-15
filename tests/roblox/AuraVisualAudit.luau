@@ -62,6 +62,7 @@ local req = env.newContext()
 local Factory = req(env.shared.Modules.CharacterModelFactory)
 local AuraBuilder = req(env.shared.Modules.AuraBuilder)
 local AuraConfig = req(env.shared.Config.AuraConfig)
+local AuraMotion = req(env.shared.Modules.AuraMotion)
 local CharacterConfig = req(env.shared.Config.CharacterConfig)
 
 ------------------------------------------------------------------------------------
@@ -336,6 +337,25 @@ local function measure(model: any, opts: { orbit: number? }?): Measure
 				local a = pivot:PointToObjectSpace(worldPos(b.Attachment0))
 				local c = pivot:PointToObjectSpace(worldPos(b.Attachment1))
 				local width = (b.Width0 + b.Width1) / 2
+				-- forma ANIMADA: mede a pose do AuraMotion num instante diferente por snapshot
+				if b:GetAttribute("MotionIndex") ~= nil then
+					local style = model:GetAttribute("AuraStyle")
+					local profile = AuraConfig.Motion[style] or AuraConfig.DefaultMotion
+					local pose = AuraMotion.ribbon(profile, {
+						index = b:GetAttribute("MotionIndex"),
+						angle = b:GetAttribute("MotionAngle"),
+						twist = b:GetAttribute("MotionTwist"),
+						radius = b:GetAttribute("MotionRadius"),
+						y0 = b:GetAttribute("MotionY0"),
+						y1 = b:GetAttribute("MotionY1"),
+						curve = b:GetAttribute("MotionCurve"),
+						amp = b:GetAttribute("MotionAmp"),
+					}, snap * 1.37)
+					local core = b.Attachment0.Parent
+					a = pivot:PointToObjectSpace(core.CFrame:PointToWorldSpace(Vector3.new(pose.ax, pose.ay, pose.az)))
+					c = pivot:PointToObjectSpace(core.CFrame:PointToWorldSpace(Vector3.new(pose.bx, pose.by, pose.bz)))
+					width *= pose.width
+				end
 				local alpha = (1 - seqAt(b.Transparency, 0.5)) * 0.8 * on
 				local steps = math.max(2, math.floor((c - a).Magnitude / CELL))
 				for s = 0, steps do
@@ -512,7 +532,7 @@ end
 local STYLE_CYCLE = { "Electric", "Flame", "Void", "Celestial", "Dark", "Wind", "Ice", "Energy", "Spirit", "Gravity" }
 local function stress(label: string, list: { { any } })
 	for _, mobile in { false, true } do
-		local tot = { rate = 0, alive = 0, beams = 0, trails = 0, highlights = 0, attachments = 0, instances = 0, animated = 0 }
+		local tot = { rate = 0, alive = 0, beams = 0, trails = 0, highlights = 0, attachments = 0, instances = 0, animated = 0, writesBefore = 0, writesAfter = 0 }
 		for i, item in list do
 			local rarity, distance = item[1], item[2]
 			local id = firstOf(rarity)
@@ -522,6 +542,31 @@ local function stress(label: string, list: { { any } })
 			AuraBuilder.attach(model, id, rarity, "Light", Factory.height(id), STYLE_CYCLE[(i - 1) % #STYLE_CYCLE + 1])
 			local active = i <= B.MaxAnimated and distance <= B.CullDistance
 			local f = if active then rateAt(distance) * (if mobile then B.LowEndRateScale else 1) else 0
+			-- custo do loop central (escritas de propriedade por quadro a 30 Hz):
+			--   antes (V2.1): órbita 1 (Position) + fita/rajada 2 (curvas) + raio 3 a ~10 Hz
+			--   agora (V2.2): órbita 1 + forma 6 (2 pontas, 2 curvas, 2 larguras) + raio 1 a ~10 Hz;
+			--                 longe (> MidDistance) ou mobile: órbitas e formas a meia frequência
+			if active then
+				local orbits, shapes, curvesOnly, bolts = 0, 0, 0, 0
+				for _, d in model:GetDescendants() do
+					if d:IsA("Attachment") and d:GetAttribute("AuraRole") == "Orbit" then
+						orbits += 1
+					elseif d:IsA("Beam") then
+						local role = d:GetAttribute("AuraRole")
+						if role == "Bolt" then
+							bolts += 1
+						elseif role == "Wisp" or role == "Gust" then
+							curvesOnly += 1
+						end
+						if d:GetAttribute("MotionIndex") ~= nil then
+							shapes += 1
+						end
+					end
+				end
+				local half = if mobile or distance > B.MidDistance then 0.5 else 1
+				tot.writesBefore += orbits + 2 * curvesOnly + bolts * 3 / 3
+				tot.writesAfter += (orbits + 6 * shapes) * half + bolts / 3
+			end
 			for _, d in AuraBuilder.instances(model) do
 				tot.instances += 1
 				if d:IsA("ParticleEmitter") then
@@ -550,7 +595,7 @@ local function stress(label: string, list: { { any } })
 			model:Destroy()
 		end
 		if REPORT then
-			print(string.format("STRESS %s%s | part/s %.0f | vivas %.0f | beams %d | trails %d | highlights ligados %d | attachments %d | instâncias VFX %d | objetos animados/frame %d", label, if mobile then " (mobile)" else "", tot.rate, tot.alive, tot.beams, tot.trails, tot.highlights, tot.attachments, tot.instances, tot.animated))
+			print(string.format("STRESS %s%s | part/s %.0f | vivas %.0f | beams %d | trails %d | highlights ligados %d | attachments %d | instâncias VFX %d | objetos animados/frame %d | escritas/quadro V2.1 %.0f -> agora %.0f", label, if mobile then " (mobile)" else "", tot.rate, tot.alive, tot.beams, tot.trails, tot.highlights, tot.attachments, tot.instances, tot.animated, tot.writesBefore, tot.writesAfter))
 		end
 		if not mobile then
 			check(tot.rate <= 2600 and tot.alive <= 3200, string.format("stress %s: %.0f partículas/s e %.0f vivas (teto da cena: 2600/s, 3200 vivas)", label, tot.rate, tot.alive))
@@ -562,6 +607,20 @@ stress("8 alta raridade (10–80 studs)", { { "Legendary", 10 }, { "Mythic", 20 
 stress("10 no LOD (10–100 studs)", { { "Secret", 10 }, { "Divine", 20 }, { "Mythic", 30 }, { "Legendary", 40 }, { "Divine", 50 }, { "Secret", 60 }, { "Mythic", 70 }, { "Divine", 80 }, { "Legendary", 90 }, { "Secret", 100 } })
 
 check(worst.occlusion <= 0.3, string.format("nenhuma aura (raridade × estilo × modo) cobre mais de 30%% do personagem (pior: %s = %.0f%%)", worst.key, worst.occlusion * 100))
+-- sem regressão: oclusão do Light <= 15% e de qualquer modo <= 22% (ec962f9: 13% / 20%); presença
+-- do Light >= a do ec962f9 (5,1 / 16,0 / 49,2 / 112,2), tolerância de 5%
+local worstLight = 0
+for key, m in results do
+	if string.find(key, "|Light$") then
+		worstLight = math.max(worstLight, m.occlusion)
+	end
+end
+check(worstLight <= 0.15 and worst.occlusion <= 0.22, string.format("oclusão sem regressão: Light %.0f%% (<= 15%%), qualquer modo %.0f%% (<= 22%%)", worstLight * 100, worst.occlusion * 100))
+local BASELINE = { Legendary = 5.1, Mythic = 16.0, Divine = 49.2, Secret = 112.2 }
+for _, rarity in ORDER do
+	local light = median(byRarity[rarity].light)
+	check(light >= BASELINE[rarity] * 0.95, string.format("%s: presença do Light não regrediu (%.1f; ec962f9 %.1f)", rarity, light, BASELINE[rarity]))
+end
 for _, rarity in ORDER do
 	local b = byRarity[rarity]
 	local ratio = median(b.light) / math.max(median(b.full), 1e-6)

@@ -49,6 +49,7 @@ export type Plan = {
 	glow: number,
 	highlight: boolean,
 	pulseEvery: number?,
+	amplitude: number, -- movimento (AuraMotion): 1 no Light, FullScale.Amplitude no Full
 }
 
 function AuraPlanner.new(auraConfig: any, characterConfig: any, diceConfig: any): any
@@ -91,9 +92,12 @@ function AuraPlanner:resolve(characterId: string, rarity: string, mode: string, 
 			count = signatureCount
 			rate = spec.rate * (signatureCount / 3) * tier.Rate * (if light then L.Rate / L.Signature else 1)
 		elseif kind == "Ribbon" then
-			count = math.max(2, math.floor(signatureCount / 2))
+			-- Full ("liberada") ganha fita(s) extra(s); Light mantém a forma principal
+			local full = A.FullScale
+			-- V2.2: várias fitas CURTAS e finas em vez de 2 faixas largas (Divino 3, Secreto 4)
+			count = math.max(3, math.floor(signatureCount / 2) + 1) + (if light or not full then 0 else full.ExtraRibbons)
 		elseif spec.burst then
-			local every = tier.PulseEvery or 4
+			local every = (tier.PulseEvery or 4) * (if light or not A.FullScale then 1 else A.FullScale.PulseEvery)
 			rate = spec.burst * (if light then L.Rate else 1) / every
 		end
 		local perComponent = if kind == "Orbit" then rate * count else rate
@@ -115,7 +119,8 @@ function AuraPlanner:resolve(characterId: string, rarity: string, mode: string, 
 		signatureCount = signatureCount,
 		glow = tier.Glow,
 		highlight = tier.Highlight,
-		pulseEvery = tier.PulseEvery,
+		pulseEvery = if tier.PulseEvery and not light and A.FullScale then tier.PulseEvery * A.FullScale.PulseEvery else tier.PulseEvery,
+		amplitude = if light or not A.FullScale then 1 else A.FullScale.Amplitude,
 	}
 end
 

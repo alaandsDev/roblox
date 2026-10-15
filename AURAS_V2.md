@@ -54,7 +54,8 @@ Mesma raridade = mesmo "espetáculo" (taxa e camadas) para qualquer estilo; só 
 
 ## 5. Light × Full
 - **Light** (Base/Torre): as MESMAS camadas, assinatura, órbitas, tamanhos, opacidade e alcance;
-  só a emissão cai (× 0,55). Desde a V2.1 o Light não corta órbitas nem assinaturas (ver §10).
+  só a emissão cai (× 0,6 desde a V2.2; antes 0,55). Desde a V2.1 o Light não corta órbitas nem
+  assinaturas (ver §10); o Full é "a mesma aura liberada" (§11).
 - **Full** (reveal/hero/galeria): versão completa.
 
 ## 6. Movimento e LOD (cliente, um loop central)
@@ -94,7 +95,9 @@ Dev:Invoke("AuraLineup", game.Players:GetPlayers()[1], "Celestial", "Light") -- 
 Dev:Invoke("AuraLineup", game.Players:GetPlayers()[1], "Electric", "Full")   -- versão reveal
 Dev:Invoke("AuraStress", game.Players:GetPlayers()[1], 4, "Divine")          -- 4 Divinos lado a lado
 Dev:Invoke("AuraStress", game.Players:GetPlayers()[1], 10, "mixed")          -- 10 raros
-Dev:Invoke("AuraCompare", game.Players:GetPlayers()[1], "Void")             -- LIGHT (esq.) × FULL (dir.), 4 raridades cada
+Dev:Invoke("AuraCompare", game.Players:GetPlayers()[1], "Void")             -- LIGHT (esq.) | FULL (dir.), 4 raridades cada
+Dev:Invoke("AuraMotion", game.Players:GetPlayers()[1], "Light")             -- MOVIMENTO: Mítico Electric/Ice, Divino Flame/Celestial, Secreto Void/Wind
+Dev:Invoke("AuraMotion", game.Players:GetPlayers()[1], "Full")
 Dev:Invoke("AuraClear")
 ```
 Os modelos nascem a 24 studs à sua frente (distância normal da câmera na Base); o último argumento
@@ -150,3 +153,56 @@ Mobile: metade das partículas (× `LowEndRateScale`). Conexões: as mesmas (1 H
 2 sinais de tag no AuraController; loop de 0,5 s no LodController). O custo novo vem de partículas
 MAIORES (mais área de tela por partícula), não de mais objetos — priorizado silhueta, camada
 externa, movimento e assinatura em vez de centenas de partículas pequenas.
+
+
+## 11. V2.2 — Motion pass (fitas vivas) + Light × Full
+
+**Por que as fitas pareciam estáticas:** a "fita" atrás de Divino/Secreto são os Beams
+`AuraRibbon1..n` (papel `Wisp`), presos a dois Attachments FIXOS no `AuraCore` (anchored): uma ponta
+no pé (`-h/2`) e outra acima da cabeça (`top·0,75`). O AuraController só mexia na curvatura
+(±2,5 a ~1,2 rad/s, igual em todos os estilos); as pontas nunca se moviam. Com a largura da V2.1
+(1 → 1,35 stud) e opacidade alta, virava uma peça rígida nas costas. As rajadas `AuraGust`
+(Wind) e os raios `AuraBolt` (Electric) tinham o mesmo esqueleto.
+
+**Solução (barata, central):** `Modules/AuraMotion` (puro) calcula, a partir do TEMPO (nada
+acumula), a pose de cada forma: pontas (balanço parcial em volta do corpo, giro, respiração,
+sobe-desce, chama subindo, saltos elétricos, degraus do gelo), curvatura e largura. O AuraBuilder
+grava os parâmetros (`MotionIndex/Angle/Twist/Radius/Y0/Y1/Curve/Amp`) no Beam; o MESMO loop
+central do AuraController aplica a pose (nenhum Tween, nenhum loop por aura). Longe (> 55 studs)
+ou no mobile, órbitas e formas atualizam a meia frequência (o movimento continua contínuo).
+As fitas viraram 3–4 formas CURTAS e finas (0,8 → 0,14 stud × 1,35), escalonadas em altura,
+afastadas do corpo e renderizadas atrás dele.
+
+| Estilo | Movimento (AuraConfig.Motion) |
+|---|---|
+| Electric | rápido, saltos bruscos em tempos discretos (7/s), curvas instáveis, largura piscando |
+| Flame | balança e a ponta de cima SOBE e cai (Rise), pulsação irregular |
+| Void / Dark | lento, caudas longas (Tip alto), cada fita no seu ritmo (Asym), raio respirando |
+| Celestial | giro contínuo elegante (sentido alternado por fita), expansão/contração suave |
+| Wind | giro rápido, curvas alongadas (corrente de ar) |
+| Ice | preciso: anda em DEGRAUS (6 por volta) com transição curta, pouca curva, pulso frio |
+| Energy | pulsa: expande/contrai em ondas + giro |
+| Spirit | fantasma: caudas suaves, fluxo irregular, sobe devagar |
+| Gravity | órbita pesada e lenta, compressão/expansão forte |
+
+As órbitas também ganham a personalidade (saltos no Electric, respiração, chama subindo).
+
+**Light × Full:** o Light (Base/Torre) mantém identidade, cor, assinatura, movimento e silhueta,
+com 60% da emissão. O Full (reveal/hero/galeria) é "a mesma aura LIBERADA": amplitude ×1,45, giro
+mais rápido, +1 fita, órbitas ×1,25 mais rápidas e pulsos a cada 75% do tempo (`FullScale`).
+
+**Números (AuraVisualAudit, mesmo estimador):**
+
+| Light (P50) | ec962f9 | V2.2 |
+|---|---|---|
+| Presença Lendário / Mítico / Divino / Secreto | 5,1 / 16,0 / 49,2 / 112,2 | 5,8 / 17,6 / 51,0 / 112,1 |
+| Oclusão máx. Light / qualquer modo | 13% / 20% | 12% / 19% |
+
+| Stress (PC) | Partículas/s | Vivas | Beams | Instâncias | Escritas/quadro (30 Hz) |
+|---|---|---|---|---|---|
+| 4 Divinos | 277 → 332 | 295 → 354 | 12 → 16 | 145 → 157 | 40 → 109 (mobile 55) |
+| 8 alta raridade | 499 → 573 | 540 → 625 | 17 → 21 | 242 → 254 | 59 → 109 (mobile 74) |
+| 10 no LOD | 650 → 753 | 719 → 834 | 27 → 33 | 335 → 353 | 87 → 169 (mobile 114) |
+
+("escritas/quadro antes" = o loop antigo aplicado ao mesmo conjunto de formas.) Conexões: as
+mesmas. A presença do Light não caiu (travado em teste) e a oclusão melhorou.

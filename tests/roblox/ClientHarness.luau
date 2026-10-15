@@ -390,6 +390,99 @@ do -- ROLLS RECENTES sem "mini F5": um roll novo cria SÓ o chip dele; os outros
 	check(st1.viewportsCreated - st0.viewportsCreated <= 1 and st1.viewportsDestroyed - st0.viewportsDestroyed <= 1,
 		string.format("rolls recentes: novo roll criou %d ViewportFrame(s) e destruiu %d (só o chip novo / o que saiu)", st1.viewportsCreated - st0.viewportsCreated, st1.viewportsDestroyed - st0.viewportsDestroyed))
 end
+do -- RECENT ROLLS some 20 s depois do último roll (tempos exatos) SEM recriar retratos
+	local RC = C.RollController
+	local Preview = clientRequire(env.client.UI.CharacterPreview)
+	local row = gui("HUD") and find(gui("HUD"), "History")
+	local fake = 1000
+	RC._setClock(function()
+		return fake
+	end)
+	-- o relógio falso acompanha cada instante (o loop real de 0,25 s também lê este relógio)
+	local function at(t: number)
+		fake = t
+		RC._historyAt(t)
+	end
+	local function rolled(t: number)
+		fake = t
+		RC._historyRolled(t)
+	end
+	local function chips()
+		local list = {}
+		for _, chip in (row and row:GetChildren()) or {} do
+			if chip:IsA("Frame") then
+				table.insert(list, { chip = chip, view = chip:FindFirstChild("Preview", true) })
+			end
+		end
+		return list
+	end
+	rolled(1000)
+	check(RC.HistoryShown() and row:GetAttribute("AutoHidden") == false, "rolls recentes: T=0 roll -> visível")
+	at(1019.9)
+	check(RC.HistoryShown(), "rolls recentes: 19,9 s sem roll -> continua visível")
+	local before = chips()
+	local st0 = Preview.stats()
+	at(1020)
+	check(not RC.HistoryShown() and row:GetAttribute("AutoHidden") == true, "rolls recentes: 20,0 s sem roll -> esconde")
+	task.wait(0.4)
+	Preview.update()
+	local faded, intact = true, #before > 0
+	for _, item in before do
+		local view = item.view
+		if view and view:IsA("ViewportFrame") then
+			faded = faded and view.ImageTransparency >= 0.99
+		end
+		intact = intact and item.chip.Parent == row and (item.view == nil or item.view.Parent ~= nil)
+	end
+	local st1 = Preview.stats()
+	check(faded and intact and row.Visible, "rolls recentes: escondida por FADE (a faixa e os chips continuam montados; Visible não muda)")
+	check(st1.created == st0.created and st1.destroyed == st0.destroyed and st1.viewportsCreated == st0.viewportsCreated and st1.viewportsDestroyed == st0.viewportsDestroyed,
+		string.format("rolls recentes: esconder não cria/destrói previews (created %d->%d, destroyed %d->%d, viewports +%d/-%d)", st0.created, st1.created, st0.destroyed, st1.destroyed, st1.viewportsCreated - st0.viewportsCreated, st1.viewportsDestroyed - st0.viewportsDestroyed))
+	rolled(1030)
+	local back = RC.HistoryShown()
+	local restored, same = true, true
+	for i, item in chips() do
+		local view = item.view
+		if view and view:IsA("ViewportFrame") then
+			restored = restored and view.ImageTransparency < 0.99
+		end
+		same = same and before[i] ~= nil and item.view == before[i].view
+	end
+	Preview.update()
+	local st2 = Preview.stats()
+	check(back and restored and same, "rolls recentes: novo roll -> reaparece NA HORA com os MESMOS retratos")
+	check(st2.created == st0.created and st2.destroyed == st0.destroyed and st2.viewportsCreated == st0.viewportsCreated and st2.viewportsDestroyed == st0.viewportsDestroyed,
+		"rolls recentes: reaparecer reutiliza tudo (PreviewCreated = 0, PreviewDestroyed = 0)")
+	rolled(1040) -- roll aos 10 s do anterior
+	at(1059)
+	local at29 = RC.HistoryShown()
+	at(1060)
+	check(at29 and not RC.HistoryShown(), "rolls recentes: roll no meio reinicia (19 s do 2º visível; 20 s do 2º esconde)")
+	local alwaysOn = true
+	for t = 2000, 2120, 0.5 do
+		rolled(t)
+		at(t + 0.45)
+		alwaysOn = alwaysOn and RC.HistoryShown()
+	end
+	check(alwaysOn, "rolls recentes: AUTO/Roll Rápido rolando sem parar nunca esconde")
+	-- roll DE VERDADE (botão) também reinicia o contador
+	fake = 5000
+	local count0 = #RC.History()
+	task.wait(1.1)
+	click(rollButton)
+	Env.waitFor(function()
+		return #RC.History() > count0 or count0 >= 10
+	end, 3)
+	fake = 5019.9
+	RC._historyAt(5019.9)
+	local onReal = RC.HistoryShown()
+	fake = 5020
+	RC._historyAt(5020)
+	check(onReal and not RC.HistoryShown(), "rolls recentes: roll pelo botão reinicia o contador de 20 s")
+	RC._setClock(os.clock)
+	RC._historyRolled(os.clock())
+end
+
 click(find(hud, "Hide"))
 task.wait(0.3)
 
@@ -1129,6 +1222,81 @@ do -- LOD DE AURA NUNCA SOME COM O PERSONAGEM: 10 estações, perto -> longe -> 
 	end
 	task.wait(0.05)
 	C.AuraController._step(0.6)
+end
+
+do -- AURA MOTION: fitas vivas, presas ao personagem (andar/virar/teleporte/andar de prédio), sem acumular
+	local Factory = clientRequire(env.shared.Modules.CharacterModelFactory)
+	local CharCfg = clientRequire(env.shared.Config.CharacterConfig)
+	local divine
+	for _, c in CharCfg.List do
+		if c.Rarity == "Divine" then
+			divine = c.Id
+			break
+		end
+	end
+	local model = Factory.build(divine, { vfx = "Full" })
+	model:PivotTo(roblox.CFrame.new(0, 0, 0))
+	model.Parent = env.real.Workspace
+	camera.CFrame = roblox.CFrame.new(0, 6, -20)
+	task.wait(0.05)
+	C.AuraController._step(0.6)
+	local stats = C.AuraController.Stats()
+	local shapes = {}
+	for _, d in model:GetDescendants() do
+		if d:IsA("Beam") and d:GetAttribute("MotionIndex") ~= nil then
+			table.insert(shapes, { beam = d, p0 = d.Attachment1.Position, w = d.Width0, c = d.CurveSize0 })
+		end
+	end
+	check(#shapes >= 3 and stats.shapes >= #shapes, string.format("aura motion: %d fitas animadas no loop central (Stats %d)", #shapes, stats.shapes))
+	C.AuraController._step(0.35)
+	local moved, curved = 0, 0
+	for _, sh in shapes do
+		if (sh.beam.Attachment1.Position - sh.p0).Magnitude > 0.02 then
+			moved += 1
+		end
+		if math.abs(sh.beam.CurveSize0 - sh.c) > 0.01 then
+			curved += 1
+		end
+	end
+	check(moved == #shapes and curved == #shapes, "aura motion: as PONTAS das fitas se movem (não só a curvatura) e a curvatura muda")
+	local function attachedWithin(): boolean
+		local pivot = model:GetPivot()
+		for _, sh in shapes do
+			for _, a in { sh.beam.Attachment0, sh.beam.Attachment1 } do
+				local world = a.Parent.CFrame:PointToWorldSpace(a.Position)
+				if (world - pivot.Position).Magnitude > 25 then
+					return false
+				end
+			end
+		end
+		return true
+	end
+	-- andando/virando/teleporte/andar de cima: tudo é relativo ao AuraCore -> acompanha
+	for _, target in { roblox.CFrame.new(3, 0, 2), roblox.CFrame.new(3, 0, 2) * roblox.CFrame.Angles(0, math.pi / 2, 0), roblox.CFrame.new(800, 40, -600), roblox.CFrame.new(800, 60, -600) } do
+		model:PivotTo(target)
+		camera.CFrame = target * roblox.CFrame.new(0, 6, -20)
+		C.AuraController._step(0.2)
+		check(attachedWithin(), "aura motion: fitas continuam presas ao personagem em " .. tostring(target.Position))
+	end
+	-- horas de animação: nada acumula nem deforma infinitamente
+	local bounded = true
+	for _ = 1, 300 do
+		C.AuraController._step(12.5)
+		for _, sh in shapes do
+			local r = sh.beam:GetAttribute("MotionRadius") :: number
+			for _, a in { sh.beam.Attachment0, sh.beam.Attachment1 } do
+				local horizontal = math.sqrt(a.Position.X ^ 2 + a.Position.Z ^ 2)
+				bounded = bounded and horizontal <= r * 1.8 and math.abs(a.Position.Y) < 30
+			end
+			bounded = bounded and sh.beam.Width0 > 0 and sh.beam.Width0 < sh.w * 2.5
+		end
+	end
+	check(bounded, "aura motion: depois de ~1 h de animação nada acumulou (posições/larguras limitadas)")
+	local before = C.AuraController.Count()
+	model:Destroy()
+	task.wait(0.05)
+	C.AuraController._step(0.6)
+	check(C.AuraController.Count() < before, "aura motion: personagem removido -> aura sai do loop central (nada órfão)")
 end
 
 -- Torres: abrir, lutar, animação da batalha, fechar

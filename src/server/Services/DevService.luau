@@ -475,7 +475,7 @@ local AURA_RARITIES = { "Legendary", "Mythic", "Divine", "Secret" }
 -- distância padrão = a da câmera de jogo olhando um pedestal da Base (~24 studs)
 local BASE_VIEW_DISTANCE = 24
 
-local function auraRow(player: Player?, specs: { { rarity: string, style: string?, label: string, mode: string? } }, characterId: string, mode: string, spacing: number, distance: number?): string
+local function auraRow(player: Player?, specs: { { rarity: string, style: string?, label: string, mode: string?, gap: number? } }, characterId: string, mode: string, spacing: number, distance: number?): string
 	local workspaceService = game:GetService("Workspace")
 	local old = workspaceService:FindFirstChild("DevAuraLineup")
 	if old then
@@ -491,9 +491,15 @@ local function auraRow(player: Player?, specs: { { rarity: string, style: string
 	look = if look.Magnitude > 0.01 then look.Unit else Vector3.new(0, 0, -1)
 	local right = look:Cross(Vector3.new(0, 1, 0))
 	local center = origin.Position + look * (distance or BASE_VIEW_DISTANCE) - Vector3.new(0, 3, 0)
-	local width = (#specs - 1) * spacing
+	-- "gap" = espaço extra ANTES desse modelo (separa LIGHT | FULL no AuraCompare)
+	local offsets, x = {}, 0
 	for i, spec in specs do
-		local pos = center + right * (-width / 2 + (i - 1) * spacing)
+		x += (if i > 1 then spacing else 0) + (spec.gap or 0)
+		offsets[i] = x
+	end
+	local width = x
+	for i, spec in specs do
+		local pos = center + right * (-width / 2 + offsets[i])
 		local cf = CFrame.lookAt(pos, pos - look)
 		local model = CharacterModelFactory.spawn(characterId, cf, { vfx = "None" })
 		local m = spec.mode or mode
@@ -527,11 +533,33 @@ DevService.Register("AuraCompare", "([player], estilo?, characterId?, distância
 	assert(CharacterConfig.ById[characterId], "personagem inválido: " .. tostring(characterId))
 	local specs = {}
 	for _, mode in { "Light", "Full" } do
-		for _, rarity in AURA_RARITIES do
-			table.insert(specs, { rarity = rarity, style = style, label = `{rarity} · {mode}`, mode = mode })
+		for i, rarity in AURA_RARITIES do
+			table.insert(specs, { rarity = rarity, style = style, label = `{string.upper(mode)} · {rarity}`, mode = mode, gap = if mode == "Full" and i == 1 then 8 else nil })
 		end
 	end
 	return auraRow(player, specs, characterId, "Light", 8, tonumber(distance))
+end)
+
+-- MOVIMENTO (AuraMotion): Mítico/Divino/Secreto com estilos de personalidades bem diferentes
+local MOTION_SET = {
+	{ rarity = "Mythic", style = "Electric" },
+	{ rarity = "Mythic", style = "Ice" },
+	{ rarity = "Divine", style = "Flame" },
+	{ rarity = "Divine", style = "Celestial" },
+	{ rarity = "Secret", style = "Void" },
+	{ rarity = "Secret", style = "Wind" },
+}
+DevService.Register("AuraMotion", "([player], modo?, characterId?, distância?) Mítico Electric/Ice, Divino Flame/Celestial, Secreto Void/Wind lado a lado para inspecionar o MOVIMENTO das fitas/órbitas (modo Light | Full)", function(...)
+	local player, mode, characterId, distance = splitPlayer(...)
+	mode = mode or "Light"
+	assert(mode == "Light" or mode == "Full", "modo: Light ou Full")
+	characterId = characterId or "char_killuo_godspeed"
+	assert(CharacterConfig.ById[characterId], "personagem inválido: " .. tostring(characterId))
+	local specs = {}
+	for _, item in MOTION_SET do
+		table.insert(specs, { rarity = item.rarity, style = item.style, label = `{item.rarity} · {item.style}` })
+	end
+	return auraRow(player, specs, characterId, mode, 9, tonumber(distance))
 end)
 
 DevService.Register("AuraStress", "([player], quantidade 4|8|10, raridade? (Divine | mixed), modo?) N auras lado a lado à frente do jogador (teste de legibilidade/FPS)", function(...)

@@ -6,6 +6,9 @@
 	manual, AUTO e OCULTAR — o servidor valida cada roll. Raridades com AutoRoll = "Pause" (RevealConfig)
 	pausam o AUTO enquanto a cinemática toca e ele continua depois.
 	Inventário cheio: para o AUTO e mostra a ação [VENDER] [MOCHILA] (sem spam).
+	RECENT ROLLS some sozinho 20 s depois do último roll (AutoHideTimer) e volta na hora com o
+	próximo. Esconder é só APRESENTAÇÃO (fade + leve deslize): a faixa continua montada, os
+	retratos (ViewportFrame/câmera/modelo do CharacterPreview) não são destruídos nem recriados.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -18,6 +21,7 @@ local CharacterConfig = require(Shared.Config.CharacterConfig)
 local Formulas = require(Shared.Modules.GameFormulas)
 local Localization = require(Shared.Localization.Localization)
 local Signal = require(Shared.Modules.Signal)
+local AutoHideTimer = require(Shared.Modules.AutoHideTimer)
 local Net = require(Shared.Modules.Net)
 
 local UI = script.Parent.Parent.UI
@@ -44,6 +48,14 @@ local cooldownBar: Frame
 local autoButton: TextButton
 local hideButton: TextButton
 local historyRow: Frame
+local historyBase: UDim2 = UDim2.new()
+
+-- RECENT ROLLS: some depois de HISTORY_HIDE_AFTER s sem roll novo
+local HISTORY_HIDE_AFTER = 20
+local HISTORY_FADE = 0.25
+local historyTimer = AutoHideTimer.new(HISTORY_HIDE_AFTER)
+local historyShown = false
+local clockFn = os.clock -- trocável nos testes (tempos exatos)
 
 local function setToggle(button: TextButton, on: boolean, key: string)
 	UIKit.setButtonColor(button, if on then Theme.Colors.Success else Color3.fromRGB(70, 70, 92))
@@ -62,6 +74,66 @@ end
 -- o retrato deles continua montado (sem piscar). Quem sai do fim da faixa é liberado.
 local chipOf: { [any]: Frame } = setmetatable({}, { __mode = "k" }) :: any
 local renderGeneration = 0
+
+-- propriedades de transparência que o fade controla (o valor original fica num atributo)
+local FADE_PROPS: { [string]: { string } } = {
+	Frame = { "BackgroundTransparency" },
+	ViewportFrame = { "ImageTransparency", "BackgroundTransparency" },
+	TextLabel = { "TextTransparency", "TextStrokeTransparency" },
+	ImageLabel = { "ImageTransparency" },
+	UIStroke = { "Transparency" },
+}
+
+local function fadeTargets(): { { obj: Instance, prop: string, base: number } }
+	local out = {}
+	for _, obj in historyRow:GetDescendants() do
+		local props = FADE_PROPS[obj.ClassName]
+		if props then
+			for _, prop in props do
+				local key = "FadeBase_" .. prop
+				local base = obj:GetAttribute(key)
+				if type(base) ~= "number" then
+					base = (obj :: any)[prop]
+					obj:SetAttribute(key, base)
+				end
+				table.insert(out, { obj = obj, prop = prop, base = base :: number })
+			end
+		end
+	end
+	return out
+end
+
+-- Mostra/esconde a faixa SEM Visible = false (o CharacterPreview liberaria os modelos e o
+-- retorno piscaria): só transparência + deslize de 14 px
+local function setHistoryShown(on: boolean, instant: boolean?)
+	if historyShown == on and not instant then
+		return
+	end
+	historyShown = on
+	historyRow:SetAttribute("AutoHidden", not on)
+	local time = if instant then 0 else (if on then HISTORY_FADE * 0.6 else HISTORY_FADE)
+	local info = TweenInfo.new(time, Enum.EasingStyle.Quad, if on then Enum.EasingDirection.Out else Enum.EasingDirection.In)
+	local target = if on then historyBase else historyBase + UDim2.fromOffset(0, 14)
+	-- tween (mesmo de duração 0) cancela um fade em andamento na mesma propriedade
+	TweenService:Create(historyRow, info, { Position = target }):Play()
+	if time <= 0 then
+		historyRow.Position = target
+	end
+	for _, item in fadeTargets() do
+		local goal = if on then item.base else 1
+		TweenService:Create(item.obj, info, { [item.prop] = goal }):Play()
+		if time <= 0 then
+			(item.obj :: any)[item.prop] = goal
+		end
+	end
+end
+
+-- (loop de 0,25 s e testes) aplica a regra dos 20 s para o instante `now`
+local function updateHistoryVisibility(now: number)
+	if historyRow then
+		setHistoryShown(historyTimer:visible(now))
+	end
+end
 
 local function renderHistory()
 	renderGeneration += 1
@@ -150,6 +222,9 @@ function RollController.Roll(): boolean
 	while #history > RollConfig.HistorySize do
 		table.remove(history)
 	end
+	-- roll novo: a faixa aparece NA HORA e o contador de 20 s recomeça
+	historyTimer:bump(clockFn())
+	setHistoryShown(true, true)
 	renderHistory()
 	RollController.Rolled:Fire(roll)
 	RevealController.Play(roll, { autoRoll = auto })
@@ -184,6 +259,19 @@ end
 
 function RollController.History(): { any }
 	return table.clone(history)
+end
+
+-- (testes) relógio, "chegou um roll" e "agora é t" com tempos exatos; estado da faixa
+function RollController._setClock(fn: () -> number)
+	clockFn = fn
+end
+function RollController._historyRolled(now: number)
+	historyTimer:bump(now)
+	setHistoryShown(true, true)
+end
+RollController._historyAt = updateHistoryVisibility
+function RollController.HistoryShown(): boolean
+	return historyShown
 end
 
 function RollController.Start()
@@ -250,6 +338,14 @@ function RollController.Start()
 		AnchorPoint = Vector2.new(0.5, 1),
 	}, bottom.Parent)
 	UIKit.list(historyRow, true, 4, "center")
+	historyBase = historyRow.Position
+	setHistoryShown(false, true) -- sem rolls ainda: nada a mostrar
+	task.spawn(function()
+		while true do
+			task.wait(0.25)
+			updateHistoryVisibility(clockFn())
+		end
+	end)
 	refreshToggles()
 	DataController.Changed:Connect(function(key)
 		if key == "Settings" then

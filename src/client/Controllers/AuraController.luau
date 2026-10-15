@@ -3,8 +3,8 @@
 	AuraController (V2): o MOVIMENTO das auras de alta raridade (AuraBuilder) num ÚNICO loop central.
 	    órbitas      raio/altura/velocidade/sentido próprios + oscilação vertical; Void/Gravity com
 	                 órbita irregular (raio "respirando")
-	    raios        arcos piscando e mudando de curva (Electric)
-	    fitas        Ribbon/Gust ondulando (Gust mais rápido)
+	    formas       fitas/rajadas/raios: PONTAS, curvatura e largura animadas pelo AuraMotion com a
+	                 personalidade do estilo (AuraConfig.Motion); raios ainda piscam
 	    rajadas      Pulse / Shockwave / Flash / anel de energia / erupção do Secreto: cada uma com
 	                 intervalo próprio ±25% (nada sincronizado entre auras nem entre camadas)
 	    contorno     Highlight (Mítico+) só nas MaxHighlights auras mais próximas
@@ -26,10 +26,13 @@ local Workspace = game:GetService("Workspace")
 local Shared = ReplicatedStorage.Shared
 local AuraConfig = require(Shared.Config.AuraConfig)
 local AuraBuilder = require(Shared.Modules.AuraBuilder)
+local AuraMotion = require(Shared.Modules.AuraMotion)
 
 local AuraController = {}
 
 type Burst = { emitter: ParticleEmitter, every: number, count: number, nextAt: number }
+-- forma grande animada (fita/rajada/raio): pontas, curvatura e largura vêm do AuraMotion
+type Shape = { beam: Beam, a0: Attachment, a1: Attachment, ribbon: AuraMotion.Ribbon, w0: number, w1: number }
 type Entry = {
 	model: Model,
 	orbits: { Attachment },
@@ -37,6 +40,11 @@ type Entry = {
 	wisps: { Beam },
 	gusts: { Beam },
 	bursts: { Burst },
+	shapes: { Shape },
+	motion: AuraMotion.Profile,
+	amp: number,
+	distance: number,
+	frame: number,
 	emitters: { ParticleEmitter },
 	outline: Highlight?,
 	rateScale: number,
@@ -87,17 +95,56 @@ local function register(model: Instance)
 	if entries[key] then
 		return
 	end
-	local entry: Entry = { model = model, orbits = {}, bolts = {}, wisps = {}, gusts = {}, bursts = {}, emitters = {}, outline = nil, rateScale = 1, active = false }
+	local style = model:GetAttribute("AuraStyle")
+	local entry: Entry = {
+		model = model,
+		orbits = {},
+		bolts = {},
+		wisps = {},
+		gusts = {},
+		bursts = {},
+		shapes = {},
+		motion = (if type(style) == "string" then AuraConfig.Motion[style] else nil) or AuraConfig.DefaultMotion,
+		amp = (model:GetAttribute("AuraAmp") :: number?) or 1,
+		distance = 0,
+		frame = 0,
+		emitters = {},
+		outline = nil,
+		rateScale = 1,
+		active = false,
+	}
 	for _, obj in model:GetDescendants() do
 		local role = obj:GetAttribute("AuraRole")
 		if obj:IsA("Attachment") and role == "Orbit" then
 			table.insert(entry.orbits, obj)
-		elseif obj:IsA("Beam") and role == "Bolt" then
-			table.insert(entry.bolts, obj)
-		elseif obj:IsA("Beam") and role == "Wisp" then
-			table.insert(entry.wisps, obj)
-		elseif obj:IsA("Beam") and role == "Gust" then
-			table.insert(entry.gusts, obj)
+		elseif obj:IsA("Beam") then
+			if role == "Bolt" then
+				table.insert(entry.bolts, obj)
+			elseif role == "Wisp" then
+				table.insert(entry.wisps, obj)
+			elseif role == "Gust" then
+				table.insert(entry.gusts, obj)
+			end
+			-- forma grande com parâmetros de movimento (fita/rajada/raio): pontas animadas
+			if obj:GetAttribute("MotionIndex") ~= nil and obj.Attachment0 and obj.Attachment1 then
+				table.insert(entry.shapes, {
+					beam = obj,
+					a0 = obj.Attachment0 :: Attachment,
+					a1 = obj.Attachment1 :: Attachment,
+					ribbon = {
+						index = obj:GetAttribute("MotionIndex") :: number,
+						angle = (obj:GetAttribute("MotionAngle") :: number?) or 0,
+						twist = (obj:GetAttribute("MotionTwist") :: number?) or 1,
+						radius = (obj:GetAttribute("MotionRadius") :: number?) or 2,
+						y0 = (obj:GetAttribute("MotionY0") :: number?) or 0,
+						y1 = (obj:GetAttribute("MotionY1") :: number?) or 3,
+						curve = (obj:GetAttribute("MotionCurve") :: number?) or 2,
+						amp = (obj:GetAttribute("MotionAmp") :: number?) or 1,
+					},
+					w0 = (obj:GetAttribute("MotionWidth0") :: number?) or obj.Width0,
+					w1 = (obj:GetAttribute("MotionWidth1") :: number?) or obj.Width1,
+				})
+			end
 		elseif obj:IsA("Highlight") and role == "Outline" then
 			entry.outline = obj
 		elseif obj:IsA("ParticleEmitter") then
@@ -164,6 +211,7 @@ local function rank()
 	local full, outlines = 0, 0
 	for i, item in list do
 		local entry = item.entry
+		entry.distance = item.distance
 		local active = i <= B.MaxAnimated and item.distance <= B.CullDistance
 		if entry.active and not active then
 			for _, beam in entry.bolts do
@@ -202,7 +250,15 @@ local function animate(dt: number)
 	end
 	for _, entry in entries do
 		if entry.active then
+			-- longe ou no mobile: formas e órbitas a meia frequência (o movimento continua contínuo,
+			-- é absoluto no tempo; só atualiza menos vezes)
+			entry.frame += 1
+			local reduced = (lowEnd or entry.distance > B.MidDistance) and entry.frame % 2 == 1
+			local motion, amp = entry.motion, entry.amp
 			for _, a in entry.orbits do
+				if reduced then
+					break
+				end
 				local index = (a:GetAttribute("AuraIndex") :: number?) or 1
 				local count = (a:GetAttribute("AuraCount") :: number?) or 1
 				local radius = (a:GetAttribute("AuraRadius") :: number?) or 2
@@ -210,25 +266,30 @@ local function animate(dt: number)
 				local speed = (a:GetAttribute("AuraSpeed") :: number?) or 3
 				local bob = (a:GetAttribute("AuraBob") :: number?) or 0.4
 				local wobble = (a:GetAttribute("AuraWobble") :: number?) or 0
-				local angle = clock * speed + index * (math.pi * 2 / count)
-				local r = radius * (1 + wobble * 0.35 * math.sin(clock * 1.7 + index * 2.1))
-				a.Position = Vector3.new(math.cos(angle) * r, height + math.sin(clock * (1.6 + index * 0.3) + index) * bob, math.sin(angle) * r)
+				-- personalidade do estilo (saltos elétricos, respiração, chama subindo)
+				local dAngle, rScale, dy = AuraMotion.orbitOffset(motion, index, clock, amp)
+				local angle = (clock * speed) % (math.pi * 2) + index * (math.pi * 2 / count) + dAngle
+				local r = radius * rScale * (1 + wobble * 0.35 * math.sin(clock * 1.7 + index * 2.1))
+				a.Position = Vector3.new(math.cos(angle) * r, height + dy + math.sin(clock * (1.6 + index * 0.3) + index) * bob, math.sin(angle) * r)
 			end
 			if flicker then
-				-- raios: arcos que mudam de forma e piscam (não um brilho parado)
+				-- raios piscam (o formato vem do AuraMotion, com saltos bruscos do Electric)
 				for _, beam in entry.bolts do
 					beam.Enabled = random:NextNumber() < 0.75
-					beam.CurveSize0 = random:NextNumber(-3, 3)
-					beam.CurveSize1 = random:NextNumber(-3, 3)
 				end
 			end
-			for i, beam in entry.wisps do
-				beam.CurveSize0 = 3 + math.sin(clock * 1.3 + i) * 2.5
-				beam.CurveSize1 = -3 + math.cos(clock * 1.1 + i * 1.7) * 2.5
-			end
-			for i, beam in entry.gusts do
-				beam.CurveSize0 = math.sin(clock * 4 + i) * 4
-				beam.CurveSize1 = math.cos(clock * 3.4 + i) * 4
+			-- FORMAS GRANDES (fitas, rajadas, raios): pontas, curvatura e largura vivas — antes só a
+			-- curvatura mudava e as pontas ficavam presas (a "fita parada nas costas")
+			if not reduced then
+				for _, shape in entry.shapes do
+					local pose = AuraMotion.ribbon(motion, shape.ribbon, clock)
+					shape.a0.Position = Vector3.new(pose.ax, pose.ay, pose.az)
+					shape.a1.Position = Vector3.new(pose.bx, pose.by, pose.bz)
+					shape.beam.CurveSize0 = pose.curve0
+					shape.beam.CurveSize1 = pose.curve1
+					shape.beam.Width0 = shape.w0 * pose.width
+					shape.beam.Width1 = shape.w1 * pose.width
+				end
 			end
 			for _, burst in entry.bursts do
 				if clock >= burst.nextAt then
@@ -249,6 +310,19 @@ function AuraController.Count(): (number, number)
 		end
 	end
 	return total, active
+end
+
+-- custo do loop central: quantas formas e órbitas são atualizadas por quadro (auras ativas)
+function AuraController.Stats(): { shapes: number, orbits: number, bursts: number }
+	local out = { shapes = 0, orbits = 0, bursts = 0 }
+	for _, entry in entries do
+		if entry.active then
+			out.shapes += #entry.shapes
+			out.orbits += #entry.orbits
+			out.bursts += #entry.bursts
+		end
+	end
+	return out
 end
 
 -- quantos contornos (Highlight) estão ligados agora (orçamento MaxHighlights)

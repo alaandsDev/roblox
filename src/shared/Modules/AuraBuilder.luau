@@ -38,6 +38,20 @@ function AuraBuilder.resolve(characterId: string, rarity: string, mode: string, 
 	return planner:resolve(characterId, rarity, mode, style)
 end
 
+-- parâmetros de MOVIMENTO de uma forma (lidos pelo AuraController -> AuraMotion.ribbon)
+local function motionParams(b: Beam, index: number, angle: number, twist: number, radius: number, y0: number, y1: number, curve: number, amp: number)
+	b:SetAttribute("MotionIndex", index)
+	b:SetAttribute("MotionAngle", angle)
+	b:SetAttribute("MotionTwist", twist)
+	b:SetAttribute("MotionRadius", radius)
+	b:SetAttribute("MotionY0", y0)
+	b:SetAttribute("MotionY1", y1)
+	b:SetAttribute("MotionCurve", curve)
+	b:SetAttribute("MotionAmp", amp)
+	b:SetAttribute("MotionWidth0", b.Width0)
+	b:SetAttribute("MotionWidth1", b.Width1)
+end
+
 ------------------------------------------------------------------------------------
 -- Utilidades
 
@@ -236,6 +250,7 @@ type Geo = {
 	rOuter: number,
 	feet: CFrame,
 	center: CFrame,
+	amp: number, -- amplitude do movimento (1 Light; FullScale.Amplitude no Full)
 }
 
 local function signatureRate(comp: AuraPlanner.Component): number
@@ -256,7 +271,8 @@ Signatures.Lightning = function(g, p, _style, n, rate)
 		local y0 = (((i * 37) % 7) / 7 - 0.4) * h * 0.7
 		local a0 = attachment(g.core, "AuraBoltA" .. i, Vector3.new(math.cos(angle) * w * 0.35, y0, math.sin(angle) * w * 0.35))
 		local a1 = attachment(g.core, "AuraBoltB" .. i, Vector3.new(math.cos(angle + 0.7) * g.rMid, y0 + h * 0.35, math.sin(angle + 0.7) * g.rMid))
-		beam(g.core, "AuraBolt" .. i, a0, a1, seq(p.light, p.main, p.accent), 0.45, 0.15, "Bolt", { lightEmission = 1, segments = 14, curve0 = 2, curve1 = -2 })
+		local b = beam(g.core, "AuraBolt" .. i, a0, a1, seq(p.light, p.main, p.accent), 0.45, 0.15, "Bolt", { lightEmission = 1, segments = 14, curve0 = 2, curve1 = -2 })
+		motionParams(b, i, angle, 0.7, math.max(w * 0.45, g.rMid * 0.6), y0, y0 + h * 0.35, 2, g.amp)
 	end
 	local flash = emitter(g.ring, "AuraFlash", {
 		texture = "Spark",
@@ -383,8 +399,10 @@ Signatures.Stars = function(g, p, _style, n, rate)
 		size = { { 0, 0 }, { 0.3, 1.3 + n * 0.1 }, { 1, 0 } },
 		transparency = { { 0, 0 }, { 1, 0.4 } },
 		lightEmission = 0.5,
-		-- estrelas EM VOLTA do corpo (superfície do anel), não dentro do volume na frente dele
+		-- estrelas EM VOLTA do corpo (superfície do anel), não dentro do volume na frente dele;
+		-- as do lado da câmera passam por trás do personagem
 		shape = Enum.ParticleEmitterShape.Cylinder,
+		zOffset = -(g.w * 0.5 + 1.5),
 		rotSpeed = 120,
 	})
 	local halo = invisiblePart(g.model, "AuraHalo", Vector3.new(2.6, 0.1, 2.6), g.center * CFrame.new(0, g.h * 0.62, 0))
@@ -408,7 +426,8 @@ Signatures.Gusts = function(g, p, _style, n, rate)
 		local angle = (i / math.max(2, n)) * math.pi * 2
 		local a0 = attachment(g.core, "AuraGustA" .. i, Vector3.new(math.cos(angle) * g.rMid, -g.h * 0.45, math.sin(angle) * g.rMid))
 		local a1 = attachment(g.core, "AuraGustB" .. i, Vector3.new(math.cos(angle + 2.2) * g.rMid * 0.8, g.top * 0.55, math.sin(angle + 2.2) * g.rMid * 0.8))
-		beam(g.core, "AuraGust" .. i, a0, a1, seq(p.light, p.main, p.accent), 0.7, 0.15, "Gust", { lightEmission = 0.3, curve0 = 3, curve1 = -3 })
+		local b = beam(g.core, "AuraGust" .. i, a0, a1, seq(p.light, p.main, p.accent), 0.7, 0.15, "Gust", { lightEmission = 0.3, curve0 = 3, curve1 = -3 })
+		motionParams(b, i, angle, 2.2, g.rMid, -g.h * 0.45, g.top * 0.55, 3, g.amp)
 	end
 	emitter(g.ring, "AuraGustStreaks", {
 		texture = "Spark",
@@ -577,7 +596,7 @@ function AuraBuilder.attach(model: Model, characterId: string, rarity: string, m
 	local ring = invisiblePart(model, "AuraRing", Vector3.new(rMid * 2, h * 0.9, rMid * 2), cf)
 	local outer = invisiblePart(model, "AuraOuter", Vector3.new(rOuter * 2, h, rOuter * 2), cf * CFrame.new(0, (S - 1) * h * 0.25, 0))
 	local ground = invisiblePart(model, "AuraGround", Vector3.new(rOuter * 1.6, 0.2, rOuter * 1.6), feet * CFrame.new(0, 0.15, 0))
-	local g: Geo = { model = model, core = core, ring = ring, outer = outer, ground = ground, h = h, w = w, top = top, rMid = rMid, rOuter = rOuter, feet = feet, center = cf }
+	local g: Geo = { model = model, core = core, ring = ring, outer = outer, ground = ground, h = h, w = w, top = top, rMid = rMid, rOuter = rOuter, feet = feet, center = cf, amp = plan.amplitude }
 	local alpha = if plan.style == "Dark" or plan.style == "Void" then 0 else 0.2
 	local main = seq(p.light, p.main, p.accent)
 	local up = style.Direction == "Up"
@@ -599,7 +618,7 @@ function AuraBuilder.attach(model: Model, characterId: string, rarity: string, m
 				-- fumaça/fogo colados no corpo ficam ATRÁS dele (a aura emoldura, não esconde); faísca
 				-- (Spark, pequena e brilhante) pode passar na frente
 				transparency = { { 0, if style.Texture == "Spark" then 0.05 else 0.2 }, { 0.6, 0.3 }, { 1, 1 } },
-				zOffset = if style.Texture == "Spark" then 0 else -(g.w * 0.5 + 1),
+				zOffset = if style.Texture == "Spark" then -(g.w * 0.5) else -(g.w * 0.5 + 1),
 				lightEmission = alpha,
 				inOut = if inward then Enum.ParticleEmitterShapeInOut.Inward else Enum.ParticleEmitterShapeInOut.Outward,
 				acceleration = if up then Vector3.new(0, 4, 0) elseif down then Vector3.new(0, -2, 0) else nil,
@@ -683,7 +702,8 @@ function AuraBuilder.attach(model: Model, characterId: string, rarity: string, m
 				-- raio, altura, velocidade e sentido diferentes (nada sincronizado)
 				a0:SetAttribute("AuraRadius", if i % 2 == 0 then rMid else (rMid + rOuter) / 2)
 				a0:SetAttribute("AuraHeight", ((i - 0.5) / comp.count - 0.45) * (h + top * 0.6))
-				a0:SetAttribute("AuraSpeed", style.OrbitSpeed * (0.8 + 0.25 * i) * (if i % 2 == 0 then -1 else 1))
+				local fullSpeed = if mode == "Full" and AuraConfig.FullScale then AuraConfig.FullScale.OrbitSpeed else 1
+				a0:SetAttribute("AuraSpeed", style.OrbitSpeed * fullSpeed * (0.8 + 0.25 * i) * (if i % 2 == 0 then -1 else 1))
 				a0:SetAttribute("AuraBob", 0.35 + 0.15 * i)
 				a0:SetAttribute("AuraWobble", style.OrbitWobble)
 				local tail = attachment(a0, "AuraOrbitTail" .. i, Vector3.new(0, 0.9 * sizeScale, 0))
@@ -711,11 +731,25 @@ function AuraBuilder.attach(model: Model, characterId: string, rarity: string, m
 				})
 			end
 		elseif kind == "Ribbon" then
+			-- V2.2: em vez de UMA faixa rígida do pé até acima da cabeça, 2–4 fitas mais CURTAS e
+			-- FINAS, escalonadas em altura e afastadas do corpo; as pontas se movem no loop
+			-- central (AuraMotion) — energia viva, não uma peça presa nas costas
+			local radius = math.max(rMid, w / 2 + 1)
 			for i = 1, comp.count do
-				local angle = (i / comp.count) * math.pi * 2
-				local a0 = attachment(core, "AuraRibbonA" .. i, Vector3.new(math.cos(angle) * rMid, -h * 0.5, math.sin(angle) * rMid))
-				local a1 = attachment(core, "AuraRibbonB" .. i, Vector3.new(math.cos(angle + 2.4) * rMid * 0.7, top * 0.75, math.sin(angle + 2.4) * rMid * 0.7))
-				beam(core, "AuraRibbon" .. i, a0, a1, seq(p.light, p.main, p.dark), 1, 0.2, "Wisp", { lightEmission = 0.25, curve0 = 3.5, curve1 = -3.5, zOffset = -1 })
+				local angle = (i / comp.count) * math.pi * 2 + 0.4
+				local band = (i - 1) / math.max(1, comp.count - 1)
+				local y0 = -h * 0.5 + band * h * 0.3
+				local y1 = y0 + h * 0.85 + (top - h * 0.5) * 0.35
+				local a0 = attachment(core, "AuraRibbonA" .. i, Vector3.new(math.cos(angle) * radius, y0, math.sin(angle) * radius))
+				local a1 = attachment(core, "AuraRibbonB" .. i, Vector3.new(math.cos(angle + 1.6) * radius * 0.78, y1, math.sin(angle + 1.6) * radius * 0.78))
+				local b = beam(core, "AuraRibbon" .. i, a0, a1, seq(p.light, p.main, p.dark), 0.8, 0.14, "Wisp", {
+					lightEmission = 0.3,
+					curve0 = 2.5,
+					curve1 = -2.5,
+					zOffset = -1,
+					transparency = numSeq({ { 0, 0.1 }, { 0.5, 0.3 }, { 1, 0.85 } }),
+				})
+				motionParams(b, i, angle, 1.6, radius, y0, y1, 2.5, plan.amplitude)
 			end
 		elseif kind == "Ground" then
 			emitter(ground, "AuraGroundRing", {
@@ -856,6 +890,7 @@ function AuraBuilder.attach(model: Model, characterId: string, rarity: string, m
 	model:SetAttribute("AuraLayers", plan.layers)
 	model:SetAttribute("AuraSilhouette", S)
 	model:SetAttribute("AuraReach", rOuter)
+	model:SetAttribute("AuraAmp", plan.amplitude)
 	CollectionService:AddTag(model, AuraBuilder.Tag)
 	return plan
 end

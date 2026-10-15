@@ -72,7 +72,7 @@ AuraConfig.Tiers = {
 		Silhouette = 2.0,
 		Layers = { "Body", "Depth", "Rise", "Orbit", "Ribbon", "Ground", "Shockwave", "Signature" },
 		Orbiters = 3,
-		Rate = 1.5,
+		Rate = 1.65,
 		SignatureCount = 4,
 		PulseEvery = 3.2,
 		Highlight = true,
@@ -82,7 +82,7 @@ AuraConfig.Tiers = {
 		Silhouette = 2.5,
 		Layers = { "Body", "Contrast", "Depth", "Rise", "Outer", "Orbit", "Ribbon", "Ground", "Shockwave", "Signature", "Crown" },
 		Orbiters = 4,
-		Rate = 1.7,
+		Rate = 1.85,
 		SignatureCount = 6,
 		PulseEvery = 2.6,
 		Highlight = true,
@@ -102,7 +102,7 @@ AuraConfig.Tiers = {
 	assinaturas completas também no Light, e o LOD por distância progressivo (AuraController) em
 	vez de cortar pela metade aos 55 studs.
 ]]
-AuraConfig.LightScale = { Rate = 0.55, Orbits = 1, Signature = 1, Pulse = true, Ground = true }
+AuraConfig.LightScale = { Rate = 0.6, Orbits = 1, Signature = 1, Pulse = true, Ground = true }
 
 -- Presença (V2.1): formas que aparecem no mapa claro/saturado em vez de muitas partículas pequenas
 --     Size  multiplica tamanho das partículas, larguras de beams e rastros
@@ -138,6 +138,52 @@ AuraConfig.Styles = {
 	Spirit = { Colors = { { 70, 230, 210 }, { 220, 255, 250 }, { 40, 140, 255 } }, Dark = { 10, 70, 90 }, Texture = "Smoke", Direction = "Up", Speed = 2.2, Lifetime = 1.8, Size = 1.4, Streak = false, Signature = "Wisps", OrbitSpeed = 1.6, OrbitWobble = 0.2, Drag = 0.4 },
 	Gravity = { Colors = { { 150, 80, 255 }, { 255, 200, 90 }, { 60, 25, 130 } }, Dark = { 25, 10, 60 }, Texture = "Ember", Direction = "In", Speed = 4, Lifetime = 1.1, Size = 1.1, Streak = true, Signature = "Pull", OrbitSpeed = 3.2, OrbitWobble = 0.5, Drag = 0.7 },
 } :: { [string]: Style }
+
+--[[
+	MOVIMENTO por estilo (AuraMotion, loop central do AuraController): as formas grandes (fitas,
+	rajadas, raios) e as órbitas ganham personalidade. Unidades: rad, rad/s, fração do raio, studs.
+	    Speed/Arc      balanço parcial em volta do corpo      Spin        giro contínuo (rad/s)
+	    Breath(Speed)  raio respirando                         Bob/Rise    sobe-desce / chama subindo
+	    Curve(Speed)   curvatura viva                          Jitter(Rate) saltos bruscos (Electric)
+	    Step           degraus por volta (Ice)                 Asym        cada fita no seu ritmo
+	    Pulse(Speed)   largura pulsando                        Tip         a ponta de cima anda mais
+]]
+local function motion(o: { [string]: number }): { [string]: number }
+	local base = { Speed = 1.2, Arc = 0.45, Spin = 0, Breath = 0.12, BreathSpeed = 1.1, Bob = 0.35, Rise = 0, Curve = 2.2, CurveSpeed = 1.3, Jitter = 0, JitterRate = 0, Step = 0, Asym = 0.2, Pulse = 0.1, PulseSpeed = 2, Tip = 0.6 }
+	for k, v in o do
+		base[k] = v
+	end
+	return base
+end
+AuraConfig.Motion = {
+	-- rápido, nervoso, saltos bruscos e arcos instáveis
+	Electric = motion({ Speed = 4.2, Arc = 0.35, Curve = 3.2, CurveSpeed = 6, Jitter = 0.45, JitterRate = 7, Pulse = 0.3, PulseSpeed = 11, Tip = 0.9 }),
+	-- sobe e balança, pulsação irregular
+	Flame = motion({ Speed = 2.4, Arc = 0.3, Bob = 0.25, Rise = 1.6, Curve = 2.6, CurveSpeed = 3.1, Asym = 0.45, Pulse = 0.2, PulseSpeed = 3.7, Tip = 1.1 }),
+	-- lento, caudas flutuando, órbitas assimétricas, distorções pequenas
+	Void = motion({ Speed = 0.55, Arc = 0.7, Breath = 0.22, BreathSpeed = 0.6, Bob = 0.5, Curve = 3.4, CurveSpeed = 0.7, Asym = 0.6, Pulse = 0.08, Tip = 1.4 }),
+	Dark = motion({ Speed = 0.65, Arc = 0.6, Breath = 0.18, BreathSpeed = 0.7, Bob = 0.45, Rise = 0.4, Curve = 3, CurveSpeed = 0.8, Asym = 0.55, Pulse = 0.08, Tip = 1.2 }),
+	-- elegante: órbita contínua + expansão/contração suave
+	Celestial = motion({ Speed = 0.9, Arc = 0.25, Spin = 0.55, Breath = 0.2, BreathSpeed = 0.9, Bob = 0.3, Curve = 1.8, CurveSpeed = 1, Asym = 0.1, Pulse = 0.12, PulseSpeed = 1.6, Tip = 0.5 }),
+	-- corrente de ar: giro rápido e curvas alongadas
+	Wind = motion({ Speed = 2, Arc = 0.3, Spin = 1.9, Breath = 0.1, BreathSpeed = 1.8, Bob = 0.25, Curve = 4.5, CurveSpeed = 2.6, Asym = 0.15, Pulse = 0.1, Tip = 0.8 }),
+	-- rígido/preciso: degraus, pulsos frios, pouca curva
+	Ice = motion({ Speed = 0.8, Arc = 0.15, Spin = 0.5, Breath = 0.06, Bob = 0.12, Curve = 0.8, CurveSpeed = 0.9, Step = 6, Asym = 0, Pulse = 0.28, PulseSpeed = 2.4, Tip = 0.2 }),
+	-- pulsando: expande/contrai em ondas + órbita
+	Energy = motion({ Speed = 1.6, Arc = 0.25, Spin = 0.8, Breath = 0.3, BreathSpeed = 3, Bob = 0.25, Curve = 2.4, CurveSpeed = 2.2, Pulse = 0.35, PulseSpeed = 3, Tip = 0.6 }),
+	-- fantasma: caudas suaves, fluxo irregular
+	Spirit = motion({ Speed = 0.8, Arc = 0.6, Breath = 0.16, BreathSpeed = 0.75, Bob = 0.55, Rise = 0.5, Curve = 3.6, CurveSpeed = 0.9, Asym = 0.7, Pulse = 0.12, Tip = 1.5 }),
+	-- pesado: órbita lenta, compressão/expansão forte (atração/repulsão)
+	Gravity = motion({ Speed = 0.7, Arc = 0.35, Spin = 0.45, Breath = 0.35, BreathSpeed = 1.2, Bob = 0.2, Curve = 2.6, CurveSpeed = 1.1, Asym = 0.3, Pulse = 0.15, PulseSpeed = 1.2, Tip = 0.7 }),
+}
+AuraConfig.DefaultMotion = AuraConfig.Motion.Energy
+
+--[[
+	FULL = "a mesma aura LIBERADA" (reveal/hero/galeria): além da emissão cheia, mais amplitude de
+	movimento, uma fita a mais, órbitas mais rápidas e pulsos mais frequentes. O Light (Base/Torre)
+	mantém identidade, cor, assinatura, movimento e silhueta — só com menos camadas extras.
+]]
+AuraConfig.FullScale = { Amplitude = 1.45, ExtraRibbons = 1, OrbitSpeed = 1.25, PulseEvery = 0.75 }
 
 -- Estilo pelo Dice de origem (tema do pool); personagens específicos podem sobrescrever
 AuraConfig.StyleByDice = {

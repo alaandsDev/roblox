@@ -1410,6 +1410,22 @@ do -- DEV AURAS V2: comparação lado a lado (mesmo personagem/estilo) e estress
 		end
 	end
 	check(light == 4 and full == 4, "DEV AuraCompare: Lendário/Mítico/Divino/Secreto em LIGHT e FULL lado a lado")
+	Dev.Run("AuraMotion", p1, "Full")
+	folder = env.real.Workspace:FindFirstChild("DevAuraLineup")
+	local styles, moving = {}, 0
+	for _, m in (folder and folder:GetChildren() or {}) do
+		styles[m:GetAttribute("AuraStyle")] = true
+		for _, d in m:GetDescendants() do
+			if d:IsA("Beam") and d:GetAttribute("MotionIndex") ~= nil then
+				moving += 1
+			end
+		end
+	end
+	local nStyles = 0
+	for _ in styles do
+		nStyles += 1
+	end
+	check(folder ~= nil and #folder:GetChildren() == 6 and nStyles == 6 and moving > 0, "DEV AuraMotion: 6 auras (Mítico/Divino/Secreto) com estilos diferentes e formas animadas (" .. moving .. ")")
 	Dev.Run("AuraClear")
 	check(env.real.Workspace:FindFirstChild("DevAuraLineup") == nil, "DEV AuraClear remove a comparação")
 end
