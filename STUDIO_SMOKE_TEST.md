@@ -285,3 +285,40 @@ Testar no PC e no emulador (celular paisagem 844×390 e retrato 390×844, tablet
 | MF1 | ANDARES | `Dev:Invoke("PreviewFloors", player, 5)` e andar pelo Floor01..04 | o andar coberto não fica escuro; luz quente suave (sem branco estourado); exterior/céu iguais | [ ] |
 | MF2 | ANDARES | no Floor01 olhar para cima (Floor02/03 com personagens) | Floor02 só mostra `$X/s`; Floor03+ sem letreiro; nada de parede de MÁX/nomes; subindo a rampa o Floor02 volta completo | [ ] |
 | MF3 | MOVIMENTO | andar Hub ↔ base ↔ rampas (PC e emulador mobile) | velocidade 22 confortável; rampas, esteira e colisões normais | [ ] |
+
+## AFK RESILIENCE (extra) — ver AFK_RESILIENCE.md
+
+**O que o JOGO controla:** AUTO continua com a mesma cadência (1/s; Roll Rápido 0,5 s), renda/timers/autosave
+continuam, indicador "💤 AFK", save final na saída, AUTO volta só numa reconexão pronta, tentativa de reconexão
+limitada (TeleportService) em quedas de rede/servidor fechando. **O que é da PLATAFORMA (o jogo não controla):**
+a desconexão por inatividade (~20 min sem input), o diálogo "Desconectado"/"Reconectar" do Roblox, app fechado/
+travado/em segundo plano, perda total de rede, e se o mesmo servidor ainda existe. No Studio NÃO há teleporte:
+reconexão real só no jogo publicado (no Studio use `SimulateReconnect`/`ReconnectPlan`).
+
+| # | Área | Ação | Esperado | OK |
+|---|---|---|---|---|
+| AFK1 | DEV | `print(Dev:Invoke("AFKStatus", p))` | estado Active, inatividade, Auto/Roll Rápido/Ocultar, último save, JobId, sessão | [ ] |
+| AFK2 | DEV | `Dev:Invoke("SimulateIdle", p, 1200)` | indicador "💤 AFK" no topo; AUTO/renda seguem; mexer o mouse ou apertar tecla → some (estado Active) | [ ] |
+| AFK3 | DEV | AUTO ligado; `Dev:Invoke("SimulateIdle", p, 1200)`; esperar 1 min | ~60 rolls/min (120 com Roll Rápido), nunca rajada; nenhuma mudança de Luck/renda | [ ] |
+| AFK4 | DEV | AUTO desligado; `Dev:Invoke("SimulateReconnect", p)` | AUTO liga sozinho UMA vez (aviso "Reconectado: AUTO religado"); repetir `AFKStatus` mostra AUTO-retomada=Done | [ ] |
+| AFK5 | DEV | `Dev:Invoke("ReconnectPlan", "DisconnectIdle")` / `"DisconnectConnectionLost"` | Never (nada) / SameServer → AnyServer → AnyServer → Manual | [ ] |
+| AFK6 | JOGO PUBLICADO (teste real 20+ min) | ver roteiro abaixo | ver roteiro | [ ] |
+
+Roteiro AFK6 (jogo publicado, servidor real; anotar tudo):
+1. Entrar no jogo.
+2. Equipar personagens na base (EQUIPAR MELHORES).
+3. Ligar o AUTO (e, se tiver, Roll Rápido).
+4. Anotar: Money, Rolls (leaderstats/HUD), quantidade na MOCHILA, hora. Opcional (Studio Team Test/
+   console do servidor): `AFKStatus`.
+5. NÃO tocar em nada (sem mouse, teclado, toque ou controle).
+6. Observar: após ~2 min aparece "💤 AFK · AUTO ligado"; os rolls continuam no mesmo ritmo; renda acumulando.
+7. Esperar ~20+ minutos.
+8. Anotar o comportamento REAL da plataforma: o Roblox desconectou por inatividade? Em quanto tempo? Qual mensagem?
+   (isto é da plataforma; o jogo não tenta evitar).
+9. Se desconectou: a mensagem do jogo (se aparecer) diz "Desconectado por inatividade (regra do Roblox)" e NÃO há
+   teleporte automático. Usar o "Reconectar" do Roblox ou entrar de novo. Se a queda foi de REDE (ex.: desligar o
+   Wi-Fi por ~10 s), o jogo tenta voltar sozinho (até 3x; depois botão RECONECTAR, até 3 cliques).
+10. Ao voltar: Money ≥ anotado (+ renda até a saída), Rolls ≥ anotado e coerente com ~1/s × minutos AFK, mochila sem
+    personagens duplicados, Rebirth/Ocultar iguais; popup de offline só se ficou ≥ 60 s FORA (e proporcional a esse
+    tempo, não aos minutos AFK online). Numa reconexão automática recente o AUTO volta sozinho depois de a base e o
+    personagem aparecerem; numa entrada normal o AUTO começa desligado.

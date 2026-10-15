@@ -317,6 +317,15 @@ function EconomyService.Start()
 	PlayerDataService.Loaded:Connect(function(player)
 		EconomyService.CheckOffline(player)
 	end)
+	-- Sem pagar duas vezes (AFK Resilience): todo save grava "visto por último = agora" junto com
+	-- a renda já acumulada online. Se o servidor cair depois, o offline começa no ÚLTIMO estado
+	-- salvo (o período online que não chegou ao save foi perdido junto, não pago de novo).
+	-- Só depois do CheckOffline: antes dele o LastLogout salvo ainda é a base do offline pendente.
+	PlayerDataService.OnBeforeSave(function(player, data)
+		if offlineChecked[player] then
+			data.LastLogout = EconomyService._now()
+		end
+	end)
 	for _, player in Players:GetPlayers() do
 		if PlayerDataService.IsLoaded(player) then
 			EconomyService.CheckOffline(player)

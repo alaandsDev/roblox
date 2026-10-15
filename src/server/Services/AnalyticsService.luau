@@ -39,6 +39,11 @@ AnalyticsService.EVENTS = {
 	"TradeCompleted",
 	"MissionClaimed",
 	"PurchaseCompleted",
+	-- AFK Resilience (só telemetria)
+	"AfkIdle",
+	"AfkActive",
+	"Reconnected",
+	"AutoResumed",
 }
 
 -- (player, nome, params)

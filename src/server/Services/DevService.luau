@@ -37,6 +37,9 @@ local IndexService = require(script.Parent.IndexService)
 local EconomyService = require(script.Parent.EconomyService)
 local StationService = require(script.Parent.StationService)
 local AnalyticsService = require(script.Parent.AnalyticsService)
+local AfkService = require(script.Parent.AfkService)
+local AfkConfig = require(Shared.Config.AfkConfig)
+local ReconnectPolicy = require(Shared.Modules.ReconnectPolicy)
 
 local log = Logger.new("Dev")
 
@@ -980,6 +983,64 @@ DevService.Register("Analytics", "() contagem dos eventos de analytics", functio
 end)
 
 -- Executa um comando (mesma porta do BindableFunction; usado também pelos testes)
+------------------------------------------------------------------------------------
+-- AFK Resilience (só estado/telemetria: nenhum comando gera input)
+
+local function afkStatusText(player: Player): string
+	local st = AfkService.Status(player)
+	local saves = st.saves or {}
+	local lines = {
+		`AFKStatus {player.Name}`,
+		`  estado: {st.state} · inativo há {st.idleSeconds} s (Idle a partir de {AfkConfig.IdleAfter} s; o Roblox desconecta ~{AfkConfig.PlatformIdleKick // 60} min sem input)`,
+		`  Auto Roll: {if st.autoRoll then "LIGADO" else "desligado"} · Roll Rápido: {if st.fastRoll then "sim" else "não"} (intervalo {tostring(st.rollInterval)} s) · Ocultar: {if st.hide then "sim" else "não"}`,
+		`  último save: {if st.lastSave > 0 then os.date("!%H:%M:%S UTC", st.lastSave) .. ` (há {tostring(st.secondsSinceSave)} s)` else "nenhum ainda"} · saves nesta sessão: {tostring(saves.count or 0)} (falhas {tostring(saves.failures or 0)})`
+			.. (if st.offlineProfile then " · PERFIL TEMPORÁRIO (Studio sem API: nada é salvo)" else ""),
+		`  JobId: {st.jobId}`,
+		`  sessão: reconexão={tostring(st.session.reconnect)} cadeia={st.session.chain} de="{st.session.fromJobId}" AUTO-retomada={st.session.resume} ({st.session.resumeReason}){if st.session.simulated then " [simulada]" else ""}`,
+	}
+	return table.concat(lines, "\n")
+end
+
+DevService.Register("AFKStatus", "([player]) estado AFK (Active/Idle/Reconnecting), inatividade, Auto/Roll Rápido/Ocultar, último save, JobId e sessão", function(...)
+	local player = splitPlayer(...)
+	assert(player, "sem jogador")
+	return afkStatusText(player)
+end)
+DevService.Register("SimulateIdle", "([player], segundos=1200) simula SÓ o estado interno de inatividade (nenhum input é gerado)", function(...)
+	local player, seconds = splitPlayer(...)
+	assert(player, "sem jogador")
+	AfkService.SimulateIdle(player, tonumber(seconds) or 1200)
+	return afkStatusText(player)
+end)
+DevService.Register("SimulateActive", "([player]) volta o estado interno para Active (como um input real)", function(...)
+	local player = splitPlayer(...)
+	assert(player, "sem jogador")
+	AfkService.ReportActivity(player)
+	return afkStatusText(player)
+end)
+DevService.Register("SimulateReconnect", "([player], auto=true) trata a sessão como reconexão (Studio não teleporta): AUTO volta só com save+base+personagem+serviços prontos", function(...)
+	local player, autoRoll = splitPlayer(...)
+	assert(player, "sem jogador")
+	AfkService.SimulateReconnect(player, autoRoll ~= false)
+	AfkService._tick()
+	return afkStatusText(player)
+end)
+DevService.Register("ReconnectPlan", "(código Enum.ConnectionError, ex. DisconnectConnectionLost | DisconnectIdle) mostra o que o cliente faria (sem teleportar)", function(code)
+	local kind, reason = ReconnectPolicy.classify(code)
+	local plan = ReconnectPolicy.new(AfkConfig.Reconnect, { kind = kind, code = code, jobId = "job-atual", chain = 0 })
+	local steps, now = {}, 0
+	for _ = 1, AfkConfig.Reconnect.MaxAttempts + 1 do
+		local step = plan:next(now)
+		table.insert(steps, `{step.action}@{step.at}s{if step.reason then " (" .. step.reason .. ")" else ""}`)
+		if step.action ~= "SameServer" and step.action ~= "AnyServer" then
+			break
+		end
+		now = step.at
+		plan:failed("Failure")
+	end
+	return `{tostring(code)}: {kind} ({reason}) -> {table.concat(steps, " -> ")}`
+end)
+
 function DevService.Run(name: string, ...: any): any
 	local command = commands[name]
 	if not command then

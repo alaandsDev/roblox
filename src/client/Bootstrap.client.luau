@@ -35,6 +35,7 @@ local ORDER = {
 	"LodController",
 	"AuraController",
 	"TutorialController",
+	"SessionController", -- AFK Resilience: atividade real (telemetria), indicador AFK, AUTO após reconectar, reconexão limitada
 }
 
 local controllers = {}

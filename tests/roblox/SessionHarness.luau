@@ -64,7 +64,7 @@ local ORDER = {
 	"EconomyService", "InventoryService", "IndexService", "SellService", "RollService",
 	"DiceService", "UpgradeService", "StationService", "DailyService", "TowerService",
 	"RebirthService", "FusionService", "TradeService", "MissionService",
-	"BoostService", "JackpotService", "LeaderboardService",
+	"BoostService", "JackpotService", "LeaderboardService", "AfkService",
 }
 local S = {}
 for _, name in ORDER do

@@ -34,6 +34,7 @@ local ORDER = {
 	"BoostService",
 	"JackpotService",
 	"LeaderboardService",
+	"AfkService", -- resiliência de sessão (AFK só telemetria; AUTO depois de reconectar)
 	"DevService", -- só ativo no Studio
 }
 

@@ -27,6 +27,13 @@ local DataConfig = {
 
 	-- Tempo máximo esperando os salvamentos quando o servidor desliga (o limite do Roblox é 30 s)
 	ShutdownTimeout = 25,
+
+	-- RECONEXÃO (AFK Resilience): quem volta logo depois de cair pode encontrar o perfil ainda
+	-- travado pelo servidor antigo (ele só libera ao perceber a saída e salvar). Em vez de
+	-- expulsar na hora, a entrada espera até LockedJoinWait s, tentando a cada LockedRetryDelay s.
+	-- Nunca assume a trava antes do SessionLockTimeout (sem dois servidores no mesmo save).
+	LockedJoinWait = 60,
+	LockedRetryDelay = 5,
 }
 
 -- Formato inicial do perfil. Tabelas vazias são "mapas dinâmicos": o conteúdo não é

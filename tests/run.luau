@@ -46,6 +46,7 @@ require("./EconomyApplied.spec")
 require("./TowerSession.spec")
 require("./Aura.spec")
 require("./DataSize.spec")
+require("./Afk.spec")
 
 if not T.report() then
 	error("testes falharam", 0)

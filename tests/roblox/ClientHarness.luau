@@ -154,7 +154,7 @@ local ORDER = {
 	"EconomyService", "InventoryService", "IndexService", "SellService", "RollService",
 	"DiceService", "UpgradeService", "StationService", "DailyService", "TowerService",
 	"RebirthService", "FusionService", "TradeService", "MissionService",
-	"BoostService", "JackpotService", "LeaderboardService",
+	"BoostService", "JackpotService", "LeaderboardService", "AfkService",
 }
 local S = {}
 for _, name in ORDER do
@@ -199,7 +199,7 @@ local CLIENT_ORDER = {
 	"RevealController", "RollController", "InventoryController", "DiceShopController", "UpgradesController",
 	"SellController", "IndexController", "DailyController", "OfflineController", "SettingsController", "TowerController",
 	"RebirthController", "FusionController", "TradeController", "MissionController", "StoreController", "MusicController",
-	"FeedbackController", "LodController", "AuraController", "TutorialController",
+	"FeedbackController", "LodController", "AuraController", "TutorialController", "SessionController",
 }
 local C = {}
 for _, name in CLIENT_ORDER do
@@ -1801,6 +1801,115 @@ do
 	local indexModel = find(index.gui, "char_sacha_base")
 	check(indexModel ~= nil and indexModel:GetAttribute("AssetRig") == true and indexModel:GetAttribute("VFXMode") == "None", "Índice: asset com VFX None")
 	UIKit.Windows.closeAll()
+end
+
+------------------------------------------------------------------------------------
+-- AFK Resilience (SessionController): atividade real, indicador AFK, AUTO após reconectar,
+-- reconexão limitada (TeleportService falso), inatividade da plataforma nunca reconecta
+
+do
+	local SC = C.SessionController
+	local RC = C.RollController
+	local AfkConfig = clientRequire(env.shared.Config.AfkConfig)
+	check(Env.waitFor(function()
+		return gui("SessionStatus") ~= nil and RC.IsReady()
+	end, 3), "AFK: SessionStatus criado e ROLAR pronto")
+
+	-- input REAL -> ReportActivity (com limite)
+	local r0 = SC.ActivityReports()
+	SC._clock = function()
+		return 1e6
+	end
+	env.stubs.UserInputService.InputBegan:Fire({ UserInputType = roblox.Enum.UserInputType.Keyboard })
+	env.stubs.UserInputService.InputBegan:Fire({ UserInputType = roblox.Enum.UserInputType.Keyboard })
+	check(SC.ActivityReports() == r0 + 1, "AFK: input real avisa o servidor, no máximo 1 vez a cada " .. AfkConfig.ActivityReportEvery .. " s")
+	check(Env.waitFor(function()
+		return S.AfkService.State(player) == "Active"
+	end, 2), "AFK: servidor vê o jogador Active")
+
+	-- indicador AFK (só UX)
+	S.AfkService.SimulateIdle(player, 1200)
+	local chip = find(gui("SessionStatus"), "AfkChip")
+	check(Env.waitFor(function()
+		return chip ~= nil and chip.Visible and string.find(chip.Text, "AFK", 1, true) ~= nil
+	end, 3), "AFK: indicador 💤 AFK aparece com o estado Idle do servidor")
+	S.AfkService.ReportActivity(player)
+	check(Env.waitFor(function()
+		return not chip.Visible
+	end, 3), "AFK: indicador some com atividade real")
+
+	-- ResumeAuto (servidor: reconexão pronta) religa o AUTO uma vez
+	if RC.IsAuto() then
+		RC.SetAuto(false)
+	end
+	Net.fire("ResumeAuto", player)
+	check(Env.waitFor(function()
+		return RC.IsAuto()
+	end, 3), "AFK: ResumeAuto do servidor religa o AUTO")
+	RC.SetAuto(false)
+	task.wait(0.1)
+
+	-- reconexão: TeleportService falso que sempre falha
+	local calls = {}
+	env.stubs.TeleportService = {
+		Teleport = function(_, _placeId, _p, data)
+			table.insert(calls, { kind = "any", data = data })
+		end,
+		TeleportToPlaceInstance = function(_, _placeId, _jobId, _p, _spawn, data)
+			table.insert(calls, { kind = "same", data = data })
+		end,
+		GetLocalPlayerTeleportData = function()
+			return nil
+		end,
+	}
+	local t = 0
+	SC._clock = function()
+		return t
+	end
+	SC._delay = function(_seconds, fn) -- esperas entre tentativas viram instantâneas
+		task.spawn(fn)
+	end
+	SC._watchdog = function() end -- o vigia de 30 s fica de fora (falhas vêm do OnTeleportFailed)
+	SC._allowTeleport = true
+	env.gameProxy.JobId = "job-test"
+	SC._reset()
+	SC.OnDisconnected("DisconnectConnectionLost")
+	check(Env.waitFor(function()
+		return #calls == 1
+	end, 2), "reconexão: queda de rede tenta voltar (API oficial TeleportService)")
+	check(calls[1].kind == "same" and type(calls[1].data) == "table" and calls[1].data.Reconnect == true and calls[1].data.Chain == 1, "reconexão: 1ª tentativa no MESMO servidor, com TeleportData de reconexão")
+	for _ = 1, 20 do
+		SC.OnTeleportFailed("GameEnded")
+		task.wait()
+	end
+	check(#calls == AfkConfig.Reconnect.MaxAttempts and calls[2].kind == "any", "reconexão: falha infinita = só " .. AfkConfig.Reconnect.MaxAttempts .. " tentativas automáticas (depois qualquer servidor), sem loop")
+	local button = find(gui("SessionStatus"), "ReconnectButton")
+	check(button ~= nil and button.Visible, "reconexão: esgotou -> botão RECONECTAR (clique real)")
+	for _ = 1, 20 do
+		t += AfkConfig.Reconnect.ManualCooldown + 1
+		click(button)
+		task.wait()
+		SC.OnTeleportFailed("Failure")
+	end
+	check(#calls == AfkConfig.Reconnect.MaxAttempts + AfkConfig.Reconnect.MaxManual, "reconexão: cliques também são limitados (" .. #calls .. " teleportes no total)")
+
+	-- inatividade da PLATAFORMA: nunca reconecta sozinho (respeita o timeout do Roblox)
+	SC._reset()
+	table.clear(calls)
+	SC.OnDisconnected("DisconnectIdle")
+	task.wait(0.1)
+	local message = find(gui("SessionStatus"), "Message")
+	check(#calls == 0 and #SC.Teleports() == 0, "inatividade da plataforma: nenhum teleporte")
+	check(message ~= nil and string.find(message.Text, "inatividade", 1, true) ~= nil and not button.Visible, "inatividade da plataforma: aviso claro, sem botão de contornar")
+	SC._reset()
+	table.clear(calls)
+	SC.OnDisconnected("DisconnectLuaKick")
+	task.wait(0.1)
+	check(#calls == 0, "expulsão do jogo (save travado etc.): nenhum teleporte")
+	SC._reset()
+	SC._allowTeleport = false
+	env.stubs.TeleportService = nil
+	env.gameProxy.JobId = ""
 end
 
 running = false

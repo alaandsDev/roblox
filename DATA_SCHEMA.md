@@ -43,7 +43,7 @@ O `SimuladorEscudo_v1` do protótipo **não é lido nem migrado**.
 | `Boosts` | map | `{ Luck = { Multiplier, ExpiresAt } }` |
 | `Tutorial` | number | passos do tutorial concluídos (0..7; 7 = terminado). Só avança (`SetTutorialStep`); jogadores com 50+ rolls pulam |
 | `RevealViews` | map | `{ [rarity] = vezes }` (libera PULAR na cinemática) |
-| `Settings.AutoRoll`, `HideRollAnimation`, `CameraShake`, `ReducedEffects` | boolean | Configurações do cliente |
+| `Settings.AutoRoll`, `HideRollAnimation`, `CameraShake`, `ReducedEffects` | boolean | Configurações do cliente. `AutoRoll` = escolha do jogador; limpo numa entrada normal e só usado para religar o AUTO numa reconexão pronta (AFK_RESILIENCE.md) |
 | `Settings.AutoSell` | map | `{ Common..Divine = boolean }` (Secreto nunca) |
 | `TowerTeam` | lista | Até 5 uids do time da torre (vazio = automático) |
 | `RebirthPerks` | map | `{ [perkId] = nível }` (loja de fichas) |

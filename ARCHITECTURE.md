@@ -175,10 +175,12 @@ Floor02: SideA = Slot09..Slot12 | SideB = Slot13..Slot16
 | BoostService | multiplicadores de sessão em data.Runtime (gamepasses, impulso de amigos), etiqueta VIP | — |
 | JackpotService | Giro do Jackpot, loja de gemas, entrega dos produtos Robux | SpinJackpot, BuyGemItem |
 | LeaderboardService | rankings dos painéis do Hub (OrderedDataStore) e leaderstats | — |
+| AfkService | resiliência de sessão (AFK_RESILIENCE.md): estado Active/Idle/Reconnecting só para UX/telemetria, AUTO só volta numa reconexão pronta, DEV AFKStatus/SimulateIdle | ReportActivity, (evento) ResumeAuto |
 
 Cliente: TowerController (janela + tela de batalha animada), RebirthController, FusionController,
 TradeController, MissionController, StoreController (loja + atalhos da direita + giro),
-MusicController. Interações do mapa: Towers, Fusion, Trade, Missions, Market (loja).
+MusicController, SessionController (atividade real, indicador AFK, reconexão limitada via TeleportService).
+Interações do mapa: Towers, Fusion, Trade, Missions, Market (loja).
 
 ## Gameplay (Fases 3–6 + estações, offline, diário, cinemática)
 

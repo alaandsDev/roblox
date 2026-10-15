@@ -6,6 +6,9 @@
 	manual, AUTO e OCULTAR — o servidor valida cada roll. Raridades com AutoRoll = "Pause" (RevealConfig)
 	pausam o AUTO enquanto a cinemática toca e ele continua depois.
 	Inventário cheio: para o AUTO e mostra a ação [VENDER] [MOCHILA] (sem spam).
+	AUTO (AFK Resilience): a escolha do jogador vira Settings.AutoRoll (o servidor limpa numa entrada
+	normal e só manda ResumeAuto numa RECONEXÃO pronta). O AUTO ocioso continua igual: um pedido por
+	vez, nenhuma fila, nenhum roll "devido" acumulado (readyAt = envio + intervalo).
 	RECENT ROLLS some sozinho 20 s depois do último roll (AutoHideTimer) e volta na hora com o
 	próximo. Esconder é só APRESENTAÇÃO (fade + leve deslize): a faixa continua montada, os
 	retratos (ViewportFrame/câmera/modelo do CharacterPreview) não são destruídos nem recriados.
@@ -40,6 +43,7 @@ RollController.Rolled = Signal.new()
 
 local requesting = false
 local auto = false
+local started = false
 local readyAt = 0
 local history: { any } = {}
 
@@ -182,9 +186,18 @@ local function animateCooldown(seconds: number)
 	end)
 end
 
+-- Preferência AUTO no save (só quando o JOGADOR liga/desliga ou o inventário enche)
+local function persistAuto(on: boolean)
+	local settings = DataController.Get("Settings")
+	if type(settings) == "table" and settings.AutoRoll ~= on then
+		task.spawn(DataController.SetSetting, "AutoRoll", on)
+	end
+end
+
 local function inventoryFull()
 	auto = false
 	refreshToggles()
+	persistAuto(false)
 	NotificationController.ShowAction("error.inventory_full", {
 		{ text = Localization.t("roll.full_sell"), color = Theme.Colors.Orange, onClick = function()
 			UIKit.Windows.open("Sell")
@@ -257,6 +270,23 @@ function RollController.SetAuto(on: boolean)
 	end
 end
 
+-- Reconexão pronta (servidor mandou ResumeAuto): religa o AUTO sem mexer na cadência
+function RollController.ResumeAuto(): boolean
+	if not started or auto then
+		return false
+	end
+	RollController.SetAuto(true)
+	return true
+end
+
+function RollController.IsAuto(): boolean
+	return auto
+end
+
+function RollController.IsReady(): boolean
+	return started
+end
+
 function RollController.History(): { any }
 	return table.clone(history)
 end
@@ -318,6 +348,7 @@ function RollController.Start()
 		order = 1,
 		onClick = function()
 			RollController.SetAuto(not auto)
+			persistAuto(auto)
 		end,
 	})
 	hideButton = UIKit.button(toggles, {
@@ -352,6 +383,7 @@ function RollController.Start()
 			refreshToggles()
 		end
 	end)
+	started = true
 	-- Atalho de teclado (PC): R = rolar
 	UserInputService.InputBegan:Connect(function(input, processed)
 		if not processed and input.KeyCode == Enum.KeyCode.R then

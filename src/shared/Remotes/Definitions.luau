@@ -49,6 +49,9 @@ local Definitions: Definitions = {
 
 		-- Roll (FASE 3). Sem argumentos: o cliente NUNCA manda raridade, luck ou personagem.
 		RequestRoll = { args = {}, rate = { capacity = 6, refill = 4 } },
+		-- AFK Resilience: "houve input REAL" (telemetria; o cliente manda no máximo a cada
+		-- AfkConfig.ActivityReportEvery s). Não vale nada na economia.
+		ReportActivity = { args = {}, rate = { capacity = 2, refill = 0.2 } },
 
 		-- Inventário e estações da base (FASE 4)
 		EquipCharacter = {
@@ -170,6 +173,8 @@ local Definitions: Definitions = {
 		JackpotResult = {},
 		-- Só Studio: tocar um reveal sem RNG (DevService "PlayReveal")
 		DevReveal = {},
+		-- AFK Resilience: reconexão pronta (save + base + personagem + serviços) -> o cliente religa o AUTO
+		ResumeAuto = {},
 	},
 }
 

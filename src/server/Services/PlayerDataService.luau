@@ -11,6 +11,9 @@
 	    PlayerDataService.Increment(player, "Rolls", 1)
 	    PlayerDataService.Loaded:Connect(function(player, data) end)
 	- No Studio sem acesso à API, o jogador joga com um perfil temporário (não salva) e é avisado.
+	- AFK Resilience: saída idempotente (PlayerRemoving + BindToClose não salvam duas vezes),
+	  entrada que espera a trava do servidor antigo (reconexão), LastLogout atualizado em todo save
+	  (OnBeforeSave) e estatística de saves por jogador (SaveStats) para o DEV AFKStatus.
 	- No jogo publicado, se não der para carregar, o jogador é desconectado com uma mensagem
 	  (melhor do que jogar e perder o progresso).
 ]]
@@ -55,7 +58,15 @@ type Entry = {
 	profile: ProfileCore.Profile,
 	-- true = perfil temporário (Studio sem API): nunca salva
 	offline: boolean,
+	-- saída em andamento (PlayerRemoving e BindToClose chegam juntos no desligamento)
+	releasing: boolean?,
+	-- da sessão: valores ANTES de o EconomyService atualizar LastLogout (reconexão/offline)
+	session: SessionInfo,
+	stats: SaveStats,
 }
+
+export type SessionInfo = { loadedAt: number, previousLogout: number, previousSave: number, isNew: boolean, waitedForLock: number }
+export type SaveStats = { count: number, failures: number, lastAt: number, lastOk: boolean?, lastReason: string? }
 
 local entries: { [Player]: Entry } = {}
 -- Studio com place local/não publicado (ou DataStore indisponível): perfis temporários direto
@@ -64,6 +75,14 @@ local loading: { [Player]: boolean } = {}
 local core: any = nil
 -- Usado na idempotência de compras (ver MonetizationService)
 local saving: { [Player]: boolean } = {}
+-- Funções chamadas logo antes de cada save (ex.: EconomyService atualiza LastLogout)
+local beforeSave: { (Player, { [string]: any }) -> () } = {}
+-- Espera entre tentativas de carregar um perfil travado (trocável nos testes)
+PlayerDataService._wait = function(seconds: number)
+	task.wait(seconds)
+end
+-- Relógio de parede da sessão (LastLogout na saída, início da sessão); trocável nos testes
+PlayerDataService._time = os.time
 
 local function keyFor(player: Player): string
 	return DataConfig.KeyPrefix .. player.UserId
@@ -139,6 +158,50 @@ function PlayerDataService.Increment(player: Player, key: string, delta: number)
 	return value
 end
 
+-- (player, data) chamado logo antes de cada save (mesmo instantâneo que vai para o DataStore)
+function PlayerDataService.OnBeforeSave(fn: (Player, { [string]: any }) -> ())
+	table.insert(beforeSave, fn)
+end
+
+local function runBeforeSave(player: Player, data: { [string]: any })
+	for _, fn in beforeSave do
+		local ok, err = pcall(function()
+			fn(player, data)
+		end)
+		if not ok then
+			log:warn("OnBeforeSave falhou:", err)
+		end
+	end
+end
+
+local function noteSave(entry: Entry, ok: boolean, reason: string?)
+	local stats = entry.stats
+	stats.count += 1
+	stats.lastAt = PlayerDataService._time()
+	stats.lastOk = ok
+	stats.lastReason = reason
+	if not ok then
+		stats.failures += 1
+	end
+end
+
+-- Dados da sessão atual (LastLogout/LastSave como estavam no save, antes desta sessão mexer)
+function PlayerDataService.SessionInfo(player: Player): SessionInfo?
+	local entry = entries[player]
+	return if entry then table.clone(entry.session) else nil
+end
+
+-- Quantos saves esta sessão fez, quando foi o último e se deu certo (DEV AFKStatus/testes)
+function PlayerDataService.SaveStats(player: Player): SaveStats?
+	local entry = entries[player]
+	return if entry then table.clone(entry.stats) else nil
+end
+
+function PlayerDataService.IsOfflineProfile(player: Player): boolean
+	local entry = entries[player]
+	return entry ~= nil and entry.offline
+end
+
 -- Salva agora (usado depois de compras). Retorna true se gravou.
 function PlayerDataService.SaveNow(player: Player): boolean
 	local entry = entries[player]
@@ -151,9 +214,19 @@ function PlayerDataService.SaveNow(player: Player): boolean
 	while saving[player] do
 		task.wait(0.1)
 	end
+	-- a saída já faz o último save (e libera a trava): espera ela e devolve o resultado dela
+	-- (ex.: compra confirmada no meio da saída continua sendo salva uma vez só)
+	if entry.releasing or entries[player] ~= entry then
+		while entries[player] == entry do
+			task.wait(0.1)
+		end
+		return entry.stats.lastOk == true
+	end
 	saving[player] = true
+	runBeforeSave(player, entry.profile.Data)
 	local ok, reason = core:save(entry.profile, false)
 	saving[player] = nil
+	noteSave(entry, ok, reason)
 	if not ok then
 		log:warn("save falhou para", player.Name, reason)
 		if reason == ProfileCore.Reasons.LockLost then
@@ -199,20 +272,31 @@ local function warnIfLarge(player: Player, data: { [string]: any })
 	end
 end
 
+-- Saída: último save + libera a trava. IDEMPOTENTE: no desligamento o PlayerRemoving e o
+-- BindToClose chamam juntos; o segundo só espera o primeiro terminar (sem save duplicado).
 local function release(player: Player)
 	local entry = entries[player]
 	if not entry then
 		return
 	end
-	entry.profile.Data.LastLogout = os.time()
+	if entry.releasing then
+		while entries[player] == entry do
+			task.wait(0.1)
+		end
+		return
+	end
+	entry.releasing = true
+	entry.profile.Data.LastLogout = PlayerDataService._time()
 	if not entry.offline then
 		while saving[player] do
 			task.wait(0.1)
 		end
 		saving[player] = true
+		runBeforeSave(player, entry.profile.Data)
 		warnIfLarge(player, entry.profile.Data)
 		local ok, reason = core:save(entry.profile, true)
 		saving[player] = nil
+		noteSave(entry, ok, reason)
 		if ok then
 			log:info("perfil salvo e liberado:", player.Name)
 		else
@@ -228,10 +312,26 @@ local function onPlayerAdded(player: Player)
 	end
 	loading[player] = true
 	local profile, reason
+	local waited = 0
 	if offlineOnly then
 		reason = ProfileCore.Reasons.Error
 	else
 		profile, reason = core:load(keyFor(player))
+		-- Reconexão: o servidor antigo ainda pode estar salvando/liberando a trava. Espera um
+		-- pouco (avisando) em vez de expulsar na hora; NUNCA assume a trava antes do timeout.
+		local notified = false
+		while not profile and reason == ProfileCore.Reasons.Locked and player.Parent == Players and waited < DataConfig.LockedJoinWait do
+			if not notified then
+				notified = true
+				Net.fire("Notify", player, "data.waiting_previous_session")
+			end
+			PlayerDataService._wait(DataConfig.LockedRetryDelay)
+			waited += DataConfig.LockedRetryDelay
+			if player.Parent ~= Players then
+				break
+			end
+			profile, reason = core:load(keyFor(player))
+		end
 	end
 	loading[player] = nil
 
@@ -279,7 +379,18 @@ local function onPlayerAdded(player: Player)
 	if (profile.Data.Tutorial or 0) < TutorialConfig.Total and (profile.Data.Rolls or 0) >= TutorialConfig.VeteranRolls then
 		profile.Data.Tutorial = TutorialConfig.Total
 	end
-	entries[player] = { profile = profile, offline = offline }
+	entries[player] = {
+		profile = profile,
+		offline = offline,
+		session = {
+			loadedAt = PlayerDataService._time(),
+			previousLogout = tonumber(profile.Data.LastLogout) or 0,
+			previousSave = tonumber(profile.Data.LastSave) or 0,
+			isNew = profile.IsNew == true,
+			waitedForLock = waited,
+		},
+		stats = { count = 0, failures = 0, lastAt = 0 },
+	}
 	log:info(`perfil carregado: {player.Name} (novo: {profile.IsNew}, offline: {offline})`)
 	PlayerDataService.Loaded:Fire(player, profile.Data)
 
@@ -289,21 +400,29 @@ local function onPlayerAdded(player: Player)
 	end
 end
 
-local function autosaveLoop()
-	while true do
-		task.wait(DataConfig.AutosaveInterval)
-		local players = {}
-		for player in entries do
-			table.insert(players, player)
-		end
-		-- Espalha os saves no intervalo para não estourar o limite de requisições
-		local spacing = math.min(2, DataConfig.AutosaveInterval / math.max(1, #players) / 2)
-		for _, player in players do
-			if entries[player] then
-				task.spawn(PlayerDataService.SaveNow, player)
+-- Uma rodada do autosave: 1 save por jogador, espalhados (exposto para testes com tempo virtual)
+function PlayerDataService._autosaveRound(spacingOverride: number?)
+	local players = {}
+	for player in entries do
+		table.insert(players, player)
+	end
+	-- Espalha os saves no intervalo para não estourar o limite de requisições
+	local spacing = spacingOverride or math.min(2, DataConfig.AutosaveInterval / math.max(1, #players) / 2)
+	for _, player in players do
+		if entries[player] then
+			task.spawn(PlayerDataService.SaveNow, player)
+			if spacing > 0 then
 				task.wait(spacing)
 			end
 		end
+	end
+end
+
+-- Autosave independe de input: jogador AFK continua salvando a cada AutosaveInterval
+local function autosaveLoop()
+	while true do
+		task.wait(DataConfig.AutosaveInterval)
+		PlayerDataService._autosaveRound()
 	end
 end
 
@@ -402,7 +521,11 @@ function PlayerDataService.Start()
 
 	game:BindToClose(function()
 		local pending = 0
+		local list = {}
 		for player in entries do
+			table.insert(list, player)
+		end
+		for _, player in list do
 			pending += 1
 			task.spawn(function()
 				release(player)
