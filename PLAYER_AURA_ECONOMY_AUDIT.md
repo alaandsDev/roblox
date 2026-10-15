@@ -18,9 +18,10 @@
 | Topo | Celestial 5T: 0% dos F2P em 40 h, ~89–96 h para Ativo/Otimizador; **Absoluta 250T: 0% em 120 h** (inalcançável) | Divina 250B em ~15–31 h; Celestial 2,5T em ~49–93 h (Casual: não em 120 h); Absoluta = prestígio (ver §4) |
 | Dice | Forbidden ~0,1–0,3 h mais cedo | Forbidden no MESMO tempo (a aura nunca compete com a trilha de Dice) |
 
-**Recomendação:** Money côncavo ×1,5 / ×1,75 / ×2 / ×2,25 / ×2,5 com preços **1B / 25B / 250B / 2,5T / 10T**
-(a Absoluta foi simulada a 25T e ninguém chega em 120 h: recomendo 10T e validar com uma rodada de
-200 h antes de implementar). Speed NÃO deve ser 2x–4x: WalkSpeed 28 / 30 / 32 / 34 / 36 (base 22,
+**Recomendação (atualizada com a simulação de 200 h, §10):** Money côncavo ×1,5 / ×1,75 / ×2 /
+×2,25 / ×2,5 com preços **1B / 25B / 250B / 2,5T / 5T** — a 10T a Absoluta só é alcançada em
+200 h por 44% dos Ativos e 2% dos Otimizadores (vira meta do Pago); a 5T o F2P dedicado chega em
+~140–170 h. Speed NÃO deve ser 2x–4x: WalkSpeed 28 / 30 / 32 / 34 / 36 (base 22,
 teto 40). O multiplicador vale sempre o da MAIOR aura comprada, calculado no servidor.
 
 
@@ -53,7 +54,7 @@ Cenários:
 | Aura Imperial | 5B · 2,5x · 2,5x | 25B · ×1,75 |
 | Aura Divina | 100B · 3x · 3x | 250B · ×2 |
 | Aura Celestial | 5T · 3,5x · 3,5x | 2,5T · ×2,25 |
-| Aura Absoluta | 250T · 4x · 4x | 25T · ×2,5 (recomendação final: 10T, ver §4) |
+| Aura Absoluta | 250T · 4x · 4x | 25T · ×2,5 (200 h: 5T / 7,5T / 10T / 20T, ver §10) |
 
 ## 2. Resultados
 
@@ -187,7 +188,7 @@ Custo do Rebirth n (15M × 2,2ⁿ) para comparar com os preços: RB1 15.00M, RB3
 | Aura Imperial | **25B** | ×1,75 | RB11 (40B) | 6,4 h (Pago) · 10,6–11,8 h (F2P) | 13–42 h |
 | Aura Divina | **250B** | ×2 | RB14 (424B) | 15 h (Pago) · 25–31 h (F2P) | 60–200 h |
 | Aura Celestial | **2,5T** | ×2,25 | RB16–17 | 49 h (Pago) · 84–93 h (Ativo/Otim.) · Casual > 120 h | — |
-| Aura Absoluta | **10T** (simulado: 25T) | ×2,5 | RB18 (9,9T) | prestígio: > 120 h (25T: 0% em 120 h) | — |
+| Aura Absoluta | **5T** (200 h, §10; 10T só 44%/2% dos Ativos/Otimizadores) | ×2,5 | RB17 (4,5T) | 84 h (Pago) · 141–168 h (Ativo/Otim.) · Casual > 200 h | centenas de horas (prestígio) |
 
 Por quê:
 - **1ª aura depois do Forbidden (400M):** a trilha de Dice continua sendo o objetivo das primeiras
@@ -264,10 +265,119 @@ do visual equipado (`EquippedVisual`, validado ≤ `Owned`).
 
 ## 9. Próximos passos (quando aprovado)
 
-1. Confirmar preços/multiplicadores (e a Absoluta com uma rodada de 200 h).
+1. Confirmar preços/multiplicadores (200 h feita: §10 recomenda Absoluta 5T).
 2. Implementar: `PlayerAuraConfig`, save `PlayerAura = { Owned, EquippedVisual }` + migração,
    fator em `incomeMultiplier`, `PlayerAuraService` (compra idempotente), WalkSpeed por tier,
    visual, estação/painel, testes (servidor nunca aceita multiplicador do cliente; ordem dos tiers;
    offline mantém o teto; venda não multiplica).
 3. Regenerar `ECONOMY_BALANCE_ANALYSIS.md` com a aura aprovada.
 
+
+## 10. Simulação de 200 h (proposta R com Absoluta candidata 10T)
+
+Simulador oficial estendido até 200 h ativas (`tools/sim/analyze_magnate.luau` +
+`tools/sim/run_magnate_audit.py`): 48 jogadores por perfil (jogo atual × proposta) e 24 por
+variante de preço da Absoluta (5T / 7,5T / 10T / 20T), MESMAS sementes. Valores continuam
+**NÃO aprovados**; nada foi implementado. Lembrete de escala: 200 h ativas = ~600 dias de Casual
+(20 min/dia), ~100 dias de Ativo/Pago, ~50 dias de Otimizador.
+
+**Leitura**
+
+1. **Desperta → Celestial seguem bons em 200 h.** Desperta ~3–5,5 h (payback 0,9–3,1 h), Imperial
+   ~6–12 h, Divina ~15–31 h, Celestial ~48 h (Pago) / 84–96 h (Ativo/Otimizador) / ~131 h (Casual).
+   Cada degrau leva ~2–3× o anterior: desejável e difícil, sem degrau "óbvio" nem "impossível".
+2. **Efeito no Rebirth seguinte é pequeno** nas 3 primeiras (+0,3 a +2 h no ciclo da compra;
+   o Casual até acelera, porque a aura compõe). Na Celestial o Otimizador (que aceita adiar o
+   Rebirth até 3× o custo) segura o ciclo +29 h: é a decisão "aura × Rebirth" aparecendo — e ela
+   custa (ver estratégias no `MAGNATE_RANKING_AUDIT.md`).
+3. **Rebirths quase não mudam** (+0 a +1 em 40/80/120/200 h): a aura não "pula" a curva aprovada.
+4. **Dinheiro produzido em 200 h:** ~2,1–2,8× o jogo atual (Ativo $20,7T × $8,3T; Pago $44T ×
+   $16,3T; Casual $12,3T × $4,4T). Em 10 h a diferença é ×1,4–1,6 (a 1ª aura só chega depois do
+   Forbidden).
+
+**Absoluta: 10T é adequado? Não para o objetivo "difícil, mas alcançável".**
+
+| Preço | Pago | Ativo | Otimizador | Casual |
+|---|---|---|---|---|
+| 5T | 84 h | 141 h (100%) | 168 h (100%) | não em 200 h |
+| 7,5T | 96 h | 160 h (100%) | 196 h (33%) | não em 200 h |
+| **10T** | 122 h | 194 h (**44%**) | 198 h (**2%**) | não em 200 h |
+| 20T | 184 h (54%) | 0% | 0% | não em 200 h |
+
+A 10T a Absoluta vira, na prática, **meta do Pago**: em 200 h ativas só 44% dos Ativos e 2% dos
+Otimizadores chegam. **Recomendação: Absoluta = 5T** (2× a Celestial): o F2P dedicado chega em
+~140–170 h, o Pago em ~84 h (~36 h depois da Celestial) e ela continua sendo um sink de
+prestígio (payback de centenas de horas — ninguém compra "para lucrar"). 7,5T é a alternativa
+"modo difícil" se quiserem que só uma parte dos Otimizadores chegue em 200 h. O Casual não fecha
+a coleção em 200 h ativas com nenhum preço testado (ele chega na Celestial com ~131 h).
+
+
+<!-- GERADO200:INICIO -->
+
+_Gerado por `python3 tools/sim/run_magnate_audit.py --players 48 --side 24 --hours 200` — 48 jogadores por perfil (R10 e base), 24 nas variantes da Absoluta; MESMAS sementes; P50 salvo indicação._
+
+### 200 h — compra de cada aura (proposta R10: Absoluta 10T)
+
+| Perfil | Aura | Preço | Money | WalkSpeed | Comprou em 200 h | Compra P10 / P50 / P90 | Rebirths na compra | Renda/s na compra | Saldo na compra | Payback¹ | Ciclo de Rebirth da compra² |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Casual | Aura Desperta | $1.00B | ×1.5 | 28 | 100% | 5.3 h / 5.5 h / 5.7 h | 6 | $178.72K/s | $1.28B | 3.1 h | +0.3 h |
+| Casual | Aura Imperial | $25.00B | ×1.75 | 30 | 100% | 11.0 h / 11.6 h / 12.0 h | 10 | $1.02M/s | $25.94B | 40.9 h | -0.7 h |
+| Casual | Aura Divina | $250.00B | ×2 | 32 | 100% | 29.0 h / 31.4 h / 33.8 h | 13 | $2.47M/s | $252.97B | 196.7 h | -5.7 h |
+| Casual | Aura Celestial | $2.50T | ×2.25 | 34 | 100% | 120.3 h / 131.2 h / 135.7 h | 16 | $4.38M/s | $2.50T | 1269.6 h | — |
+| Casual | Aura Absoluta | $10.00T | ×2.5 | 36 | 0% | — / — / — | — | —/s | — | — | — |
+| Ativo | Aura Desperta | $1.00B | ×1.5 | 28 | 100% | 4.8 h / 5.0 h / 5.5 h | 5 | $331.47K/s | $1.00B | 1.7 h | +0.5 h |
+| Ativo | Aura Imperial | $25.00B | ×1.75 | 30 | 100% | 10.0 h / 10.8 h / 11.0 h | 9 | $1.66M/s | $26.30B | 25.1 h | +0.9 h |
+| Ativo | Aura Divina | $250.00B | ×2 | 32 | 100% | 24.2 h / 25.9 h / 26.3 h | 12 | $4.40M/s | $251.79B | 110.4 h | +2.0 h |
+| Ativo | Aura Celestial | $2.50T | ×2.25 | 34 | 100% | 81.6 h / 84.0 h / 88.0 h | 15 | $11.58M/s | $2.50T | 479.8 h | +5.6 h |
+| Ativo | Aura Absoluta | $10.00T | ×2.5 | 36 | 44% | 186.0 h / 194.0 h / 197.9 h | 17 | $23.83M/s | $10.00T | 1049.1 h | — |
+| Otimizador | Aura Desperta | $1.00B | ×1.5 | 28 | 100% | 4.2 h / 4.7 h / 5.2 h | 4 | $263.04K/s | $1.00B | 2.1 h | +0.8 h |
+| Otimizador | Aura Imperial | $25.00B | ×1.75 | 30 | 100% | 10.0 h / 11.6 h / 12.0 h | 9 | $1.85M/s | $25.01B | 22.6 h | +1.4 h |
+| Otimizador | Aura Divina | $250.00B | ×2 | 32 | 100% | 25.4 h / 28.0 h / 29.1 h | 11 | $3.89M/s | $250.03B | 124.9 h | +7.5 h |
+| Otimizador | Aura Celestial | $2.50T | ×2.25 | 34 | 100% | 84.2 h / 96.0 h / 99.1 h | 14 | $9.84M/s | $2.50T | 564.5 h | +29.1 h |
+| Otimizador | Aura Absoluta | $10.00T | ×2.5 | 36 | 2% | 198.4 h / 198.4 h / 198.4 h | 16 | $22.31M/s | $10.00T | 1120.4 h | — |
+| Pago | Aura Desperta | $1.00B | ×1.5 | 28 | 100% | 2.6 h / 3.0 h / 3.5 h | 5 | $608.86K/s | $1.01B | 0.9 h | +0.3 h |
+| Pago | Aura Imperial | $25.00B | ×1.75 | 30 | 100% | 6.0 h / 6.4 h / 7.0 h | 9 | $3.15M/s | $25.08B | 13.2 h | +0.8 h |
+| Pago | Aura Divina | $250.00B | ×2 | 32 | 100% | 14.0 h / 15.0 h / 16.2 h | 12 | $7.94M/s | $250.16B | 61.2 h | +1.1 h |
+| Pago | Aura Celestial | $2.50T | ×2.25 | 34 | 100% | 44.2 h / 48.4 h / 52.3 h | 15 | $19.78M/s | $2.51T | 280.9 h | +1.1 h |
+| Pago | Aura Absoluta | $10.00T | ×2.5 | 36 | 100% | 110.2 h / 122.3 h / 136.5 h | 17 | $32.65M/s | $10.02T | 765.7 h | -9.6 h |
+
+¹ tempo ATIVO para o ganho extra de renda (× novo ÷ × anterior − 1) pagar o preço, com a renda do momento (limite superior: a renda continua crescendo).
+² diferença de duração do ciclo de Rebirth em que a compra caiu, contra o MESMO ciclo (mesmo nº de Rebirth, mesma semente) no jogo atual: + = o Rebirth seguinte atrasou (o jogador juntou para a aura).
+
+### Dinheiro produzido e Rebirths (P50)
+
+| Perfil | Cenário | Produzido 10 h | Produzido 20 h | Produzido 40 h | Produzido 80 h | Produzido 120 h | Produzido 200 h | Rebirths 40/80/120/200 h | Renda/s 200 h |
+|---|---|---|---|---|---|---|---|---|---|
+| Casual | atual (sem auras) | $25.56B | $126.87B | $431.38B | $1.30T | $2.28T | $4.40T | 13 / 14 / 15 / 16 | $1.91M/s |
+| Casual | R10 | $39.95B | $265.48B | $1.05T | $3.29T | $5.83T | $12.27T | 13 / 15 / 16 / 17 | $6.21M/s |
+| Ativo | atual (sem auras) | $24.27B | $137.77B | $536.86B | $1.82T | $3.73T | $8.32T | 13 / 15 / 15 / 17 | $8.52M/s |
+| Ativo | R10 | $35.40B | $258.73B | $1.14T | $4.16T | $8.73T | $20.68T | 14 / 15 / 16 / 17 | $21.48M/s |
+| Otimizador | atual (sem auras) | $21.98B | $114.10B | $414.38B | $1.41T | $2.87T | $6.54T | 13 / 14 / 15 / 16 | $8.85M/s |
+| Otimizador | R10 | $30.94B | $194.85B | $754.55B | $2.75T | $5.42T | $13.69T | 13 / 14 / 15 / 16 | $20.23M/s |
+| Pago | atual (sem auras) | $99.89B | $418.29B | $1.48T | $4.56T | $8.13T | $16.30T | 14 / 16 / 16 / 17 | $14.30M/s |
+| Pago | R10 | $161.69B | $838.73B | $3.25T | $10.80T | $20.52T | $43.98T | 15 / 16 / 17 / 18 | $43.46M/s |
+
+"Produzido" = todo dinheiro que entrou (todas as fontes, inclusive venda e Jackpot).
+
+### Absoluta: 5T × 7,5T × 10T × 20T (o resto da proposta igual)
+
+| Perfil | Preço da Absoluta | Comprou em 200 h | Compra P10 / P50 / P90 | Rebirths na compra | Celestial (P50) |
+|---|---|---|---|---|---|
+| Casual | 5T | 0% | — / — / — | — | 131.0 h |
+| Casual | 7,5T | 0% | — / — / — | — | 131.0 h |
+| Casual | 10T | 0% | — / — / — | — | 131.2 h |
+| Casual | 20T | 0% | — / — / — | — | 131.0 h |
+| Ativo | 5T | 100% | 133.7 h / 140.6 h / 148.1 h | 16 | 84.0 h |
+| Ativo | 7,5T | 100% | 151.8 h / 159.5 h / 168.2 h | 16 | 84.0 h |
+| Ativo | 10T | 44% | 186.0 h / 194.0 h / 197.9 h | 17 | 84.0 h |
+| Ativo | 20T | 0% | — / — / — | — | 84.0 h |
+| Otimizador | 5T | 100% | 151.2 h / 168.1 h / 172.7 h | 15 | 96.0 h |
+| Otimizador | 7,5T | 33% | 182.5 h / 196.2 h / 198.2 h | 16 | 96.0 h |
+| Otimizador | 10T | 2% | 198.4 h / 198.4 h / 198.4 h | 16 | 96.0 h |
+| Otimizador | 20T | 0% | — / — / — | — | 96.0 h |
+| Pago | 5T | 100% | 76.5 h / 84.0 h / 92.7 h | 16 | 48.5 h |
+| Pago | 7,5T | 100% | 86.5 h / 95.6 h / 106.0 h | 16 | 48.5 h |
+| Pago | 10T | 100% | 110.2 h / 122.3 h / 136.5 h | 17 | 48.4 h |
+| Pago | 20T | 54% | 170.8 h / 183.5 h / 199.0 h | 18 | 48.5 h |
+
+<!-- GERADO200:FIM -->

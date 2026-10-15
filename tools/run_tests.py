@@ -17,6 +17,7 @@ Uso:  python tools\\run_tests.py
    tests/build_characters_lune_test.py: Tags incompatível em várias classes (fallback do Lune) e
    tests/auras_audit_test.py: auditor do Auras Pack com Animator.Tags incompatível (não quebra).
    tests/build_place_test.py: o build inclui ReplicatedStorage.CharacterAssets (10 pilotos).
+   tests/money_sources_test.py: toda origem de EconomyService.AddMoney classificada (Ranking Magnata).
 4. Se o Pillow estiver instalado, desenha build/map_preview.png (vista de cima).
 Os binários (versões fixas) são baixados para tools/bin na primeira vez.
 """
@@ -129,6 +130,7 @@ def main() -> None:
     compat = subprocess.run([sys.executable, "tests/build_characters_lune_test.py"], cwd=RAIZ)
     place = subprocess.run([sys.executable, "tests/build_place_test.py"], cwd=RAIZ)
     auras = subprocess.run([sys.executable, "tests/auras_audit_test.py"], cwd=RAIZ)
+    magnata = subprocess.run([sys.executable, "tests/money_sources_test.py"], cwd=RAIZ)
     catalogo = subprocess.run([sys.executable, "tools/characters/gen_launch_catalog.py", "--check"], cwd=RAIZ)
     print(f"[Catálogo de lançamento gerado em dia com catalog_proposal.json] {'OK' if catalogo.returncode == 0 else 'DESATUALIZADO'}")
 
@@ -140,7 +142,7 @@ def main() -> None:
         except ImportError:
             print("(Pillow não instalado: pulando a imagem do mapa)")
 
-    if erros or puros.returncode != 0 or mapa.returncode != 0 or servicos.returncode != 0 or gameplay.returncode != 0 or cliente.returncode != 0 or sessao.returncode != 0 or pack.returncode != 0 or personagens.returncode != 0 or reais.returncode != 0 or leitor.returncode != 0 or ferramenta.returncode != 0 or compat.returncode != 0 or place.returncode != 0 or auras.returncode != 0 or catalogo.returncode != 0:
+    if erros or puros.returncode != 0 or mapa.returncode != 0 or servicos.returncode != 0 or gameplay.returncode != 0 or cliente.returncode != 0 or sessao.returncode != 0 or pack.returncode != 0 or personagens.returncode != 0 or reais.returncode != 0 or leitor.returncode != 0 or ferramenta.returncode != 0 or compat.returncode != 0 or place.returncode != 0 or auras.returncode != 0 or magnata.returncode != 0 or catalogo.returncode != 0:
         sys.exit(1)
 
 

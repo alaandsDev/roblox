@@ -246,4 +246,27 @@ describe("EconomyModel: Player Auras (HIPÓTESE de simulação, não existe no j
 	end)
 end)
 
+describe("EconomyModel: LifetimeMoneyGenerated (protótipo do Ranking Magnata)", function()
+	it("Lifetime = soma das origens GENERATED; nunca diminui (nem no Rebirth); <= tudo que entrou", function()
+		local MoneyLedger = require("../tools/sim/MoneyLedger")
+		local res = M.run(short({ sessionsPerDay = { 3600 } }), 4 * 3600, 11, { checkpoints = { 3600, 7200, 10800, 14400 } })
+		local q = res.player
+		local generated, total = 0, 0
+		for source, v in q.earned do
+			total += v
+			if MoneyLedger.counts(source) then
+				generated += v
+			end
+		end
+		expect(q.lifetime).toBe(generated)
+		expect(q.lifetime <= total and q.lifetime > 0).toBeTruthy()
+		expect(#q.rebirthTimes >= 1).toBeTruthy()
+		local last = 0
+		for _, snap in res.snapshots do
+			expect(snap.lifetime >= last).toBeTruthy()
+			last = snap.lifetime
+		end
+	end)
+end)
+
 return true

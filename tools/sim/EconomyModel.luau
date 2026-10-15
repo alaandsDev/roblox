@@ -40,6 +40,7 @@ local PrismConfig = require("../../src/shared/Config/PrismConfig")
 local IndexConfig = require("../../src/shared/Config/IndexConfig")
 local BaseProgressionConfig = require("../../src/shared/Config/BaseProgressionConfig")
 local Rng = require("../../tests/Rng")
+local MoneyLedger = require("./MoneyLedger")
 
 local EconomyModel = {}
 
@@ -304,6 +305,9 @@ export type PlayerAuraOptions = {
 	tiers: { PlayerAuraTier },
 	-- poupa para a próxima aura (adiando o Rebirth) se preço <= saveRatio × custo do Rebirth
 	saveRatio: number,
+	-- "ratio" (padrão: regra saveRatio) | "efficiency" (estratégia D: aura ou Rebirth, o que der
+	-- mais renda por $ gasto)
+	strategy: string?,
 	-- false = só registra quando PODERIA pagar (nunca compra): linha de base
 	buy: boolean,
 }
@@ -381,6 +385,7 @@ local function newPlayer(profile: Profile): any
 		auraBoughtAt = {} :: { number },
 		auraAffordableAt = {} :: { number }, -- 1ª vez com saldo >= preço (mesmo sem comprar)
 		auraBuyState = {} :: { any }, -- renda/s, rebirths e Dice no momento da compra
+		lifetime = 0, -- LifetimeMoneyGenerated (protótipo MoneyLedger: só fontes GENERATED)
 	}
 end
 
@@ -395,6 +400,11 @@ local function earn(p: any, source: string, amount: number)
 	end
 	p.money += amount
 	add(p.earned, source, amount)
+	-- toda origem do simulador precisa estar classificada (falha fechada, como no protótipo)
+	assert(MoneyLedger.kindOf(source), "origem de dinheiro sem classe: " .. source)
+	if MoneyLedger.counts(source) then
+		p.lifetime += amount
+	end
 end
 
 local function spend(p: any, sink: string, amount: number): boolean
@@ -646,10 +656,38 @@ local function trackAuraAffordable(p: any, auras: PlayerAuraOptions?)
 	end
 end
 
+-- ganho PERMANENTE de renda do próximo Rebirth (+25%/rebirth e slot novo). O upgrade de Renda
+-- que reseta é recomprado em minutos, então não entra na conta.
+local function rebirthGain(p: any): number
+	local data = p.data
+	local current = formulas:incomeMultiplier(data)
+	local slotsNow = slotsAvailable(p)
+	data.Rebirths += 1
+	local after = formulas:incomeMultiplier(data)
+	local slotsNext = slotsAvailable(p)
+	data.Rebirths -= 1
+	local gain = after / math.max(current, 1e-9) - 1
+	if slotsNext > slotsNow and #p.slots > 0 then
+		gain += (slotsNext - slotsNow) / #p.slots
+	end
+	return gain
+end
+
 -- poupando para a próxima aura: adia o Rebirth (o Rebirth zeraria o dinheiro)
 local function savingForAura(p: any, auras: PlayerAuraOptions?): boolean
 	local tier = nextAura(p, auras)
-	return tier ~= nil and (auras :: any).buy and tier.price <= (auras :: any).saveRatio * nextRebirthCost(p)
+	if tier == nil or not (auras :: any).buy then
+		return false
+	end
+	local cost = nextRebirthCost(p)
+	if (auras :: any).strategy == "efficiency" then
+		-- D: compara renda extra por $ (aura × Rebirth); sem Rebirth disponível, junta para a aura
+		if cost == math.huge then
+			return true
+		end
+		return (tier.money / p.auraMult - 1) / tier.price >= rebirthGain(p) / cost
+	end
+	return tier.price <= (auras :: any).saveRatio * cost
 end
 
 local function buyAura(p: any, auras: PlayerAuraOptions?)
@@ -965,6 +1003,7 @@ local function snapshot(p: any, now: number): any
 		prismCharges = p.prismCharges,
 		duplicatesSold = p.duplicatesSold,
 		towerFloors = (p.towers.Ember or 0) + (p.towers.Storm or 0) + (p.towers.Void or 0),
+		lifetime = p.lifetime,
 		slots = count,
 		earnedBy = table.clone(p.earned),
 		spentBy = table.clone(p.spent),
