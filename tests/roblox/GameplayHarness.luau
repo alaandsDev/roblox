@@ -109,7 +109,7 @@ check(Env.waitFor(function()
 end), "jogadores carregados e com base")
 local d1 = S.PlayerDataService.GetData(p1)
 local d2 = S.PlayerDataService.GetData(p2)
-check(d1.Version == 4 and d1.NextUid == 1 and d1.Pity.Legendary == 0, "perfil novo no schema v4")
+check(d1.Version == 5 and d1.NextUid == 1 and d1.Pity.Legendary == 0, "perfil novo no schema v5")
 check(d1.EquippedDice == "Starter" and d1.OwnedDice.Starter == true, "SelectedDiceId padrão seguro: Starter (desbloqueado)")
 
 -- Controle de tempo e sorte

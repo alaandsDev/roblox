@@ -239,7 +239,8 @@ function HudController.Init()
 
 	-- DIREITA (reservado para monetização futura)
 	container(root, "Right", {
-		Size = UDim2.fromOffset(170, 420),
+		-- 4 atalhos de 100 px (VIP, Sorte, Jackpot, AURAS) + espaçamento
+		Size = UDim2.fromOffset(170, 448),
 		Position = UDim2.new(1, -12, 0.5, 0),
 		AnchorPoint = Vector2.new(1, 0.5),
 	})

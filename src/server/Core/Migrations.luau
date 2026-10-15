@@ -110,4 +110,41 @@ end
 -- Contexto da v4 (PlayerDataService injeta: Migrations.Context.investmentOf / .maxLevel)
 ;(Migrations :: any).Context = Context
 
+--[[
+	v5 (Systems pass): LifetimeMoneyGenerated + PLAYER AURAS.
+	  - RANKING MAGNATA — TEMPORADA 1: o save antigo NÃO tem histórico de geração. Lifetime = 0
+	    (nunca estimado por Money, Rebirth ou inventário); valor válido já existente é mantido
+	    (re-rodar a migração não zera ninguém); NaN/infinito/negativo/texto -> 0.
+	  - PlayerAura ausente/inválida -> { Owned = 0, Equipped = 0 }; Owned inteiro 0..5,
+	    Equipped 0..Owned.
+	  - LedgerOps ausente -> {}.
+]]
+local MAX_AURA_TIER = 5
+
+local function finite(n: any): boolean
+	return type(n) == "number" and n == n and n ~= math.huge and n ~= -math.huge
+end
+
+Migrations[5] = function(data)
+	if not finite(data.LifetimeMoneyGenerated) or data.LifetimeMoneyGenerated < 0 then
+		data.LifetimeMoneyGenerated = 0
+	end
+	data.LifetimeMoneyGenerated = math.floor(data.LifetimeMoneyGenerated)
+	if type(data.MagnateSeason) ~= "number" then
+		data.MagnateSeason = 1
+	end
+	if type(data.LedgerOps) ~= "table" then
+		data.LedgerOps = {}
+	end
+	local aura = data.PlayerAura
+	if type(aura) ~= "table" then
+		aura = {}
+		data.PlayerAura = aura
+	end
+	local owned = if finite(aura.Owned) then math.clamp(math.floor(aura.Owned), 0, MAX_AURA_TIER) else 0
+	local equipped = if finite(aura.Equipped) then math.clamp(math.floor(aura.Equipped), 0, owned) else owned
+	aura.Owned, aura.Equipped = owned, equipped
+	return data
+end
+
 return Migrations

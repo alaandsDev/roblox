@@ -154,7 +154,7 @@ local ORDER = {
 	"EconomyService", "InventoryService", "IndexService", "SellService", "RollService",
 	"DiceService", "UpgradeService", "StationService", "DailyService", "TowerService",
 	"RebirthService", "FusionService", "TradeService", "MissionService",
-	"BoostService", "JackpotService", "LeaderboardService", "AfkService",
+	"BoostService", "PlayerAuraService", "JackpotService", "LeaderboardService", "AfkService",
 }
 local S = {}
 for _, name in ORDER do
@@ -199,7 +199,7 @@ local CLIENT_ORDER = {
 	"RevealController", "RollController", "InventoryController", "DiceShopController", "UpgradesController",
 	"SellController", "IndexController", "DailyController", "OfflineController", "SettingsController", "TowerController",
 	"RebirthController", "FusionController", "TradeController", "MissionController", "StoreController", "MusicController",
-	"FeedbackController", "LodController", "AuraController", "TutorialController", "SessionController",
+	"FeedbackController", "LodController", "AuraController", "PlayerAuraController", "PlayerAuraShopController", "TutorialController", "SessionController",
 }
 local C = {}
 for _, name in CLIENT_ORDER do
@@ -1392,6 +1392,42 @@ do
 	end, 2), "FUNDIR cria a variante Prata")
 	UIKit.Windows.closeAll()
 
+	-- ⚡ FUNDIR MÁX.: 9 Normais + a Prata que já existe -> 4 fusões (3 Prata + 1 Ouro), UMA operação
+	for _ = 1, 9 do
+		S.InventoryService.Add(player, "abyss_warlock")
+	end
+	task.wait(0.3)
+	fusion = openWindow("Fusion")
+	local maxButton = find(fusion.content, "FuseMax_abyss_warlock")
+	check(maxButton ~= nil and find(fusion.content, "Fuse_abyss_warlock") ~= nil, "FUSÃO: botões FUNDIR 1× e ⚡ FUNDIR MÁX. lado a lado")
+	if maxButton then
+		click(maxButton)
+	end
+	local confirm = find(fusion.content, "FuseMaxConfirm")
+	check(Env.waitFor(function()
+		return confirm ~= nil and confirm.Visible and string.find(find(confirm, "Body").Text, "4 fusões", 1, true) ~= nil
+	end, 2), "FUNDIR MÁX.: prévia curta (4 fusões, maior resultado, o que resta)")
+	local viewports = 0
+	for _, d in confirm:GetDescendants() do
+		if d:IsA("ViewportFrame") then
+			viewports += 1
+		end
+	end
+	check(viewports == 0, "prévia sem ViewportFrames")
+	click(find(confirm, "Confirm"))
+	check(Env.waitFor(function()
+		local result = find(fusion.content, "FuseMaxResult")
+		return result ~= nil and result.Visible and string.find(find(result, "Body").Text, "4 FUSÕES", 1, true) ~= nil
+	end, 2), "FUNDIR MÁX.: UMA animação com o resumo (⚡ 4 FUSÕES REALIZADAS!)")
+	local gold = 0
+	for _, item in data.Inventory do
+		if item.Id == "abyss_warlock" and item.Variant == "Gold" then
+			gold += 1
+		end
+	end
+	check(gold == 1, "FUNDIR MÁX. usou a Prata que já existia e chegou ao Ouro")
+	UIKit.Windows.closeAll()
+
 	local rebirths = data.Rebirths
 	local rebirth = openWindow("Rebirth")
 	local doRebirth = find(rebirth.content, "DoRebirth")
@@ -1910,6 +1946,158 @@ do
 	SC._allowTeleport = false
 	env.stubs.TeleportService = nil
 	env.gameProxy.JobId = ""
+end
+
+------------------------------------------------------------------------------------
+-- PLAYER AURAS: loja, compra, visual no avatar (respawn sem duplicar), LOD, mobile, stress
+
+do
+	local PAC = C.PlayerAuraController
+	UIKit.Windows.closeAll()
+	check(find(gui("HUD"), "AurasShortcut") ~= nil, "HUD: atalho ✨ AURAS")
+	data.Money = 1e13
+	data.PlayerAura = { Owned = 0, Equipped = 0 }
+	S.PlayerDataService.Replicate(player, "PlayerAura")
+	S.PlayerAuraService.Apply(player)
+	task.wait(0.2)
+	local shop = openWindow("PlayerAuras")
+	local desperta = find(shop.content, "Aura_Desperta")
+	local imperial = find(shop.content, "Aura_Imperial")
+	check(desperta ~= nil and desperta:GetAttribute("State") == "Next" and imperial:GetAttribute("State") == "Locked", "loja: Desperta = PRÓXIMA (comprar), Imperial = 🔒 BLOQUEADA")
+	local summaryText = find(shop.content, "Summary").Text
+	check(string.find(summaryText, "Gerado", 1, true) ~= nil, "loja mostra 👑 Gerado (Lifetime)")
+	click(find(desperta, "Action"))
+	local confirmBuy = find(shop.content, "BuyConfirm")
+	check(confirmBuy.Visible and string.find(find(confirmBuy, "Body").Text, "Compra permanente", 1, true) ~= nil, "confirmação: AURA DESPERTA, preço, renda, velocidade, compra permanente")
+	click(find(confirmBuy, "Confirm"))
+	check(Env.waitFor(function()
+		return data.PlayerAura.Owned == 1 and data.Money == 1e13 - 1e9
+	end, 2), "comprou a Desperta pela UI (servidor cobrou $1B)")
+	check(Env.waitFor(function()
+		local card = find(shop.content, "Aura_Desperta")
+		return card ~= nil and card:GetAttribute("State") == "Equipped"
+	end, 2), "card vira ✓ EQUIPADA")
+	UIKit.Windows.closeAll()
+
+	-- visual no avatar
+	local function spawnCharacter()
+		local model = Instance.new("Model")
+		model.Name = player.Name
+		local root = Instance.new("Part")
+		root.Name = "HumanoidRootPart"
+		root.Size = roblox.Vector3.new(2, 2, 1)
+		root.Parent = model
+		model.Parent = env.real.Workspace
+		player.Character = model
+		return model, root
+	end
+	local function countFx(root)
+		local body, folders = 0, 0
+		for _, child in root:GetChildren() do
+			if child.Name == "PA_Body" then
+				body += 1
+			elseif child.Name == "PlayerAuraFX" then
+				folders += 1
+			end
+		end
+		return body, folders
+	end
+	local model, root = spawnCharacter()
+	PAC._scan()
+	local b, f = countFx(root)
+	check(b == 1 and f == 1, "Desperta aparece no avatar (corpo + efeitos)")
+	for i = 1, 4 do
+		model:Destroy()
+		model, root = spawnCharacter()
+		PAC._scan()
+		PAC._scan()
+		local b2, f2 = countFx(root)
+		check(b2 == 1 and f2 == 1, "respawn #" .. i .. ": aura reaplicada sem duplicar")
+	end
+	-- trocar de tier no mesmo corpo: limpa e remonta
+	S.PlayerDataService.Set(player, "PlayerAura", { Owned = 5, Equipped = 5 })
+	S.PlayerAuraService.Apply(player)
+	PAC._scan()
+	local b3, f3 = countFx(root)
+	local halo = root:FindFirstChild("PA_Halo1")
+	check(b3 == 1 and f3 == 1 and halo ~= nil, "Absoluta: remonta no mesmo corpo, com auréola/coroa exclusiva")
+	-- dono: sempre cheia, mesmo longe; mobile reduz
+	local own = PAC.EntryFor("P" .. tostring(player.UserId))
+	root.CFrame = roblox.CFrame.new(0, 3, 500)
+	PAC._step(0.05)
+	check(own ~= nil and own.lod == "Full", "a própria aura fica cheia mesmo longe da câmera")
+	local fullRate = PAC.Stats().rate
+	PAC._setMobile(true)
+	PAC._step(0.05)
+	local mobileRate = PAC.Stats().rate
+	check(mobileRate > 0 and math.abs(mobileRate - fullRate * 0.5) < 0.01 * fullRate, string.format("mobile: emissão × 0,5 (%.0f -> %.0f/s)", fullRate, mobileRate))
+	PAC._setMobile(false)
+	-- visual antigo: bônus continua o maior
+	S.PlayerAuraService.Equip(player, 1)
+	PAC._scan()
+	check(root:FindFirstChild("PA_Halo1") == nil and root:FindFirstChild("PA_Body") ~= nil and S.BaseService.WalkSpeedFor(player) == 36, "visual Desperta com Absoluta comprada: efeito antigo, velocidade 36")
+	S.PlayerAuraService.Equip(player, 0)
+	PAC._scan()
+	check(root:FindFirstChild("PA_Body") == nil and root:FindFirstChild("PlayerAuraFX") == nil, "sem visual: nada no avatar")
+
+	-- STRESS: 1 / 5 / 10 Absolutas (bonecos de outros jogadores) perto, médio e longe
+	local CS = env.stubs.CollectionService
+	local hosts = {}
+	local function host(i, pos)
+		local m = Instance.new("Model")
+		m.Name = "Host" .. i
+		local r = Instance.new("Part")
+		r.Name = "HumanoidRootPart"
+		r.CFrame = roblox.CFrame.new(pos)
+		r.Parent = m
+		m:SetAttribute("PlayerAuraVisual", 5)
+		m.Parent = env.real.Workspace
+		CS:AddTag(m, "PlayerAuraHost")
+		table.insert(hosts, m)
+		return m
+	end
+	camera.CFrame = roblox.CFrame.new(0, 5, 0)
+	local report = {}
+	for _, n in { 1, 5, 10 } do
+		for _, m in hosts do
+			CS:RemoveTag(m, "PlayerAuraHost")
+			m:Destroy()
+		end
+		table.clear(hosts)
+		for i = 1, n do
+			host(i, roblox.Vector3.new((i - 5) * 4, 3, -12))
+		end
+		PAC._scan()
+		PAC._step(0.05)
+		local st = PAC.Stats()
+		table.insert(report, string.format("%d Absolutas perto: %d emissores, %.0f partículas/s, %d beams, %d trails, %d attachments, %d luzes, %d highlights, %d conexão", n, st.emitters, st.rate, st.beams, st.trails, st.attachments, st.lights, st.highlights, st.connections))
+		check(st.auras == n and st.full == n and st.highlights == 0, n .. " Absolutas perto: todas cheias, zero Highlight")
+	end
+	for _, line in report do
+		print("    " .. line)
+	end
+	-- 10 Absolutas a ~60 studs (reduzidas) e a ~200 (desligadas)
+	for _, m in hosts do
+		m.HumanoidRootPart.CFrame = roblox.CFrame.new(0, 3, -60)
+	end
+	PAC._step(0.05)
+	local mid = PAC.Stats()
+	check(mid.reduced == 10, "10 Absolutas a 60 studs: LOD reduzido (" .. string.format("%.0f", mid.rate) .. " partículas/s)")
+	for _, m in hosts do
+		m.HumanoidRootPart.CFrame = roblox.CFrame.new(0, 3, -200)
+	end
+	PAC._step(0.05)
+	local far = PAC.Stats()
+	check(far.off == 10 and far.rate == 0 and far.beams == 0, "10 Absolutas a 200 studs: desligadas (0 partículas, 0 beams)")
+	print(string.format("    10 Absolutas: perto %s · 60 studs %.0f/s · 200 studs %.0f/s", report[3], mid.rate, far.rate))
+	for _, m in hosts do
+		CS:RemoveTag(m, "PlayerAuraHost")
+		m:Destroy()
+	end
+	PAC._scan()
+	check(PAC.Stats().auras == 0, "bonecos removidos: nenhuma aura sobra (sem vazamento)")
+	model:Destroy()
+	player.Character = nil
 end
 
 running = false

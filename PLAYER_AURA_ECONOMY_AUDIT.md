@@ -1,5 +1,8 @@
 # PLAYER AURAS — auditoria econômica (proposta, NÃO implementada)
 
+> **ATUALIZAÇÃO (Systems pass):** implementado com a proposta R e **Absoluta = $5T** (decisão final).
+> Ver `SYSTEMS_PASS.md`. O texto abaixo é o registro da auditoria original.
+
 > **Status:** só simulação e proposta. Nada de Player Aura existe no jogo: nenhum save, serviço,
 > remote, UI ou multiplicador foi adicionado. IncomeCurve, taxa 1,11, pivô 0,10, preços dos Dice,
 > RNG, pesos, pity, Luck, Rebirth e a economia atual **não foram alterados** (o simulador ganhou

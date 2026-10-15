@@ -43,6 +43,10 @@ O `SimuladorEscudo_v1` do protótipo **não é lido nem migrado**.
 | `Boosts` | map | `{ Luck = { Multiplier, ExpiresAt } }` |
 | `Tutorial` | number | passos do tutorial concluídos (0..7; 7 = terminado). Só avança (`SetTutorialStep`); jogadores com 50+ rolls pulam |
 | `RevealViews` | map | `{ [rarity] = vezes }` (libera PULAR na cinemática) |
+| `LifetimeMoneyGenerated` | number | Riqueza GERADA (só origens GENERATED de `MoneySourceConfig`) desde a Temporada 1 do Ranking Magnata. Nunca diminui; não reseta no Rebirth. **v5:** saves antigos começam em 0 (sem estimar histórico) |
+| `MagnateSeason` | number | Temporada do Magnata (1) |
+| `LedgerOps` | { string } | ids de operação de dinheiro já aplicados (idempotência do `AddMoney` com opId; privado, até 100) |
+| `PlayerAura` | { Owned, Equipped } | Player Aura do AVATAR: `Owned` = maior tier comprado (0..5, sequencial, permanente); `Equipped` = visual (0..Owned). Bônus de renda/velocidade sempre do `Owned`. **v5:** ausente/inválido -> { 0, 0 } |
 | `Settings.AutoRoll`, `HideRollAnimation`, `CameraShake`, `ReducedEffects` | boolean | Configurações do cliente. `AutoRoll` = escolha do jogador; limpo numa entrada normal e só usado para religar o AUTO numa reconexão pronta (AFK_RESILIENCE.md) |
 | `Settings.AutoSell` | map | `{ Common..Divine = boolean }` (Secreto nunca) |
 | `TowerTeam` | lista | Até 5 uids do time da torre (vazio = automático) |

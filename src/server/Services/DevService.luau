@@ -38,6 +38,14 @@ local EconomyService = require(script.Parent.EconomyService)
 local StationService = require(script.Parent.StationService)
 local AnalyticsService = require(script.Parent.AnalyticsService)
 local AfkService = require(script.Parent.AfkService)
+local PlayerAuraService = require(script.Parent.PlayerAuraService)
+local LeaderboardService = require(script.Parent.LeaderboardService)
+local FusionService = require(script.Parent.FusionService)
+local PlayerAuraConfig = require(Shared.Config.PlayerAuraConfig)
+local MagnateConfig = require(Shared.Config.MagnateConfig)
+local NumberFormatterDev = require(Shared.Modules.NumberFormatter)
+local FusionCoreDev = require(game:GetService("ServerScriptService").Server.Core.FusionCore)
+local SaleCoreDev = require(Shared.Modules.SaleCore)
 local AfkConfig = require(Shared.Config.AfkConfig)
 local ReconnectPolicy = require(Shared.Modules.ReconnectPolicy)
 
@@ -1039,6 +1047,198 @@ DevService.Register("ReconnectPlan", "(código Enum.ConnectionError, ex. Disconn
 		plan:failed("Failure")
 	end
 	return `{tostring(code)}: {kind} ({reason}) -> {table.concat(steps, " -> ")}`
+end)
+
+------------------------------------------------------------------------------------
+-- PLAYER AURAS / MAGNATA / FUNDIR MÁX. (Studio)
+
+local function auraTierOf(value: any): number?
+	if type(value) == "number" then
+		return if PlayerAuraConfig.List[value] then value else nil
+	end
+	local tier = PlayerAuraConfig.ById[tostring(value)]
+	return if tier then tier.Tier else nil
+end
+
+-- Boneco simples de avatar (R6 em blocos, ancorado) que recebe a Player Aura pelo cliente
+local function auraDummy(parent: Instance, cf: CFrame, tier: number, label: string): Model
+	local model = Instance.new("Model")
+	model.Name = "AuraDummy_" .. label
+	local function part(name: string, size: Vector3, offset: Vector3, color: Color3): Part
+		local p = Instance.new("Part")
+		p.Name = name
+		p.Size = size
+		p.Anchored = true
+		p.CanCollide = false
+		p.Color = color
+		p.CFrame = cf * CFrame.new(offset)
+		p.Parent = model
+		return p
+	end
+	local root = part("HumanoidRootPart", Vector3.new(2, 2, 1), Vector3.new(0, 3, 0), Color3.new(1, 1, 1))
+	root.Transparency = 1
+	part("Torso", Vector3.new(2, 2, 1), Vector3.new(0, 3, 0), Color3.fromRGB(60, 120, 220))
+	part("Head", Vector3.new(1.2, 1.2, 1.2), Vector3.new(0, 4.6, 0), Color3.fromRGB(255, 205, 150))
+	part("LeftArm", Vector3.new(1, 2, 1), Vector3.new(-1.5, 3, 0), Color3.fromRGB(255, 205, 150))
+	part("RightArm", Vector3.new(1, 2, 1), Vector3.new(1.5, 3, 0), Color3.fromRGB(255, 205, 150))
+	part("LeftLeg", Vector3.new(1, 2, 1), Vector3.new(-0.5, 1, 0), Color3.fromRGB(40, 40, 60))
+	part("RightLeg", Vector3.new(1, 2, 1), Vector3.new(0.5, 1, 0), Color3.fromRGB(40, 40, 60))
+	model.PrimaryPart = root
+	model:SetAttribute("PlayerAuraVisual", tier)
+	galleryLabel(model, label, "Player Aura")
+	model.Parent = parent
+	game:GetService("CollectionService"):AddTag(model, "PlayerAuraHost")
+	return model
+end
+
+local function auraFolder(): Folder
+	local ws = game:GetService("Workspace")
+	local old = ws:FindFirstChild("DevPlayerAuras")
+	if old then
+		old:Destroy()
+	end
+	local folder = Instance.new("Folder")
+	folder.Name = "DevPlayerAuras"
+	folder.Parent = ws
+	return folder
+end
+
+local function frontOf(player: Player?, distance: number): (Vector3, Vector3, Vector3)
+	local root = player and player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	local origin = if root and root:IsA("BasePart") then root.CFrame else CFrame.new(0, 3, 0)
+	local look = Vector3.new(origin.LookVector.X, 0, origin.LookVector.Z)
+	look = if look.Magnitude > 0.01 then look.Unit else Vector3.new(0, 0, -1)
+	return origin.Position + look * distance - Vector3.new(0, 3, 0), look, look:Cross(Vector3.new(0, 1, 0))
+end
+
+DevService.Register("PlayerAuraStatus", "([player]) Player Aura: comprada, visual, renda ×, WalkSpeed, próxima/preço, Money e Lifetime", function(...)
+	local player = splitPlayer(...)
+	assert(player, "sem jogador")
+	local st = PlayerAuraService.Status(player)
+	return string.format(
+		"PlayerAura %s: comprada %s (tier %d) · visual %s · renda ×%.2f · WalkSpeed %d · próxima %s %s · Money %s · 👑 Lifetime %s",
+		player.Name, tostring(st.ownedId or "nenhuma"), st.owned or 0, tostring(st.equippedId or "nenhum"), st.multiplier or 1, st.walkSpeed or 0,
+		tostring(st.nextId or "—"), if st.nextPrice then NumberFormatterDev.money(st.nextPrice) else "", NumberFormatterDev.money(st.money or 0), NumberFormatterDev.money(st.lifetime or 0)
+	)
+end)
+DevService.Register("SetPlayerAura", "([player], tier 0..5 ou nome) Studio: define a maior aura comprada (sem dinheiro) para testar bônus/velocidade/visual", function(...)
+	local player, value = splitPlayer(...)
+	assert(player, "sem jogador")
+	local tier = if value == 0 or value == "0" then 0 else auraTierOf(value)
+	assert(tier, "tier inválido")
+	PlayerDataService.Set(player, "PlayerAura", { Owned = tier, Equipped = tier })
+	PlayerAuraService.Apply(player)
+	return "ok: " .. tostring(tier)
+end)
+DevService.Register("PlayerAuraPreview", "([player], Desperta|Imperial|Divina|Celestial|Absoluta|nenhuma) SÓ o visual no próprio avatar (sem bônus; volta com SetPlayerAura/EQUIPAR)", function(...)
+	local player, value = splitPlayer(...)
+	assert(player, "sem jogador")
+	local tier = auraTierOf(value) or 0
+	player:SetAttribute("PlayerAuraVisual", tier)
+	return "visual: " .. (if tier > 0 then PlayerAuraConfig.List[tier].Id else "nenhum")
+end)
+DevService.Register("PlayerAuraLineup", "([player], distância=16) as 5 Player Auras lado a lado à frente do jogador (bonecos); apague com PlayerAuraClear", function(...)
+	local player, distance = splitPlayer(...)
+	local folder = auraFolder()
+	local center, look, right = frontOf(player, tonumber(distance) or 16)
+	local spacing = 7
+	for i, tier in PlayerAuraConfig.List do
+		local pos = center + right * ((i - 3) * spacing)
+		auraDummy(folder, CFrame.lookAt(pos, pos - look), tier.Tier, string.upper(tier.Id))
+	end
+	return "5 Player Auras em Workspace.DevPlayerAuras"
+end)
+DevService.Register("PlayerAuraStress", "([player], quantidade=10, tier=Absoluta) N bonecos com a MESMA Player Aura juntos (stress/LOD)", function(...)
+	local player, count, value = splitPlayer(...)
+	local n = math.clamp(tonumber(count) or 10, 1, 20)
+	local tier = auraTierOf(value or "Absoluta") or 5
+	local folder = auraFolder()
+	local center, look, right = frontOf(player, 18)
+	for i = 1, n do
+		local row, col = (i - 1) // 5, (i - 1) % 5
+		local pos = center + right * ((col - 2) * 5) + look * (row * 6)
+		auraDummy(folder, CFrame.lookAt(pos, pos - look), tier, `{PlayerAuraConfig.List[tier].Id} #{i}`)
+	end
+	return `{n} × {PlayerAuraConfig.List[tier].Id} em Workspace.DevPlayerAuras`
+end)
+DevService.Register("PlayerAuraClear", "() remove Workspace.DevPlayerAuras", function()
+	local old = game:GetService("Workspace"):FindFirstChild("DevPlayerAuras")
+	if old then
+		old:Destroy()
+	end
+	return "ok"
+end)
+
+DevService.Register("MagnateStatus", "([player]) 👑 Lifetime gerado, Money atual, temporada, pontuação gravada e posição local", function(...)
+	local player = splitPlayer(...)
+	assert(player, "sem jogador")
+	local d = data(player)
+	local board = LeaderboardService.Boards[4]
+	local top = LeaderboardService.LocalTop("Magnate", MagnateConfig.Top)
+	local rank = "—"
+	for i, entry in top do
+		if entry.name == player.DisplayName then
+			rank = tostring(i)
+		end
+	end
+	return string.format("Magnata T%d %s: Lifetime %s · Money %s · pontuação %d (×%d) · posição local #%s · gravações de ranking %d",
+		MagnateConfig.Season, player.Name, NumberFormatterDev.money(d.LifetimeMoneyGenerated or 0), NumberFormatterDev.money(d.Money),
+		LeaderboardService.Score(board, d), MagnateConfig.ScoreUnit, rank, LeaderboardService.Writes)
+end)
+DevService.Register("MagnateBoardPreview", "() preenche o painel 👑 MAGNATA com 10 nomes/valores de exemplo (só visual; o próximo refresh volta ao real)", function()
+	local sample = {}
+	local values = { 12.4e12, 9.8e12, 7.1e12, 3.3e12, 980e9, 450e9, 120e9, 33e9, 4.2e9, 750e6 }
+	for i, v in values do
+		sample[i] = { name = (if i == 2 then "NomeMuitoLongoDeJogador_" else "Jogador") .. i, value = v }
+	end
+	LeaderboardService.Render("Panel4", sample, MagnateConfig.Top, true)
+	return "painel Panel4 com 10 linhas de exemplo"
+end)
+DevService.Register("MagnateSimulateIncome", "([player], segundos=600) Studio: credita N segundos da renda/s ATUAL como coleta legítima (Collector) — sobe Money e Lifetime", function(...)
+	local player, seconds = splitPlayer(...)
+	assert(player, "sem jogador")
+	local d = data(player)
+	local amount = math.floor(Formulas:incomePerSecond(d) * (tonumber(seconds) or 600))
+	EconomyService.AddMoney(player, amount, "Collector")
+	return "gerado " .. NumberFormatterDev.money(amount) .. " · Lifetime " .. NumberFormatterDev.money(d.LifetimeMoneyGenerated)
+end)
+
+DevService.Register("FuseMaxPreview", "([player], characterId?) prévia do FUNDIR MÁX. (sem mudar nada); sem id = a família com mais fusões", function(...)
+	local player, characterId = splitPlayer(...)
+	assert(player, "sem jogador")
+	local d = data(player)
+	local function investedOf(item)
+		return SaleCoreDev.invested(Formulas, item)
+	end
+	local ids = {}
+	if characterId then
+		ids = { characterId }
+	else
+		local seen = {}
+		for _, item in d.Inventory do
+			if not seen[item.Id] then
+				seen[item.Id] = true
+				table.insert(ids, item.Id)
+			end
+		end
+	end
+	local best, bestId = nil, nil
+	local t0 = os.clock()
+	for _, id in ids do
+		local plan = FusionCoreDev.fuseMaxPlan(d, id, FusionService.Configs, investedOf, d.Money)
+		if plan and (not best or plan.fusions > best.fusions) then
+			best, bestId = plan, id
+		end
+	end
+	if not best then
+		return "nada para fundir"
+	end
+	local parts = {}
+	for variant, n in best.created do
+		table.insert(parts, `{n}× {variant}`)
+	end
+	return string.format("FUNDIR MÁX. %s: %d fusões, maior %s, cria [%s], custo %s%s (%.1f ms)", tostring(bestId), best.fusions, tostring(best.top), table.concat(parts, ", "),
+		NumberFormatterDev.money(best.cost), if best.limitedByMoney then " (limitado pelo dinheiro)" else "", (os.clock() - t0) * 1000)
 end)
 
 function DevService.Run(name: string, ...: any): any

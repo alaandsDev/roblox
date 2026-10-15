@@ -34,6 +34,8 @@ local ORDER = {
 	"FeedbackController",
 	"LodController",
 	"AuraController",
+	"PlayerAuraController", -- Player Auras (avatares): visual central com LOD
+	"PlayerAuraShopController", -- janela PLAYER AURAS (comprar/equipar)
 	"TutorialController",
 	"SessionController", -- AFK Resilience: atividade real (telemetria), indicador AFK, AUTO após reconectar, reconexão limitada
 }

@@ -32,6 +32,7 @@ local ORDER = {
 	"TradeService",
 	"MissionService",
 	"BoostService",
+	"PlayerAuraService", -- Player Auras (avatar): compra permanente, multiplicador/velocidade do maior tier
 	"JackpotService",
 	"LeaderboardService",
 	"AfkService", -- resiliência de sessão (AFK só telemetria; AUTO depois de reconectar)

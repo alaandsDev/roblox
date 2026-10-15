@@ -106,6 +106,7 @@ local EVENTS = {
 	Instance = { "Destroying", "ChildAdded", "ChildRemoved", "AncestryChanged" },
 	GuiButton = { "Activated", "MouseEnter", "MouseLeave", "MouseButton1Down", "MouseButton1Up", "MouseButton1Click" },
 	Sound = { "Ended" },
+	Humanoid = { "Died" },
 }
 for className, names in EVENTS do
 	for _, name in names do

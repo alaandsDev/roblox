@@ -31,6 +31,7 @@ local Shared = ReplicatedStorage.Shared
 local MapConfig = require(Shared.Config.MapConfig)
 local BaseConfig = require(Shared.Config.BaseConfig)
 local MovementConfig = require(Shared.Config.MovementConfig)
+local Formulas = require(Shared.Modules.GameFormulas)
 local Logger = require(Shared.Modules.Logger)
 local Signal = require(Shared.Modules.Signal)
 local Net = require(Shared.Modules.Net)
@@ -363,6 +364,21 @@ BaseService.Dev.ResetPlayerBase = BaseService.Dev.Reset
 
 ------------------------------------------------------------------------------------
 
+-- WalkSpeed do jogador (Formulas:walkSpeed: base 22 ou a da MAIOR Player Aura, teto 40)
+function BaseService.WalkSpeedFor(player: Player): number
+	local speed = Formulas:walkSpeed(PlayerDataService.GetData(player))
+	return math.min(speed, MovementConfig.MaxWalkSpeed)
+end
+
+-- Reaplica no personagem atual (ex.: logo depois de comprar uma Player Aura)
+function BaseService.ApplyWalkSpeed(player: Player)
+	local character = (player :: any).Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	if humanoid then
+		humanoid.WalkSpeed = BaseService.WalkSpeedFor(player)
+	end
+end
+
 function BaseService.Init()
 	-- O personagem só é carregado pelo SpawnCoordinator (depois da base atribuída)
 	Players.CharacterAutoLoads = false
@@ -378,8 +394,9 @@ local function watchPlayer(player: Player)
 		if not humanoid or not root or player.Character ~= character then
 			return
 		end
-		-- velocidade base do jogo (MovementConfig; servidor define, o cliente nunca escolhe)
-		humanoid.WalkSpeed = MovementConfig.BaseWalkSpeed
+		-- velocidade do jogo: base (MovementConfig) ou a da maior Player Aura comprada. O servidor
+		-- define a cada spawn (morte/respawn reaplica); o cliente nunca escolhe
+		humanoid.WalkSpeed = BaseService.WalkSpeedFor(player)
 		humanoid.Died:Once(function()
 			coordinator:died(player)
 			task.delay(Players.RespawnTime, function()

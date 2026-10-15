@@ -7,7 +7,7 @@ local DataConfig = {
 	StoreName = "RollLegends_PlayerData_v1",
 	KeyPrefix = "Player_",
 
-	SchemaVersion = 4,
+	SchemaVersion = 5,
 
 	-- Salvamento automático (segundos entre cada rodada)
 	AutosaveInterval = 120,
@@ -39,9 +39,17 @@ local DataConfig = {
 -- Formato inicial do perfil. Tabelas vazias são "mapas dinâmicos": o conteúdo não é
 -- comparado com o modelo, só o tipo.
 DataConfig.Template = {
-	Version = 4,
+	Version = 5,
 
 	Money = 0,
+	-- Riqueza GERADA desde a Temporada 1 do Ranking Magnata (só fontes GENERATED de
+	-- MoneySourceConfig; nunca diminui; não reseta no Rebirth). Saves antigos: 0 (v5).
+	LifetimeMoneyGenerated = 0,
+	MagnateSeason = 1,
+	-- ids de operação de dinheiro já aplicados (idempotência do AddMoney com opId)
+	LedgerOps = {},
+	-- PLAYER AURAS: Owned = maior tier comprado (0..5, sequencial); Equipped = visual (0 = nenhum, <= Owned)
+	PlayerAura = { Owned = 0, Equipped = 0 },
 	Gems = 0,
 	RebirthTokens = 0,
 
@@ -136,7 +144,7 @@ DataConfig.Template = {
 }
 
 -- Chaves que nunca são enviadas ao cliente
-DataConfig.PrivateKeys = { "ProcessedReceipts" }
+DataConfig.PrivateKeys = { "ProcessedReceipts", "LedgerOps" }
 
 -- Configurações que o cliente pode alterar (sempre booleanas)
 DataConfig.ClientSettings = { "AutoRoll", "HideRollAnimation", "CameraShake", "ReducedEffects", "Music" }

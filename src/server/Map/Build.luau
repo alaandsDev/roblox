@@ -190,6 +190,9 @@ function Build.rankingBoard(part: BasePart, face: Enum.NormalId, title: string, 
 	local titleLabel = label(gui, "Title", title, 0.94, Enum.TextXAlignment.Center, 30, titleColor)
 	titleLabel.Size = UDim2.fromScale(0.94, 0.14)
 	titleLabel.LayoutOrder = 0
+	-- 5 linhas: 0,12 cada (como sempre); mais linhas (Magnata top 10) dividem o espaço
+	local rowHeight = math.min(0.12, 0.78 / rows)
+	local textSize = math.floor(24 * math.min(1, rowHeight / 0.1))
 	for i = 1, rows do
 		local row = Instance.new("Frame")
 		row.Name = "Row" .. i
@@ -197,7 +200,7 @@ function Build.rankingBoard(part: BasePart, face: Enum.NormalId, title: string, 
 		row.BackgroundTransparency = if i % 2 == 0 then 1 else 0.82
 		row.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 		row.BorderSizePixel = 0
-		row.Size = UDim2.fromScale(0.94, 0.12)
+		row.Size = UDim2.fromScale(0.94, rowHeight)
 		row.Parent = gui
 		local rowLayout = Instance.new("UIListLayout")
 		rowLayout.FillDirection = Enum.FillDirection.Horizontal
@@ -206,9 +209,9 @@ function Build.rankingBoard(part: BasePart, face: Enum.NormalId, title: string, 
 		rowLayout.Padding = UDim.new(0.02, 0)
 		rowLayout.Parent = row
 		local columns = Build.RankingRowColumns
-		label(row, "Rank", i .. ".", columns.Rank, Enum.TextXAlignment.Right, 24).LayoutOrder = 1
-		label(row, "PlayerName", "—", columns.PlayerName, Enum.TextXAlignment.Left, 24).LayoutOrder = 2
-		label(row, "Value", "", columns.Value, Enum.TextXAlignment.Right, 24, Color3.fromRGB(255, 220, 80)).LayoutOrder = 3
+		label(row, "Rank", i .. ".", columns.Rank, Enum.TextXAlignment.Right, textSize).LayoutOrder = 1
+		label(row, "PlayerName", "—", columns.PlayerName, Enum.TextXAlignment.Left, textSize).LayoutOrder = 2
+		label(row, "Value", "", columns.Value, Enum.TextXAlignment.Right, textSize, Color3.fromRGB(255, 220, 80)).LayoutOrder = 3
 	end
 	return gui
 end

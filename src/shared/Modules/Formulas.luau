@@ -137,10 +137,40 @@ function Formulas:runtimeAdd(data: any, kind: string): number
 	return if type(value) == "number" then value else 0
 end
 
+-- PLAYER AURA: maior tier COMPRADO (0..MaxTier). O visual equipado não importa aqui.
+function Formulas:playerAuraTier(data: any): number
+	local auras = self.c.PlayerAuras
+	local aura = data.PlayerAura
+	local owned = if type(aura) == "table" then aura.Owned else nil
+	if not auras or type(owned) ~= "number" or owned ~= owned then
+		return 0
+	end
+	return math.clamp(math.floor(owned), 0, auras.MaxTier)
+end
+
+-- Multiplicador de renda da Player Aura (×1 sem aura). Não empilha entre auras.
+function Formulas:playerAuraMultiplier(data: any): number
+	local tier = self:playerAuraTier(data)
+	return if tier > 0 then self.c.PlayerAuras.List[tier].MoneyMultiplier else 1
+end
+
+-- WalkSpeed do avatar: base do jogo ou a da MAIOR aura comprada, sempre <= MaxWalkSpeed
+function Formulas:walkSpeed(data: any?): number
+	local movement = self.c.Movement
+	local base = if movement then movement.BaseWalkSpeed else 16
+	local tier = if data then self:playerAuraTier(data) else 0
+	local speed = if tier > 0 then math.max(base, self.c.PlayerAuras.List[tier].WalkSpeed) else base
+	return if movement then math.min(speed, movement.MaxWalkSpeed) else speed
+end
+
+-- Fator ÚNICO da renda/s: upgrade Renda × Rebirth × sessão (VIP/amigos) × Player Aura.
+-- Tudo que é "renda/s" ou "N segundos de renda" (coletor, offline, Torre, Missão, Diário,
+-- Jackpot) passa por aqui; venda, refund, troca, fusão e custos NÃO.
 function Formulas:incomeMultiplier(data: any): number
 	return (1 + level(data, "Income") * self.c.Upgrades.ById.Income.PerLevel)
 		* self:rebirthMultiplier(data, "Income")
 		* self:runtime(data, "Income")
+		* self:playerAuraMultiplier(data)
 end
 
 function Formulas:rebirthCost(rebirths: number): number?

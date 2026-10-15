@@ -25,6 +25,7 @@ local MapConfig = require(Shared.Config.MapConfig)
 local BaseConfig = require(Shared.Config.BaseConfig)
 local MapLayout = require(Shared.Modules.MapLayout)
 local AssetLoader = require(Shared.Modules.AssetLoader)
+local MagnateConfig = require(ReplicatedStorage.Shared.Config.MagnateConfig)
 local Localization = require(Shared.Localization.Localization)
 
 local Build = require(script.Parent.Build)
@@ -969,7 +970,8 @@ local function buildSocial(parent: Folder)
 		Build.prompt(tableTop, "Trade", Localization.t("map.trade"), Localization.t("prompt.open"))
 	end
 
-	-- Rankings: pódio (ouro/prata/bronze) na frente de 3 painéis
+	-- Rankings: pódio (ouro/prata/bronze) na frente de 4 painéis: os 3 de sempre + 👑 MAGNATA
+	-- (Temporada 1, top 10, moldura dourada) na ponta do MESMO arco — nada foi substituído
 	local boards = Build.model("Leaderboards", parent)
 	local lo = facingHub(s.Leaderboards)
 	-- Arco côncavo virado para o Hub. ANTES: raio 4 com ±28° => centros a ~1,9 stud e painéis de
@@ -978,21 +980,41 @@ local function buildSocial(parent: Folder)
 	local BOARD_RADIUS = 24
 	local BOARD_SPACING = 11 -- moldura 9,8 + folga
 	local step = 2 * math.asin(BOARD_SPACING / (2 * BOARD_RADIUS))
-	for i, key in { "map.lb_rebirths", "map.lb_tower", "map.lb_rolls" } do
-		local panelCf = lo * CFrame.new(0, 0, 4 - BOARD_RADIUS) * CFrame.Angles(0, (i - 2) * step, 0) * CFrame.new(0, 0, BOARD_RADIUS)
+	local PANELS = {
+		{ key = "map.lb_rebirths", rows = 5 },
+		{ key = "map.lb_tower", rows = 5 },
+		{ key = "map.lb_rolls", rows = 5 },
+		{ key = "map.lb_magnate", rows = MagnateConfig.Top, magnate = true },
+	}
+	for i, info in PANELS do
+		local panelCf = lo * CFrame.new(0, 0, 4 - BOARD_RADIUS) * CFrame.Angles(0, (i - (#PANELS + 1) / 2) * step, 0) * CFrame.new(0, 0, BOARD_RADIUS)
+		-- o Magnata fica na ponta do arco, ao lado do caminho: painel ELEVADO (base acima da cabeça,
+		-- pilares sem colisão) para não bloquear ninguém
+		local height = if info.magnate then 13 else 11
+		local lift = if info.magnate then 5.4 else 3
+		local centerY = lift + height / 2
 		for _, x in { -3.5, 3.5 } do
-			Build.decor(Build.part(Vector3.new(1, 3, 1), panelCf * CFrame.new(x, 1.5, 0), {
-				Color = rgb(70, 65, 85),
+			Build.decor(Build.part(Vector3.new(1, lift, 1), panelCf * CFrame.new(x, lift / 2, 0), {
+				Color = if info.magnate then rgb(200, 150, 40) else rgb(70, 65, 85),
 				Parent = boards,
 			}))
 		end
-		local panel = Build.part(Vector3.new(9, 11, 0.8), panelCf * CFrame.new(0, 8.5, 0), {
+		local panel = Build.part(Vector3.new(9, height, 0.8), panelCf * CFrame.new(0, centerY, 0), {
 			Name = `Panel{i}`,
-			Color = rgb(40, 35, 60),
+			Color = if info.magnate then rgb(35, 25, 15) else rgb(40, 35, 60),
 			Parent = boards,
 		})
-		Build.rankingBoard(panel, Enum.NormalId.Front, Localization.t(key), rgb(255, 220, 80), 5)
-		Build.decor(Build.part(Vector3.new(9.8, 11.8, 0.4), panelCf * CFrame.new(0, 8.5, 0.6), { Name = "PanelFrame", Color = rgb(60, 140, 230), Parent = boards }))
+		Build.rankingBoard(panel, Enum.NormalId.Front, Localization.t(info.key, { season = MagnateConfig.Season }), rgb(255, 220, 80), info.rows)
+		Build.decor(Build.part(Vector3.new(9.8, height + 0.8, 0.4), panelCf * CFrame.new(0, centerY, 0.6), {
+			Name = "PanelFrame",
+			Color = if info.magnate then rgb(255, 195, 50) else rgb(60, 140, 230),
+			Material = if info.magnate then Enum.Material.Neon else nil,
+			Parent = boards,
+		}))
+		if info.magnate then
+			-- coroa simples em cima do painel (status, sem bloquear nada)
+			Build.decor(Build.part(Vector3.new(3.2, 1.2, 0.6), panelCf * CFrame.new(0, lift + height + 1.1, 0), { Name = "MagnateCrown", Color = rgb(255, 205, 60), Material = Enum.Material.Neon, Parent = boards }))
+		end
 	end
 	local podiums: { { x: number, h: number, color: Color3 } } = {
 		{ x = 0, h = 3, color = rgb(255, 205, 70) },

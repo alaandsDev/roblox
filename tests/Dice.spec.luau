@@ -406,7 +406,7 @@ describe("Dice: save (SelectedDiceId)", function()
 	it("perfil novo: Starter selecionado e desbloqueado", function()
 		expect(DataConfig.Template.EquippedDice).toBe(DiceConfig.Default)
 		expect(DataConfig.Template.OwnedDice.Starter).toBe(true)
-		expect(DataConfig.SchemaVersion).toBe(4) -- v4: investimento por instância + cap 30
+		expect(DataConfig.SchemaVersion).toBe(5) -- v4: investimento por instância + cap 30; v5: Lifetime/Player Aura
 		expect(next(DataConfig.Template.DiceRolls)).toBeNil()
 	end)
 

@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Ranking Magnata (auditoria): TODA entrada de dinheiro do servidor tem origem classificada.
+"""Ranking Magnata: TODA entrada de dinheiro do servidor tem origem classificada.
 
 Lê src/server: cada EconomyService.AddMoney(..., "Origem") precisa estar em
-tools/sim/MoneyLedger.luau (MoneyLedger.Sources) com uma classe válida, e o saldo (Money) só
-pode subir por EconomyService.AddMoney (nada de PlayerDataService.Increment(..., "Money")
-espalhado). Assim nenhuma fonte nova escapa da classificação GENERATED/TRANSFER/REFUND/RECYCLED/
-OTHER antes da implementação do LifetimeMoneyGenerated.
+src/shared/Config/MoneySourceConfig.luau (fonte ÚNICA usada pelo jogo para o
+LifetimeMoneyGenerated) com uma classe válida, e o saldo (Money) só pode subir por
+EconomyService.AddMoney (nada de PlayerDataService.Increment(..., "Money") espalhado). O
+protótipo da auditoria (tools/sim/MoneyLedger.luau) precisa concordar com a config.
 """
 import os
 import re
@@ -14,6 +14,7 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SERVER = os.path.join(ROOT, "src", "server")
 LEDGER = os.path.join(ROOT, "tools", "sim", "MoneyLedger.luau")
+CONFIG = os.path.join(ROOT, "src", "shared", "Config", "MoneySourceConfig.luau")
 KINDS = {"GENERATED", "TRANSFER", "REFUND", "RECYCLED", "OTHER"}
 
 falhas = 0
@@ -29,7 +30,13 @@ def check(ok, msg):
 with open(LEDGER, encoding="utf-8") as f:
     ledger = f.read()
 block = ledger[ledger.index("MoneyLedger.Sources = {"): ledger.index("\n}\n", ledger.index("MoneyLedger.Sources = {"))]
-sources = dict(re.findall(r'^\s*([A-Za-z]+)\s*=\s*"([A-Z]+)"', block, re.M))
+prototype = dict(re.findall(r'^\s*([A-Za-z]+)\s*=\s*"([A-Z]+)"', block, re.M))
+with open(CONFIG, encoding="utf-8") as f:
+    config = f.read()
+cblock = config[config.index("Sources = {"): config.index("}", config.index("Sources = {"))]
+sources = dict(re.findall(r'^\s*([A-Za-z]+)\s*=\s*"([A-Z]+)"', cblock, re.M))
+check(all(prototype.get(k) == v for k, v in sources.items()), "MoneySourceConfig (jogo) == protótipo da auditoria em todas as origens")
+check(sources.get("Collector") == "GENERATED" and sources.get("Offline") == "GENERATED" and sources.get("Product") == "OTHER" and sources.get("Dev") == "OTHER" and sources.get("AutoSell") == "RECYCLED", "Collector/Offline contam; Product/Dev/AutoSell não")
 check(len(sources) >= 10, f"protótipo tem {len(sources)} origens classificadas")
 check(all(kind in KINDS for kind in sources.values()), "toda classe é GENERATED/TRANSFER/REFUND/RECYCLED/OTHER")
 

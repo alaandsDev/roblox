@@ -322,3 +322,26 @@ Roteiro AFK6 (jogo publicado, servidor real; anotar tudo):
     personagens duplicados, Rebirth/Ocultar iguais; popup de offline só se ficou ≥ 60 s FORA (e proporcional a esse
     tempo, não aos minutos AFK online). Numa reconexão automática recente o AUTO volta sozinho depois de a base e o
     personagem aparecerem; numa entrada normal o AUTO começa desligado.
+
+## SYSTEMS PASS (extra) — FUNDIR MÁX. + PLAYER AURAS + LIFETIME + MAGNATA (ver SYSTEMS_PASS.md)
+
+Comandos (Barra de comandos, contexto Servidor): `local Dev = game.ServerStorage.RollLegendsDev; local p = game.Players:GetPlayers()[1]`
+
+| # | Área | Ação | Esperado | OK |
+|---|---|---|---|---|
+| PA1 | PLAYER AURA | `Dev:Invoke("GiveMoney", p, 2e9)`; HUD ✨ AURAS → Desperta → COMPRAR → confirmar | pede confirmação (preço, Renda ×1,50, Velocidade 28, "Compra permanente"); Money −$1B; aura aparece no avatar; anda mais rápido; card ✓ EQUIPADA; `PlayerAuraStatus` confirma | [ ] |
+| PA2 | PLAYER AURA | `GiveMoney` 1e13 e comprar Imperial → Divina → Celestial → Absoluta (tentar Divina antes da Imperial) | fora de ordem: "Compre a aura anterior primeiro"; cada etapa cobra só o seu preço; Renda ×1,75/2,00/2,25/2,50 e Velocidade 30/32/34/36 | [ ] |
+| PA3 | PLAYER AURA | morrer (Reset) 3× seguidas; sair e entrar de novo | aura volta a cada respawn SEM duplicar efeitos; velocidade mantida; save/load preserva | [ ] |
+| PA4 | PLAYER AURA | com Absoluta comprada, EQUIPAR VISUAL na Desperta; depois clicar ✓ EQUIPADA (tira o visual) | visual muda; `PlayerAuraStatus` continua renda ×2,50 e WalkSpeed 36 | [ ] |
+| PA5 | PLAYER AURA | `Dev:Invoke("PlayerAuraLineup", p)` | as 5 auras lado a lado; escala clara Desperta < Imperial < Divina < Celestial < ABSOLUTA (auréola/coroa + anel duplo: inconfundível); avatar nunca coberto | [ ] |
+| PA6 | PLAYER AURA | `Dev:Invoke("PlayerAuraStress", p, 10, "Absoluta")`; andar em volta e se afastar 40 / 90+ studs; emulador mobile | FPS estável; longe reduz e some depois de ~90 studs; a SUA aura sempre cheia; `PlayerAuraClear` limpa | [ ] |
+| MG1 | LIFETIME | coletar no coletor; `Dev:Invoke("MagnateStatus", p)` | Lifetime sobe exatamente o valor coletado | [ ] |
+| MG2 | LIFETIME | `GiveMoney` (não conta) → Rebirth → `MagnateStatus` | Money zera, Lifetime igual; aura continua | [ ] |
+| MG3 | LIFETIME | sair/entrar | Lifetime e aura preservados | [ ] |
+| MG4 | LIFETIME | `GrantPass` VIP + aura comprada; `MagnateSimulateIncome`/coletar | Lifetime sobe o valor FINAL (VIP × aura) uma vez; vender personagens NÃO sobe | [ ] |
+| MG5 | MAGNATA | ir aos Rankings do Hub; `Dev:Invoke("MagnateBoardPreview")` | 4º painel 👑 MAGNATA · TEMPORADA 1 (dourado, elevado, top 10, valores em $), sem bloquear caminho/esteira/outros 3 painéis | [ ] |
+| FM1 | FUSÃO | 3 iguais → FUNDIR 1× | comportamento de sempre | [ ] |
+| FM2 | FUSÃO | `Dev:Invoke("GiveCharacter", p, "<id>", 300)` → ⚡ FUNDIR MÁX. | prévia curta (≈152 fusões, maior resultado, o que resta, custo) → FUNDIR TUDO → UMA animação "⚡ N FUSÕES REALIZADAS!" | [ ] |
+| FM3 | FUSÃO | ter 2 Prata + 300 Normal da mesma família → FUNDIR MÁX. | as Pratas existentes entram na cadeia (102 Prata → 34 Ouro …) | [ ] |
+| FM4 | FUSÃO | equipar/travar/favoritar algumas cópias → FUNDIR MÁX. | nenhuma delas é consumida | [ ] |
+| FM5 | FUSÃO | clicar FUNDIR TUDO várias vezes rápido / mudar o inventário com a prévia aberta | uma operação só; prévia velha: "Seu inventário mudou. Veja a prévia de novo." | [ ] |

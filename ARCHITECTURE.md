@@ -169,17 +169,19 @@ Floor02: SideA = Slot09..Slot12 | SideB = Slot13..Slot16
 |---|---|---|
 | TowerService | 3 torres, batalha de cards simulada no servidor (BattleCore), time da torre, recompensas | RequestEnterTower, SetTowerTeam |
 | RebirthService | renascimento (reset, bônus permanentes, +1 pedestal), loja de fichas | Rebirth, BuyRebirthPerk |
-| FusionService | 3 iguais -> próxima variante (FusionCore) | Fuse |
+| FusionService | 3 iguais -> próxima variante (FusionCore); FUNDIR MÁX. = cadeia inteira de uma família numa operação (FusionCore.fuseMaxPlan) | Fuse, FuseMax |
 | TradeService | trocas entre jogadores (convite, ofertas, pronto, confirmação, troca atômica — TradeCore) | RequestTrade, RespondTrade, SetTradeOffer, SetTradeReady, ConfirmTrade, CancelTrade |
 | MissionService | 3 diárias por jogador/dia + conquistas (MissionCore), progresso pelos eventos de analytics | ClaimMission |
 | BoostService | multiplicadores de sessão em data.Runtime (gamepasses, impulso de amigos), etiqueta VIP | — |
 | JackpotService | Giro do Jackpot, loja de gemas, entrega dos produtos Robux | SpinJackpot, BuyGemItem |
-| LeaderboardService | rankings dos painéis do Hub (OrderedDataStore) e leaderstats | — |
+| LeaderboardService | rankings dos painéis do Hub (OrderedDataStore) e leaderstats; 4º painel 👑 MAGNATA (LifetimeMoneyGenerated, top 10, Temporada 1) | — |
+| PlayerAuraService | Player Auras do avatar: compra sequencial permanente, visual equipado, atributos replicados (tier/visual), WalkSpeed via BaseService; bônus de renda em `Formulas:incomeMultiplier` | BuyPlayerAura, EquipPlayerAura |
 | AfkService | resiliência de sessão (AFK_RESILIENCE.md): estado Active/Idle/Reconnecting só para UX/telemetria, AUTO só volta numa reconexão pronta, DEV AFKStatus/SimulateIdle | ReportActivity, (evento) ResumeAuto |
 
 Cliente: TowerController (janela + tela de batalha animada), RebirthController, FusionController,
 TradeController, MissionController, StoreController (loja + atalhos da direita + giro),
-MusicController, SessionController (atividade real, indicador AFK, reconexão limitada via TeleportService).
+MusicController, PlayerAuraController (visual das Player Auras, LOD central), PlayerAuraShopController
+(janela PLAYER AURAS), SessionController (atividade real, indicador AFK, reconexão limitada via TeleportService).
 Interações do mapa: Towers, Fusion, Trade, Missions, Market (loja).
 
 ## Gameplay (Fases 3–6 + estações, offline, diário, cinemática)

@@ -12,4 +12,6 @@ return Formulas.new({
 	Levels = require(Config.CharacterLevelConfig),
 	Variants = require(Config.VariantConfig),
 	Rebirth = require(Config.RebirthConfig),
+	PlayerAuras = require(Config.PlayerAuraConfig),
+	Movement = require(Config.MovementConfig),
 })

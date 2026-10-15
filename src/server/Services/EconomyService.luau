@@ -24,6 +24,7 @@ local EconomyConfig = require(Shared.Config.EconomyConfig)
 local OfflineIncomeConfig = require(Shared.Config.OfflineIncomeConfig)
 local Formulas = require(Shared.Modules.GameFormulas)
 local OfflineCore = require(Shared.Modules.OfflineCore)
+local MoneySourceConfig = require(Shared.Config.MoneySourceConfig)
 local NumberFormatter = require(Shared.Modules.NumberFormatter)
 local Logger = require(Shared.Modules.Logger)
 local Signal = require(Shared.Modules.Signal)
@@ -56,14 +57,49 @@ local function finite(n: any): boolean
 	return type(n) == "number" and n == n and n ~= math.huge and n ~= -math.huge
 end
 
-function EconomyService.AddMoney(player: Player, amount: number, source: string): number
+--[[
+	ÚNICA porta de entrada de Money (MAGNATE_RANKING_AUDIT.md §3):
+	  1) valida a ORIGEM (MoneySourceConfig; desconhecida = erro, falha fechada)
+	  2) valida o valor (finito, >= 0, <= MaxGrant)
+	  3) opId opcional: a mesma operação nunca credita duas vezes (LedgerOps no save)
+	  4) Money += valor
+	  5) GENERATED -> LifetimeMoneyGenerated += valor no MESMO passo (sem yield; nunca diminui)
+	Nenhum remote recebe valor do cliente. Gastos (TrySpend) nunca mexem no Lifetime.
+]]
+function EconomyService.AddMoney(player: Player, amount: number, source: string, opId: string?): number
 	local data = PlayerDataService.GetData(player)
 	assert(data, "dados não carregados")
+	local kind = MoneySourceConfig.Sources[source]
+	assert(kind ~= nil, `origem de dinheiro desconhecida: {tostring(source)}`)
 	assert(finite(amount) and amount >= 0, "valor inválido")
+	assert(amount <= MoneySourceConfig.MaxGrant, "valor acima do teto")
+	if opId ~= nil then
+		local ops = data.LedgerOps
+		if type(ops) ~= "table" then
+			ops = {}
+			data.LedgerOps = ops
+		end
+		if table.find(ops, opId) then
+			return data.Money -- operação repetida: nada é creditado
+		end
+		table.insert(ops, opId)
+		while #ops > MoneySourceConfig.OpHistory do
+			table.remove(ops, 1)
+		end
+	end
 	local value = math.floor(amount)
 	local money = PlayerDataService.Increment(player, "Money", value)
-	EconomyService.MoneyAdded:Fire(player, value, source)
+	if kind == "GENERATED" and value > 0 then
+		local lifetime = if finite(data.LifetimeMoneyGenerated) and data.LifetimeMoneyGenerated > 0 then data.LifetimeMoneyGenerated else 0
+		PlayerDataService.Set(player, "LifetimeMoneyGenerated", math.min(lifetime + value, MoneySourceConfig.MaxLifetime))
+	end
+	EconomyService.MoneyAdded:Fire(player, value, source, kind)
 	return money
+end
+
+-- Classe da origem (GENERATED/RECYCLED/REFUND/TRANSFER/OTHER) ou nil se desconhecida
+function EconomyService.SourceKind(source: string): string?
+	return MoneySourceConfig.Sources[source]
 end
 
 -- Desconta se tiver saldo. Sem yield entre checar e descontar (dois pedidos não gastam o mesmo dinheiro)

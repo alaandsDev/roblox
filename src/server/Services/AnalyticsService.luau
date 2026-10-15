@@ -44,6 +44,7 @@ AnalyticsService.EVENTS = {
 	"AfkActive",
 	"Reconnected",
 	"AutoResumed",
+	"PlayerAuraPurchased",
 }
 
 -- (player, nome, params)

@@ -1,5 +1,9 @@
 # RANKING MAGNATA — auditoria (proposta, NÃO implementada)
 
+> **ATUALIZAÇÃO (Systems pass):** implementado conforme esta auditoria — `LifetimeMoneyGenerated`
+> (schema v5, Temporada 1 = 0), `MoneySourceConfig` + `EconomyService.AddMoney` como porta única e o
+> 4º painel 👑 MAGNATA. Ver `SYSTEMS_PASS.md`. O texto abaixo é o registro da auditoria original.
+
 > **Status:** auditoria/proposta. Nada foi ativado no jogo: nenhum campo novo no save, nenhum
 > ranking novo, nenhuma mudança em `EconomyService`, economia, Rebirth ou RNG. O que existe é um
 > **protótipo puro** (`tools/sim/MoneyLedger.luau`) usado pelo simulador e pelos testes

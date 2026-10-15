@@ -13,6 +13,8 @@ Uso:  python tools\\run_tests.py
    tests/roblox/SessionHarness.luau: smoke do ciclo completo (save/load) + sessão longa de 10 jogadores.
    tests/roblox/AfkHarness.luau: AFK Resilience com tempo virtual (cadência AFK/Roll Rápido, saves,
    reconexão sem duplicar, offline sem pagar duas vezes, trava do servidor antigo, DEV).
+   tests/roblox/SystemsHarness.luau: FUNDIR MÁX. ≡ Fuse repetido, Player Auras, LifetimeMoneyGenerated
+   (origens, VIP+Aura, exploits) e Ranking Magnata.
    tests/roblox/CharacterPipelineHarness.luau: pipeline de personagens com um pack SINTÉTICO
    (sanitização, .rbxm, jogo final SEM o pack, factory/variantes/poses/fallback) e
    tests/build_characters_test.py: a ferramenta tools/build_characters.py de ponta a ponta e
@@ -129,6 +131,7 @@ def main() -> None:
     reais = subprocess.run([str(lune), "run", "tests/roblox/RealAssetsHarness.luau"], cwd=RAIZ)
     auravisual = subprocess.run([str(lune), "run", "tests/roblox/AuraVisualAudit.luau"], cwd=RAIZ)
     afk = subprocess.run([str(lune), "run", "tests/roblox/AfkHarness.luau"], cwd=RAIZ)
+    sistemas = subprocess.run([str(lune), "run", "tests/roblox/SystemsHarness.luau"], cwd=RAIZ)
     leitor = subprocess.run([sys.executable, "tests/rbxm_reader_test.py"], cwd=RAIZ)
     ferramenta = subprocess.run([sys.executable, "tests/build_characters_test.py"], cwd=RAIZ)
     compat = subprocess.run([sys.executable, "tests/build_characters_lune_test.py"], cwd=RAIZ)
@@ -146,7 +149,7 @@ def main() -> None:
         except ImportError:
             print("(Pillow não instalado: pulando a imagem do mapa)")
 
-    if erros or puros.returncode != 0 or mapa.returncode != 0 or servicos.returncode != 0 or gameplay.returncode != 0 or cliente.returncode != 0 or sessao.returncode != 0 or pack.returncode != 0 or personagens.returncode != 0 or reais.returncode != 0 or auravisual.returncode != 0 or afk.returncode != 0 or leitor.returncode != 0 or ferramenta.returncode != 0 or compat.returncode != 0 or place.returncode != 0 or auras.returncode != 0 or magnata.returncode != 0 or catalogo.returncode != 0:
+    if erros or puros.returncode != 0 or mapa.returncode != 0 or servicos.returncode != 0 or gameplay.returncode != 0 or cliente.returncode != 0 or sessao.returncode != 0 or pack.returncode != 0 or personagens.returncode != 0 or reais.returncode != 0 or auravisual.returncode != 0 or afk.returncode != 0 or sistemas.returncode != 0 or leitor.returncode != 0 or ferramenta.returncode != 0 or compat.returncode != 0 or place.returncode != 0 or auras.returncode != 0 or magnata.returncode != 0 or catalogo.returncode != 0:
         sys.exit(1)
 
 

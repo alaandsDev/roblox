@@ -115,6 +115,14 @@ local Definitions: Definitions = {
 			rate = { capacity = 5, refill = 2 },
 		},
 		Fuse = { args = { { type = "array", maxItems = 3, of = UID } }, rate = { capacity = 4, refill = 2 } },
+		-- PLAYER AURAS: só o tier (preço/ordem/saldo/efeitos são do servidor)
+		BuyPlayerAura = { args = { { type = "number", integer = true, min = 1, max = 5 } }, rate = { capacity = 3, refill = 0.5 } },
+		EquipPlayerAura = { args = { { type = "number", integer = true, min = 0, max = 5 } }, rate = { capacity = 5, refill = 2 } },
+		-- FUNDIR MÁX.: só o personagem (o servidor planeja tudo); false = prévia; nº de fusões da prévia
+		FuseMax = {
+			args = { CONFIG_ID, { type = "boolean" }, { type = "number", integer = true, min = 0, max = 1000000, optional = true } },
+			rate = { capacity = 4, refill = 1 },
+		},
 		RequestTrade = { args = { { type = "number", integer = true, min = 1, max = 1e12 } }, rate = { capacity = 3, refill = 0.3 } },
 		RespondTrade = { args = { { type = "number", integer = true, min = 1, max = 1e12 }, { type = "boolean" } }, rate = { capacity = 5, refill = 1 } },
 		SetTradeOffer = { args = { { type = "array", maxItems = 8, of = UID } }, rate = { capacity = 10, refill = 4 } },
