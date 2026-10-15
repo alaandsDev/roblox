@@ -10,7 +10,8 @@
 	    contorno     Highlight (Mítico+) só nas MaxHighlights auras mais próximas
 	Orçamento (AuraConfig.Budget):
 	    - só anima as MaxAnimated auras mais próximas e dentro de CullDistance (ranking 2x/s);
-	    - além de MidDistance a taxa cai pela metade (mesma identidade);
+	    - a taxa cai aos poucos com a distância (Budget.DistanceRates: 100% → 55% até o Cull);
+	    - o PERSONAGEM nunca é escondido aqui: só partículas/beams/contorno da aura mudam;
 	    - no máximo MaxFull auras "Full" com taxa cheia; as excedentes caem para a taxa Light;
 	    - mobile/touch sem teclado: taxas × LowEndRateScale.
 	Nenhum loop por personagem; nenhuma conexão por frame além desta.
@@ -130,6 +131,16 @@ local function unregister(model: Instance)
 	end
 end
 
+-- fator de taxa pela distância da câmera (progressivo; além do Cull a aura nem anima)
+function AuraController.distanceRate(distance: number): number
+	for _, step in B.DistanceRates do
+		if distance <= step[1] then
+			return step[2]
+		end
+	end
+	return B.DistanceRates[#B.DistanceRates][2]
+end
+
 -- Ranking (2x/s): quais auras animar, quais Full mantêm taxa cheia e quais ganham contorno
 local function rank()
 	local camera = Workspace.CurrentCamera
@@ -161,9 +172,7 @@ local function rank()
 		end
 		entry.active = active
 		local scale = if lowEnd then B.LowEndRateScale else 1
-		if item.distance > B.MidDistance then
-			scale *= 0.5
-		end
+		scale *= AuraController.distanceRate(item.distance)
 		if entry.model:GetAttribute("AuraMode") == "Full" then
 			full += 1
 			if full > B.MaxFull then

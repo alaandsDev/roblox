@@ -99,6 +99,33 @@ export type EmitterOpts = {
 	role: string?,
 }
 
+-- Presença: elementos maiores e mais sólidos (AuraConfig.Presence.Size/Fade), em Light e Full
+local sizeScale, fade = 1, 1
+
+local function scaledSize(points: { { number } }): { { number } }
+	local peak = 0
+	for _, p in points do
+		peak = math.max(peak, p[2])
+	end
+	-- pico mínimo: partícula pequena demais vira invisível no mapa claro
+	local minPeak = if sizeScale ~= 1 then (AuraConfig.Presence.MinPeak or 0) else 0
+	local boost = if peak > 0 and peak * sizeScale < minPeak then minPeak / peak else sizeScale
+	local out = {}
+	for _, p in points do
+		table.insert(out, { p[1], p[2] * boost })
+	end
+	return out
+end
+
+local function faded(points: { { number } }): { { number } }
+	local out = {}
+	for _, p in points do
+		-- o fim da vida continua sumindo (1); o resto fica mais opaco
+		table.insert(out, { p[1], if p[2] >= 1 then 1 else p[2] * fade })
+	end
+	return out
+end
+
 local function emitter(parent: Instance, name: string, o: EmitterOpts): ParticleEmitter
 	local e = Instance.new("ParticleEmitter")
 	e.Name = name
@@ -109,8 +136,8 @@ local function emitter(parent: Instance, name: string, o: EmitterOpts): Particle
 	e.Rate = o.rate
 	e.Lifetime = NumberRange.new(o.life[1], o.life[2])
 	e.Speed = NumberRange.new(o.speed[1], o.speed[2])
-	e.Size = numSeq(o.size)
-	e.Transparency = numSeq(o.transparency or { { 0, 0.05 }, { 0.6, 0.3 }, { 1, 1 } })
+	e.Size = numSeq(scaledSize(o.size))
+	e.Transparency = numSeq(faded(o.transparency or { { 0, 0.05 }, { 0.6, 0.3 }, { 1, 1 } }))
 	e.ZOffset = o.zOffset or 0
 	e.SpreadAngle = o.spread or Vector2.new(15, 15)
 	e.Shape = o.shape or Enum.ParticleEmitterShape.Box
@@ -177,8 +204,9 @@ local function beam(parent: Instance, name: string, a0: Attachment, a1: Attachme
 	b.LightInfluence = 0
 	b.FaceCamera = true
 	b.Segments = o.segments or 16
-	b.Width0 = width0
-	b.Width1 = width1
+	b.Width0 = width0 * sizeScale
+	b.Width1 = width1 * sizeScale
+	b.ZOffset = o.zOffset or 0
 	b.CurveSize0 = o.curve0 or 1.5
 	b.CurveSize1 = o.curve1 or -1.5
 	b.Transparency = o.transparency or numSeq({ { 0, 0.1 }, { 0.5, 0.15 }, { 1, 0.6 } })
@@ -325,6 +353,8 @@ Signatures.Shadows = function(g, p, _style, n, rate)
 		size = { { 0, 1.6 + n * 0.15 }, { 0.6, 2.6 + n * 0.15 }, { 1, 3 } },
 		transparency = { { 0, 0.05 }, { 0.6, 0.35 }, { 1, 1 } },
 		lightEmission = 0,
+		-- sombra densa ATRÁS do corpo (moldura escura): nunca na frente do personagem
+		zOffset = -(g.w * 0.5 + 2),
 		shape = Enum.ParticleEmitterShape.Cylinder,
 		spread = Vector2.new(10, 10),
 	})
@@ -353,8 +383,8 @@ Signatures.Stars = function(g, p, _style, n, rate)
 		size = { { 0, 0 }, { 0.3, 1.3 + n * 0.1 }, { 1, 0 } },
 		transparency = { { 0, 0 }, { 1, 0.4 } },
 		lightEmission = 0.5,
+		-- estrelas EM VOLTA do corpo (superfície do anel), não dentro do volume na frente dele
 		shape = Enum.ParticleEmitterShape.Cylinder,
-		shapeStyle = Enum.ParticleEmitterShapeStyle.Volume,
 		rotSpeed = 120,
 	})
 	local halo = invisiblePart(g.model, "AuraHalo", Vector3.new(2.6, 0.1, 2.6), g.center * CFrame.new(0, g.h * 0.62, 0))
@@ -528,14 +558,19 @@ function AuraBuilder.attach(model: Model, characterId: string, rarity: string, m
 	end
 	local style = AuraConfig.Styles[plan.style]
 	local p = palette(style)
+	sizeScale, fade = AuraConfig.Presence.Size, AuraConfig.Presence.Fade
 	local cf, size = bounds(model, height or 5)
 	local h = math.max(size.Y, 2)
-	local w = math.max(math.max(size.X, size.Z), 1.2)
+	-- largura do CORPO, não da caixa: espadas/bisentos/capas abertas (Ulkiorra Liberado 21 studs,
+	-- Barbalva 13) não podem inflar a aura (nem quebrar o clamp abaixo); corpo humano <= 0,6 × altura
+	local w = math.clamp(math.max(size.X, size.Z), 1.2, h * 0.6)
 	local S = plan.silhouette
 	local Z = AuraConfig.Zones
-	-- alcance externo cresce com a silhueta (Lendário ~1,8 · Secreto ~5,5 studs do eixo)
-	local rOuter = math.clamp(w / 2 + (S - 1) * h * 0.55, w / 2 + 0.6, Z.OuterMax)
-	local rMid = math.clamp((w / 2 + rOuter) / 2 + 0.3, math.min(Z.MidMin, rOuter), Z.MidMax)
+	-- alcance externo cresce com a silhueta (Lendário ~1,8 · Secreto ~5,5 studs do eixo); o mínimo
+	-- nunca passa do máximo (math.clamp com min > max lança erro)
+	local outerMin = math.min(w / 2 + 0.6, Z.OuterMax)
+	local rOuter = math.clamp(w / 2 + (S - 1) * h * 0.55, outerMin, Z.OuterMax)
+	local rMid = math.clamp((w / 2 + rOuter) / 2 + 0.3, math.min(Z.MidMin, rOuter), math.max(Z.MidMax, math.min(Z.MidMin, rOuter)))
 	local top = h * (S - 0.5) -- topo visual acima do centro do corpo
 	local feet = cf * CFrame.new(0, -h / 2, 0)
 	local core = invisiblePart(model, "AuraCore", Vector3.new(w * 0.95, h * 0.95, w * 0.75), cf)
@@ -561,7 +596,10 @@ function AuraBuilder.attach(model: Model, characterId: string, rarity: string, m
 				life = { style.Lifetime, style.Lifetime * 1.6 },
 				speed = { style.Speed * 0.35, style.Speed * 0.7 },
 				size = { { 0, style.Size * 0.6 }, { 0.3, style.Size * 1.15 }, { 1, 0 } },
-				transparency = { { 0, 0.05 }, { 0.6, 0.25 }, { 1, 1 } },
+				-- fumaça/fogo colados no corpo ficam ATRÁS dele (a aura emoldura, não esconde); faísca
+				-- (Spark, pequena e brilhante) pode passar na frente
+				transparency = { { 0, if style.Texture == "Spark" then 0.05 else 0.2 }, { 0.6, 0.3 }, { 1, 1 } },
+				zOffset = if style.Texture == "Spark" then 0 else -(g.w * 0.5 + 1),
 				lightEmission = alpha,
 				inOut = if inward then Enum.ParticleEmitterShapeInOut.Inward else Enum.ParticleEmitterShapeInOut.Outward,
 				acceleration = if up then Vector3.new(0, 4, 0) elseif down then Vector3.new(0, -2, 0) else nil,
@@ -581,7 +619,7 @@ function AuraBuilder.attach(model: Model, characterId: string, rarity: string, m
 				size = { { 0, style.Size * 1.6 }, { 1, style.Size * 2.6 } },
 				transparency = { { 0, 0.25 }, { 0.6, 0.45 }, { 1, 1 } },
 				lightEmission = 0,
-				zOffset = -1.5,
+				zOffset = -(g.w * 0.5 + 2.5),
 				acceleration = Vector3.new(0, 1.5, 0),
 			})
 		elseif kind == "Depth" then
@@ -616,7 +654,8 @@ function AuraBuilder.attach(model: Model, characterId: string, rarity: string, m
 				rate = comp.rate,
 				life = { 1, 1.4 },
 				speed = { riseSpeed * 0.7, riseSpeed },
-				size = { { 0, 0.55 }, { 1, 0.15 } },
+				-- streaks subindo mais grossos (V2.1): a coluna subindo é o que lê a raridade de longe
+				size = { { 0, 0.9 }, { 1, 0.3 } },
 				lightEmission = 0.55,
 				spread = Vector2.new(6, 6),
 				shape = Enum.ParticleEmitterShape.Cylinder,
@@ -647,7 +686,7 @@ function AuraBuilder.attach(model: Model, characterId: string, rarity: string, m
 				a0:SetAttribute("AuraSpeed", style.OrbitSpeed * (0.8 + 0.25 * i) * (if i % 2 == 0 then -1 else 1))
 				a0:SetAttribute("AuraBob", 0.35 + 0.15 * i)
 				a0:SetAttribute("AuraWobble", style.OrbitWobble)
-				local tail = attachment(a0, "AuraOrbitTail" .. i, Vector3.new(0, 0.9, 0))
+				local tail = attachment(a0, "AuraOrbitTail" .. i, Vector3.new(0, 0.9 * sizeScale, 0))
 				local trail = Instance.new("Trail")
 				trail.Name = "AuraOrbitTrail" .. i
 				trail.Attachment0 = a0
@@ -676,7 +715,7 @@ function AuraBuilder.attach(model: Model, characterId: string, rarity: string, m
 				local angle = (i / comp.count) * math.pi * 2
 				local a0 = attachment(core, "AuraRibbonA" .. i, Vector3.new(math.cos(angle) * rMid, -h * 0.5, math.sin(angle) * rMid))
 				local a1 = attachment(core, "AuraRibbonB" .. i, Vector3.new(math.cos(angle + 2.4) * rMid * 0.7, top * 0.75, math.sin(angle + 2.4) * rMid * 0.7))
-				beam(core, "AuraRibbon" .. i, a0, a1, seq(p.light, p.main, p.dark), 1, 0.2, "Wisp", { lightEmission = 0.25, curve0 = 3.5, curve1 = -3.5 })
+				beam(core, "AuraRibbon" .. i, a0, a1, seq(p.light, p.main, p.dark), 1, 0.2, "Wisp", { lightEmission = 0.25, curve0 = 3.5, curve1 = -3.5, zOffset = -1 })
 			end
 		elseif kind == "Ground" then
 			emitter(ground, "AuraGroundRing", {
@@ -797,6 +836,20 @@ function AuraBuilder.attach(model: Model, characterId: string, rarity: string, m
 		mark(light)
 		light.Parent = core
 	end
+	-- REGRA: a aura emoldura, nunca engole o personagem. Toda fumaça/fogo (texturas grandes e
+	-- opacas) renderiza ATRÁS do corpo (ZOffset além do raio externo); faíscas pequenas e
+	-- brilhantes podem passar na frente. Medido em tests/roblox/AuraVisualAudit.luau (oclusão <= 30%).
+	local behind = -(2 * rOuter + 4) -- além do alcance que a fumaça percorre na vida dela
+	for _, obj in model:GetDescendants() do
+		if obj:IsA("ParticleEmitter") and string.sub(obj.Name, 1, 4) == "Aura" then
+			if obj.Texture == AuraConfig.Textures.Smoke or obj.Texture == AuraConfig.Textures.Fire then
+				obj.ZOffset = math.min(obj.ZOffset, behind)
+			end
+		elseif obj:IsA("Beam") and (obj:GetAttribute("AuraRole") == "Wisp" or obj:GetAttribute("AuraRole") == "Gust") then
+			obj.ZOffset = math.min(obj.ZOffset, -rMid)
+		end
+	end
+	sizeScale, fade = 1, 1
 	model:SetAttribute("Aura", plan.tier)
 	model:SetAttribute("AuraStyle", plan.style)
 	model:SetAttribute("AuraMode", mode)

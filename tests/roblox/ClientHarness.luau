@@ -1035,6 +1035,102 @@ do -- Letreiros entre andares (LodController + FloorLegibility): outro andar nã
 	check(tInfo.Enabled, "andares: sem personagem, nada é escondido")
 end
 
+do -- LOD DE AURA NUNCA SOME COM O PERSONAGEM: 10 estações, perto -> longe -> perto e troca de andar
+	local Factory = clientRequire(env.shared.Modules.CharacterModelFactory)
+	local CharCfg = clientRequire(env.shared.Config.CharacterConfig)
+	local AuraCfgL = clientRequire(env.shared.Config.AuraConfig)
+	local picks = {}
+	for _, rarity in { "Legendary", "Mythic", "Divine", "Secret" } do
+		for _, c in CharCfg.List do
+			if c.Rarity == rarity then
+				table.insert(picks, c.Id)
+				break
+			end
+		end
+	end
+	local stations = {}
+	for i = 1, 10 do
+		local station = Instance.new("Model")
+		station.Name = "LodStation" .. i
+		station:SetAttribute("FloorY", 0)
+		local figure = Factory.build(picks[(i - 1) % #picks + 1], { vfx = "Light" })
+		figure:PivotTo(roblox.CFrame.new(i * 12, 0, 0))
+		figure.Parent = station
+		local anchor = Instance.new("Part")
+		anchor.Name = "InfoAnchor"
+		anchor.CFrame = roblox.CFrame.new(i * 12, 8, 0)
+		anchor.Parent = station
+		local info = Instance.new("BillboardGui")
+		info.Name = "Info"
+		info.Parent = anchor
+		station.Parent = env.real.Workspace
+		local parts = {}
+		for _, d in figure:GetDescendants() do
+			if d:IsA("BasePart") and string.sub(d.Name, 1, 4) ~= "Aura" then
+				table.insert(parts, { part = d, transparency = d.Transparency })
+			end
+		end
+		table.insert(stations, { station = station, figure = figure, parts = parts })
+	end
+	local function allVisible(): (boolean, string)
+		for i, s in stations do
+			if s.figure.Parent ~= s.station or s.station.Parent == nil then
+				return false, "estação " .. i .. ": modelo fora da estação"
+			end
+			for _, p in s.parts do
+				if p.part.Parent == nil or p.part.Transparency ~= p.transparency then
+					return false, "estação " .. i .. ": parte " .. p.part.Name .. " escondida/removida"
+				end
+			end
+		end
+		return true, ""
+	end
+	local function auraOn(s): number
+		local on = 0
+		for _, d in s.figure:GetDescendants() do
+			if d:IsA("ParticleEmitter") and d:GetAttribute("VFXTier") ~= nil and d.Enabled then
+				on += 1
+			end
+		end
+		return on
+	end
+	local function frame(distance: number, feet: number?)
+		camera.CFrame = roblox.CFrame.new(60, 6, -distance)
+		for i, s in stations do
+			local d = (roblox.Vector3.new(i * 12, 8, 0) - camera.CFrame.Position).Magnitude
+			C.LodController._apply(s.station, d, false, feet)
+		end
+		task.wait(0.05)
+		C.AuraController._step(0.6)
+	end
+	local ok, why
+	frame(15)
+	ok, why = allVisible()
+	check(ok, "LOD perto: os 10 personagens visíveis " .. why)
+	check(auraOn(stations[5]) > 0, "LOD perto: aura ligada")
+	local _, active = C.AuraController.Count()
+	check(active <= AuraCfgL.Budget.MaxAnimated, "LOD: no máximo MaxAnimated auras animadas (" .. active .. ")")
+	frame(400)
+	ok, why = allVisible()
+	check(ok, "LOD longe (além do Cull): personagens continuam visíveis, só a aura apaga " .. why)
+	check(auraOn(stations[5]) == 0, "LOD longe: aura desligada")
+	frame(15)
+	ok, why = allVisible()
+	check(ok and auraOn(stations[5]) > 0, "LOD perto de novo: personagens visíveis e aura volta " .. why)
+	frame(15, 0 + 40) -- jogador 2 andares acima
+	ok, why = allVisible()
+	check(ok, "troca de andar: personagens do outro andar continuam visíveis " .. why)
+	frame(15, 0)
+	ok, why = allVisible()
+	check(ok, "volta ao andar: nenhum personagem sumiu " .. why)
+	check(AuraCfgL.Budget.DistanceRates[1][2] == 1 and C.AuraController.distanceRate(100) > 0 and C.AuraController.distanceRate(100) < C.AuraController.distanceRate(10), "taxa por distância progressiva (100% perto, cai até o Cull, nunca zero dentro dele)")
+	for _, s in stations do
+		s.station:Destroy()
+	end
+	task.wait(0.05)
+	C.AuraController._step(0.6)
+end
+
 -- Torres: abrir, lutar, animação da batalha, fechar
 S.InventoryService.Add(player, "eclipse_sovereign")
 local towers = openWindow("Towers")

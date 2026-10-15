@@ -472,7 +472,10 @@ local AuraBuilder = require(Shared.Modules.AuraBuilder)
 local AuraConfig = require(Shared.Config.AuraConfig)
 local AURA_RARITIES = { "Legendary", "Mythic", "Divine", "Secret" }
 
-local function auraRow(player: Player?, specs: { { rarity: string, style: string?, label: string } }, characterId: string, mode: string, spacing: number): string
+-- distância padrão = a da câmera de jogo olhando um pedestal da Base (~24 studs)
+local BASE_VIEW_DISTANCE = 24
+
+local function auraRow(player: Player?, specs: { { rarity: string, style: string?, label: string, mode: string? } }, characterId: string, mode: string, spacing: number, distance: number?): string
 	local workspaceService = game:GetService("Workspace")
 	local old = workspaceService:FindFirstChild("DevAuraLineup")
 	if old then
@@ -487,21 +490,22 @@ local function auraRow(player: Player?, specs: { { rarity: string, style: string
 	local look = Vector3.new(origin.LookVector.X, 0, origin.LookVector.Z)
 	look = if look.Magnitude > 0.01 then look.Unit else Vector3.new(0, 0, -1)
 	local right = look:Cross(Vector3.new(0, 1, 0))
-	local center = origin.Position + look * 16 - Vector3.new(0, 3, 0)
+	local center = origin.Position + look * (distance or BASE_VIEW_DISTANCE) - Vector3.new(0, 3, 0)
 	local width = (#specs - 1) * spacing
 	for i, spec in specs do
 		local pos = center + right * (-width / 2 + (i - 1) * spacing)
 		local cf = CFrame.lookAt(pos, pos - look)
 		local model = CharacterModelFactory.spawn(characterId, cf, { vfx = "None" })
-		AuraBuilder.attach(model, characterId, spec.rarity, mode, CharacterModelFactory.height(characterId), spec.style)
-		galleryLabel(model, spec.label, `{model:GetAttribute("AuraStyle")} · {mode} · {model:GetAttribute("AuraLayers")} camadas`)
+		local m = spec.mode or mode
+		AuraBuilder.attach(model, characterId, spec.rarity, m, CharacterModelFactory.height(characterId), spec.style)
+		galleryLabel(model, spec.label, `{model:GetAttribute("AuraStyle")} · {m} · {model:GetAttribute("AuraLayers")} camadas`)
 		model.Parent = folder
 	end
 	return `{#specs} auras em Workspace.DevAuraLineup ({mode}); apague com Invoke("AuraClear")`
 end
 
-DevService.Register("AuraLineup", "([player], estilo?, modo?, characterId?) Lendário/Mítico/Divino/Secreto lado a lado, MESMO personagem e estilo, à frente do jogador. estilo: Electric|Flame|Void|Dark|Celestial|Wind|Ice|Energy|Spirit|Gravity (padrão Celestial); modo: Light (base) | Full (reveal)", function(...)
-	local player, style, mode, characterId = splitPlayer(...)
+DevService.Register("AuraLineup", "([player], estilo?, modo?, characterId?, distância?) Lendário/Mítico/Divino/Secreto lado a lado, MESMO personagem e estilo, à frente do jogador na distância da Base (padrão 24 studs). estilo: Electric|Flame|Void|Dark|Celestial|Wind|Ice|Energy|Spirit|Gravity (padrão Celestial); modo: Light (base) | Full (reveal)", function(...)
+	local player, style, mode, characterId, distance = splitPlayer(...)
 	style = style or "Celestial"
 	assert(AuraConfig.Styles[style], "estilo inválido: " .. tostring(style))
 	mode = mode or "Light"
@@ -512,7 +516,22 @@ DevService.Register("AuraLineup", "([player], estilo?, modo?, characterId?) Lend
 	for _, rarity in AURA_RARITIES do
 		table.insert(specs, { rarity = rarity, style = style, label = rarity })
 	end
-	return auraRow(player, specs, characterId, mode, 9)
+	return auraRow(player, specs, characterId, mode, 9, tonumber(distance))
+end)
+
+DevService.Register("AuraCompare", "([player], estilo?, characterId?, distância?) LIGHT (esquerda) × FULL (direita): Lendário/Mítico/Divino/Secreto nos dois modos, lado a lado, na distância da Base", function(...)
+	local player, style, characterId, distance = splitPlayer(...)
+	style = style or "Celestial"
+	assert(AuraConfig.Styles[style], "estilo inválido: " .. tostring(style))
+	characterId = characterId or "char_killuo_godspeed"
+	assert(CharacterConfig.ById[characterId], "personagem inválido: " .. tostring(characterId))
+	local specs = {}
+	for _, mode in { "Light", "Full" } do
+		for _, rarity in AURA_RARITIES do
+			table.insert(specs, { rarity = rarity, style = style, label = `{rarity} · {mode}`, mode = mode })
+		end
+	end
+	return auraRow(player, specs, characterId, "Light", 8, tonumber(distance))
 end)
 
 DevService.Register("AuraStress", "([player], quantidade 4|8|10, raridade? (Divine | mixed), modo?) N auras lado a lado à frente do jogador (teste de legibilidade/FPS)", function(...)

@@ -51,8 +51,8 @@ AuraConfig.Tiers = {
 		Silhouette = 1.2,
 		Layers = { "Body", "Rise", "Signature" },
 		Orbiters = 0,
-		Rate = 1,
-		SignatureCount = 2,
+		Rate = 1.6,
+		SignatureCount = 3,
 		PulseEvery = nil,
 		Highlight = false,
 		Glow = 0.4,
@@ -60,10 +60,11 @@ AuraConfig.Tiers = {
 	Mythic = {
 		Silhouette = 1.5,
 		Layers = { "Body", "Rise", "Orbit", "Signature", "Pulse" },
-		Orbiters = 2,
-		Rate = 1.25,
-		SignatureCount = 3,
-		PulseEvery = 4,
+		-- V2.1: Mítico "claramente perceptível" na Base (inspeção no Studio)
+		Orbiters = 3,
+		Rate = 1.4,
+		SignatureCount = 4,
+		PulseEvery = 3.2,
 		Highlight = true,
 		Glow = 0.6,
 	},
@@ -94,7 +95,21 @@ AuraConfig.Tiers = {
 	menos órbitas. Full (reveal/hero/galeria): versão cinematográfica completa.
 	Light NÃO é "quase invisível": tamanho, opacidade e alcance são os mesmos do Full.
 ]]
-AuraConfig.LightScale = { Rate = 0.55, Orbits = 0.5, Signature = 0.75, Pulse = true, Ground = true }
+--[[
+	Light: MESMA identidade do Full (todas as camadas, órbitas e assinaturas) com 55% da emissão.
+	V2.1 (inspeção no Studio: o Light "quase desligado" sumia na Base): ~2× a PRESENÇA sem dobrar
+	partículas — elementos maiores e mais sólidos em TODA aura (AuraConfig.Presence), órbitas e
+	assinaturas completas também no Light, e o LOD por distância progressivo (AuraController) em
+	vez de cortar pela metade aos 55 studs.
+]]
+AuraConfig.LightScale = { Rate = 0.55, Orbits = 1, Signature = 1, Pulse = true, Ground = true }
+
+-- Presença (V2.1): formas que aparecem no mapa claro/saturado em vez de muitas partículas pequenas
+--     Size  multiplica tamanho das partículas, larguras de beams e rastros
+--     Fade  multiplica a transparência (exceto o fim da vida): 0,7 = 30% mais opaco
+--     MinPeak  nenhuma partícula de aura tem pico menor que isso (studs): faíscas de 0,5 stud
+--              somem contra o mapa claro
+AuraConfig.Presence = { Size = 1.35, Fade = 0.7, MinPeak = 0.9 }
 
 export type Style = {
 	Colors: { { number } }, -- principal, clara, destaque
@@ -159,8 +174,11 @@ AuraConfig.DefaultStyle = "Energy"
 AuraConfig.Budget = {
 	-- além disso o cliente desliga as partículas da aura (studs da câmera)
 	CullDistance = 110,
-	-- a partir daqui as auras animadas caem para metade da taxa (mesma identidade)
+	-- referência de "meia distância" (relatórios/testes); a queda real é progressiva (DistanceRates)
 	MidDistance = 55,
+	-- taxa por distância da câmera (studs): perto cheio, cai aos poucos, some só depois do Cull.
+	-- O PERSONAGEM nunca é afetado: só a aura.
+	DistanceRates = { { 30, 1 }, { 60, 0.85 }, { 90, 0.7 }, { 110, 0.55 } },
 	-- auras com animação (órbita/raio/pulso) ao mesmo tempo: as mais próximas da câmera
 	MaxAnimated = 10,
 	-- auras FULL simultâneas (reveal/hero/galeria); as outras ficam Light

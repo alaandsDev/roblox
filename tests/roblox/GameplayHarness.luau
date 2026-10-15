@@ -1399,6 +1399,17 @@ do -- DEV AURAS V2: comparação lado a lado (mesmo personagem/estilo) e estress
 	Dev.Run("AuraStress", p1, 10, "mixed")
 	folder = env.real.Workspace:FindFirstChild("DevAuraLineup")
 	check(folder ~= nil and #folder:GetChildren() == 10, "DEV AuraStress: 10 auras lado a lado")
+	Dev.Run("AuraCompare", p1, "Void")
+	folder = env.real.Workspace:FindFirstChild("DevAuraLineup")
+	local light, full = 0, 0
+	for _, m in (folder and folder:GetChildren() or {}) do
+		if m:GetAttribute("AuraMode") == "Light" then
+			light += 1
+		elseif m:GetAttribute("AuraMode") == "Full" then
+			full += 1
+		end
+	end
+	check(light == 4 and full == 4, "DEV AuraCompare: Lendário/Mítico/Divino/Secreto em LIGHT e FULL lado a lado")
 	Dev.Run("AuraClear")
 	check(env.real.Workspace:FindFirstChild("DevAuraLineup") == nil, "DEV AuraClear remove a comparação")
 end

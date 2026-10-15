@@ -446,11 +446,34 @@ end
 
 -- Aura de raridade: Épico = suave (acima); Lendário+ = sistema de auras (AuraConfig/AuraBuilder:
 -- raridade = intensidade, estilo do personagem = comportamento). Nada disso é só "glow".
+-- Avisos de desenvolvimento (uma vez por personagem)
+local warned: { [string]: boolean } = {}
+local function warnOnce(key: string, message: string)
+	if not warned[key] then
+		warned[key] = true
+		warn("[CharacterModelFactory] " .. message)
+	end
+end
+
+-- A AURA NUNCA PODE SUMIR COM O PERSONAGEM: se a aura falhar, o modelo fica (sem aura) e o erro
+-- é avisado. Antes, um erro aqui derrubava o buildAsset inteiro e o asset virava o placeholder
+-- genérico (Barbalva / Ulkiorra Liberado "sumindo" da Base).
 local function rarityAura(model: Model, character: any, rarity: any, mode: string, torso: BasePart)
-	if AuraBuilder.resolve(character.Id, character.Rarity, mode) then
-		AuraBuilder.attach(model, character.Id, character.Rarity, mode, CharacterModelFactory.height(character.Id))
-	elseif rarity.Aura then
-		aura(model, torso, rarity.Aura, rgb(rarity.Color))
+	local ok, err = pcall(function()
+		if AuraBuilder.resolve(character.Id, character.Rarity, mode) then
+			AuraBuilder.attach(model, character.Id, character.Rarity, mode, CharacterModelFactory.height(character.Id))
+		elseif rarity.Aura then
+			aura(model, torso, rarity.Aura, rgb(rarity.Color))
+		end
+	end)
+	if not ok then
+		warnOnce("aura:" .. character.Id, `falha ao montar a aura de {character.Id} ({err}): personagem mantido sem aura`)
+		for _, obj in model:GetDescendants() do
+			-- só o que a aura criou (nome Aura*): o corpo do personagem nunca é tocado
+			if string.sub(obj.Name, 1, 4) == "Aura" and obj.Parent then
+				obj:Destroy()
+			end
+		end
 	end
 end
 
@@ -465,15 +488,6 @@ export type BuildOptions = {
 }
 
 local VFX_CLASSES = { "ParticleEmitter", "Beam", "Trail", "Fire", "Smoke", "Sparkles", "PointLight", "SpotLight" }
-
--- Avisos de desenvolvimento (uma vez por personagem)
-local warned: { [string]: boolean } = {}
-local function warnOnce(key: string, message: string)
-	if not warned[key] then
-		warned[key] = true
-		warn("[CharacterModelFactory] " .. message)
-	end
-end
 
 -- Template validado (cache por CharacterId): Model, ou false se ausente/inválido
 local templates: { [string]: Model | false } = {}

@@ -81,6 +81,45 @@ for _, id in { "char_killuo_base", "char_killuo_godspeed" } do
 	model:Destroy()
 end
 
+do
+	-- REGRESSÃO (Barbalva / Ulkiorra Liberado sumindo da Base): personagens LARGOS (espada,
+	-- bisento, capa) montam como o asset real COM aura, em Light e Full; e uma falha da aura
+	-- nunca troca o personagem pelo placeholder (o modelo fica, sem aura)
+	local AuraBuilder = req(env.shared.Modules.AuraBuilder)
+	local wide = 0
+	for _, character in CharacterConfig.List do
+		local rarity = character.Rarity
+		if Factory.hasAsset(character.Id) and (rarity == "Legendary" or rarity == "Mythic" or rarity == "Divine" or rarity == "Secret") then
+			for _, mode in { "Light", "Full" } do
+				local model = Factory.build(character.Id, { vfx = mode })
+				local _, size = model:GetBoundingBox()
+				if math.max(size.X, size.Z) > 12.8 then
+					wide += 1
+				end
+				check(model:GetAttribute("AssetRig") == true and model:GetAttribute("TODO_ASSET") == nil and model:GetAttribute("Aura") ~= nil, `{character.Id} ({mode}): asset real + aura (largura {string.format("%.1f", math.max(size.X, size.Z))} studs)`)
+				model:Destroy()
+			end
+		end
+	end
+	check(wide >= 2, `existem personagens largos (> 12,8 studs) no pacote para a regressão valer ({wide})`)
+	local original = AuraBuilder.attach
+	AuraBuilder.attach = function()
+		error("falha simulada da aura")
+	end
+	local model = Factory.build("char_barbalva_base", { vfx = "Light" })
+	AuraBuilder.attach = original
+	local visible, auraLeft = 0, 0
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") and d.Transparency < 1 then
+			visible += 1
+		end
+		if string.sub(d.Name, 1, 4) == "Aura" then
+			auraLeft += 1
+		end
+	end
+	check(model:GetAttribute("AssetRig") == true and visible > 5 and auraLeft == 0, `aura falhando: o personagem continua o asset real ({visible} partes visíveis), só sem aura`)
+end
+
 local failures = T.finish()
 if failures > 0 then
 	process.exit(1)

@@ -277,6 +277,8 @@ Testar no PC e no emulador (celular paisagem 844×390 e retrato 390×844, tablet
 | J3 | JACKPOT | personagem alto e pequeno: `..."DivineLanding", player, "<id>")` | enquadra o corpo inteiro + anel no chão; câmera não atravessa o personagem | [ ] |
 | J4 | JACKPOT | AUTO (e Roll Rápido) ligado + OCULTAR, depois `DivineLanding` | AUTO pausa durante a apresentação e volta sem rajada de rolls atrasados; OCULTAR não esconde Divino/Secreto | [ ] |
 | J5 | JACKPOT | emulador mobile (vertical e horizontal) | textos dentro da safe area, tremida confortável, FPS ok | [ ] |
+| AV4 | AURAS V2.1 | equipar Barbalva e Ulkiorra Liberado na Base | o MODELO real aparece no pedestal (não um boneco de blocos); aura em volta, sem cobrir o personagem | [ ] |
+| AV5 | AURAS V2.1 | `Dev:Invoke("AuraCompare", player, "Void")` e afastar a câmera 0–30 / 30–60 / 60–90 / 90–110 studs | Mítico claro, Divino chama atenção, Secreto impossível de ignorar no LIGHT; personagens SEMPRE visíveis; aura some só depois de 110 | [ ] |
 | MF1 | ANDARES | `Dev:Invoke("PreviewFloors", player, 5)` e andar pelo Floor01..04 | o andar coberto não fica escuro; luz quente suave (sem branco estourado); exterior/céu iguais | [ ] |
 | MF2 | ANDARES | no Floor01 olhar para cima (Floor02/03 com personagens) | Floor02 só mostra `$X/s`; Floor03+ sem letreiro; nada de parede de MÁX/nomes; subindo a rampa o Floor02 volta completo | [ ] |
 | MF3 | MOVIMENTO | andar Hub ↔ base ↔ rampas (PC e emulador mobile) | velocidade 22 confortável; rampas, esteira e colisões normais | [ ] |

@@ -404,6 +404,30 @@ function Env.create()
 		end
 		model.WorldPivot = target
 	end)
+	-- Model:GetBoundingBox como no Roblox (orientação do pivô, todas as BaseParts). Sem isto o
+	-- AuraBuilder caía num tamanho padrão nos testes e não via personagens LARGOS (espada/bisento):
+	-- foi assim que o Barbalva/Ulkiorra Liberado virarem placeholder passou despercebido.
+	pcall(roblox.implementMethod, "Model", "GetBoundingBox", function(model)
+		local pivot = pivotOf(model)
+		local V3 = roblox.Vector3
+		local minV, maxV = V3.new(math.huge, math.huge, math.huge), V3.new(-math.huge, -math.huge, -math.huge)
+		for _, part in descendantsParts(model) do
+			local h = part.Size / 2
+			for _, sx in { -1, 1 } do
+				for _, sy in { -1, 1 } do
+					for _, sz in { -1, 1 } do
+						local p = pivot:PointToObjectSpace(part.CFrame:PointToWorldSpace(V3.new(h.X * sx, h.Y * sy, h.Z * sz)))
+						minV = V3.new(math.min(minV.X, p.X), math.min(minV.Y, p.Y), math.min(minV.Z, p.Z))
+						maxV = V3.new(math.max(maxV.X, p.X), math.max(maxV.Y, p.Y), math.max(maxV.Z, p.Z))
+					end
+				end
+			end
+		end
+		if minV.X == math.huge then
+			return pivot, V3.new(0, 0, 0)
+		end
+		return pivot * roblox.CFrame.new((minV + maxV) / 2), maxV - minV
+	end)
 	pcall(roblox.implementMethod, "WorldRoot", "BulkMoveTo", function(_, parts, cframes)
 		for i, part in parts do
 			part.CFrame = cframes[i]
