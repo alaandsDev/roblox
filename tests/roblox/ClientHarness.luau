@@ -195,7 +195,7 @@ end), "jogador carregado com base")
 local clientRequire = env.newContext(overrides, { task = safeTask, warn = clientWarn })
 local ClientControllers = env.client.Controllers
 local CLIENT_ORDER = {
-	"NotificationController", "DataController", "HudController", "NavigationController", "AmbientController",
+	"NotificationController", "DataController", "HudController", "NavigationController", "AmbientController", "HubDecorationController",
 	"RevealController", "RollController", "InventoryController", "DiceShopController", "UpgradesController",
 	"SellController", "IndexController", "DailyController", "OfflineController", "SettingsController", "TowerController",
 	"RebirthController", "FusionController", "TradeController", "MissionController", "StoreController", "MusicController",
@@ -2209,6 +2209,64 @@ do
 	check(PAC.Stats().auras == 0, "bonecos removidos: nenhuma aura sobra (sem vazamento)")
 	model:Destroy()
 	player.Character = nil
+end
+
+------------------------------------------------------------------------------------
+-- HUB ART PASS: microanimações dos landmarks (1 loop, LOD, mobile)
+
+do
+	local HDC = C.HubDecorationController
+	HDC._rescan()
+	local st0 = HDC.Stats()
+	check(st0.items >= 20 and st0.effects >= 5 and st0.connections == 1, string.format("landmarks: %d elementos animados e %d efeitos num único loop", st0.items, st0.effects))
+	local map = env.real.Workspace.Map
+	local bag = map.Shops.Market:FindFirstChild("FloatingBag")
+	local before = bag:GetPivot()
+	local tclock = 500
+	HDC._setClock(function()
+		return tclock
+	end)
+	-- câmera perto do Mercado: animação cheia
+	camera.CFrame = roblox.CFrame.new(-38, 6, -45)
+	HDC._step(1)
+	tclock += 0.7
+	HDC._step(0.05)
+	local after = bag:GetPivot()
+	local near = HDC.Stats()
+	check((after.Position - before.Position).Magnitude > 0.01 or after.LookVector ~= before.LookVector, "MERCADO: sacola girando/flutuando")
+	local coin = map.Shops.Sell:FindFirstChild("BigCoin")
+	check(coin ~= nil and coin.CanCollide == false, "VENDER: moeda animada sem colisão")
+	-- teste de distância: overview do Hub (perto de várias), depois bem longe
+	local report = {}
+	for _, spot in { { "centro do Hub", roblox.CFrame.new(0, 6, -40) }, { "perto do Mercado", roblox.CFrame.new(-38, 6, -45) }, { "longe (canto da ilha)", roblox.CFrame.new(160, 6, -240) } } do
+		camera.CFrame = spot[2]
+		HDC._step(1)
+		local writes = 0
+		for f = 1, 30 do
+			tclock += 1 / 30
+			HDC._step(1 / 30)
+			writes += HDC.Stats().writes
+		end
+		local st = HDC.Stats()
+		table.insert(report, string.format("%s: %d cheios / %d reduzidos / %d parados · %.1f escritas por quadro · %.0f partículas/s · %d beams", spot[1], st.full, st.reduced, st.off, writes / 30, st.rate, st.beams))
+		if spot[1] == "longe (canto da ilha)" then
+			check(st.full == 0 and writes == 0 and st.rate == 0 and st.beams == 0, "longe: animações paradas e efeitos desligados (geometria fica)")
+		end
+	end
+	for _, line in report do
+		print("    " .. line)
+	end
+	camera.CFrame = roblox.CFrame.new(-38, 6, -45)
+	HDC._setMobile(true)
+	HDC._step(1)
+	local mob = HDC.Stats()
+	HDC._setMobile(false)
+	HDC._step(1)
+	local full = HDC.Stats()
+	check(mob.rate <= full.rate * 0.5 + 0.01, string.format("mobile: efeitos pela metade (%.1f -> %.1f partículas/s)", full.rate, mob.rate))
+	HDC._setClock(os.clock)
+	camera.CFrame = roblox.CFrame.new(0, 5, 0)
+	local _ = near
 end
 
 ------------------------------------------------------------------------------------

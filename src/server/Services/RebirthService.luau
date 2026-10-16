@@ -21,6 +21,7 @@ local BaseService = require(script.Parent.BaseService)
 local InventoryService = require(script.Parent.InventoryService)
 local UpgradeService = require(script.Parent.UpgradeService)
 local AnalyticsService = require(script.Parent.AnalyticsService)
+local MapService = require(script.Parent.MapService)
 
 local RebirthService = {}
 
@@ -94,6 +95,10 @@ end
 function RebirthService.Init()
 	Net.handle("Rebirth", RebirthService.Rebirth)
 	Net.handle("BuyRebirthPerk", RebirthService.BuyPerk)
+	-- Landmark RENASCER do Hub (art pass): abre a MESMA janela do botão do HUD
+	MapService.RegisterInteraction("HubRebirth", function(player)
+		Net.fire("OpenMenu", player, "Rebirth")
+	end)
 end
 
 return RebirthService

@@ -29,6 +29,7 @@ local MagnateConfig = require(ReplicatedStorage.Shared.Config.MagnateConfig)
 local Localization = require(Shared.Localization.Localization)
 
 local Build = require(script.Parent.Build)
+local Landmarks = require(script.Parent.Landmarks)
 local Decor = require(script.Parent.Decor)
 local WorldStyle = require(script.Parent.WorldStyle)
 
@@ -639,72 +640,21 @@ local function signBoard(parent: Instance, cf: CFrame, width: number, height: nu
 	return board
 end
 
--- MERCADO: barraca com toldo listrado, caixotes e bandeirinhas
+-- MERCADO: barraca comercial (toldo + balcão + produtos) e sacola flutuando (Landmarks.market)
 local function buildMarket(parent: Instance, spot: any)
 	local model = shopModel(parent, "Market")
 	local origin = shopOrigin(spot)
-	local w, d = spot.width, spot.depth
-	local orange = rgb(255, 150, 60)
-	Build.part(Vector3.new(w, 1, d), origin * CFrame.new(0, 0.5, 0), { Name = "Floor", Color = color(P.Wood), Material = Enum.Material.WoodPlanks, Parent = model })
-	Build.part(Vector3.new(w, 8, 1.2), origin * CFrame.new(0, 5, d / 2 - 0.6), { Name = "BackWall", Color = color(P.WoodDark), Material = Enum.Material.WoodPlanks, Parent = model })
-	for _, x in { -w / 2 + 0.9, w / 2 - 0.9 } do
-		for _, z in { -d / 2 + 0.9, d / 2 - 0.9 } do
-			Build.part(Vector3.new(1.8, 10, 1.8), origin * CFrame.new(x, 6, z), { Name = "Post", Color = color(P.WoodDark), Material = Enum.Material.Wood, Parent = model })
-		end
-	end
-	-- toldo listrado inclinado para a frente
-	local stripes = 6
-	for i = 1, stripes do
-		local x = -w / 2 + (i - 0.5) * w / stripes
-		Build.decor(Build.part(Vector3.new(w / stripes + 0.05, 0.6, d + 3), origin * CFrame.new(x, 11.4, -1) * CFrame.Angles(math.rad(12), 0, 0), {
-			Name = "Awning",
-			Color = if i % 2 == 0 then rgb(255, 250, 240) else orange,
-			Parent = model,
-		}))
-	end
-	local counter = Build.part(Vector3.new(w - 4, 3.5, 2), origin * CFrame.new(0, 2.75, -d / 2 + 2), { Name = "Counter", Color = rgb(150, 100, 60), Material = Enum.Material.Wood, Parent = model })
-	-- caixotes de frutas nas laterais
-	for i, offset in { Vector3.new(-w / 2 - 2, 1.5, -d / 2 + 2), Vector3.new(w / 2 + 2, 1.5, -d / 2 + 3), Vector3.new(w / 2 + 2, 4.1, -d / 2 + 3) } do
-		Build.decor(Build.part(Vector3.new(3, 2.6, 3), origin * CFrame.new(offset) * CFrame.Angles(0, i * 0.2, 0), { Name = "Crate", Color = color(P.Wood), Material = Enum.Material.WoodPlanks, Parent = model }))
-		Build.decor(Build.part(Vector3.new(2.4, 0.6, 2.4), origin * CFrame.new(offset + Vector3.new(0, 1.5, 0)), { Name = "Fruit", Color = if i == 2 then rgb(255, 90, 80) else rgb(120, 220, 90), Parent = model }))
-	end
-	signBoard(model, origin * CFrame.new(0, 14.6, -d / 2 - 0.6), w - 2, 3.8, orange, { { "🛒 " .. Localization.t("map.market"), 0.85 } })
+	local counter = Landmarks.market(model, origin, spot.width, spot.depth)
+	signBoard(model, origin * CFrame.new(0, 14.6, -spot.depth / 2 - 0.6), spot.width - 2, 3.8, rgb(255, 150, 60), { { "🛒 " .. Localization.t("map.market"), 0.85 } })
 	Build.prompt(counter, "Market", Localization.t("map.market"), Localization.t("prompt.open"))
 end
 
--- VENDER: cofre de pedra com moeda gigante no telhado
+-- VENDER: máquina/processador de venda (Landmarks.sell)
 local function buildSell(parent: Instance, spot: any)
 	local model = shopModel(parent, "Sell")
 	local origin = shopOrigin(spot)
-	local w, d = spot.width, spot.depth
-	local green, gold = rgb(80, 200, 110), color(P.Gold)
-	Build.part(Vector3.new(w, 1, d), origin * CFrame.new(0, 0.5, 0), { Name = "Floor", Color = color(P.StoneDark), Material = Enum.Material.Slate, Parent = model })
-	Build.part(Vector3.new(w, 9, 1.4), origin * CFrame.new(0, 5.5, d / 2 - 0.7), { Name = "BackWall", Color = color(P.Stone), Material = Enum.Material.Slate, Parent = model })
-	for _, x in { -w / 2 + 0.8, w / 2 - 0.8 } do
-		Build.part(Vector3.new(1.6, 9, d), origin * CFrame.new(x, 5.5, 0), { Name = "SideWall", Color = color(P.Stone), Material = Enum.Material.Slate, Parent = model })
-	end
-	-- telhado plano com ameias e faixa verde
-	Build.part(Vector3.new(w + 1.4, 1.2, d + 1.4), origin * CFrame.new(0, 10.6, 0), { Name = "Roof", Color = green, Parent = model })
-	for _, x in { -w / 2, w / 2 } do
-		for _, z in { -d / 2, d / 2 } do
-			Build.decor(Build.part(Vector3.new(2.2, 1.8, 2.2), origin * CFrame.new(x, 12.1, z), { Name = "Crenel", Color = color(P.Stone), Parent = model }))
-		end
-	end
-	-- moeda gigante em pé no telhado, virada para o Hub, com "$" nas duas faces
-	local coin = Build.part(Vector3.new(1.4, 9, 9), origin * CFrame.new(0, 16.4, 0) * CFrame.Angles(0, math.rad(90), 0), { Name = "BigCoin", Color = gold, Parent = model })
-	coin.Shape = Enum.PartType.Cylinder
-	Build.decor(coin)
-	Build.sign(coin, Enum.NormalId.Left, { { "$", 0.9, rgb(255, 250, 220) } })
-	Build.sign(coin, Enum.NormalId.Right, { { "$", 0.9, rgb(255, 250, 220) } })
-	local counter = Build.part(Vector3.new(w - 4, 3.5, 2), origin * CFrame.new(0, 2.75, -d / 2 + 2), { Name = "Counter", Color = green, Parent = model })
-	-- pilhas de moedas e sacos de dinheiro na frente
-	for i, x in { -w / 2 - 2, w / 2 + 2 } do
-		for k = 0, 2 - i % 2 do
-			Build.decor(Build.cylinder(2.6, 0.7, origin * CFrame.new(x, 0.75 * k, -d / 2 + 2), { Name = "CoinStack", Color = gold, Parent = model }))
-		end
-		Build.decor(Build.part(Vector3.new(2.4, 2.4, 2.4), origin * CFrame.new(x, 1.2, -d / 2 + 5) * CFrame.Angles(0, 0.4 * i, 0), { Name = "MoneyBag", Color = rgb(190, 150, 90), Parent = model }))
-	end
-	signBoard(model, origin * CFrame.new(0, 8.4, -d / 2 - 0.4), w - 3, 3.4, green, { { "💰 " .. Localization.t("map.sell"), 0.85 } })
+	local counter = Landmarks.sell(model, origin, spot.width, spot.depth)
+	signBoard(model, origin * CFrame.new(0, 12, -spot.depth / 2 + 0.2), spot.width - 3, 3.2, rgb(80, 200, 110), { { "💰 " .. Localization.t("map.sell"), 0.85 } })
 	Build.prompt(counter, "Sell", Localization.t("map.sell"), Localization.t("prompt.open"))
 end
 
@@ -744,6 +694,8 @@ local function buildDiceShop(parent: Instance, spot: any)
 	Build.sign(bridge, Enum.NormalId.Front, { { "🎲 " .. Localization.t("map.dice_shop"), 0.85, rgb(255, 230, 90) } })
 	Build.sign(bridge, Enum.NormalId.Back, { { "🎲 " .. Localization.t("map.dice_shop"), 0.85, rgb(255, 230, 90) } })
 	buildDice(model, origin * CFrame.new(0, 1 + towerH + 10, -d / 2 + 4) * CFrame.Angles(0.4, 0.5, 0.2), 7)
+	-- ART PASS (polish, sem redesenho): dados menores flutuando/girando + brilho suave
+	Landmarks.diceShopPolish(model, origin, w, d, 1 + towerH)
 	Decor.crystal(model, origin * CFrame.new(-w / 2 - 2.5, 0, -d / 2), 7, rgb(190, 140, 255))
 	Decor.crystal(model, origin * CFrame.new(w / 2 + 2.5, 0, -d / 2), 7, rgb(140, 220, 255))
 	if counter then
@@ -837,6 +789,12 @@ local function buildTowers(parent: Folder): BasePart
 		end
 		y += h
 	end
+	-- ART PASS: número de cada andar na face da frente, bandeiras no topo, portal respirando
+	local tierParts = {}
+	for i = 1, 4 do
+		table.insert(tierParts, parent:FindFirstChild(`TowerTier{i}`) :: BasePart)
+	end
+	Landmarks.towerPolish(parent, portal, tierParts)
 	Build.decor(Build.part(Vector3.new(6, 6, 6), body * CFrame.new(0, y + 4, 0) * CFrame.Angles(math.rad(45), 0, math.rad(45)), {
 		Name = "TowerOrb",
 		Color = rgb(255, 110, 170),
@@ -876,99 +834,33 @@ end
 local function buildSocial(parent: Folder)
 	local s = MapConfig.Social
 
-	-- Fusão: plataforma em 2 degraus, runa quadrada, altar com cristal grande, pilares de cristal
+	-- Fusão: 3 entradas -> núcleo -> 1 saída (Landmarks.fusion)
 	local fusion = Build.model("Fusion", parent)
 	Build.tag(fusion, "Interactable")
-	local fo = facingHub(s.Fusion)
-	Build.part(Vector3.new(18, 1, 18), fo * CFrame.new(0, 0.5, 0), { Name = "Platform", Color = rgb(70, 60, 110), Material = Enum.Material.Slate, Parent = fusion })
-	Build.part(Vector3.new(12, 1, 12), fo * CFrame.new(0, 1.5, 0), { Name = "Platform2", Color = rgb(96, 82, 148), Material = Enum.Material.Slate, Parent = fusion })
-	local rune = Decor.chunkyBorder(fusion, fo * CFrame.new(0, 2, 0), 9, 9, 0.5, 0.12, rgb(120, 255, 220))
-	for _, part in rune:GetChildren() do
-		(part :: BasePart).Material = Enum.Material.Neon
-	end
-	local altar = Build.part(Vector3.new(5, 3.5, 5), fo * CFrame.new(0, 3.75, 0), { Name = "Altar", Color = rgb(110, 90, 170), Material = Enum.Material.Slate, Parent = fusion })
-	Decor.crystal(fusion, fo * CFrame.new(0, 5.5, 0), 9, rgb(120, 255, 220))
-	for i, x in { -6.5, 6.5 } do
-		local base = fo * CFrame.new(x, 1, 6.5)
-		Build.decor(Build.part(Vector3.new(3.4, 3, 3.4), base * CFrame.new(0, 1.5, 0), { Name = "CrystalBase", Color = color(P.StoneDark), Parent = fusion }))
-		Decor.crystal(fusion, base * CFrame.new(0, 3, 0), 7, if i == 1 then rgb(200, 120, 255) else rgb(255, 140, 210))
-	end
-	Decor.rockCluster(fusion, fo * CFrame.new(-10, 0, 8), 4, 901, false)
-	Decor.rockCluster(fusion, fo * CFrame.new(10, 0, 8), 4, 902, false)
-	Decor.sign(fusion, fo * CFrame.new(0, 0, 10.5), "✨ " .. Localization.t("map.fusion"), rgb(110, 70, 220), { width = 12, lift = 6 })
+	local altar = Landmarks.fusion(fusion, facingHub(s.Fusion))
 	Build.prompt(altar, "Fusion", Localization.t("map.fusion"), Localization.t("prompt.open"))
 
-	-- Missões: quadro de avisos com telhadinho + NPC guia
+	-- Missões: quadro de tarefas + "!" sobre o NPC (Landmarks.missions)
 	local missions = Build.model("Missions", parent)
 	Build.tag(missions, "Interactable")
-	local mo = facingHub(s.Missions)
-	for _, x in { -5.6, 5.6 } do
-		Build.part(Vector3.new(1.2, 10, 1.2), mo * CFrame.new(x, 5, 2.4), { Name = "Post", Color = color(P.WoodDark), Material = Enum.Material.Wood, Parent = missions })
-	end
-	local board = Build.part(Vector3.new(10, 7, 0.8), mo * CFrame.new(0, 5.5, 2), {
-		Name = "Board",
-		Color = rgb(150, 105, 65),
-		Material = Enum.Material.Wood,
-		Parent = missions,
-	})
-	Build.sign(board, Enum.NormalId.Front, {
-		{ "📜 " .. Localization.t("map.missions"), 0.3, rgb(255, 230, 90) },
-		{ "• • •", 0.25 },
-	}, rgb(245, 235, 210))
-	for _, side in { -1, 1 } do
-		Build.decor(Build.wedge(Vector3.new(14, 2, 4), mo * CFrame.new(0, 11, 2.4 + side * 2) * CFrame.Angles(0, if side == 1 then math.pi else 0, 0), {
-			Name = "Roof",
-			Color = rgb(230, 150, 40),
-			Parent = missions,
-		}))
-	end
-	local npc = Build.model("GuideNPC", missions)
-	local npcBase = mo * CFrame.new(-8, 0, 0)
-	Build.part(Vector3.new(2, 2, 1), npcBase * CFrame.new(0, 3, 0), { Color = rgb(60, 120, 220), Parent = npc })
-	Build.part(Vector3.new(2, 2, 1), npcBase * CFrame.new(0, 1, 0), { Color = rgb(50, 50, 70), Parent = npc })
-	Build.part(Vector3.new(1.6, 1.6, 1.6), npcBase * CFrame.new(0, 4.8, 0), { Color = rgb(255, 210, 170), Parent = npc })
-	Build.decor(Build.part(Vector3.new(2.4, 0.5, 2.4), npcBase * CFrame.new(0, 5.8, 0), { Color = rgb(255, 200, 60), Parent = npc }))
+	local board = Landmarks.missions(missions, facingHub(s.Missions))
 	Build.prompt(board, "Missions", Localization.t("map.missions"), Localization.t("prompt.open"))
 
-	-- Trocas: tenda listrada sobre tapete, mesas e banquinhos
+	-- Trocas: estação simétrica A ↔ B (Landmarks.trade)
 	local trade = Build.model("Trade", parent)
 	Build.tag(trade, "Interactable")
-	local to = facingHub(s.Trade)
-	Build.part(Vector3.new(16, 0.2, 12), to * CFrame.new(0, 0.1, 0), {
-		Name = "Rug",
-		Color = rgb(230, 90, 90),
-		Material = Enum.Material.Fabric,
-		Parent = trade,
-	})
-	for _, x in { -7.4, 7.4 } do
-		for _, z in { -5.4, 5.4 } do
-			Build.decor(Build.part(Vector3.new(1, 8.5, 1), to * CFrame.new(x, 4.25, z), { Name = "TentPost", Color = color(P.WoodDark), Parent = trade }))
-		end
-	end
-	for i = 1, 4 do
-		Build.decor(Build.part(Vector3.new(16.6, 0.5, 3.3), to * CFrame.new(0, 8.8, -6.6 + (i - 0.5) * 3.3), {
-			Name = "TentRoof",
-			Color = if i % 2 == 0 then rgb(255, 250, 240) else rgb(230, 80, 80),
-			Parent = trade,
-		}))
-	end
-	local tableTop: BasePart? = nil
-	for _, x in { -4, 4 } do
-		tableTop = Build.part(Vector3.new(4, 0.5, 3), to * CFrame.new(x, 3, 0), {
-			Name = "Table",
-			Color = rgb(170, 120, 75),
-			Material = Enum.Material.Wood,
-			Parent = trade,
-		})
-		Build.part(Vector3.new(1, 2.7, 1), to * CFrame.new(x, 1.35, 0), { Color = rgb(140, 95, 60), Parent = trade })
-		for _, z in { -2.6, 2.6 } do
-			Build.part(Vector3.new(1.6, 1.6, 1.6), to * CFrame.new(x, 0.8, z), { Name = "Stool", Color = rgb(255, 200, 80), Parent = trade })
-		end
-	end
-	Decor.sign(trade, to * CFrame.new(0, 0, 8.5), "🤝 " .. Localization.t("map.trade"), rgb(230, 80, 80), { width = 12, lift = 6 })
-	if tableTop then
-		Build.prompt(tableTop, "Trade", Localization.t("map.trade"), Localization.t("prompt.open"))
-	end
+	local tableTop = Landmarks.trade(trade, facingHub(s.Trade))
+	Build.prompt(tableTop, "Trade", Localization.t("map.trade"), Localization.t("prompt.open"))
+
+	-- MELHORIAS e RENASCER: landmarks novos (abrem as MESMAS janelas do HUD)
+	local upgrades = Build.model("HubUpgrades", parent)
+	Build.tag(upgrades, "Interactable")
+	local console = Landmarks.upgrades(upgrades, facingHub(s.Upgrades))
+	Build.prompt(console, "HubUpgrades", Localization.t("map.upgrades"), Localization.t("prompt.open"))
+	local rebirth = Build.model("HubRebirth", parent)
+	Build.tag(rebirth, "Interactable")
+	local pedestal = Landmarks.rebirth(rebirth, facingHub(s.Rebirth))
+	Build.prompt(pedestal, "HubRebirth", Localization.t("map.rebirth"), Localization.t("prompt.open"))
 
 	-- Rankings: pódio (ouro/prata/bronze) na frente de 4 painéis: os 3 de sempre + 👑 MAGNATA
 	-- (Temporada 1, top 10, moldura dourada) na ponta do MESMO arco — nada foi substituído

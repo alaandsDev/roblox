@@ -180,7 +180,7 @@ Floor02: SideA = Slot09..Slot12 | SideB = Slot13..Slot16
 
 Cliente: TowerController (janela + tela de batalha animada), RebirthController, FusionController,
 TradeController, MissionController, StoreController (loja + atalhos da direita + giro),
-MusicController, PlayerAuraController (visual das Player Auras, LOD central), PlayerAuraShopController
+MusicController, HubDecorationController (microanimações dos landmarks do Hub, 1 loop + LOD; ver HUB_ART_PASS.md), PlayerAuraController (visual das Player Auras, LOD central), PlayerAuraShopController
 (janela PLAYER AURAS), SessionController (atividade real, indicador AFK, reconexão limitada via TeleportService).
 Interações do mapa: Towers, Fusion, Trade, Missions, Market (loja).
 

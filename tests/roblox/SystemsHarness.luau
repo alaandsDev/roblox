@@ -670,6 +670,45 @@ section("F) DEV: PlayerAuraLineup / PlayerAuraStress sem sobreposição", functi
 	Dev.Run("PlayerAuraClear")
 end)
 
+section("G) DEV HubArtTour: pontos de observação seguros", function()
+	local map = env.real.Workspace:FindFirstChild("Map")
+	local solids = {}
+	for _, d in map:GetDescendants() do
+		if d:IsA("BasePart") and d.CanCollide then
+			table.insert(solids, d)
+		end
+	end
+	local function blocked(point)
+		for _, part in solids do
+			local lp = part.CFrame:PointToObjectSpace(point)
+			local half = part.Size / 2
+			if part.Shape == roblox.Enum.PartType.Cylinder then
+				half = roblox.Vector3.new(part.Size.X / 2, part.Size.Y / 2, part.Size.Z / 2)
+			end
+			if math.abs(lp.X) < half.X + 1 and math.abs(lp.Y) < half.Y + 0.5 and math.abs(lp.Z) < half.Z + 1 then
+				return part:GetFullName()
+			end
+		end
+		return nil
+	end
+	local bad = {}
+	local names = { "Overview" }
+	for key in Dev.HubArtTargets() do
+		table.insert(names, key)
+	end
+	for _, name in names do
+		for _, dist in { 26, 60 } do
+			local from = Dev.HubArtViewpoint(name, dist)
+			local hit = from and blocked(from)
+			if not from or hit then
+				table.insert(bad, name .. "@" .. dist .. ": " .. tostring(hit))
+			end
+		end
+	end
+	check(#names == 11 and #bad == 0, "HubArtTour: 11 pontos (Overview + 10 landmarks) a 26/60 studs fora de qualquer peça sólida" .. (if #bad > 0 then " — " .. bad[1] else ""))
+	check(string.find(Dev.Run("HubArtTour", pa, "Inexistente"), "desconhecido", 1, true) ~= nil, "HubArtTour: nome inválido lista as opções")
+end)
+
 check(#runtimeErrors == 0, "nenhum erro de execução nos handlers (" .. #runtimeErrors .. ")" .. (if #runtimeErrors > 0 then ": " .. runtimeErrors[1] else ""))
 check(#Env.errors == 0, "nenhum erro em threads do servidor (" .. #Env.errors .. ")" .. (if #Env.errors > 0 then ": " .. tostring(Env.errors[1]) else ""))
 local failures = T.finish()

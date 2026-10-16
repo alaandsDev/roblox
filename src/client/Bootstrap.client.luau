@@ -14,6 +14,7 @@ local ORDER = {
 	"HudController",
 	"NavigationController",
 	"AmbientController",
+	"HubDecorationController", -- microanimações dos landmarks do Hub (1 loop, LOD)
 	"RevealController",
 	"RollController",
 	"InventoryController",

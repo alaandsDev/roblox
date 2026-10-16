@@ -71,6 +71,9 @@ MapConfig.Social = {
 	Trade = { x = 68, z = 12 },
 	Missions = { x = -50, z = 98 },
 	Leaderboards = { x = 50, z = 98 },
+	-- Hub art pass: landmarks de MELHORIAS e RENASCER (entre o Hub e a esteira, fora dos caminhos)
+	Upgrades = { x = -68, z = -40 },
+	Rebirth = { x = 68, z = -40 },
 }
 
 MapConfig.Entrance = { z = -248, width = 34, height = 16 }
@@ -191,6 +194,8 @@ MapConfig.Landmarks = {
 	{ id = "Trade", x = 68, z = 12, radius = 13 },
 	{ id = "Missions", x = -50, z = 98, radius = 13 },
 	{ id = "Leaderboards", x = 50, z = 98, radius = 15 },
+	{ id = "Upgrades", x = -68, z = -40, radius = 12 },
+	{ id = "Rebirth", x = 68, z = -40, radius = 12 },
 	{ id = "Entrance", x = 0, z = -248, radius = 22 },
 }
 

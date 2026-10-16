@@ -46,6 +46,8 @@ return {
 	["map.towers"] = "TORRES",
 	["map.towers_sub"] = "DESAFIE OS ANDARES",
 	["map.fusion"] = "FUSÃO",
+	["map.upgrades"] = "MELHORIAS",
+	["map.rebirth"] = "RENASCER",
 	["map.missions"] = "MISSÕES",
 	["map.trade"] = "TROCAS",
 	["map.rankings"] = "RANKINGS",

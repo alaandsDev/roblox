@@ -66,6 +66,10 @@ function UpgradeService.Init()
 		end
 		Net.fire("OpenMenu", player, "Upgrades")
 	end)
+	-- Landmark MELHORIAS do Hub (art pass): abre a MESMA janela do botão do HUD
+	MapService.RegisterInteraction("HubUpgrades", function(player)
+		Net.fire("OpenMenu", player, "Upgrades")
+	end)
 end
 
 return UpgradeService

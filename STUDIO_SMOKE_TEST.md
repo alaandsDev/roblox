@@ -347,3 +347,26 @@ Comandos (Barra de comandos, contexto Servidor): `local Dev = game.ServerStorage
 | FM3 | FUSÃO | ter 2 Prata + 300 Normal da mesma família → FUNDIR MÁX. | as Pratas existentes entram na cadeia (102 Prata → 34 Ouro …) | [ ] |
 | FM4 | FUSÃO | equipar/travar/favoritar algumas cópias → FUNDIR MÁX. | nenhuma delas é consumida | [ ] |
 | FM5 | FUSÃO | clicar FUNDIR TUDO várias vezes rápido / mudar o inventário com a prévia aberta | uma operação só; prévia velha: "Seu inventário mudou. Veja a prévia de novo." | [ ] |
+
+## HUB ART PASS (extra) — ver HUB_ART_PASS.md
+
+`local Dev = game.ServerStorage:WaitForChild("RollLegendsDev"); local p = game.Players:GetPlayers()[1]`
+Critério: SEM LER AS PLACAS dá para dizer "isso vende / troca / é missão / funde / é torre / vende dados / melhora / renasce". Testes automáticos NÃO aprovam arte.
+
+| # | Área | Ação | Esperado | OK |
+|---|---|---|---|---|
+| HA1 | OVERVIEW | `Dev:Invoke("HubArtTour", p, "Overview")` | Hub parece um mundo intencional; Dados/Fusão/Torres se destacam (tier A), sem poluição | [ ] |
+| HA2 | MERCADO | `HubArtTour Market` | toldo + balcão + produtos grandes + sacola flutuando girando; não parece barraca vazia | [ ] |
+| HA3 | LOJA DE DADOS | `HubArtTour DiceShop` | portal original preservado; 3 dados flutuando/girando devagar + brilho suave | [ ] |
+| HA4 | VENDER | `HubArtTour Sell` | lê como MÁQUINA: funil → esteira (bloco entrando) → visor $ pulsando → moedas saindo; prompt continua no balcão | [ ] |
+| HA5 | TROCAS | `HubArtTour Trade` | dois lados simétricos (azul/laranja) com ↔ no arco respirando; prompt na mesa central | [ ] |
+| HA6 | MISSÕES | `HubArtTour Missions` | quadro de tarefas com cartões/pinos/✓/★; NPC com "!" flutuando; prompt no quadro | [ ] |
+| HA7 | FUSÃO | `HubArtTour Fusion` | 3 entradas → núcleo pulsando → 1 saída; energia correndo pelos 3 beams; prompt no altar | [ ] |
+| HA8 | TORRES | `HubArtTour Tower` | portal respirando, andares 1–4 numerados, bandeiras; compacto | [ ] |
+| HA9 | MELHORIAS | `HubArtTour Upgrades` | 3 pilares crescentes com setas subindo + engrenagem; prompt abre a janela MELHORIAS | [ ] |
+| HA10 | RENASCER | `HubArtTour Rebirth` | anel com setas circulares girando + estrela; prompt abre a janela RENASCER | [ ] |
+| HA11 | DISTÂNCIA | `HubArtTour <nome>, 10 / 30 / 60 / 100` para cada um | 10–30: detalhes; 60: silhueta clara; 100: reconhecível pela forma/cor; animações param longe, geometria fica | [ ] |
+| HA12 | MOBILE | emulador (retrato e paisagem) andando pelo Hub | FPS estável; nada cobre a câmera; caminhos livres | [ ] |
+| HA13 | PLAYER AURA | `SetPlayerAura p 5` e passear pelo Hub | Absoluta continua legível contra os landmarks; landmarks não competem com a aura | [ ] |
+| HA14 | PERSONAGENS | base ocupada + Character Auras + Recent Rolls + HUD | Hub continua legível em gameplay real | [ ] |
+| HA15 | STRESS | `PlayerAuraStress p 10` no centro do Hub + girar a câmera | FPS ok; landmarks + auras sem poluição visual excessiva | [ ] |

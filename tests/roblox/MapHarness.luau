@@ -296,9 +296,127 @@ do
 			prompts[obj:GetAttribute("InteractId")] = true
 		end
 	end
-	for _, id in { "Market", "DiceShop", "Sell", "Towers", "Fusion", "Missions", "Trade" } do
+	for _, id in { "Market", "DiceShop", "Sell", "Towers", "Fusion", "Missions", "Trade", "HubUpgrades", "HubRebirth" } do
 		check(prompts[id] == true, "prompt de " .. id .. " presente")
 	end
+
+	-- HUB ART PASS: cada landmark com a sua SILHUETA (peças-assinatura), sem perder nada
+	local function has(root, name, minCount)
+		local n = 0
+		for _, d in (root and root:GetDescendants() or {}) do
+			if d.Name == name then
+				n += 1
+			end
+		end
+		return n >= (minCount or 1), n
+	end
+	local shops, social = map.Shops, map.Social
+	local market, sellM, dice = shops:FindFirstChild("Market"), shops:FindFirstChild("Sell"), shops:FindFirstChild("DiceShop")
+	local fusionM, missionsM, tradeM = social:FindFirstChild("Fusion"), social:FindFirstChild("Missions"), social:FindFirstChild("Trade")
+	local upM, rbM = social:FindFirstChild("HubUpgrades"), social:FindFirstChild("HubRebirth")
+	check(has(market, "Awning", 6) and has(market, "Counter") and has(market, "FloatingBag") and has(market, "Sack"), "MERCADO: toldo + balcão + produtos + sacola flutuando")
+	check(has(sellM, "HopperFunnel", 2) and has(sellM, "InputBelt") and has(sellM, "SellMachine") and has(sellM, "MachineScreen") and has(sellM, "OutputChute") and has(sellM, "BigCoin"), "VENDER: funil -> esteira -> processador ($) -> rampa de moedas")
+	check(has(dice, "Bridge") and has(dice, "FloatingDice", 3) and has(dice, "DiceSparkles"), "LOJA DE DADOS: portal preservado + 3 dados flutuando + brilho")
+	local boothA, boothB = tradeM and tradeM:FindFirstChild("TradeBoothA"), tradeM and tradeM:FindFirstChild("TradeBoothB")
+	check(boothA ~= nil and boothB ~= nil and has(tradeM, "TradeArrowL") and has(tradeM, "TradeArrowR"), "TROCAS: dois lados (A | B) + ↔")
+	if boothA and boothB then
+		local pa = boothA:FindFirstChild("Booth").CFrame.Position
+		local pb = boothB:FindFirstChild("Booth").CFrame.Position
+		local mid = tradeM:FindFirstChild("Table").CFrame.Position
+		check(math.abs((pa - mid).Magnitude - (pb - mid).Magnitude) < 1.2, "TROCAS: balcões simétricos em volta da mesa central")
+	end
+	check(has(missionsM, "QuestCard", 4) and has(missionsM, "Pin", 4) and has(missionsM, "Check", 2) and has(missionsM, "QuestStar") and has(missionsM, "GuideNPC") and has(missionsM, "QuestMark"), "MISSÕES: quadro com 4 cartões, pinos, ✓, ★, NPC com !")
+	local _, inputs = has(fusionM, "FusionInput", 3)
+	local beams = 0
+	for _, d in fusionM:GetDescendants() do
+		if d:IsA("Beam") then
+			beams += 1
+		end
+	end
+	check(inputs == 3 and has(fusionM, "FusionCore") and has(fusionM, "FusionOutput") and beams == 3, "FUSÃO: 3 entradas -> núcleo -> 1 saída (3 beams convergindo)")
+	check(has(map.Towers, "PortalField") and has(map.Towers, "TowerTier4") and has(map.Towers, "Flag", 2) and has(map.Towers, "GiantSword"), "TORRES: portal + torre em andares numerados + bandeiras + espada")
+	check(has(upM, "UpgradePillar", 3) and has(upM, "UpgradeArrow1") and has(upM, "UpgradeArrow3") and has(upM, "UpgradeGear"), "MELHORIAS: 3 pilares crescentes com setas ↑ + engrenagem")
+	check(has(rbM, "RebirthRing", 8) and has(rbM, "RebirthArrows") and has(rbM, "RebirthStar"), "RENASCER: anel + setas circulares + estrela")
+
+	-- animado = sem colisão, ancorado; nada de Script nas estruturas
+	local animated, badAnim, scripts = 0, 0, 0
+	for _, root in { map.Hub, shops, social, map.Towers } do
+		for _, d in root:GetDescendants() do
+			if d:GetAttribute("DecoMode") ~= nil then
+				animated += 1
+				local parts = if d:IsA("BasePart") then { d } else d:GetDescendants()
+				for _, part in parts do
+					if part:IsA("BasePart") and (part.CanCollide or not part.Anchored) then
+						badAnim += 1
+					end
+				end
+			end
+			if d:IsA("Script") or d:IsA("LocalScript") or d:IsA("ModuleScript") then
+				scripts += 1
+			end
+		end
+	end
+	check(animated >= 20 and badAnim == 0, "microanimações: " .. animated .. " elementos animados, todos sem colisão e ancorados")
+	check(scripts == 0, "nenhum Script dentro das estruturas (animação central no cliente)")
+
+	-- decoração pequena com colisão (prende/tropeça o jogador): nenhuma nos landmarks
+	local smallSolid = {}
+	for _, root in { shops, social } do
+		for _, d in root:GetDescendants() do
+			if d:IsA("BasePart") and d.CanCollide and math.max(d.Size.X, d.Size.Y, d.Size.Z) < 1.8 then
+				table.insert(smallSolid, d:GetFullName())
+			end
+		end
+	end
+	check(#smallSolid == 0, "nenhuma decoração pequena com colisão nos landmarks" .. (if #smallSolid > 0 then ": " .. smallSolid[1] else ""))
+
+	-- landmarks não se invadem e não invadem bases; spawns livres
+	local Layout2 = requireModule(shared.Modules.MapLayout).new(MapCfg, requireModule(shared.Config.BaseConfig))
+	local boxes = {}
+	for _, m in { market, sellM, dice, fusionM, missionsM, tradeM, upM, rbM, social:FindFirstChild("Leaderboards") } do
+		local box = { name = m.Name, minX = math.huge, maxX = -math.huge, minZ = math.huge, maxZ = -math.huge }
+		for _, part in m:GetDescendants() do
+			if part:IsA("BasePart") and part.CanCollide then
+				local p = part.CFrame.Position
+				box.minX, box.maxX = math.min(box.minX, p.X), math.max(box.maxX, p.X)
+				box.minZ, box.maxZ = math.min(box.minZ, p.Z), math.max(box.maxZ, p.Z)
+			end
+		end
+		table.insert(boxes, box)
+	end
+	local overlaps, inBase = {}, {}
+	for i, a in boxes do
+		if Layout2:nearBase((a.minX + a.maxX) / 2, (a.minZ + a.maxZ) / 2, 4) then
+			table.insert(inBase, a.name)
+		end
+		for j = i + 1, #boxes do
+			local b = boxes[j]
+			if a.minX < b.maxX and b.minX < a.maxX and a.minZ < b.maxZ and b.minZ < a.maxZ then
+				table.insert(overlaps, a.name .. "×" .. b.name)
+			end
+		end
+	end
+	check(#overlaps == 0, "nenhum landmark invade outro" .. (if #overlaps > 0 then ": " .. overlaps[1] else ""))
+	check(#inBase == 0, "nenhum landmark invade base" .. (if #inBase > 0 then ": " .. inBase[1] else ""))
+	local blockedSpawn = {}
+	for name, spot in MapCfg.Spawns do
+		for _, root in { map.Hub, shops, social, map.Towers } do
+			for _, part in root:GetDescendants() do
+				if part:IsA("BasePart") and part.CanCollide then
+					local p = part.CFrame.Position
+					local half = part.Size / 2
+					if part.Shape == roblox.Enum.PartType.Cylinder then -- cilindro em pé: altura = Size.X
+						half = roblox.Vector3.new(part.Size.Y / 2, part.Size.X / 2, part.Size.Z / 2)
+					end
+					-- (pisos/degraus baixos não contam: só o que fica na altura do corpo)
+					if math.abs(p.X - spot.x) < half.X + 2 and math.abs(p.Z - spot.z) < half.Z + 2 and p.Y - half.Y < 5 and p.Y + half.Y > 3 then
+						table.insert(blockedSpawn, name .. ":" .. part:GetFullName())
+					end
+				end
+			end
+		end
+	end
+	check(#blockedSpawn == 0, "spawns livres" .. (if #blockedSpawn > 0 then ": " .. blockedSpawn[1] else ""))
 
 	-- Nada sólido na altura do personagem em cima dos caminhos (exceto o altar do Hub, que É o destino)
 	local allowed = { AltarTier1 = true, AltarTier2 = true, AltarTier3 = true, DicePedestal = true, TowerTier1 = true }
@@ -609,6 +727,51 @@ do
 	check(#list == 1 and list[1] == inner and inner.Name == MapCfg.Lighting.SkyName and box.Parent == nil, "Sky: ClassicRobloxSky salvo dentro de um contêiner vira o único Sky efetivo (movido, sem clonar)")
 	check(MapCfg.Lighting.SkyAssetId == 339406852 and MapCfg.Lighting.SkyName == "ClassicRobloxSky", "Sky: céu oficial = Classic Roblox Sky (339406852)")
 	inner:Destroy()
+end
+
+do
+	-- Custo do cenário dos LANDMARKS do Hub (Hub, Lojas, Torres, área social): o que fica no
+	-- mundo o tempo todo. As animações são só no cliente (HubDecorationController).
+	local st = { parts = 0, meshes = 0, emitters = 0, rate = 0, beams = 0, trails = 0, attachments = 0, lights = 0, collide = 0 }
+	for _, name in { "Hub", "Shops", "Towers", "Social" } do
+		local folder = map:FindFirstChild(name)
+		for _, d in (folder and folder:GetDescendants() or {}) do
+			if d:IsA("MeshPart") then
+				st.meshes += 1
+			end
+			if d:IsA("BasePart") then
+				st.parts += 1
+				if d.CanCollide then
+					st.collide += 1
+				end
+			elseif d:IsA("ParticleEmitter") then
+				st.emitters += 1
+				st.rate += d.Rate
+			elseif d:IsA("Beam") then
+				st.beams += 1
+			elseif d:IsA("Trail") then
+				st.trails += 1
+			elseif d:IsA("Attachment") then
+				st.attachments += 1
+			elseif d:IsA("Light") then
+				st.lights += 1
+			end
+		end
+	end
+	local per = {}
+	for _, path in { { "Shops", "Market" }, { "Shops", "DiceShop" }, { "Shops", "Sell" }, { "Social", "Trade" }, { "Social", "Missions" }, { "Social", "Fusion" }, { "Social", "HubUpgrades" }, { "Social", "HubRebirth" }, { "Social", "Leaderboards" } } do
+		local m = map[path[1]]:FindFirstChild(path[2])
+		local n = 0
+		for _, d in (m and m:GetDescendants() or {}) do
+			if d:IsA("BasePart") then
+				n += 1
+			end
+		end
+		table.insert(per, path[2] .. " " .. n)
+	end
+	print("[Harness] peças por landmark: " .. table.concat(per, " · "))
+	print(string.format("\n[Harness] LANDMARKS do Hub: %d Parts (%d com colisão), %d MeshParts, %d ParticleEmitters (%.0f partículas/s), %d Beams, %d Trails, %d Attachments, %d Lights",
+		st.parts, st.collide, st.meshes, st.emitters, st.rate, st.beams, st.trails, st.attachments, st.lights))
 end
 
 print(string.format("\n[Harness] %d peças no total", partCount))

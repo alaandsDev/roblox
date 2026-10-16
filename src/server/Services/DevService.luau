@@ -380,6 +380,73 @@ DevService.Register("VisualCheck", "(player, ponto?) teleporta para conferir o v
 	return "ponto desconhecido; " .. table.concat(names, ", ")
 end)
 
+-- HUB ART PASS: tour pelos landmarks (ponto seguro de observação, olhando para a estrutura).
+-- distância opcional (10/30/60/100 para o teste de leitura). Câmera não é controlada.
+local function hubArtTargets(): { [string]: { x: number, z: number } }
+	local s, sh, t = MapConfig.Social, MapConfig.Shops, MapConfig.Towers
+	return {
+		Market = sh.Market, DiceShop = sh.DiceShop, Sell = sh.Sell,
+		Trade = s.Trade, Missions = s.Missions, Fusion = s.Fusion,
+		Tower = { x = t.x, z = t.z }, Upgrades = s.Upgrades, Rebirth = s.Rebirth, Rankings = s.Leaderboards,
+	}
+end
+DevService.HubArtTargets = hubArtTargets
+-- altura segura para ficar em pé em (x, z): topo da peça sólida mais alta embaixo + corpo
+local function standY(x: number, z: number): number
+	local top = 0
+	local map = game:GetService("Workspace"):FindFirstChild("Map")
+	for _, part in (map and map:GetDescendants() or {}) do
+		if part:IsA("BasePart") and part.CanCollide then
+			local lp = part.CFrame:PointToObjectSpace(Vector3.new(x, part.CFrame.Position.Y, z))
+			local half = part.Size / 2
+			local height = part.Size.Y
+			if part.Shape == Enum.PartType.Cylinder then
+				half = Vector3.new(part.Size.X / 2, part.Size.Y / 2, part.Size.Z / 2)
+				height = part.Size.X
+			end
+			if math.abs(lp.X) <= half.X and math.abs(lp.Z) <= half.Z and part.CFrame.Position.Y + height / 2 < 12 then
+				top = math.max(top, part.CFrame.Position.Y + height / 2)
+			end
+		end
+	end
+	return top + 3.2
+end
+
+-- Ponto de observação: na direção do Hub (as estruturas olham para ele), a `distance` studs,
+-- em pé em cima do que houver no chão ali (degraus do altar, plataformas)
+function DevService.HubArtViewpoint(name: string, distance: number?): (Vector3?, Vector3?)
+	if name == "Overview" then
+		return Vector3.new(0, standY(0, -50), -50), Vector3.new(0, 4, 40)
+	end
+	local target = hubArtTargets()[name]
+	if not target then
+		return nil, nil
+	end
+	local to = Vector3.new(target.x, 4, target.z)
+	local toHub = Vector3.new(MapConfig.Hub.Center.x - target.x, 0, MapConfig.Hub.Center.z - target.z)
+	local dir = if toHub.Magnitude > 1 then toHub.Unit else Vector3.new(0, 0, -1)
+	local from = to + dir * (distance or 26)
+	return Vector3.new(from.X, standY(from.X, from.Z), from.Z), to
+end
+DevService.Register("HubArtTour", "([player], Overview|Market|DiceShop|Sell|Trade|Missions|Fusion|Tower|Upgrades|Rebirth|Rankings, distância=26) teleporta para um ponto seguro olhando o landmark (teste de leitura: 10/30/60/100)", function(...)
+	local player, name, distance = splitPlayer(...)
+	local names = { "Overview" }
+	for key in hubArtTargets() do
+		table.insert(names, key)
+	end
+	table.sort(names)
+	local from, to = DevService.HubArtViewpoint(tostring(name), tonumber(distance))
+	if not from or not to then
+		return "landmark desconhecido; use: " .. table.concat(names, ", ")
+	end
+	local character = player and player.Character
+	if not character then
+		return "sem personagem (entre em Play)"
+	end
+	character:PivotTo(CFrame.lookAt(from, Vector3.new(to.X, from.Y, to.Z)))
+	return string.format("%s a %.0f studs", tostring(name), (from - to).Magnitude)
+end)
+
 ------------------------------------------------------------------------------------
 -- Pipeline de personagens (PILOTO): galeria, variantes, poses e checagens
 
