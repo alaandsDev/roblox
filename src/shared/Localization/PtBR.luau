@@ -87,7 +87,6 @@ return {
 	["base.slot_locked"] = "REBIRTH NECESSÁRIO",
 	["base.slot_requires_rebirth"] = "REBIRTH {rebirth}",
 	["base.collector"] = "COLETAR",
-	["base.upgrades"] = "MELHORIAS",
 	["base.floor_unlocked"] = "Novo andar construído! (Andar {floor})",
 
 	["prompt.collect"] = "Coletar",

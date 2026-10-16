@@ -15,7 +15,7 @@
 	│       └── Ramp               (só se existir o andar de cima)
 	├── Roof                       moldura no topo do andar mais alto (mostra a altura)
 	├── MoneyCollector             tag: Interactable
-	├── UpgradeArea                tag: Interactable
+	   (MELHORIAS não tem mais pad na base: acesso só pelo landmark do Hub + botão do HUD)
 	└── RuntimeCharacters          personagens do dono (fases futuras)
 
 	Slot (Model): Pedestal, Rim, CharacterPoint (onde o personagem fica, já orientado)
@@ -644,7 +644,6 @@ function BaseBuilder.build(baseId: number, parent: Instance, progression: Progre
 	Build.tag(spawnLocation, "TeleportPoint")
 
 	pad(base, "MoneyCollector", BaseConfig.Collector, rgb(80, 230, 110), "base.collector")
-	pad(base, "UpgradeArea", BaseConfig.UpgradeArea, rgb(80, 170, 255), "base.upgrades")
 	Build.folder("RuntimeCharacters", base)
 
 	BaseBuilder.setOwner(base, nil)

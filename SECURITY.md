@@ -87,8 +87,9 @@ Todos passam por rate limit + `Validator` (tipos, tamanhos, enums) antes do hand
 Trocas: os dois perfis estão sob trava de sessão neste servidor, então mover itens na memória e
 salvar os dois em seguida não permite duplicação entre servidores.
 
-Prompts do mapa (coletor, melhorias, pads de estação) conferem se o prompt pertence à base
-do jogador. Dinheiro offline e diário validam timestamps (NaN, infinito, futuro, negativo).
+Prompts do mapa dentro das bases (coletor, pads de estação) conferem se o prompt pertence à base
+do jogador. MELHORIAS não tem mais pad na base: o landmark do Hub só abre a janela (a compra
+continua no `BuyUpgrade`, validado no servidor). Dinheiro offline e diário validam timestamps (NaN, infinito, futuro, negativo).
 DevService (Barra de comandos) só existe no Studio.
 
 ## Auditoria pré-Studio — casos de borda (testados no `GameplayHarness`)

@@ -789,6 +789,29 @@ for _, name in { "DiceShop", "Upgrades", "Sell", "Index", "Daily", "Settings" } 
 	check(w ~= nil and w.isOpen, name .. " abre")
 end
 UIKit.Windows.closeAll()
+do -- MELHORIAS: acesso oficial = botão do HUD + landmark do Hub; os dois abrem a MESMA janela
+	task.wait(0.3)
+	local upgradesWindow = UIKit.Windows.get("Upgrades")
+	click(find(hud, "Upgrades"))
+	task.wait(0.3)
+	local viaHud = UIKit.Windows.get("Upgrades")
+	local hudOpen = viaHud ~= nil and viaHud.isOpen
+	UIKit.Windows.closeAll()
+	task.wait(0.3)
+	local prompt = nil
+	for _, d in env.real.Workspace:GetDescendants() do
+		if d:IsA("ProximityPrompt") and d:GetAttribute("InteractId") == "HubUpgrades" then
+			prompt = d
+		end
+	end
+	env.stubs.ProximityPromptService.PromptTriggered:Fire(prompt, player)
+	task.wait(0.3)
+	local viaLandmark = UIKit.Windows.get("Upgrades")
+	check(hudOpen, "MELHORIAS: botão do HUD abre a janela Upgrades")
+	check(prompt ~= nil and viaLandmark ~= nil and viaLandmark.isOpen, "MELHORIAS: prompt do landmark do Hub abre a janela Upgrades")
+	check(viaHud == upgradesWindow and viaLandmark == upgradesWindow, "MELHORIAS: HUD e landmark abrem EXATAMENTE a mesma janela")
+	UIKit.Windows.closeAll()
+end
 do -- fechar a MOCHILA solta todos os retratos e esvazia o pool
 	local Preview = _G.__previewModule
 	Preview.update()

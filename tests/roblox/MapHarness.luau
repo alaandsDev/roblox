@@ -232,6 +232,46 @@ for i = 1, 8 do
 	check(unlocked == (i <= 4), string.format("RB0: Slot%02d %s", i, if i <= 4 then "liberado" else "bloqueado"))
 end
 
+-- MELHORIAS: o antigo pad da base não é mais construído (acesso = landmark do Hub + HUD);
+-- o resto da base continua igual (coletor, spawn, placa, slots/pedestais, andares)
+do
+	local BC = requireModule(shared.Config.BaseConfig)
+	local pads, broken = 0, {}
+	for i = 1, 10 do
+		local base = bases:FindFirstChild(string.format("Base%02d", i))
+		for _, d in base:GetDescendants() do
+			if d.Name == "UpgradeArea" or d.Name == "UpgradeAreaFrame" or d:GetAttribute("InteractId") == "UpgradeArea" then
+				pads += 1
+			end
+		end
+		local collector = base:FindFirstChild("MoneyCollector")
+		local local0 = collector and base.WorldPivot:PointToObjectSpace(collector.CFrame.Position)
+		if not (collector and math.abs(local0.X - BC.Collector.x) < 0.01 and math.abs(local0.Z - BC.Collector.z) < 0.01) then
+			table.insert(broken, base.Name .. ":MoneyCollector")
+		end
+		for _, name in { "PlayerSpawn", "OwnerSign", "Entrance", "Floors", "RuntimeCharacters", "Foundation" } do
+			if not base:FindFirstChild(name) then
+				table.insert(broken, base.Name .. ":" .. name)
+			end
+		end
+		local f1 = base:FindFirstChild("Floors") and base.Floors:FindFirstChild("Floor01")
+		local slots = 0
+		for _, sideName in { "SideA", "SideB" } do
+			for _, slot in (f1 and f1:FindFirstChild(sideName) and f1[sideName]:GetChildren() or {}) do
+				if slot:FindFirstChild("Pedestal") and slot:FindFirstChild("CharacterPoint") then
+					slots += 1
+				end
+			end
+		end
+		if slots ~= 8 then
+			table.insert(broken, base.Name .. ":slots=" .. slots)
+		end
+	end
+	check(pads == 0, "MELHORIAS: ZERO pads antigos (UpgradeArea/moldura/prompt) nas 10 bases")
+	check(BC.UpgradeArea == nil, "MELHORIAS: BaseConfig sem UpgradeArea (sem referência órfã)")
+	check(#broken == 0, "MELHORIAS: remoção não mexe no resto da base (coletor no lugar, spawn, placa, entrada, andares, 8 slots c/ pedestal)" .. (if #broken > 0 then ": " .. broken[1] else ""))
+end
+
 -- PlayerSpawn: SpawnLocation na entrada, no piso, olhando para dentro da base
 local BaseConfig = requireModule(shared.Config.BaseConfig)
 for i = 1, 10 do
@@ -337,6 +377,90 @@ do
 	check(has(map.Towers, "PortalField") and has(map.Towers, "TowerTier4") and has(map.Towers, "Flag", 2) and has(map.Towers, "GiantSword"), "TORRES: portal + torre em andares numerados + bandeiras + espada")
 	check(has(upM, "UpgradePillar", 3) and has(upM, "UpgradeArrow1") and has(upM, "UpgradeArrow3") and has(upM, "UpgradeGear"), "MELHORIAS: 3 pilares crescentes com setas ↑ + engrenagem")
 	check(has(rbM, "RebirthRing", 8) and has(rbM, "RebirthArrows") and has(rbM, "RebirthStar"), "RENASCER: anel + setas circulares + estrela")
+
+	-- HUB ART PASS FINAL POLISH (regressões)
+	do -- TROCAS: ↔ maior e elevado, lados azul × laranja, 2 slots claros, simétrico
+		local function shaft(name)
+			local m = tradeM:FindFirstChild(name)
+			return m and m:FindFirstChild("Shaft")
+		end
+		local sl, sr = shaft("TradeArrowL"), shaft("TradeArrowR")
+		local okArrow = sl ~= nil and sr ~= nil and sl.Size.Y >= 3 and sr.Size.Y >= 3 and sl.Size.X >= 1.2
+			and sl.CFrame.Position.Y >= 9 and math.abs(sl.CFrame.Position.Y - sr.CFrame.Position.Y) < 0.01
+		check(okArrow, "TROCAS: ↔ grande (haste ≥ 3, largura ≥ 1.2) e elevado (y ≥ 9), as duas setas na mesma altura")
+		local pa, pb = tradeM:FindFirstChild("ArrowPanelA"), tradeM:FindFirstChild("ArrowPanelB")
+		local _, banners = has(tradeM, "SideBanner", 2)
+		local _, backs = has(tradeM, "SlotBack", 2)
+		check(pa ~= nil and pb ~= nil and banners == 2 and backs == 2, "TROCAS: painéis azul|laranja atrás do ↔ + 2 faixas laterais + 2 fundos de slot")
+		if pa and pb then
+			local tcf = tradeM:FindFirstChild("Table").CFrame -- espaço local da mesa (o landmark pode estar girado)
+			local a, b = tcf:PointToObjectSpace(pa.CFrame.Position), tcf:PointToObjectSpace(pb.CFrame.Position)
+			check(math.abs(a.X + b.X) < 0.05 and math.abs(a.Z - b.Z) < 0.05 and pa.Color.B > pa.Color.R and pb.Color.R > pb.Color.B, "TROCAS: lados simétricos, A azul × B laranja")
+		end
+	end
+	do -- FUSÃO: núcleo = ponto mais brilhante; periferia sem estouro; 3 beams mais suaves
+		local core = fusionM:FindFirstChild("FusionCore")
+		local function lum(c)
+			return 0.2126 * c.R + 0.7152 * c.G + 0.0722 * c.B
+		end
+		local brighter, emissive = {}, 0
+		for _, d in fusionM:GetDescendants() do
+			if d:IsA("BasePart") and d ~= core and d.Material == roblox.Enum.Material.Neon and lum(d.Color) >= lum(core.Color) then
+				table.insert(brighter, d.Name)
+			end
+			if d:IsA("Beam") then
+				emissive = math.max(emissive, d.LightEmission)
+			end
+		end
+		check(core ~= nil and core.Material == roblox.Enum.Material.Neon and core.Size.X >= 4, "FUSÃO: núcleo neon, grande (≥ 4)")
+		check(#brighter == 0, "FUSÃO: nenhuma peça neon da periferia mais clara que o núcleo" .. (if #brighter > 0 then ": " .. brighter[1] else ""))
+		local ring, gem = fusionM:FindFirstChild("CoreRing"), fusionM:FindFirstChild("ResultGem")
+		check(ring ~= nil and ring.Material ~= roblox.Enum.Material.Neon and gem ~= nil and gem.Material ~= roblox.Enum.Material.Neon, "FUSÃO: anel do núcleo e gema-resultado sem neon (não competem com o núcleo)")
+		check(emissive > 0 and emissive <= 0.5, "FUSÃO: beams com LightEmission ≤ 0.5 (bloom contido)")
+	end
+	do -- MELHORIAS: carcaça única ligando tudo (base + laterais + painel traseiro), pilares sobre o deck
+		local mb, panel = upM:FindFirstChild("MachineBase"), upM:FindFirstChild("MachineBackPanel")
+		local _, sides = has(upM, "MachineSide", 2)
+		check(mb ~= nil and panel ~= nil and sides == 2 and has(upM, "PowerStrip"), "MELHORIAS: carcaça de máquina (base + 2 laterais + painel traseiro + faixa de energia)")
+		if mb then
+			local deckTop = mb.CFrame.Position.Y + mb.Size.Y / 2
+			local onDeck, inside = 0, 0
+			local half = mb.Size.X / 2
+			for _, d in upM:GetChildren() do
+				if d.Name == "UpgradePillar" then
+					if math.abs((d.CFrame.Position.Y - d.Size.Y / 2) - deckTop) < 0.05 then
+						onDeck += 1
+					end
+					if math.abs(d.CFrame.Position.X - mb.CFrame.Position.X) + d.Size.X / 2 <= half then
+						inside += 1
+					end
+				end
+			end
+			check(onDeck == 3 and inside == 3, "MELHORIAS: os 3 pilares crescentes apoiados no deck, dentro da carcaça")
+		end
+		local prompts = 0
+		for _, d in upM:GetDescendants() do
+			if d:IsA("ProximityPrompt") and d:GetAttribute("InteractId") == "HubUpgrades" then
+				prompts += 1
+			end
+		end
+		check(prompts == 1, "MELHORIAS: 1 prompt HubUpgrades no landmark")
+	end
+	do -- RENASCER: portal com fundo (lê como portal de todos os ângulos), pés alinhados ao anel
+		local disc = rbM:FindFirstChild("PortalDisc")
+		check(disc ~= nil and not disc.CanCollide and disc.Transparency < 0.5, "RENASCER: disco escuro dentro do anel (portal intencional), sem colisão")
+		local feet = {}
+		for _, d in rbM:GetChildren() do
+			if d.Name == "RingFoot" then
+				table.insert(feet, d.CFrame.Position)
+			end
+		end
+		local dp = disc and disc.CFrame.Position
+		local function flat(v)
+			return roblox.Vector3.new(v.X - dp.X, 0, v.Z - dp.Z).Magnitude
+		end
+		check(#feet == 2 and dp ~= nil and math.abs(flat(feet[1]) - flat(feet[2])) < 0.05 and math.abs(feet[1].Y - feet[2].Y) < 0.01, "RENASCER: 2 pés simétricos em relação ao portal")
+	end
 
 	-- animado = sem colisão, ancorado; nada de Script nas estruturas
 	local animated, badAnim, scripts = 0, 0, 0

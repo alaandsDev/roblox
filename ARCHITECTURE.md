@@ -202,8 +202,8 @@ Inventory → Index → Sell → Roll → Dice → Upgrade → Station → Daily
 | DailyService | recompensas diárias (7 dias, UTC do servidor) | GetDailyStatus, ClaimDaily |
 | AnalyticsService | ganchos internos (FirstRoll, Roll, RareObtained, …) | — |
 
-Interações do mapa: `MapService.RegisterInteraction(id, fn)` (DiceShop, Sell, UpgradeArea,
-MoneyCollector, StationUpgrade); o servidor responde com `OpenMenu` quando é uma janela.
+Interações do mapa: `MapService.RegisterInteraction(id, fn)` (DiceShop, Sell, HubUpgrades,
+HubRebirth, MoneyCollector, StationUpgrade; MELHORIAS não tem pad nas bases); o servidor responde com `OpenMenu` quando é uma janela.
 
 **Cliente**: `UITheme` + `UIKit` (um design system para toda janela). HUD segue a hierarquia
 da referência: topo centro CENTRO/CASA/LOJA, esquerda LOJA/RENASCER/ÍNDICE, baixo centro

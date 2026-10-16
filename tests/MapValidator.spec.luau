@@ -16,7 +16,7 @@ local function goodBase(id)
 		hasPlayerSpawn = true,
 		hasOwnerSign = true,
 		hasMoneyCollector = true,
-		hasUpgradeArea = true,
+		hasUpgradeArea = false,
 		hasRuntimeCharacters = true,
 		floors = { { name = "Floor01", floorId = 1, sides = { A = side("A", 1), B = side("B", 5) } } },
 	}
@@ -56,17 +56,26 @@ describe("MapValidator", function()
 		expect(has(MapValidator.validate(map, 10, 4), "BaseId 1 repetido")).toBeTruthy()
 	end)
 
-	it("detecta falta de PlayerSpawn/OwnerSign/MoneyCollector/UpgradeArea", function()
+	it("detecta falta de PlayerSpawn/OwnerSign/MoneyCollector/RuntimeCharacters", function()
 		local map = goodMap()
 		map.bases[3].hasPlayerSpawn = false
 		map.bases[4].hasOwnerSign = false
 		map.bases[5].hasMoneyCollector = false
-		map.bases[6].hasUpgradeArea = false
+		map.bases[6].hasRuntimeCharacters = false
 		local problems = MapValidator.validate(map, 10, 4)
 		expect(has(problems, "Base03: falta PlayerSpawn")).toBeTruthy()
 		expect(has(problems, "Base04: falta OwnerSign")).toBeTruthy()
 		expect(has(problems, "Base05: falta MoneyCollector")).toBeTruthy()
-		expect(has(problems, "Base06: falta UpgradeArea")).toBeTruthy()
+		expect(has(problems, "Base06: falta RuntimeCharacters")).toBeTruthy()
+	end)
+
+	it("pad MELHORIAS antigo (UpgradeArea) nas bases é erro; sem ele, mapa válido", function()
+		local map = goodMap()
+		map.bases[6].hasUpgradeArea = true
+		local problems = MapValidator.validate(map, 10, 4)
+		expect(has(problems, "Base06: pad MELHORIAS antigo")).toBeTruthy()
+		expect(has(problems, "falta UpgradeArea")).toBeFalsy()
+		expect(#MapValidator.validate(goodMap(), 10, 4)).toBe(0)
 	end)
 
 	it("detecta lado com quantidade errada de slots (ex.: 2+2)", function()

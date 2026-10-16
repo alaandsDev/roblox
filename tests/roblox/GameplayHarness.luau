@@ -414,6 +414,51 @@ root.CFrame = CFrame.new(0, 500, 0)
 check(d1.UncollectedMoney < 1, "coletor zera depois de coletar")
 
 ------------------------------------------------------------------------------------
+-- MELHORIAS: acesso físico ÚNICO = landmark do Hub (o antigo pad das bases foi removido)
+do
+	local world = base1.Parent.Parent
+	local bases = S.MapService.GetBases()
+	local count, pads, stray = 0, 0, {}
+	for _, base in bases do
+		count += 1
+		if base:FindFirstChild("UpgradeArea", true) or base:FindFirstChild("UpgradeAreaFrame", true) then
+			pads += 1
+		end
+		for _, d in base:GetDescendants() do
+			if d:GetAttribute("InteractId") == "UpgradeArea" then
+				table.insert(stray, d:GetFullName())
+			end
+		end
+	end
+	check(count == 10, "MELHORIAS: exatamente 10 bases")
+	check(pads == 0 and #stray == 0, "MELHORIAS: ZERO pads antigos (UpgradeArea) dentro das bases" .. (if #stray > 0 then ": " .. stray[1] else ""))
+	check(#S.MapService.ValidateMap() == 0, "MELHORIAS: MapValidator aceita as bases sem o pad (e nada mais faltando)")
+	local landmarks, prompt = 0, nil
+	for _, d in world:GetDescendants() do
+		if d.Name == "HubUpgrades" and d:IsA("Model") then
+			landmarks += 1
+		end
+		if d:IsA("ProximityPrompt") and d:GetAttribute("InteractId") == "HubUpgrades" then
+			prompt = d
+		end
+	end
+	check(landmarks == 1 and prompt ~= nil, "MELHORIAS: landmark do Hub existe exatamente 1 vez, com prompt")
+	local PPS = env.stubs.ProximityPromptService
+	local before = #sent
+	PPS.PromptTriggered:Fire(prompt, p2) -- qualquer jogador (não é base de ninguém)
+	local ev = lastEvent("OpenMenu", p2)
+	check(#sent > before and ev ~= nil and ev.args[1] == "Upgrades", "MELHORIAS: prompt do landmark abre a janela \"Upgrades\" (a mesma do botão do HUD)")
+	-- um prompt com o InteractId antigo não tem mais handler (cai no "em breve")
+	local fake = Instance.new("ProximityPrompt")
+	fake:SetAttribute("InteractId", "UpgradeArea")
+	fake.ObjectText = "MELHORIAS"
+	PPS.PromptTriggered:Fire(fake, p1)
+	local last = sent[#sent]
+	check(last and last.name == "Notify" and last.args[1] == "map.coming_soon", "MELHORIAS: interação antiga \"UpgradeArea\" não está mais registrada (sem referência órfã)")
+	fake:Destroy()
+end
+
+------------------------------------------------------------------------------------
 -- DADOS
 d1.Money = 0
 d1.Rolls = 0

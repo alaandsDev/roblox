@@ -216,28 +216,35 @@ function Landmarks.trade(model: Model, o: CFrame): BasePart
 		local bx = side * 5.2
 		Build.part(Vector3.new(3, 3.2, 4), o * CFrame.new(bx, 1.6, 0), { Name = "Booth", Color = tint, Parent = booth })
 		Build.decor(Build.part(Vector3.new(3.4, 0.4, 4.4), o * CFrame.new(bx, 3.4, 0), { Name = "BoothTop", Color = white, Parent = booth }))
-		-- moldura do slot (quadrado em pé, virado para o centro)
-		local slot = o * CFrame.new(bx, 5.6, 0) * CFrame.Angles(0, side * math.pi / 2, 0)
-		for _, e in { { 0, 1.5, 3.4, 0.4 }, { 0, -1.5, 3.4, 0.4 }, { 1.5, 0, 0.4, 3.4 }, { -1.5, 0, 0.4, 3.4 } } do
-			Build.decor(Build.part(Vector3.new(e[3], e[4], 0.4), slot * CFrame.new(e[1], e[2], 0), { Name = "SlotFrame", Color = tint, Material = Enum.Material.Neon, Parent = booth }))
+		-- moldura do slot (quadrado em pé, virado para o centro) — POLISH: maior e mais grossa
+		local slot = o * CFrame.new(bx, 5.9, 0) * CFrame.Angles(0, side * math.pi / 2, 0)
+		for _, e in { { 0, 1.85, 4.3, 0.6 }, { 0, -1.85, 4.3, 0.6 }, { 1.85, 0, 0.6, 4.3 }, { -1.85, 0, 0.6, 4.3 } } do
+			Build.decor(Build.part(Vector3.new(e[3], e[4], 0.5), slot * CFrame.new(e[1], e[2], 0), { Name = "SlotFrame", Color = tint, Material = Enum.Material.Neon, Parent = booth }))
 		end
-		local cube = Build.part(Vector3.new(1.4, 1.4, 1.4), slot, { Name = "SlotItem", Color = if side < 0 then rgb(255, 230, 90) else rgb(170, 110, 255), Parent = booth })
+		-- fundo escuro do slot: o item e a moldura colorida destacam de longe
+		Build.decor(Build.part(Vector3.new(3.2, 3.2, 0.2), slot * CFrame.new(0, 0, 0.3), { Name = "SlotBack", Color = rgb(35, 35, 55), Parent = booth }))
+		local cube = Build.part(Vector3.new(1.8, 1.8, 1.8), slot, { Name = "SlotItem", Color = if side < 0 then rgb(255, 230, 90) else rgb(170, 110, 255), Parent = booth })
 		Landmarks.animate(cube, "Tumble", { Speed = 40 + i * 10, Hz = 12 })
 	end
 	-- ARCO central com ↔ gigante (a silhueta "um lado <-> outro lado")
 	-- (postes por DENTRO da área: o caminho da base passa ao lado)
-	for _, x in { -6.6, 6.6 } do
-		Build.part(Vector3.new(1.4, 11, 1.4), o * CFrame.new(x, 5.5, 4.6), { Name = "ArchPost", Color = color(P.WoodDark), Parent = model })
+	-- POLISH: postes e arco um pouco mais altos (o ↔ sobe), cada poste com a COR do seu lado
+	for i, x in { -6.6, 6.6 } do
+		Build.part(Vector3.new(1.4, 13.4, 1.4), o * CFrame.new(x, 6.7, 4.6), { Name = "ArchPost", Color = color(P.WoodDark), Parent = model })
+		Build.decor(Build.part(Vector3.new(0.3, 7, 2.2), o * CFrame.new(x - math.sign(x) * 0.85, 7.5, 4.6), { Name = "SideBanner", Color = if i == 1 then blue else orange, Parent = model }))
 	end
-	local beam = Build.part(Vector3.new(14.6, 2.6, 1.6), o * CFrame.new(0, 12, 4.6), { Name = "ArchBeam", Color = rgb(230, 80, 80), Parent = model })
+	local beam = Build.part(Vector3.new(14.6, 2.6, 1.6), o * CFrame.new(0, 14.6, 4.6), { Name = "ArchBeam", Color = rgb(230, 80, 80), Parent = model })
 	Build.decor(beam)
 	Build.sign(beam, Enum.NormalId.Front, { { "🤝 " .. Localization.t("map.trade"), 0.85 } })
-	-- ↔: duas setas horizontais (pulsam e "respiram" em direções opostas)
-	local arrowY = 8.4
-	local left = arrow(model, "TradeArrowL", o * CFrame.new(-0.4, arrowY, 4.6) * CFrame.Angles(0, 0, math.pi / 2), 4.2, 0.9, blue)
-	local right = arrow(model, "TradeArrowR", o * CFrame.new(0.4, arrowY, 4.6) * CFrame.Angles(0, 0, -math.pi / 2), 4.2, 0.9, orange)
-	Landmarks.animate(left, "Slide", { Speed = 1.4, Amp = 0.6, Axis = "Y", Hz = 15 })
-	Landmarks.animate(right, "Slide", { Speed = 1.4, Amp = 0.6, Axis = "Y", Phase = math.pi, Hz = 15 })
+	-- painel atrás do ↔: metade AZUL | metade LARANJA (os dois lados lidos de longe)
+	local arrowY = 10.3
+	Build.decor(Build.part(Vector3.new(5.9, 3.6, 0.4), o * CFrame.new(-2.95, arrowY, 5.4), { Name = "ArrowPanelA", Color = rgb(30, 60, 120), Parent = model }))
+	Build.decor(Build.part(Vector3.new(5.9, 3.6, 0.4), o * CFrame.new(2.95, arrowY, 5.4), { Name = "ArrowPanelB", Color = rgb(130, 60, 20), Parent = model }))
+	-- ↔ MAIOR: duas setas horizontais (respiram em direções opostas)
+	local left = arrow(model, "TradeArrowL", o * CFrame.new(-0.3, arrowY, 4.6) * CFrame.Angles(0, 0, math.pi / 2), 5.4, 1.4, blue)
+	local right = arrow(model, "TradeArrowR", o * CFrame.new(0.3, arrowY, 4.6) * CFrame.Angles(0, 0, -math.pi / 2), 5.4, 1.4, orange)
+	Landmarks.animate(left, "Slide", { Speed = 1.4, Amp = 0.45, Axis = "Y", Hz = 15 })
+	Landmarks.animate(right, "Slide", { Speed = 1.4, Amp = 0.45, Axis = "Y", Phase = math.pi, Hz = 15 })
 	-- mesa central (onde a troca "acontece": prompt)
 	local tableTop = Build.part(Vector3.new(3, 0.5, 3), o * CFrame.new(0, 3, -1), { Name = "Table", Color = rgb(170, 120, 75), Material = Enum.Material.Wood, Parent = model })
 	Build.part(Vector3.new(1, 2.7, 1), o * CFrame.new(0, 1.35, -1), { Name = "TableLeg", Color = rgb(140, 95, 60), Parent = model })
@@ -312,19 +319,24 @@ end
 -- FUSÃO: 3 ENTRADAS -> NÚCLEO -> 1 SAÍDA (energia convergindo por 3 beams)
 
 function Landmarks.fusion(model: Model, fo: CFrame): BasePart
+	-- POLISH de luz: o NÚCLEO é o ponto mais brilhante; entradas, runa, anel e resultado
+	-- enquadram (tons mais escuros, menos neon/bloom) em vez de estourar a imagem
 	local teal = rgb(120, 255, 220)
+	local tealDim = rgb(55, 150, 135)
 	Build.part(Vector3.new(18, 1, 18), fo * CFrame.new(0, 0.5, 0), { Name = "Platform", Color = rgb(70, 60, 110), Material = Enum.Material.Slate, Parent = model })
 	Build.part(Vector3.new(12, 1, 12), fo * CFrame.new(0, 1.5, 0), { Name = "Platform2", Color = rgb(96, 82, 148), Material = Enum.Material.Slate, Parent = model })
-	local rune = Decor.chunkyBorder(model, fo * CFrame.new(0, 2, 0), 9, 9, 0.5, 0.12, teal)
+	local rune = Decor.chunkyBorder(model, fo * CFrame.new(0, 2, 0), 9, 9, 0.5, 0.12, tealDim)
 	for _, part in rune:GetChildren() do
 		(part :: BasePart).Material = Enum.Material.Neon
 	end
 	-- NÚCLEO: altar + orbe pulsando
 	local altar = Build.part(Vector3.new(4.6, 3.5, 4.6), fo * CFrame.new(0, 3.75, 0), { Name = "Altar", Color = rgb(110, 90, 170), Material = Enum.Material.Slate, Parent = model })
-	Decor.crystal(model, fo * CFrame.new(0, 5.5, 0), 4, teal)
-	local core = Build.ball(3.6, fo * CFrame.new(0, 10.6, 0), { Name = "FusionCore", Color = teal, Material = Enum.Material.Neon, Parent = model })
-	Landmarks.animate(core, "Pulse", { Speed = 2.4, Amp = 0.3, Hz = 12 })
-	local shell = Build.part(Vector3.new(5.6, 0.4, 5.6), fo * CFrame.new(0, 10.6, 0) * CFrame.Angles(0, 0, math.rad(25)), { Name = "CoreRing", Color = rgb(255, 255, 255), Material = Enum.Material.Neon, Transparency = 0.2, Parent = model })
+	Decor.crystal(model, fo * CFrame.new(0, 5.5, 0), 4, tealDim)
+	local core = Build.ball(4, fo * CFrame.new(0, 10.6, 0), { Name = "FusionCore", Color = teal, Material = Enum.Material.Neon, Parent = model })
+	Landmarks.animate(core, "Pulse", { Speed = 2.4, Amp = 0.25, Hz = 12 })
+	-- anel do núcleo: sem neon branco (era o maior "estouro"); só contorno escuro girando
+	local shell = Build.part(Vector3.new(6, 0.4, 6), fo * CFrame.new(0, 10.6, 0) * CFrame.Angles(0, 0, math.rad(25)), { Name = "CoreRing", Color = rgb(60, 70, 110), Parent = model })
+	shell:SetAttribute("ArtRole", "Special")
 	Landmarks.animate(shell, "Spin", { Speed = 50, Hz = 15 })
 	local coreAtt = Instance.new("Attachment")
 	coreAtt.Name = "CoreIn"
@@ -332,9 +344,9 @@ function Landmarks.fusion(model: Model, fo: CFrame): BasePart
 	-- 3 ENTRADAS atrás (pedestal + cristal), cada uma ligada ao núcleo por 1 beam
 	type Input = { x: number, z: number, tint: Color3 }
 	local inputs: { Input } = {
-		{ x = -5.6, z = 4.6, tint = rgb(200, 120, 255) },
-		{ x = 0, z = 6.6, tint = rgb(120, 200, 255) },
-		{ x = 5.6, z = 4.6, tint = rgb(255, 140, 210) },
+		{ x = -5.6, z = 4.6, tint = rgb(120, 70, 165) },
+		{ x = 0, z = 6.6, tint = rgb(60, 105, 165) },
+		{ x = 5.6, z = 4.6, tint = rgb(160, 70, 120) },
 	}
 	for i, info in inputs do
 		local base = fo * CFrame.new(info.x, 2, info.z)
@@ -349,14 +361,15 @@ function Landmarks.fusion(model: Model, fo: CFrame): BasePart
 		energy.Attachment0 = from
 		energy.Attachment1 = coreAtt
 		energy.Color = ColorSequence.new(info.tint, teal)
-		energy.Width0 = 0.6
-		energy.Width1 = 0.25
+		-- mais fino e mais transparente na saída da entrada; mais forte chegando no núcleo
+		energy.Width0 = 0.4
+		energy.Width1 = 0.3
 		energy.FaceCamera = true
-		energy.LightEmission = 1
+		energy.LightEmission = 0.45
 		energy.Texture = SPARK
 		energy.TextureSpeed = 1.6
 		energy.TextureLength = 2
-		energy.Transparency = NumberSequence.new(0.2, 0.05)
+		energy.Transparency = NumberSequence.new(0.55, 0.15)
 		energy.CurveSize0 = 1.5
 		energy.Segments = 10
 		energy.Parent = pedestal
@@ -365,7 +378,9 @@ function Landmarks.fusion(model: Model, fo: CFrame): BasePart
 	-- 1 SAÍDA na frente: pedestal + gema dourada girando (o resultado)
 	local out = fo * CFrame.new(0, 2, -6.4)
 	Build.part(Vector3.new(3, 1.6, 3), out * CFrame.new(0, 0.8, 0), { Name = "FusionOutput", Color = rgb(255, 205, 60), Parent = model })
-	local gem = Build.part(Vector3.new(2, 2, 2), out * CFrame.new(0, 3.2, 0) * CFrame.Angles(math.rad(45), 0, math.rad(45)), { Name = "ResultGem", Color = rgb(255, 225, 90), Material = Enum.Material.Neon, Parent = model })
+	-- resultado: dourado SÓLIDO (sem neon): lê como prêmio sem competir com o núcleo
+	local gem = Build.part(Vector3.new(2, 2, 2), out * CFrame.new(0, 3.2, 0) * CFrame.Angles(math.rad(45), 0, math.rad(45)), { Name = "ResultGem", Color = rgb(235, 180, 40), Parent = model })
+	gem:SetAttribute("ArtRole", "Special")
 	Landmarks.animate(gem, "Spin", { Speed = 60, Amp = 0.35, Hz = 15 })
 	Decor.rockCluster(model, fo * CFrame.new(-10, 0, 8), 4, 901, false)
 	Decor.rockCluster(model, fo * CFrame.new(10, 0, 8), 4, 902, false)
@@ -379,16 +394,32 @@ end
 function Landmarks.upgrades(model: Model, o: CFrame): BasePart
 	local blue, cyan = rgb(70, 140, 255), rgb(90, 230, 255)
 	Build.part(Vector3.new(16, 1, 14), o * CFrame.new(0, 0.5, 0), { Name = "Platform", Color = rgb(55, 70, 120), Material = Enum.Material.Slate, Parent = model })
+	-- POLISH: CARCAÇA que une tudo numa estação — base única (pilares + console em cima),
+	-- painel traseiro com moldura lateral, faixa de energia ligando os pilares e indicadores
+	local deck = 2.4 -- topo da base da máquina
+	local frameColor = rgb(40, 50, 90)
+	Build.part(Vector3.new(14, deck - 1, 10.4), o * CFrame.new(0, 1 + (deck - 1) / 2, -0.3), { Name = "MachineBase", Color = rgb(75, 95, 170), Parent = model })
+	Build.decor(Build.part(Vector3.new(14.4, 0.3, 10.8), o * CFrame.new(0, deck + 0.05, -0.3), { Name = "MachineTrim", Color = frameColor, Parent = model }))
+	Build.part(Vector3.new(14, 6, 1), o * CFrame.new(0, deck + 3, 4.4), { Name = "MachineBackPanel", Color = frameColor, Parent = model })
+	Build.decor(Build.part(Vector3.new(14.6, 0.6, 1.4), o * CFrame.new(0, deck + 6.2, 4.4), { Name = "MachineCap", Color = blue, Parent = model }))
+	for _, x in { -7.3, 7.3 } do
+		Build.part(Vector3.new(1, 7, 10.4), o * CFrame.new(x, deck + 3.5 - 0.5, -0.3), { Name = "MachineSide", Color = frameColor, Parent = model })
+	end
+	-- faixa de energia ligando os 3 pilares (lê como UM sistema) + 3 indicadores de nível
+	Build.decor(Build.part(Vector3.new(12, 0.4, 0.3), o * CFrame.new(0, deck + 0.6, -0.15), { Name = "PowerStrip", Color = cyan, Material = Enum.Material.Neon, Parent = model }))
+	for i = 1, 3 do
+		Build.decor(Build.part(Vector3.new(0.8, 0.8 * i, 0.2), o * CFrame.new(-6 + i * 1.1, 1 + (deck - 1) / 2, -5.55), { Name = "LevelLight", Color = cyan, Material = Enum.Material.Neon, Parent = model }))
+	end
 	for i, h in { 3, 5.5, 8 } do
 		local x = (i - 2) * 4.6
-		Build.part(Vector3.new(3, h, 3), o * CFrame.new(x, 1 + h / 2, 1.5), { Name = "UpgradePillar", Color = if i == 3 then blue else rgb(90, 110, 200), Parent = model })
-		Build.decor(Build.part(Vector3.new(3.4, 0.5, 3.4), o * CFrame.new(x, 1 + h + 0.25, 1.5), { Name = "PillarCap", Color = cyan, Material = Enum.Material.Neon, Parent = model }))
-		local a = arrow(model, "UpgradeArrow" .. i, o * CFrame.new(x, 1 + h + 1, 1.5), 2.4 + i * 0.6, 0.9, cyan)
+		Build.part(Vector3.new(3, h, 3), o * CFrame.new(x, deck + h / 2, 1.5), { Name = "UpgradePillar", Color = if i == 3 then blue else rgb(90, 110, 200), Parent = model })
+		Build.decor(Build.part(Vector3.new(3.4, 0.5, 3.4), o * CFrame.new(x, deck + h + 0.25, 1.5), { Name = "PillarCap", Color = cyan, Material = Enum.Material.Neon, Parent = model }))
+		local a = arrow(model, "UpgradeArrow" .. i, o * CFrame.new(x, deck + h + 1, 1.5), 2.4 + i * 0.6, 0.9, cyan)
 		Landmarks.animate(a, "Bob", { Speed = 2.4, Amp = 0.5, Phase = i * 0.9, Hz = 15 })
 	end
 	-- engrenagem atrás (disco + 6 dentes), girando no próprio eixo
 	local gear = Build.model("UpgradeGear", model)
-	local gcf = o * CFrame.new(0, 9.5, 6) * CFrame.Angles(0, math.rad(90), 0)
+	local gcf = o * CFrame.new(0, 10.6, 5.6) * CFrame.Angles(0, math.rad(90), 0)
 	local disk = Build.part(Vector3.new(1, 7, 7), gcf, { Name = "GearDisk", Color = rgb(255, 205, 60), Parent = gear })
 	disk.Shape = Enum.PartType.Cylinder
 	for k = 1, 6 do
@@ -398,10 +429,11 @@ function Landmarks.upgrades(model: Model, o: CFrame): BasePart
 	Build.part(Vector3.new(1.2, 2.4, 2.4), gcf, { Name = "GearHub", Color = blue, Parent = gear })
 	gear.PrimaryPart = disk
 	Landmarks.animate(gear, "Spin", { Speed = 25, Axis = "X", Hz = 12 })
-	Build.part(Vector3.new(1.2, 6, 1.2), o * CFrame.new(0, 3, 6), { Name = "GearStand", Color = rgb(90, 110, 200), Parent = model })
-	-- console (prompt) na frente + placa
-	local console = Build.part(Vector3.new(4, 3, 2), o * CFrame.new(0, 2.5, -4.5), { Name = "Console", Color = rgb(40, 50, 90), Parent = model })
-	Build.decor(Build.part(Vector3.new(3.2, 1.6, 0.2), o * CFrame.new(0, 3, -5.55), { Name = "ConsoleScreen", Color = cyan, Material = Enum.Material.Neon, Parent = model }))
+	-- engrenagem montada no topo do painel traseiro (eixo saindo da carcaça)
+	Build.decor(Build.part(Vector3.new(1, 1, 1.4), o * CFrame.new(0, 10.6, 4.9), { Name = "GearAxle", Color = frameColor, Parent = model }))
+	-- console (prompt) EM CIMA da base, na frente
+	local console = Build.part(Vector3.new(4, 2.6, 2), o * CFrame.new(0, deck + 1.3, -4.3), { Name = "Console", Color = frameColor, Parent = model })
+	Build.decor(Build.part(Vector3.new(3.2, 1.4, 0.2), o * CFrame.new(0, deck + 1.6, -5.35), { Name = "ConsoleScreen", Color = cyan, Material = Enum.Material.Neon, Parent = model }))
 	Decor.sign(model, o * CFrame.new(-7.2, 0, -5.8), "⬆️ " .. Localization.t("map.upgrades"), blue, { width = 9, lift = 4.5, height = 2.6 })
 	return console
 end
@@ -419,9 +451,17 @@ function Landmarks.rebirth(model: Model, o: CFrame): BasePart
 		local ang = k / 8 * math.pi * 2
 		Build.part(Vector3.new(2.4, 1.8, 1.4), center * CFrame.Angles(0, 0, ang) * CFrame.new(0, 4.8, 0), { Name = "RebirthRing", Color = magenta, Parent = model })
 	end
-	for _, x in { -3, 3 } do
-		Build.part(Vector3.new(1.6, 3, 1.6), o * CFrame.new(x, 2, 1.5), { Name = "RingFoot", Color = magenta, Parent = model })
+	-- POLISH: pés alinhados com os blocos de baixo do anel (antes ficavam soltos abaixo deles)
+	local footX = math.sin(math.rad(45)) * 4.8
+	local footTop = 7.4 - math.cos(math.rad(45)) * 4.8
+	for _, x in { -footX, footX } do
+		Build.part(Vector3.new(1.6, footTop - 1, 1.4), o * CFrame.new(x, 1 + (footTop - 1) / 2, 1.5), { Name = "RingFoot", Color = magenta, Parent = model })
 	end
+	-- disco escuro dentro do anel: o portal lê como portal de qualquer ângulo (sem VFX)
+	local disc = Build.part(Vector3.new(0.2, 8, 8), center * CFrame.new(0, 0, 0.35) * CFrame.Angles(0, math.rad(90), 0), { Name = "PortalDisc", Color = rgb(45, 20, 60), Transparency = 0.15, Parent = model })
+	disc.Shape = Enum.PartType.Cylinder
+	disc:SetAttribute("ArtRole", "Special")
+	Build.decor(disc)
 	-- setas circulares (3 arcos com ponta) girando dentro do anel
 	local arrows = Build.model("RebirthArrows", model)
 	for k = 1, 3 do

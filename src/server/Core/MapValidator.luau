@@ -9,7 +9,7 @@
 		points = { HubSpawn = true, ShopSpawn = true, TowerEntrance = true },
 		bases = {
 			{ name = "Base01", baseId = 1, hasPlayerSpawn = true, hasOwnerSign = true,
-			  hasMoneyCollector = true, hasUpgradeArea = true, hasRuntimeCharacters = true,
+			  hasMoneyCollector = true, hasUpgradeArea = false, hasRuntimeCharacters = true,
 			  floors = {
 				{ name = "Floor01", floorId = 1, sides = {
 					A = { { name = "Slot01", slotId = 1, side = "A", index = 1, floorId = 1 }, ... },
@@ -47,10 +47,15 @@ function MapValidator.validate(snapshot: any, expectedBases: number, slotsPerSid
 		else
 			baseIds[base.baseId] = label
 		end
-		for _, part in { "PlayerSpawn", "OwnerSign", "MoneyCollector", "UpgradeArea", "RuntimeCharacters" } do
+		for _, part in { "PlayerSpawn", "OwnerSign", "MoneyCollector", "RuntimeCharacters" } do
 			if not base["has" .. part] then
 				add(`{label}: falta {part}`)
 			end
+		end
+
+		-- o antigo pad MELHORIAS não pode voltar (acesso duplicado com o landmark do Hub)
+		if base.hasUpgradeArea then
+			add(`{label}: pad MELHORIAS antigo (UpgradeArea) não deveria existir`)
 		end
 
 		local floor1 = nil

@@ -17,7 +17,6 @@ local Net = require(Shared.Modules.Net)
 
 local PlayerDataService = require(script.Parent.PlayerDataService)
 local EconomyService = require(script.Parent.EconomyService)
-local BaseService = require(script.Parent.BaseService)
 local MapService = require(script.Parent.MapService)
 local AnalyticsService = require(script.Parent.AnalyticsService)
 
@@ -58,15 +57,8 @@ end
 
 function UpgradeService.Init()
 	Net.handle("BuyUpgrade", UpgradeService.Buy)
-	MapService.RegisterInteraction("UpgradeArea", function(player, prompt)
-		local base = BaseService.GetPlayerBase(player)
-		if not base or not prompt:IsDescendantOf(base) then
-			Net.fire("Notify", player, "base.not_yours")
-			return
-		end
-		Net.fire("OpenMenu", player, "Upgrades")
-	end)
-	-- Landmark MELHORIAS do Hub (art pass): abre a MESMA janela do botão do HUD
+	-- Acesso físico ÚNICO: landmark MELHORIAS do Hub. Abre a MESMA janela do botão do HUD.
+	-- (o antigo pad "UpgradeArea" dentro das bases foi removido — não é mais construído)
 	MapService.RegisterInteraction("HubUpgrades", function(player)
 		Net.fire("OpenMenu", player, "Upgrades")
 	end)

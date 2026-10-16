@@ -124,7 +124,9 @@ describe("BaseLayout (slots 4 + 4 por andar)", function()
 		local function clear(rect)
 			return sp.x + half <= rect.minX or sp.x - half >= rect.maxX or sp.z + half <= rect.minZ or sp.z - half >= rect.maxZ
 		end
-		for _, pad in { BaseConfig.Collector, BaseConfig.UpgradeArea } do
+		-- o antigo pad MELHORIAS (UpgradeArea) não existe mais; o coletor continua
+		expect((BaseConfig :: any).UpgradeArea).toBeNil()
+		for _, pad in { BaseConfig.Collector } do
 			expect(clear({ minX = pad.x - pad.width / 2, maxX = pad.x + pad.width / 2, minZ = pad.z - pad.depth / 2, maxZ = pad.z + pad.depth / 2 })).toBeTruthy()
 		end
 		expect(clear(layout:rampRect(1))).toBeTruthy()

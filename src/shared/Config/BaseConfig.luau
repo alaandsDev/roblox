@@ -69,7 +69,7 @@ local BaseConfig = {
 	-- olhando para dentro da base. Livre de pilares do arco, pads e rampa.
 	Spawn = { x = 0, z = -25, size = 4 },
 	Collector = { x = -24, z = -25, width = 8, depth = 6 }, -- frente, lado B
-	UpgradeArea = { x = 24, z = -25, width = 8, depth = 6 }, -- frente, lado A
+	-- (o antigo pad MELHORIAS da frente/lado A foi removido: acesso pelo landmark do Hub + HUD)
 	Entrance = { halfWidth = 13, height = 13 },
 
 	-- Cores de cada base (Base01..Base10)

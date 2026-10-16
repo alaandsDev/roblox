@@ -84,6 +84,26 @@ Dev:Invoke("HubArtTour", p, "Fusion", 60) -- distância de leitura: 10 / 30 / 60
 
 O jogador é teleportado na direção do Hub, olhando para o landmark, em pé sobre o que houver no chão (degraus, plataformas). O teste confere que nenhum dos 11 pontos, a 26 e a 60 studs, cai dentro de uma peça sólida.
 
+## FINAL POLISH (sem redesenhar o Hub)
+
+Aprovados e intocados: LOJA DE DADOS, VENDER, MERCADO, MISSÕES, TORRES, Rankings/Magnata.
+
+- **TROCAS:** ↔ maior (haste 5,4 × 1,4, antes menor) e mais alto (y 10,3), sobre dois painéis escuros azul | laranja; faixas laterais azul/laranja nos postes do arco (13,4); molduras dos slots maiores (4,3) com fundo escuro e item 1,8 — os dois "pedestais de troca" leem claro. Simetria e caminho livre preservados (teste). Não virou prédio.
+- **FUSÃO:** periferia mais escura e menos bloom — runa e cristal do altar em teal escuro, cristais das entradas em tons fechados, anel do núcleo sem neon (contorno escuro girando), gema-resultado dourada sólida (sem neon), beams mais finos (0,4→0,3) com LightEmission 0,45. O NÚCLEO ficou maior (4) e é a única peça neon mais clara do landmark (teste). Hierarquia: entradas → núcleo forte → resultado. Continuam 3 beams.
+- **MELHORIAS:** ganhou CORPO de máquina: base/deck (14 × 10,4), duas laterais, painel traseiro, tampo, faixa de energia ligando os pilares e 3 luzes de nível na frente. Pilares crescentes agora apoiados no deck, engrenagem com eixo no painel traseiro, console no deck. Posição, pilares, setas, engrenagem, prompt e UI mantidos; tudo blocky.
+- **RENASCER:** só alinhamento — pés do anel realinhados à curva do anel (simétricos) e disco escuro dentro do anel (portal intencional de qualquer ângulo). Sem aumentar, sem VFX novo.
+
+**Pad MELHORIAS das bases removido:** havia acesso duplicado (pad na frente/lado A de cada base + landmark do Hub). O pad não é mais construído (BaseBuilder), `BaseConfig.UpgradeArea` e a interação `UpgradeArea` saíram, e o MapValidator agora reprova se ele voltar. Acesso oficial: landmark do Hub + botão MELHORIAS do HUD, os dois abrindo a MESMA janela `Upgrades` (ClientHarness). Sistema, dados, níveis, preços, fórmulas e `BuyUpgrade` intactos. O espaço liberado ficou como piso livre (nada novo ali); slots, pedestais, andares, coletor, iluminação e placas das bases não mudaram.
+
+| Custo (landmarks do Hub) | Antes do polish | Depois |
+|---|---|---|
+| Parts | 513 (84 com colisão) | 530 (87 com colisão) |
+| Peças: Trocas · Fusão · Melhorias · Renascer | 27 · 36 · 31 · 29 | 33 · 36 · 41 · 30 |
+| ParticleEmitters | 3 (14/s) | 3 (14/s) |
+| Beams / Attachments / Lights | 3 / 4 / 2 | 3 / 4 / 2 |
+| Loops / conexões novas | — | 0 |
+| Bases (10) | 1130 peças | 1080 (−5 por base: pad + moldura; −10 prompts, −10 BillboardGuis) |
+
 ## Aprovação
 
 Os testes provam estrutura, colisão, caminhos, LOD, custo e existência. **Eles não aprovam a arte.** A aprovação final é visual no Studio: roteiro HA1–HA15 em `STUDIO_SMOKE_TEST.md`.

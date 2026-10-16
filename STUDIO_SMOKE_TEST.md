@@ -370,3 +370,7 @@ Critério: SEM LER AS PLACAS dá para dizer "isso vende / troca / é missão / f
 | HA13 | PLAYER AURA | `SetPlayerAura p 5` e passear pelo Hub | Absoluta continua legível contra os landmarks; landmarks não competem com a aura | [ ] |
 | HA14 | PERSONAGENS | base ocupada + Character Auras + Recent Rolls + HUD | Hub continua legível em gameplay real | [ ] |
 | HA15 | STRESS | `PlayerAuraStress p 10` no centro do Hub + girar a câmera | FPS ok; landmarks + auras sem poluição visual excessiva | [ ] |
+| HA16 | TROCAS 50–60 | `HubArtTour Trade, 60` | ↔ grande e alto legível de longe; lado azul × laranja óbvio; 2 slots claros | [ ] |
+| HA17 | FUSÃO LUZ | `HubArtTour Fusion, 30` | núcleo é o ponto mais claro; entradas/anel/resultado não estouram | [ ] |
+| HA18 | MELHORIAS CORPO | `HubArtTour Upgrades, 30` | lê como UMA estação/máquina (base + laterais + painel), não peças soltas | [ ] |
+| HA19 | SEM PAD NA BASE | entrar na própria base (frente, lado A) | não há mais pad/placa MELHORIAS; piso livre; coletor/slots/andares iguais; HUD MELHORIAS e landmark abrem a mesma janela | [ ] |
