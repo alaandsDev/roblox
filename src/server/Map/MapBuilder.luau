@@ -990,7 +990,7 @@ local function buildSocial(parent: Folder)
 		local panelCf = lo * CFrame.new(0, 0, 4 - BOARD_RADIUS) * CFrame.Angles(0, (i - (#PANELS + 1) / 2) * step, 0) * CFrame.new(0, 0, BOARD_RADIUS)
 		-- o Magnata fica na ponta do arco, ao lado do caminho: painel ELEVADO (base acima da cabeça,
 		-- pilares sem colisão) para não bloquear ninguém
-		local height = if info.magnate then 13 else 11
+		local height = if info.magnate then 15 else 11
 		local lift = if info.magnate then 5.4 else 3
 		local centerY = lift + height / 2
 		for _, x in { -3.5, 3.5 } do
@@ -1004,7 +1004,11 @@ local function buildSocial(parent: Folder)
 			Color = if info.magnate then rgb(35, 25, 15) else rgb(40, 35, 60),
 			Parent = boards,
 		})
-		Build.rankingBoard(panel, Enum.NormalId.Front, Localization.t(info.key, { season = MagnateConfig.Season }), rgb(255, 220, 80), info.rows)
+		local title = Localization.t(info.key, { season = MagnateConfig.Season })
+		if info.magnate then
+			title = string.gsub(title, " · ", "\n") -- duas linhas: 👑 MAGNATA / TEMPORADA 1
+		end
+		Build.rankingBoard(panel, Enum.NormalId.Front, title, rgb(255, 220, 80), info.rows)
 		Build.decor(Build.part(Vector3.new(9.8, height + 0.8, 0.4), panelCf * CFrame.new(0, centerY, 0.6), {
 			Name = "PanelFrame",
 			Color = if info.magnate then rgb(255, 195, 50) else rgb(60, 140, 230),

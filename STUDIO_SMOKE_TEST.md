@@ -333,8 +333,10 @@ Comandos (Barra de comandos, contexto Servidor): `local Dev = game.ServerStorage
 | PA2 | PLAYER AURA | `GiveMoney` 1e13 e comprar Imperial → Divina → Celestial → Absoluta (tentar Divina antes da Imperial) | fora de ordem: "Compre a aura anterior primeiro"; cada etapa cobra só o seu preço; Renda ×1,75/2,00/2,25/2,50 e Velocidade 30/32/34/36 | [ ] |
 | PA3 | PLAYER AURA | morrer (Reset) 3× seguidas; sair e entrar de novo | aura volta a cada respawn SEM duplicar efeitos; velocidade mantida; save/load preserva | [ ] |
 | PA4 | PLAYER AURA | com Absoluta comprada, EQUIPAR VISUAL na Desperta; depois clicar ✓ EQUIPADA (tira o visual) | visual muda; `PlayerAuraStatus` continua renda ×2,50 e WalkSpeed 36 | [ ] |
-| PA5 | PLAYER AURA | `Dev:Invoke("PlayerAuraLineup", p)` | as 5 auras lado a lado; escala clara Desperta < Imperial < Divina < Celestial < ABSOLUTA (auréola/coroa + anel duplo: inconfundível); avatar nunca coberto | [ ] |
-| PA6 | PLAYER AURA | `Dev:Invoke("PlayerAuraStress", p, 10, "Absoluta")`; andar em volta e se afastar 40 / 90+ studs; emulador mobile | FPS estável; longe reduz e some depois de ~90 studs; a SUA aura sempre cheia; `PlayerAuraClear` limpa | [ ] |
+| PA5 | PLAYER AURA | `Dev:Invoke("PlayerAuraLineup", p)` | 5 bonecos bem espaçados, rótulos limpos (só o nome); DESPERTA < IMPERIAL < DIVINA << CELESTIAL (auréola + coluna) < ABSOLUTA (coroa dourada + 3 fluxos nos ombros: reconhecível sem o nome); energia no tronco/cabeça, não só no chão; fitas visivelmente em movimento | [ ] |
+| PA6 | PLAYER AURA | `Dev:Invoke("PlayerAuraStress", p, 10, "Absoluta")`; andar em volta e se afastar 40 / 60 / 90 / 110 studs; emulador mobile | formação 5 + 5 sem amontoar, rótulos "Absoluta #n" sem sobrepor; FPS estável; reduz depois de 40 e some depois de 90; a SUA aura sempre cheia; `PlayerAuraClear` limpa | [ ] |
+| PA7 | MOBILE | emulador em pé (iPhone SE / 14) e deitado | em pé: ✨ AURAS na coluna da esquerda sem cobrir ROLAR/MOCHILA/AUTO/OCULTAR/joystick; deitado: só o da direita; loja abre/fecha/rola/compra/equipa sem texto cortado | [ ] |
+| MG6 | MAGNATA | olhar o painel de perto e de ~20 studs | 10 linhas iguais e legíveis, nomes longos com "…", valores alinhados ("$12.4T" inteiro), título em 2 linhas | [ ] |
 | MG1 | LIFETIME | coletar no coletor; `Dev:Invoke("MagnateStatus", p)` | Lifetime sobe exatamente o valor coletado | [ ] |
 | MG2 | LIFETIME | `GiveMoney` (não conta) → Rebirth → `MagnateStatus` | Money zera, Lifetime igual; aura continua | [ ] |
 | MG3 | LIFETIME | sair/entrar | Lifetime e aura preservados | [ ] |

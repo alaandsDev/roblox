@@ -208,3 +208,81 @@ O teste `money_sources_test.py` confere toda chamada de `AddMoney` no servidor c
 | `FuseMaxPreview(id?)` | prévia do FUNDIR MÁX. sem mudar nada |
 
 O roteiro manual está em `STUDIO_SMOKE_TEST.md` (PA1–PA6, MG1–MG5, FM1–FM5).
+
+## PLAYER AURA ART PASS V2 + MAGNATA POLISH + MOBILE AURAS
+
+Regra desta etapa: identidade vale mais que quantidade. Preços, multiplicadores, WalkSpeed, Lifetime, MoneySourceConfig, Fusion/FuseMax, RNG, AFK, Recent Rolls, Hero Landing e Character Aura **não mudaram**.
+
+### Composição por tier (`PlayerAuraConfig.Visual`)
+
+| Tier | Pés | Tronco | Ombros / cabeça | Assinatura |
+|---|---|---|---|---|
+| Desperta | anel simples (2 arcos), pulso suave a cada 3,2 s | energia leve + ascendentes junto ao corpo | — | primeira transformação, ciano |
+| Imperial | anel dourado, pulso, rastro | 2 orbitadores grandes, chamas DOURADAS subindo pelas laterais | — | chamas laterais |
+| Divina | anel redondo (4 arcos), pulso a cada 2,4 s | 3 orbitadores, ascendentes, laterais, 2 fluxos | os fluxos sobem até acima dos ombros | corpo inteiro envolvido |
+| Celestial | anel, pulso a cada 2,1 s | coluna de luz que respira, estrelas subindo, 2 fluxos largos | **auréola celestial** girando + faíscas | salto visual: auréola + coluna |
+| Absoluta | 1 anel forte e largo (0,55), pulso a cada 1,6 s | energia vertical carmesim, coluna, 3 orbitadores | **3 grandes fluxos nos ombros** + **coroa dourada** (auréola + 4 pontas) + faíscas | coroa = reconhecível sem ler o nome |
+
+### Como os círculos foram barateados
+
+- **Antes:** um círculo era um polígono de 12 beams + 12 attachments.
+- **Agora:** é um conjunto de **arcos Bézier**: o eixo do attachment fica na tangente e o `CurveSize` vale k·r. Com 2 arcos o círculo inteiro usa 2 beams e 2 attachments; com 4 arcos, 4 e 4.
+- **Precisão:** o teste confere que o meio de cada arco cai exatamente no raio, ou seja, o círculo é redondo e não um polígono.
+
+### Movimento (todo beam se move)
+
+- **Fluxos:** as pontas andam ~1,3 studs e a curva varia ~4,8 em 1,5 s, cada fluxo com fase própria. A textura de fogo também corre ao longo deles.
+- **Auréola e coroa:** giram.
+- **Anel e coluna:** a textura corre, e a coluna respira na largura.
+- **Teste:** o ClientHarness reprova qualquer beam parado.
+
+### Custo (medido no ClientHarness)
+
+| | Antes (7e2c50b) | Agora |
+|---|---|---|
+| Absoluta: beams | 44 | **14** (−68%) |
+| Absoluta: attachments | 57 | **26** (−54%) |
+| Absoluta: partículas/s | 104 | **64** (~55 vivas) |
+| 10 Absolutas perto | 1040/s · 440 beams · 570 att. | **640/s · 550 vivas · 140 beams · 260 att. · 240 escritas por quadro** |
+| 10 a 40 studs | — | cheias (igual à linha acima) |
+| 10 a 60 / 90 studs | 468/s | reduzidas: 288/s, 247 vivas, 30 escritas por quadro (metade da frequência) |
+| 10 a 110 studs | — | desligadas: 0 partículas, 0 beams, 0 escritas |
+| 10 perto no mobile | — | 320/s (×0,5) |
+
+Em todos os casos: **1 conexão**, **0 Highlights**, 1 PointLight por aura.
+
+### Escala por tier (1 aura perto)
+
+| Tier | Partículas/s | Beams | Attachments | Elementos acima do tronco |
+|---|---|---|---|---|
+| Desperta | 18 | 2 | 3 | 0 |
+| Imperial | 33 | 2 | 9 | 0 |
+| Divina | 43 | 6 | 16 | 2 |
+| Celestial | 55 | 9 | 20 | 6 |
+| Absoluta | 64 | 14 | 26 | 11 |
+
+### DEV
+
+- **`PlayerAuraLineup`:**
+  - 13 studs entre os bonecos (antes 7);
+  - rótulo pequeno em studs (7 de largura) acima da coroa, só com o nome: DESPERTA … ABSOLUTA;
+  - sem o "Player Aura" repetido; nenhum rótulo se sobrepõe.
+- **`PlayerAuraStress`:**
+  - formação 5 + 5, com 10 studs entre colunas e 11 entre fileiras;
+  - a fileira de trás fica deslocada meio passo, para ninguém ficar escondido;
+  - rótulos curtos: "Absoluta #n".
+
+### Magnata (polish, sem redesenho)
+
+- **Linhas:** as 10 têm a mesma altura (0,073), com espaçamento fino constante. O texto ficou com 23 px no painel.
+- **Painel:** passou de 13 para 15 studs de altura.
+- **Título:** "👑 MAGNATA / TEMPORADA 1" agora ocupa duas linhas e se ajusta à largura, sem "…".
+- **Colunas:** a do valor ficou mais larga (0,33) e alinhada à direita, então "$12.4T" não é cortado. Nome longo trunca com "…".
+- **Preservado:** moldura dourada, coroa, posição, elevação e Top 10. Os 3 painéis originais não mudaram.
+
+### Mobile: botão AURAS
+
+- **Retrato:** a coluna da direita some, então o atalho ✨ AURAS aparece na **coluna da esquerda** como 5º botão. O botão tem o atributo `PortraitOnly` e o `HudController.Layout` aumenta a altura da coluna para caber.
+- **Paisagem e PC:** o botão da esquerda fica escondido e só o da direita aparece, sem duplicata.
+- **Sem sobreposição:** testado em retrato estreito (360×740) e médio (390×844). A coluna termina antes dos controles de baixo (ROLAR, MOCHILA, MELHORIAS, AUTO, OCULTAR).
+- **Loja no celular:** abre dentro da tela, rola as 5 auras, compra, equipa e mostra preço, renda, velocidade e 👑 Gerado em retrato e paisagem.

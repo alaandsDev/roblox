@@ -1061,7 +1061,7 @@ local function auraTierOf(value: any): number?
 end
 
 -- Boneco simples de avatar (R6 em blocos, ancorado) que recebe a Player Aura pelo cliente
-local function auraDummy(parent: Instance, cf: CFrame, tier: number, label: string): Model
+local function auraDummy(parent: Instance, cf: CFrame, tier: number, label: string, labelWidth: number): Model
 	local model = Instance.new("Model")
 	model.Name = "AuraDummy_" .. label
 	local function part(name: string, size: Vector3, offset: Vector3, color: Color3): Part
@@ -1085,11 +1085,36 @@ local function auraDummy(parent: Instance, cf: CFrame, tier: number, label: stri
 	part("RightLeg", Vector3.new(1, 2, 1), Vector3.new(0.5, 1, 0), Color3.fromRGB(40, 40, 60))
 	model.PrimaryPart = root
 	model:SetAttribute("PlayerAuraVisual", tier)
-	galleryLabel(model, label, "Player Aura")
+	-- rótulo pequeno, em STUDS (não cresce com a distância nem se sobrepõe aos vizinhos),
+	-- acima da coroa; sem "Player Aura" repetido
+	local gui = Instance.new("BillboardGui")
+	gui.Name = "AuraLabel"
+	gui.Size = UDim2.new(labelWidth, 0, 0.9, 0)
+	gui.StudsOffsetWorldSpace = Vector3.new(0, 5.6, 0)
+	gui.LightInfluence = 0
+	gui.MaxDistance = 140
+	gui.Parent = root
+	local text = Instance.new("TextLabel")
+	text.Name = "Text"
+	text.BackgroundTransparency = 1
+	text.Size = UDim2.fromScale(1, 1)
+	text.Font = Enum.Font.FredokaOne
+	text.TextScaled = true
+	text.TextColor3 = Color3.new(1, 1, 1)
+	text.TextStrokeTransparency = 0.2
+	text.Text = label
+	text.Parent = gui
 	model.Parent = parent
 	game:GetService("CollectionService"):AddTag(model, "PlayerAuraHost")
 	return model
 end
+
+-- espaçamentos dos comandos de vitrine (studs; testados contra a largura dos rótulos)
+DevService.LineupSpacing = 13
+DevService.LineupLabelWidth = 7
+DevService.StressSpacing = 10
+DevService.StressRowGap = 11
+DevService.StressLabelWidth = 6
 
 local function auraFolder(): Folder
 	local ws = game:GetService("Workspace")
@@ -1137,14 +1162,14 @@ DevService.Register("PlayerAuraPreview", "([player], Desperta|Imperial|Divina|Ce
 	player:SetAttribute("PlayerAuraVisual", tier)
 	return "visual: " .. (if tier > 0 then PlayerAuraConfig.List[tier].Id else "nenhum")
 end)
-DevService.Register("PlayerAuraLineup", "([player], distância=16) as 5 Player Auras lado a lado à frente do jogador (bonecos); apague com PlayerAuraClear", function(...)
+DevService.Register("PlayerAuraLineup", "([player], distância=26) as 5 Player Auras lado a lado à frente do jogador (bonecos); apague com PlayerAuraClear", function(...)
 	local player, distance = splitPlayer(...)
 	local folder = auraFolder()
-	local center, look, right = frontOf(player, tonumber(distance) or 16)
-	local spacing = 7
+	-- 13 studs entre bonecos: a maior aura (anel 3,3 + fluxos/orbitadores) cabe sem invadir a vizinha
+	local center, look, right = frontOf(player, tonumber(distance) or 26)
 	for i, tier in PlayerAuraConfig.List do
-		local pos = center + right * ((i - 3) * spacing)
-		auraDummy(folder, CFrame.lookAt(pos, pos - look), tier.Tier, string.upper(tier.Id))
+		local pos = center + right * ((i - 3) * DevService.LineupSpacing)
+		auraDummy(folder, CFrame.lookAt(pos, pos - look), tier.Tier, string.upper(tier.Id), DevService.LineupLabelWidth)
 	end
 	return "5 Player Auras em Workspace.DevPlayerAuras"
 end)
@@ -1153,11 +1178,13 @@ DevService.Register("PlayerAuraStress", "([player], quantidade=10, tier=Absoluta
 	local n = math.clamp(tonumber(count) or 10, 1, 20)
 	local tier = auraTierOf(value or "Absoluta") or 5
 	local folder = auraFolder()
-	local center, look, right = frontOf(player, 18)
+	-- formação 5 + 5 (fileira de trás deslocada meio passo: ninguém fica escondido atrás)
+	local center, look, right = frontOf(player, 24)
 	for i = 1, n do
 		local row, col = (i - 1) // 5, (i - 1) % 5
-		local pos = center + right * ((col - 2) * 5) + look * (row * 6)
-		auraDummy(folder, CFrame.lookAt(pos, pos - look), tier, `{PlayerAuraConfig.List[tier].Id} #{i}`)
+		local x = (col - 2) * DevService.StressSpacing + (if row % 2 == 1 then DevService.StressSpacing / 2 else 0)
+		local pos = center + right * x + look * (row * DevService.StressRowGap)
+		auraDummy(folder, CFrame.lookAt(pos, pos - look), tier, `{PlayerAuraConfig.List[tier].Id} #{i}`, DevService.StressLabelWidth)
 	end
 	return `{n} × {PlayerAuraConfig.List[tier].Id} em Workspace.DevPlayerAuras`
 end)

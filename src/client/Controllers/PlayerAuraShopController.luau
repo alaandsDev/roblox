@@ -253,6 +253,23 @@ function PlayerAuraShopController.Start()
 			end,
 		})
 	end
+	-- Celular em pé: a coluna da direita some; o mesmo atalho aparece na coluna da esquerda
+	-- (HudController.Layout mostra/esconde quem tem PortraitOnly e ajusta a altura da coluna)
+	local left = HudController.Containers.Left
+	if left then
+		local side = UIKit.iconButton(left, {
+			name = "AurasSide",
+			icon = "✨",
+			text = Localization.t("paura.short"),
+			color = Color3.fromRGB(200, 60, 120),
+			order = 5,
+			onClick = function()
+				UIKit.Windows.toggle("PlayerAuras")
+			end,
+		})
+		side:SetAttribute("PortraitOnly", true)
+		HudController.Layout()
+	end
 	DataController.Changed:Connect(function(key)
 		if key == "PlayerAura" or key == "Money" or key == "LifetimeMoneyGenerated" then
 			PlayerAuraShopController.Refresh()

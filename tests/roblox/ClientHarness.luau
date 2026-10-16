@@ -2057,39 +2057,150 @@ do
 		return m
 	end
 	camera.CFrame = roblox.CFrame.new(0, 5, 0)
-	local report = {}
-	for _, n in { 1, 5, 10 } do
+	local PlayerAuraBuilder = clientRequire(env.shared.Modules.PlayerAuraBuilder)
+	local PlayerAuraConfig = clientRequire(env.shared.Config.PlayerAuraConfig)
+	local function clearHosts()
 		for _, m in hosts do
 			CS:RemoveTag(m, "PlayerAuraHost")
 			m:Destroy()
 		end
 		table.clear(hosts)
+	end
+
+	-- ART PASS V2: orçamento e composição por tier (1 boneco de cada, perto)
+	local perTier = {}
+	for tier = 1, 5 do
+		clearHosts()
+		local m = host(tier, roblox.Vector3.new(0, 3, -12))
+		m:SetAttribute("PlayerAuraVisual", tier)
+		PAC._scan()
+		PAC._step(0.05)
+		local st = PAC.Stats()
+		local root = m.HumanoidRootPart
+		local feet, torso, head = 0, 0, 0
+		for _, child in root:GetChildren() do
+			if child:IsA("Attachment") then
+				local y = child.CFrame.Position.Y
+				if y < -2 then
+					feet += 1
+				elseif y < 2.2 then
+					torso += 1
+				else
+					head += 1
+				end
+			end
+		end
+		for _, e in root:GetChildren() do
+			if e:IsA("ParticleEmitter") then
+				torso += 1 -- energia corporal/ascendentes saem do tronco
+			end
+		end
+		perTier[tier] = { st = st, feet = feet, torso = torso, head = head }
+		print(string.format("    %-9s %5.0f partículas/s · %4.0f vivas · %2d beams · %2d attachments · %d trails · pés %d / tronco %d / cabeça %d",
+			PlayerAuraConfig.List[tier].Id, st.rate, st.alive, st.beams, st.attachments, st.trails, feet, torso, head))
+	end
+	local ok = true
+	for tier = 2, 5 do
+		local a, b = perTier[tier - 1].st, perTier[tier].st
+		ok = ok and b.rate > a.rate and (b.beams >= a.beams) and b.attachments >= a.attachments
+	end
+	check(ok, "escala clara: Desperta < Imperial < Divina < Celestial < Absoluta (emissão, beams, elementos)")
+	local abs, cel = perTier[5], perTier[4]
+	check(abs.st.beams <= 22 and abs.st.attachments <= 30, string.format("Absoluta: %d beams (antes 44) e %d attachments (antes 57) — redução >= 40%%", abs.st.beams, abs.st.attachments))
+	check(abs.st.rate < 104, string.format("Absoluta: %.0f partículas/s (antes 104)", abs.st.rate))
+	check(abs.head >= 8 and abs.torso >= 8 and cel.head >= 4, "energia distribuída: Absoluta/Celestial com elementos no TRONCO e na CABEÇA (não só no chão)")
+	check(perTier[4].st.beams - perTier[3].st.beams >= 3 and perTier[4].head > perTier[3].head, "Celestial dá um SALTO sobre a Divina (auréola + coluna + fluxos maiores)")
+	-- assinatura exclusiva da Absoluta: coroa (pontas) só nela
+	clearHosts()
+	local hostAbs = host(1, roblox.Vector3.new(0, 3, -12))
+	PAC._scan()
+	local rootAbs = hostAbs.HumanoidRootPart
+	check(rootAbs:FindFirstChild("PA_CrownTip1") ~= nil and rootAbs:FindFirstChild("PA_Halo1") ~= nil, "Absoluta: auréola + coroa de pontas (exclusiva)")
+	-- círculo por arcos Bézier: o meio do arco cai NO raio (é redondo, não um polígono)
+	local fx = PAC.EntryFor("H" .. hostAbs:GetFullName()).fx
+	local halo = fx.halo
+	local p0, p1 = halo.points[1], halo.points[2]
+	local k = PlayerAuraBuilder.arcHandle(halo.radius, #halo.points)
+	local c0 = p0.CFrame.Position + p0.CFrame.RightVector * k
+	local c1 = p1.CFrame.Position - p1.CFrame.RightVector * k
+	local mid = (p0.CFrame.Position + c0 * 3 + c1 * 3 + p1.CFrame.Position) / 8
+	local midR = math.sqrt(mid.X ^ 2 + mid.Z ^ 2)
+	check(math.abs(midR - halo.radius) / halo.radius < 0.03, string.format("auréola: arco Bézier redondo (meio do arco a %.2f do centro; raio %.2f)", midR, halo.radius))
+	-- fluxos VISIVELMENTE em movimento em 1,5 s (pontas e curvas)
+	local tclock = 100
+	PAC._setClock(function()
+		return tclock
+	end)
+	local moved, curveMin, curveMax = 0, math.huge, -math.huge
+	local first = {}
+	for i, flow in fx.flows do
+		first[i] = flow.a1.CFrame.Position
+	end
+	for f = 0, 45 do
+		tclock = 100 + f / 30
+		PAC._step(1 / 30)
+		for i, flow in fx.flows do
+			moved = math.max(moved, (flow.a1.CFrame.Position - first[i]).Magnitude)
+			curveMin = math.min(curveMin, flow.beam.CurveSize0)
+			curveMax = math.max(curveMax, flow.beam.CurveSize0)
+		end
+	end
+	check(#fx.flows == 3 and moved > 1 and curveMax - curveMin > 2, string.format("fluxos da Absoluta em movimento visível: ponta anda %.1f studs e a curva varia %.1f em 1,5 s", moved, curveMax - curveMin))
+	local textured = true
+	for _, b in fx.beams do
+		local animated = b.beam.TextureSpeed ~= 0 or b.beam.Name == "PA_Halo" or b.beam.Name == "PA_Crown"
+		textured = textured and animated
+	end
+	check(textured, "todo beam da Player Aura se move (textura correndo, pontas/curvas animadas ou girando com a auréola)")
+	local haloBefore = halo.points[1].CFrame.Position
+	tclock += 1
+	PAC._step(1 / 30)
+	check((halo.points[1].CFrame.Position - haloBefore).Magnitude > 0.3, "auréola/coroa girando")
+	PAC._setClock(os.clock)
+
+	-- STRESS: 1 / 5 / 10 Absolutas perto; depois 40 / 60 / 90 / 110 studs; mobile
+	local report = {}
+	for _, n in { 1, 5, 10 } do
+		clearHosts()
 		for i = 1, n do
-			host(i, roblox.Vector3.new((i - 5) * 4, 3, -12))
+			host(i, roblox.Vector3.new((i - 5.5) * 6, 3, -14))
 		end
 		PAC._scan()
 		PAC._step(0.05)
 		local st = PAC.Stats()
-		table.insert(report, string.format("%d Absolutas perto: %d emissores, %.0f partículas/s, %d beams, %d trails, %d attachments, %d luzes, %d highlights, %d conexão", n, st.emitters, st.rate, st.beams, st.trails, st.attachments, st.lights, st.highlights, st.connections))
+		table.insert(report, string.format("%d Absolutas perto: %.0f partículas/s, %.0f vivas, %d beams, %d trails, %d attachments, %d escritas/quadro, %d luzes, %d highlights, %d conexão", n, st.rate, st.alive, st.beams, st.trails, st.attachments, st.writes, st.lights, st.highlights, st.connections))
 		check(st.auras == n and st.full == n and st.highlights == 0, n .. " Absolutas perto: todas cheias, zero Highlight")
 	end
+	local ten = PAC.Stats()
+	check(ten.beams <= 220 and ten.attachments <= 300, string.format("10 Absolutas: %d beams (antes 440) e %d attachments (antes 570)", ten.beams, ten.attachments))
+	for _, dist in { 40, 60, 90, 110 } do
+		for _, m in hosts do
+			m.HumanoidRootPart.CFrame = roblox.CFrame.new(0, 5, -dist) -- mesma altura da câmera: distância exata
+		end
+		PAC._step(0.05)
+		local st = PAC.Stats()
+		table.insert(report, string.format("10 Absolutas a %d studs: %s · %.0f partículas/s, %.0f vivas, %d beams, %d escritas/quadro", dist, if st.full == 10 then "cheias" elseif st.reduced == 10 then "reduzidas" else "desligadas", st.rate, st.alive, st.beams, st.writes))
+		if dist == 110 then
+			check(st.off == 10 and st.rate == 0 and st.beams == 0, "10 Absolutas a 110 studs: desligadas")
+		elseif dist == 40 then
+			check(st.full == 10, "10 Absolutas a 40 studs: ainda cheias")
+		elseif dist >= 60 then
+			check(st.reduced == 10 and st.rate < ten.rate * 0.5, "10 Absolutas a " .. dist .. " studs: LOD reduzido")
+		end
+	end
+	for _, m in hosts do
+		m.HumanoidRootPart.CFrame = roblox.CFrame.new(0, 3, -14)
+	end
+	PAC._setMobile(true)
+	PAC._step(0.05)
+	local mob = PAC.Stats()
+	table.insert(report, string.format("MOBILE 10 Absolutas perto: %.0f partículas/s, %.0f vivas", mob.rate, mob.alive))
+	check(math.abs(mob.rate - ten.rate * 0.5) < 1, "mobile: 10 Absolutas com emissão × 0,5")
+	PAC._setMobile(false)
+	PAC._step(0.05)
 	for _, line in report do
 		print("    " .. line)
 	end
-	-- 10 Absolutas a ~60 studs (reduzidas) e a ~200 (desligadas)
-	for _, m in hosts do
-		m.HumanoidRootPart.CFrame = roblox.CFrame.new(0, 3, -60)
-	end
-	PAC._step(0.05)
-	local mid = PAC.Stats()
-	check(mid.reduced == 10, "10 Absolutas a 60 studs: LOD reduzido (" .. string.format("%.0f", mid.rate) .. " partículas/s)")
-	for _, m in hosts do
-		m.HumanoidRootPart.CFrame = roblox.CFrame.new(0, 3, -200)
-	end
-	PAC._step(0.05)
-	local far = PAC.Stats()
-	check(far.off == 10 and far.rate == 0 and far.beams == 0, "10 Absolutas a 200 studs: desligadas (0 partículas, 0 beams)")
-	print(string.format("    10 Absolutas: perto %s · 60 studs %.0f/s · 200 studs %.0f/s", report[3], mid.rate, far.rate))
 	for _, m in hosts do
 		CS:RemoveTag(m, "PlayerAuraHost")
 		m:Destroy()
@@ -2098,6 +2209,84 @@ do
 	check(PAC.Stats().auras == 0, "bonecos removidos: nenhuma aura sobra (sem vazamento)")
 	model:Destroy()
 	player.Character = nil
+end
+
+------------------------------------------------------------------------------------
+-- MOBILE: AURAS acessível no retrato (estreito/médio) e na paisagem; loja usável
+
+do
+	UIKit.Windows.closeAll()
+	local hudRoot = gui("HUD"):FindFirstChild("Root")
+	local left = hudRoot:FindFirstChild("Left")
+	local sideButton = find(left, "AurasSide")
+	local rightButton = find(gui("HUD"), "AurasShortcut")
+	local Theme = clientRequire(env.client.UI.UITheme)
+	for _, size in { { 360, 740, "retrato estreito" }, { 390, 844, "retrato médio" }, { 844, 390, "paisagem" }, { 1280, 720, "PC" } } do
+		Env.setViewport(camera, size[1], size[2])
+		task.wait(0.05)
+		local portrait = size[2] > size[1]
+		local scale = UIKit.uiScale()
+		local W, H = size[1] / scale, size[2] / scale
+		if portrait then
+			check(sideButton ~= nil and sideButton.Visible and left.Visible and not hudRoot.Right.Visible, size[3] .. ": ✨ AURAS na coluna da esquerda (a da direita some)")
+			-- a coluna cresceu para 5 botões e não encosta nos controles de baixo (ROLAR/MOCHILA/MELHORIAS/AUTO/OCULTAR)
+			local leftH = left.Size.Y.Offset
+			local leftBottom = H * 0.5 + leftH / 2 - 10
+			local leftRight = 14 + left.Size.X.Offset
+			local togglesTop = H - (Theme.ButtonSizes.Roll.Y + 24) - 46
+			local togglesLeft = W / 2 - 165
+			local bottomLeftEdge = W / 2 - 260
+			check(leftH >= Theme.ButtonSizes.Side.Y * 5, size[3] .. ": coluna da esquerda cabe 5 botões")
+			check(leftBottom < togglesTop or leftRight < math.min(togglesLeft, bottomLeftEdge), string.format("%s: AURAS sem sobrepor ROLAR/AUTO/OCULTAR/MOCHILA (coluna até y=%.0f, x=%.0f; controles a partir de y=%.0f, x=%.0f)", size[3], leftBottom, leftRight, togglesTop, math.min(togglesLeft, bottomLeftEdge)))
+			click(sideButton)
+			local shop = UIKit.Windows.get("PlayerAuras")
+			check(Env.waitFor(function()
+				return shop.isOpen
+			end, 2), size[3] .. ": AURAS abre a loja")
+			local panel = shop.gui:FindFirstChild("Panel", true)
+			check(panel ~= nil and panel.Size.X.Offset * scale <= size[1] and panel.Size.Y.Offset * scale <= size[2], size[3] .. ": janela inteira dentro da tela")
+			local list = find(shop.content, "List")
+			check(list ~= nil and list:IsA("ScrollingFrame") and list.AutomaticCanvasSize == roblox.Enum.AutomaticSize.Y and #list:GetChildren() >= 5, size[3] .. ": 5 auras numa lista que rola")
+			local cardOk = true
+			for _, card in list:GetChildren() do
+				if card:IsA("Frame") then
+					local action = card:FindFirstChild("Action")
+					local name = card:FindFirstChild("Name")
+					cardOk = cardOk and action ~= nil and name ~= nil and name.TextScaled and action.Size.X.Offset + 12 <= panel.Size.X.Offset - 16
+				end
+			end
+			check(cardOk, size[3] .. ": preço/renda/velocidade e botão dentro do card (texto ajustado, nada cortado)")
+			check(string.find(find(shop.content, "Summary").Text, "Gerado", 1, true) ~= nil, size[3] .. ": Lifetime e multiplicador visíveis")
+			UIKit.Windows.closeAll()
+		else
+			check(sideButton ~= nil and not sideButton.Visible and rightButton ~= nil and hudRoot.Right.Visible, size[3] .. ": AURAS fica na coluna da direita (sem botão duplicado)")
+		end
+	end
+	-- comprar e equipar pela loja no retrato
+	Env.setViewport(camera, 390, 844)
+	task.wait(0.05)
+	data.Money = 1e14
+	S.PlayerDataService.Set(player, "PlayerAura", { Owned = 1, Equipped = 1 })
+	click(sideButton)
+	task.wait(0.2)
+	local shop = UIKit.Windows.get("PlayerAuras")
+	local imperial = find(shop.content, "Aura_Imperial")
+	click(find(imperial, "Action"))
+	click(find(find(shop.content, "BuyConfirm"), "Confirm"))
+	check(Env.waitFor(function()
+		return data.PlayerAura.Owned == 2
+	end, 2), "retrato: comprar Imperial pela loja")
+	check(Env.waitFor(function()
+		local card = find(shop.content, "Aura_Desperta")
+		return card ~= nil and card:GetAttribute("State") == "Owned"
+	end, 2), "retrato: Desperta vira EQUIPAR VISUAL")
+	click(find(find(shop.content, "Aura_Desperta"), "Action"))
+	check(Env.waitFor(function()
+		return data.PlayerAura.Equipped == 1 and data.PlayerAura.Owned == 2
+	end, 2), "retrato: equipar visual antigo (bônus continua o da Imperial)")
+	UIKit.Windows.closeAll()
+	Env.setViewport(camera, 1280, 720)
+	task.wait(0.05)
 end
 
 running = false

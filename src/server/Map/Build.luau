@@ -150,6 +150,9 @@ end
 -- truncado com "…" em vez de encolher a linha), valor alinhado à direita. O LeaderboardService
 -- só troca os textos (nenhum objeto é criado a cada atualização).
 Build.RankingRowColumns = { Rank = 0.14, PlayerName = 0.58, Value = 0.24 }
+-- Painéis com MAIS de 5 linhas (👑 Magnata, top 10): espaçamento fino e constante, altura de linha
+-- calculada para caber, coluna de valor mais larga ("$12.4T" sem cortar) e nome truncado com "…".
+Build.WideRankingColumns = { Rank = 0.11, PlayerName = 0.5, Value = 0.33 }
 function Build.rankingBoard(part: BasePart, face: Enum.NormalId, title: string, titleColor: Color3, rows: number): SurfaceGui
 	local gui = Instance.new("SurfaceGui")
 	gui.Name = "Sign"
@@ -164,7 +167,9 @@ function Build.rankingBoard(part: BasePart, face: Enum.NormalId, title: string, 
 	layout.VerticalAlignment = Enum.VerticalAlignment.Center
 	layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	layout.SortOrder = Enum.SortOrder.LayoutOrder
-	layout.Padding = UDim.new(0.02, 0)
+	local dense = rows > 5
+	local pad = if dense then 0.008 else 0.02
+	layout.Padding = UDim.new(pad, 0)
 	layout.Parent = gui
 
 	local function label(parent: Instance, name: string, text: string, width: number, align: Enum.TextXAlignment, size: number, color: Color3?): TextLabel
@@ -190,9 +195,17 @@ function Build.rankingBoard(part: BasePart, face: Enum.NormalId, title: string, 
 	local titleLabel = label(gui, "Title", title, 0.94, Enum.TextXAlignment.Center, 30, titleColor)
 	titleLabel.Size = UDim2.fromScale(0.94, 0.14)
 	titleLabel.LayoutOrder = 0
-	-- 5 linhas: 0,12 cada (como sempre); mais linhas (Magnata top 10) dividem o espaço
-	local rowHeight = math.min(0.12, 0.78 / rows)
-	local textSize = math.floor(24 * math.min(1, rowHeight / 0.1))
+	if dense then
+		-- título longo ("👑 MAGNATA / TEMPORADA 1") em duas linhas, ajustado à largura (sem "…")
+		titleLabel.TextScaled = true
+		titleLabel.TextWrapped = true
+		titleLabel.TextTruncate = Enum.TextTruncate.None
+	end
+	-- 5 linhas: 0,12 cada e texto 24 (como sempre). Top 10: altura igual para todas as linhas,
+	-- calculada para caber título + linhas + espaçamentos, texto proporcional ao pixel real
+	local rowHeight = if dense then (0.96 - 0.14 - pad * (rows + 1)) / rows else 0.12
+	local pixels = part.Size.Y * gui.PixelsPerStud
+	local textSize = if dense then math.clamp(math.floor(rowHeight * pixels * 0.7), 18, 26) else 24
 	for i = 1, rows do
 		local row = Instance.new("Frame")
 		row.Name = "Row" .. i
@@ -208,7 +221,7 @@ function Build.rankingBoard(part: BasePart, face: Enum.NormalId, title: string, 
 		rowLayout.SortOrder = Enum.SortOrder.LayoutOrder
 		rowLayout.Padding = UDim.new(0.02, 0)
 		rowLayout.Parent = row
-		local columns = Build.RankingRowColumns
+		local columns = if dense then Build.WideRankingColumns else Build.RankingRowColumns
 		label(row, "Rank", i .. ".", columns.Rank, Enum.TextXAlignment.Right, textSize).LayoutOrder = 1
 		label(row, "PlayerName", "—", columns.PlayerName, Enum.TextXAlignment.Left, textSize).LayoutOrder = 2
 		label(row, "Value", "", columns.Value, Enum.TextXAlignment.Right, textSize, Color3.fromRGB(255, 220, 80)).LayoutOrder = 3

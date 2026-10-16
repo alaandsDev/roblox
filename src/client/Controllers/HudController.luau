@@ -128,7 +128,22 @@ function HudController.Layout()
 		stats.Position = UDim2.new(0, 16, 1, -10)
 	end
 	right.Visible = mode ~= "portrait" and not tutorialHidden
-	HudController.Containers.Left.Visible = not tutorialHidden
+	local left = HudController.Containers.Left
+	left.Visible = not tutorialHidden
+	-- Botões "só no retrato" (ex.: ✨ AURAS, cujo atalho normal fica na coluna da direita, que
+	-- some no celular em pé): aparecem na coluna da esquerda e ela cresce para caber
+	local shown = 0
+	for _, child in left:GetChildren() do
+		if child:IsA("GuiButton") then
+			if child:GetAttribute("PortraitOnly") == true then
+				child.Visible = mode == "portrait"
+			end
+			if child.Visible then
+				shown += 1
+			end
+		end
+	end
+	left.Size = UDim2.fromOffset(Theme.ButtonSizes.Side.X, Theme.ButtonSizes.Side.Y * math.max(4, shown) + 12 * (math.max(4, shown) - 1))
 	if history and history:IsA("GuiObject") then
 		history.Visible = mode ~= "portrait"
 	end

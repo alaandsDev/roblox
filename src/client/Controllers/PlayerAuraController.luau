@@ -42,6 +42,7 @@ local mobile = false
 local clock = os.clock
 local scanAccumulator = 0
 local lastStep = 0
+local lastWrites = 0 -- escritas de propriedade no último passo (todas as auras)
 
 local function hostRoot(model: Instance?): BasePart?
 	local root = model and model:FindFirstChild("HumanoidRootPart")
@@ -142,6 +143,7 @@ function PlayerAuraController._step(dt: number)
 	end
 	local t = clock()
 	local cam = cameraPosition()
+	local writes = 0
 	for _, entry in entries do
 		local distance = if cam then (entry.root.CFrame.Position - cam).Magnitude else 0
 		local lod, factor = PlayerAuraController.lodFor(entry.own, distance)
@@ -151,35 +153,53 @@ function PlayerAuraController._step(dt: number)
 			continue
 		end
 		local fx = entry.fx
-		-- órbitas
+		-- longe (Reduced): metade da frequência para fluxos/auréola
+		local heavy = lod == "Full" or math.floor(t * 30) % 2 == 0
+		-- órbitas: 2–3 elementos importantes, inclinados (não um disco plano)
 		local n = #fx.orbit
 		for i, a in fx.orbit do
-			local ang = t * 1.9 + (i / n) * math.pi * 2
-			local r = fx.orbitRadius * (1 + 0.08 * math.sin(t * 2.3 + i))
-			a.Position = Vector3.new(math.cos(ang) * r, 0.3 + 0.55 * math.sin(t * 1.4 + i * 1.7), math.sin(ang) * r)
+			local ang = t * 1.7 + (i / n) * math.pi * 2
+			local r = fx.orbitRadius * (1 + 0.1 * math.sin(t * 2.3 + i))
+			a.Position = Vector3.new(math.cos(ang) * r, 0.6 + 1.1 * math.sin(ang + i), math.sin(ang) * r)
+			writes += 1
 		end
-		-- fitas girando em espiral (longe: meia frequência)
-		if lod == "Full" or math.floor(t * 30) % 2 == 0 then
-			for _, rib in fx.ribbons do
-				local ang = rib.angle + t * 0.9
-				rib.a0.Position = Vector3.new(math.cos(ang) * 1.6, PlayerAuraBuilder.FootY + 0.6, math.sin(ang) * 1.6)
-				rib.a1.Position = Vector3.new(math.cos(ang + 1.4) * 1.3, PlayerAuraBuilder.HeadY + 0.25 * math.sin(t * 2 + rib.angle), math.sin(ang + 1.4) * 1.3)
+		if heavy then
+			-- fluxos: pontas + curvas animadas (visível em 1–2 s), cada um com fase própria
+			for _, flow in fx.flows do
+				local cf0, cf1, c0, c1 = PlayerAuraBuilder.flowPose(flow, t)
+				flow.a0.CFrame = cf0
+				flow.a1.CFrame = cf1
+				flow.beam.CurveSize0 = c0
+				flow.beam.CurveSize1 = c1
+				writes += 4
+			end
+			-- auréola/coroa girando devagar
+			local halo = fx.halo
+			if halo then
+				PlayerAuraBuilder.placeCircle(halo.points, halo.radius, halo.y, t * 0.7, fx.crownTips, 0.9)
+				writes += #halo.points + #fx.crownTips
+			end
+			-- coluna respirando
+			if fx.column then
+				(fx.column :: Beam).Width0 = fx.columnWidth * (1 + 0.22 * math.sin(t * 2.2))
+				writes += 1
 			end
 		end
-		-- pulso periódico no chão (Divina+)
-		if fx.pulse and t >= entry.nextPulse then
-			entry.nextPulse = t + (if entry.tier >= 5 then 1.6 else 2.4)
+		-- onda periódica no chão
+		if fx.pulse and fx.pulseEvery > 0 and t >= entry.nextPulse then
+			entry.nextPulse = t + fx.pulseEvery
 			pcall(function()
 				(fx.pulse :: ParticleEmitter):Emit(1)
 			end)
 		end
 	end
+	lastWrites = writes
 	lastStep = t
 end
 
 -- (testes/DEV/stress) números do que está vivo
 function PlayerAuraController.Stats(): { [string]: number }
-	local s = { auras = 0, emitters = 0, rate = 0, beams = 0, trails = 0, attachments = 0, lights = 0, highlights = 0, connections = 1, full = 0, reduced = 0, off = 0 }
+	local s = { auras = 0, emitters = 0, rate = 0, alive = 0, beams = 0, trails = 0, attachments = 0, lights = 0, highlights = 0, connections = 1, full = 0, reduced = 0, off = 0, writes = lastWrites }
 	for _, entry in entries do
 		s.auras += 1
 		s.attachments += entry.fx.attachments
@@ -187,6 +207,8 @@ function PlayerAuraController.Stats(): { [string]: number }
 			s.emitters += 1
 			if e.emitter.Enabled then
 				s.rate += e.emitter.Rate
+				-- partículas vivas ~ emissão × vida média
+				s.alive += e.emitter.Rate * e.life
 			end
 		end
 		for _, b in entry.fx.beams do

@@ -532,6 +532,19 @@ section("D) RANKING MAGNATA", function()
 	check(sign ~= nil and sign:FindFirstChild("Row10") ~= nil, "4º painel (Panel4) com 10 linhas")
 	check(sign and sign.Row1.PlayerName.Text == pa.DisplayName and string.find(sign.Row1.Value.Text, "T", 1, true) ~= nil and string.find(sign.Row1.Value.Text, "$", 1, true) ~= nil, "painel mostra $ com o formatter (" .. tostring(sign and sign.Row1.Value.Text) .. ")")
 	check(string.find(sign.Title.Text, "MAGNATA", 1, true) ~= nil and string.find(sign.Title.Text, "1", 1, true) ~= nil, "título 👑 MAGNATA · TEMPORADA 1")
+	-- polish de legibilidade: 10 linhas da MESMA altura, texto >= 18 px, valor com coluna larga,
+	-- nome truncado com "…", título em 2 linhas ajustado (sem cortar)
+	local h, sizes, same = nil, math.huge, true
+	for i = 1, 10 do
+		local row = sign["Row" .. i]
+		h = h or row.Size.Y.Scale
+		same = same and math.abs(row.Size.Y.Scale - h) < 1e-9
+		sizes = math.min(sizes, row.Value.TextSize, row.PlayerName.TextSize)
+	end
+	local total = sign.Title.Size.Y.Scale + 10 * h + 11 * sign.UIListLayout.Padding.Scale
+	check(same and total <= 1 and sizes >= 18, string.format("Magnata: 10 linhas iguais (%.3f), cabem no painel (%.2f), texto >= 18 px (%d)", h, total, sizes))
+	check(sign.Row1.Value.Size.X.Scale >= 0.3 and sign.Row1.PlayerName.TextTruncate == roblox.Enum.TextTruncate.AtEnd and sign.Row1.Value.TextXAlignment == roblox.Enum.TextXAlignment.Right, "Magnata: valor alinhado à direita em coluna larga; nome longo trunca com …")
+	check(sign.Title.TextScaled and string.find(sign.Title.Text, "\n", 1, true) ~= nil and panel.Size.Y >= 15, "Magnata: título em duas linhas (👑 MAGNATA / TEMPORADA 1), painel mais alto")
 	for i = 1, 3 do
 		check(env.real.Workspace.Map:FindFirstChild("Panel" .. i, true) ~= nil, "painel " .. i .. " original continua")
 	end
@@ -614,6 +627,47 @@ section("E) Integrado", function()
 	end
 	check(pos ~= nil, "Ranking Magnata: jogador continua no ranking (#" .. tostring(pos) .. ")")
 	leave(back)
+end)
+
+section("F) DEV: PlayerAuraLineup / PlayerAuraStress sem sobreposição", function()
+	local function dummies()
+		local folder = env.real.Workspace:FindFirstChild("DevPlayerAuras")
+		local list = {}
+		for _, m in (folder and folder:GetChildren() or {}) do
+			local root = m:FindFirstChild("HumanoidRootPart")
+			local label = root and root:FindFirstChild("AuraLabel")
+			table.insert(list, { pos = root.CFrame.Position, label = label, text = label and label.Text.Text, width = label and label.Size.X.Scale, tier = m:GetAttribute("PlayerAuraVisual") })
+		end
+		return list
+	end
+	local function minGap(list)
+		local gap = math.huge
+		for i = 1, #list do
+			for j = i + 1, #list do
+				gap = math.min(gap, (list[i].pos - list[j].pos).Magnitude)
+			end
+		end
+		return gap
+	end
+	Dev.Run("PlayerAuraLineup", pa)
+	local lineup = dummies()
+	local names = {}
+	for _, d in lineup do
+		names[d.tier] = d.text
+	end
+	check(#lineup == 5 and names[1] == "DESPERTA" and names[2] == "IMPERIAL" and names[3] == "DIVINA" and names[4] == "CELESTIAL" and names[5] == "ABSOLUTA", "lineup: 5 bonecos, rótulo só com o nome (DESPERTA … ABSOLUTA)")
+	local labelW = lineup[1].width
+	check(minGap(lineup) >= 12 and labelW + 1 < minGap(lineup), string.format("lineup: %.0f studs entre bonecos; rótulos de %.0f studs não se sobrepõem", minGap(lineup), labelW))
+	check(minGap(lineup) >= 2 * 3.3 + 4, "lineup: os anéis/fluxos da maior aura não invadem o vizinho")
+	Dev.Run("PlayerAuraStress", pa, 10, "Absoluta")
+	local stress = dummies()
+	local labelsOk = true
+	for _, d in stress do
+		labelsOk = labelsOk and string.match(d.text or "", "^Absoluta #%d+$") ~= nil and d.tier == 5
+	end
+	check(#stress == 10 and labelsOk, "stress: 10 Absolutas com rótulos curtos (Absoluta #n)")
+	check(minGap(stress) >= 9 and stress[1].width + 1 < minGap(stress), string.format("stress: formação 5 + 5 espaçada (mín. %.1f studs; rótulo %.0f)", minGap(stress), stress[1].width))
+	Dev.Run("PlayerAuraClear")
 end)
 
 check(#runtimeErrors == 0, "nenhum erro de execução nos handlers (" .. #runtimeErrors .. ")" .. (if #runtimeErrors > 0 then ": " .. runtimeErrors[1] else ""))
